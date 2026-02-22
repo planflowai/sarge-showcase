@@ -13,7 +13,7 @@ export interface VaultItem {
   isBase64?: boolean;
   mimeType?: string;
   originalName: string;
-  tags?: string[];
+  tags: string[];
   notes?: string;
   createdAt: Date;
 }
@@ -88,6 +88,7 @@ export const useVaultStore = create<VaultState>((set) => ({
       size: item.size,
       originalName: item.name,
       mimeType: item.type,
+      tags: [],
       createdAt: new Date(),
     } : item;
 
