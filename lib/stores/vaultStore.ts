@@ -22,8 +22,12 @@ export function formatFileSize(bytes: number): string {
 
 interface VaultState {
   items: VaultItem[];
+  searchQuery: string;
+  filterCategory: FileCategory;
   hydrated: boolean;
   hydrate: () => void;
+  setSearchQuery: (query: string) => void;
+  setFilterCategory: (category: FileCategory) => void;
   addItem: (item: VaultItem) => void;
   updateItem: (id: string, updates: Partial<VaultItem>) => void;
   deleteItem: (id: string) => void;
@@ -32,10 +36,20 @@ interface VaultState {
 
 export const useVaultStore = create<VaultState>((set) => ({
   items: [],
+  searchQuery: "",
+  filterCategory: "all",
   hydrated: false,
 
   hydrate: () => {
     set({ hydrated: true });
+  },
+
+  setSearchQuery: (query) => {
+    set({ searchQuery: query });
+  },
+
+  setFilterCategory: (category) => {
+    set({ filterCategory: category });
   },
 
   addItem: (item) => {
