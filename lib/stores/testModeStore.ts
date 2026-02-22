@@ -16,33 +16,11 @@ interface TestModeState {
   questions: SavedQuestion[];
   poisons: SavedPoison[];
   isRunning: boolean;
-  showingTestMode: boolean;
-  testModeHidden: boolean;
   slots: Array<{ provider: string; model: string }>;
-  batchHistory: Array<{
-    batchId: string;
-    source: "local" | "cloud";
-    testCount: number;
-    savedAt: number;
-  }>;
-  testHistory: Array<{
-    testId: string;
-    source: "local" | "cloud";
-    savedAt: number;
-    question: string;
-    passLogs?: Array<{ model: string }>;
-  }>;
-  promptPools: Record<string, Array<{ id: string; name: string }>>;
-  debateLogic: {
-    challengeKeywords: string;
-    flagKeywords: string;
-    caughtKeywords: string;
-  };
   hydrated: boolean;
   hydrate: () => void;
   hydrateBatchHistory: () => void;
-  hydrateTestHistory: () => void;
-  updateSlot: (index: number, updates: Partial<{ provider: string; model: string }>) => void;
+  streamLLM: (model: string, prompt: string, system: string, onChunk: (chunk: string) => void, source: "local" | "cloud") => Promise<void>;
   addTestCase: (testCase: TestCase) => void;
   updateTestCase: (id: string, updates: Partial<TestCase>) => void;
   deleteTestCase: (id: string) => void;
@@ -55,13 +33,6 @@ interface TestModeState {
   addPoison: (poison: SavedPoison) => void;
   updatePoison: (id: string, poison: Partial<SavedPoison>) => void;
   removePoison: (id: string) => void;
-  streamLLM: (
-    model: string,
-    prompt: string,
-    system: string,
-    onChunk: (chunk: string) => void,
-    source: "local" | "cloud"
-  ) => Promise<void>;
   clearAll: () => void;
 }
 
@@ -70,26 +41,11 @@ export const useTestModeStore = create<TestModeState>((set) => ({
   questions: [],
   poisons: [],
   isRunning: false,
-  showingTestMode: false,
-  testModeHidden: false,
   slots: [
     { provider: "ollama", model: "" },
     { provider: "ollama", model: "" },
     { provider: "ollama", model: "" },
   ],
-  batchHistory: [],
-  testHistory: [],
-  promptPools: {
-    D1: [],
-    D2: [],
-    D3: [],
-    Judge: [],
-  },
-  debateLogic: {
-    challengeKeywords: "",
-    flagKeywords: "",
-    caughtKeywords: "",
-  },
   hydrated: false,
 
   hydrate: () => {
@@ -100,14 +56,35 @@ export const useTestModeStore = create<TestModeState>((set) => ({
     set({ hydrated: true });
   },
 
-  hydrateTestHistory: () => {
-    set({ hydrated: true });
-  },
+  streamLLM: async (model, prompt, system, onChunk, source) => {
+    // Placeholder implementation for streaming LLM calls
+    try {
+      const response = await fetch(
+        source === "local" ? "/api/ollama/generate" : "/api/chat",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ model, prompt, system, stream: true }),
+        }
+      );
 
-  updateSlot: (index, updates) => {
-    set((state) => ({
-      slots: state.slots.map((s, i) => (i === index ? { ...s, ...updates } : s)),
-    }));
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      if (!response.body) throw new Error("No response body");
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        if (chunk) onChunk(chunk);
+      }
+    } catch (error) {
+      console.error("[streamLLM] Error:", error);
+      onChunk("\n[ERROR: Failed to stream response]\n");
+    }
   },
 
   addTestCase: (testCase) => {
@@ -182,45 +159,6 @@ export const useTestModeStore = create<TestModeState>((set) => ({
     set((state) => ({
       poisons: state.poisons.filter((p) => p.id !== id),
     }));
-  },
-
-  streamLLM: async (model, prompt, system, onChunk, source) => {
-    // Placeholder for streaming LLM calls
-    // This will be implemented with actual API calls in the future
-    try {
-      const response = await fetch(
-        source === "local" ? "/api/ollama/generate" : "/api/chat",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            model,
-            prompt,
-            system,
-            stream: true,
-          }),
-        }
-      );
-
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      if (!response.body) throw new Error("No response body");
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-        if (chunk) onChunk(chunk);
-      }
-    } catch (error) {
-      console.error("[streamLLM] Error:", error);
-      onChunk(
-        "\n[ERROR: Failed to stream response. Please check the server.]\n"
-      );
-    }
   },
 
   clearAll: () => {
