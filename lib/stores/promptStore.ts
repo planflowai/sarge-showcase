@@ -4,7 +4,7 @@ import { create } from "zustand";
 
 export interface Prompt {
   id: string;
-  title: string;
+  name: string;
   content: string;
   category: string;
   createdAt: Date;
@@ -15,7 +15,7 @@ interface PromptState {
   hydrated: boolean;
   hydrate: () => void;
   addPrompt: (prompt: Prompt) => void;
-  updatePrompt: (id: string, title: string, content: string) => void;
+  updatePrompt: (id: string, name: string, content: string) => void;
   deletePrompt: (id: string) => void;
   clearAll: () => void;
 }
@@ -34,10 +34,10 @@ export const usePromptStore = create<PromptState>((set) => ({
     }));
   },
 
-  updatePrompt: (id, title, content) => {
+  updatePrompt: (id, name, content) => {
     set((state) => ({
       prompts: state.prompts.map((p) =>
-        p.id === id ? { ...p, title, content } : p
+        p.id === id ? { ...p, name, content } : p
       ),
     }));
   },
