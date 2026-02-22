@@ -13,6 +13,7 @@ export interface Conversation {
 interface ConversationState {
   conversations: Conversation[];
   currentId: string | null;
+  currentConversationId: string | null;
   hydrated: boolean;
   hydrate: () => void;
   loadConversations: () => void;
@@ -20,12 +21,14 @@ interface ConversationState {
   updateConversation: (id: string, conversation: Partial<Conversation>) => void;
   deleteConversation: (id: string) => void;
   setCurrentId: (id: string | null) => void;
+  setCurrent: (id: string | null) => void;
   clearAll: () => void;
 }
 
 export const useConversationStore = create<ConversationState>((set) => ({
   conversations: [],
   currentId: null,
+  currentConversationId: null,
   hydrated: false,
 
   hydrate: () => {
@@ -55,17 +58,23 @@ export const useConversationStore = create<ConversationState>((set) => ({
     set((state) => ({
       conversations: state.conversations.filter((c) => c.id !== id),
       currentId: state.currentId === id ? null : state.currentId,
+      currentConversationId: state.currentConversationId === id ? null : state.currentConversationId,
     }));
   },
 
   setCurrentId: (id) => {
-    set({ currentId: id });
+    set({ currentId: id, currentConversationId: id });
+  },
+
+  setCurrent: (id) => {
+    set({ currentId: id, currentConversationId: id });
   },
 
   clearAll: () => {
     set({
       conversations: [],
       currentId: null,
+      currentConversationId: null,
     });
   },
 }));
