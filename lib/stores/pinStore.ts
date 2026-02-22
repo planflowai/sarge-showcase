@@ -17,7 +17,7 @@ interface PinState {
   setPin: (pin: string) => void;
   addPin: (pin: Pin) => void;
   updatePin: (id: string, updates: Partial<Pin>) => void;
-  removePin: (id: string) => void;
+  removePin: () => void;
   clearAll: () => void;
 }
 
@@ -48,10 +48,8 @@ export const usePinStore = create<PinState>((set) => ({
     }));
   },
 
-  removePin: (id) => {
-    set((state) => ({
-      pins: state.pins.filter((p) => p.id !== id),
-    }));
+  removePin: () => {
+    set({ pinEnabled: false });
   },
 
   clearAll: () => {
