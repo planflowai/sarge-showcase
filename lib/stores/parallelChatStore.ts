@@ -204,19 +204,28 @@ export const useParallelChatStore = create<ParallelChatState>((set, get) => ({
       const messagesToSend = updatedColumn.messages;
 
       // Call API
+      const requestBody = {
+        messages: messagesToSend,
+        provider: column.provider,
+        model: column.model,
+        roleId: column.roleId,
+      };
+
+      console.log("[ParallelChat] Sending to /api/chat:", {
+        provider: column.provider,
+        model: column.model,
+        messageCount: messagesToSend.length,
+      });
+
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: messagesToSend,
-          provider: column.provider,
-          model: column.model,
-          roleId: column.roleId,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.error("[ParallelChat] API error response:", errorData);
         throw new Error(errorData.error || `API error: ${response.status}`);
       }
 
