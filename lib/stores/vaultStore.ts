@@ -44,7 +44,7 @@ interface VaultState {
   updateItem: (id: string, updates: Partial<VaultItem>) => void;
   deleteItem: (id: string) => void;
   getFilteredItems: () => VaultItem[];
-  getItemContent: (id: string) => string | undefined;
+  getItemContent: (id: string) => string | null;
   clearVault: () => void;
   clearAll: () => void;
 }
@@ -126,7 +126,7 @@ export const useVaultStore = create<VaultState>((set) => ({
   getItemContent: (id) => {
     // Returns content of a specific item by ID
     // This is a placeholder - actual implementation would use get()
-    return undefined;
+    return null;
   },
 
   clearVault: () => {
