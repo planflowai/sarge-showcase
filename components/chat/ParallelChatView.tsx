@@ -330,6 +330,7 @@ export function ParallelChatView() {
           <div className="flex items-center gap-1 mr-2">
             <span className="text-xs text-zinc-500 mr-1">Panes:</span>
             <Button
+              type="button"
               variant="ghost"
               size="sm"
               onClick={() => setColumnCount(2)}
@@ -342,6 +343,7 @@ export function ParallelChatView() {
               <Columns2 className="h-4 w-4" />
             </Button>
             <Button
+              type="button"
               variant="ghost"
               size="sm"
               onClick={() => setColumnCount(3)}
@@ -354,6 +356,7 @@ export function ParallelChatView() {
               <Columns3 className="h-4 w-4" />
             </Button>
             <Button
+              type="button"
               variant="ghost"
               size="sm"
               onClick={() => setColumnCount(4)}

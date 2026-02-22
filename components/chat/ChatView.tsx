@@ -56,6 +56,7 @@ function MultiChatModeToggle() {
   return (
     <div className="flex items-center rounded-lg bg-zinc-800/50 p-0.5">
       <button
+        type="button"
         onClick={() => toggleParallelMode()}
         className={cn(
           "px-2 py-1 text-[10px] font-medium rounded-md transition-all",
@@ -67,6 +68,7 @@ function MultiChatModeToggle() {
         Single
       </button>
       <button
+        type="button"
         onClick={() => toggleParallelMode()}
         className={cn(
           "px-2 py-1 text-[10px] font-medium rounded-md transition-all flex items-center gap-1",
