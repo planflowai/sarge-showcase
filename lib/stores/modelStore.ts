@@ -12,6 +12,8 @@ export interface Model {
 interface ModelState {
   models: Model[];
   currentModel: Model | null;
+  nicknames: Record<string, string>;
+  voicePersona: string;
   hydrated: boolean;
   hydrate: () => void;
   setModels: (models: Model[]) => void;
@@ -19,12 +21,15 @@ interface ModelState {
   updateModel: (id: string, updates: Partial<Model>) => void;
   getEffectiveModels: (providerId?: string) => Model[];
   getDisplayName: (modelId: string, fallbackName?: string) => string;
+  setVoicePersona: (persona: string) => void;
   clearAll: () => void;
 }
 
 export const useModelStore = create<ModelState>((set, get) => ({
   models: [],
   currentModel: null,
+  nicknames: {},
+  voicePersona: "default",
   hydrated: false,
 
   hydrate: () => {
@@ -60,6 +65,10 @@ export const useModelStore = create<ModelState>((set, get) => ({
     const state = get();
     const model = state.models.find((m) => m.id === modelId);
     return model ? model.name : (fallbackName || modelId);
+  },
+
+  setVoicePersona: (persona) => {
+    set({ voicePersona: persona });
   },
 
   clearAll: () => {
