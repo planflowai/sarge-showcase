@@ -15,6 +15,7 @@ interface ConversationState {
   currentId: string | null;
   hydrated: boolean;
   hydrate: () => void;
+  loadConversations: () => void;
   addConversation: (conversation: Conversation) => void;
   updateConversation: (id: string, conversation: Partial<Conversation>) => void;
   deleteConversation: (id: string) => void;
@@ -28,6 +29,11 @@ export const useConversationStore = create<ConversationState>((set) => ({
   hydrated: false,
 
   hydrate: () => {
+    set({ hydrated: true });
+  },
+
+  loadConversations: () => {
+    // Placeholder - loads conversations from storage/API
     set({ hydrated: true });
   },
 
