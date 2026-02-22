@@ -14,7 +14,7 @@ interface PromptState {
   prompts: Prompt[];
   hydrated: boolean;
   hydrate: () => void;
-  addPrompt: (prompt: Prompt) => void;
+  addPrompt: (name: string, content: string) => void;
   updatePrompt: (id: string, name: string, content: string) => void;
   deletePrompt: (id: string) => void;
   clearAll: () => void;
@@ -28,9 +28,16 @@ export const usePromptStore = create<PromptState>((set) => ({
     set({ hydrated: true });
   },
 
-  addPrompt: (prompt) => {
+  addPrompt: (name, content) => {
+    const newPrompt: Prompt = {
+      id: `prompt_${Date.now()}`,
+      name,
+      content,
+      category: "general",
+      createdAt: new Date(),
+    };
     set((state) => ({
-      prompts: [...state.prompts, prompt],
+      prompts: [...state.prompts, newPrompt],
     }));
   },
 
