@@ -1,130 +1,53 @@
-      storage: createDebouncedStorage(),
-    }
-  )
-    },
-    {
-      name: "journal",
-      storage: createDebouncedStorage(),
-    }
-  )
-);
-    });
+"use client";
 
-    // Collect dates from analyses
-    analysisHistory.forEach((a) => {
-      const date = new Date(a.timestamp);
-      date.setHours(0, 0, 0, 0);
-      dateSet.add(date.toISOString());
-    });
+import { create } from "zustand";
 
-    // Convert back to Date objects and sort descending
-    return Array.from(dateSet)
-      .map((iso) => new Date(iso))
-      .sort((a, b) => b.getTime() - a.getTime());
+export interface JournalEntry {
+  id: string;
+  content: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface JournalState {
+  entries: JournalEntry[];
+  hydrated: boolean;
+  hydrate: () => void;
+  addEntry: (entry: JournalEntry) => void;
+  updateEntry: (id: string, content: string) => void;
+  deleteEntry: (id: string) => void;
+  clearAll: () => void;
+}
+
+export const useJournalStore = create<JournalState>((set) => ({
+  entries: [],
+  hydrated: false,
+
+  hydrate: () => {
+    set({ hydrated: true });
   },
 
-  // Conversation actions
-  createConversation: (title) => {
-    const id = crypto.randomUUID();
-    const now = new Date().toISOString();
-    const conversation: JournalConversation = {
-      id,
-      title: title || `Chat ${new Date().toLocaleDateString()}`,
-      createdAt: now,
-      updatedAt: now,
-      messages: [],
-    };
-    const updated = [...get().conversations, conversation];
-    set({ conversations: updated, activeConversationId: id });
-    saveConversations(updated);
-    return id;
-  },
-
-  addMessageToConversation: (conversationId, message) => {
-    const { conversations } = get();
-    const updated = conversations.map((c) => {
-      if (c.id === conversationId) {
-        const newMessage: JournalChatMessage = {
-          ...message,
-          id: crypto.randomUUID(),
-          timestamp: new Date().toISOString(),
-        };
-        return {
-          ...c,
-          updatedAt: new Date().toISOString(),
-          messages: [...c.messages, newMessage],
-        };
-      }
-      return c;
-    });
-    set({ conversations: updated });
-    saveConversations(updated);
-  },
-
-  getConversation: (id) => {
-    return get().conversations.find((c) => c.id === id);
-  },
-
-  getConversations: () => {
-    return get().conversations.slice().reverse(); // Most recent first
-  },
-
-  setActiveConversation: (id) => {
-    set({ activeConversationId: id });
-  },
-
-  deleteConversation: (id) => {
-    const updated = get().conversations.filter((c) => c.id !== id);
-    const activeId = get().activeConversationId;
-    set({
-      conversations: updated,
-      activeConversationId: activeId === id ? null : activeId,
-    });
-    saveConversations(updated);
-  },
-
-  getActiveConversation: () => {
-    const { conversations, activeConversationId } = get();
-    if (!activeConversationId) return undefined;
-    return conversations.find((c) => c.id === activeConversationId);
-  },
-
-  // Shared context actions - connect Analysis to Chat
-  setCurrentAnalysis: (analysis, provider) => {
+  addEntry: (entry) => {
     set((state) => ({
-      sharedContext: {
-        ...state.sharedContext,
-        currentAnalysis: analysis,
-        currentAnalysisProvider: provider,
-      },
-      latestAnalysis: analysis, // Also update latestAnalysis for backward compat
+      entries: [...state.entries, entry],
     }));
   },
 
-  setCurrentPrompts: (prompts) => {
+  updateEntry: (id, content) => {
     set((state) => ({
-      sharedContext: { ...state.sharedContext, currentPrompts: prompts },
+      entries: state.entries.map((e) =>
+        e.id === id ? { ...e, content, updatedAt: new Date() } : e
+      ),
     }));
   },
 
-  setSelectedBatchLog: (log) => {
+  deleteEntry: (id) => {
     set((state) => ({
-      sharedContext: { ...state.sharedContext, selectedBatchLog: log },
+      entries: state.entries.filter((e) => e.id !== id),
     }));
   },
 
-  setLastSuggestion: (suggestion) => {
-    set((state) => ({
-      sharedContext: { ...state.sharedContext, lastSuggestion: suggestion },
-    }));
+  clearAll: () => {
+    set({ entries: [] });
   },
-
-  clearSharedContext: () => {
-    set({ sharedContext: { ...defaultSharedContext } });
-  }),
-    {
-      name: "journal",
-      storage: createDebouncedStorage(),
-    }
-  )
-);
+}));

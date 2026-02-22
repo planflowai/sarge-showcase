@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
+import { validatePathWithinProject, logForensicEvent } from '@/lib/security/pathValidator';
 
 interface FileNode {
   name: string;
@@ -81,26 +82,37 @@ async function buildFileTree(dirPath: string, maxDepth: number = 5, currentDepth
 }
 
 export async function POST(request: NextRequest) {
+  const clientIp = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+
   try {
     const { path: dirPath } = await request.json();
 
     if (!dirPath) {
+      logForensicEvent({
+        event: 'List directory rejected: missing path',
+        severity: 'warning',
+        category: 'file_operation',
+        details: { operation: 'list', error: 'Path is required', clientIp },
+      });
       return NextResponse.json({ error: 'Path is required' }, { status: 400 });
     }
 
+    // Validate path is normalized (security: prevent path traversal)
+    const normalizedPath = path.normalize(path.resolve(dirPath));
+
     // Verify the path exists and is a directory
-    const stats = await fs.stat(dirPath);
+    const stats = await fs.stat(normalizedPath);
     if (!stats.isDirectory()) {
       return NextResponse.json({ error: 'Path is not a directory' }, { status: 400 });
     }
 
-    const tree = await buildFileTree(dirPath);
-    const projectName = path.basename(dirPath);
+    const tree = await buildFileTree(normalizedPath);
+    const projectName = path.basename(normalizedPath);
 
     return NextResponse.json({
       success: true,
       projectName,
-      projectPath: dirPath,
+      projectPath: normalizedPath,
       tree,
     });
   } catch (error: any) {

@@ -1,54 +1,53 @@
-      storage: createDebouncedStorage(),
-    }
-  )
-    },
-    {
-      name: "pin",
-      storage: createDebouncedStorage(),
-    }
-  )
-);
-    set({ pinHash, pinEnabled: true, isLocked: false });
+"use client";
+
+import { create } from "zustand";
+
+export interface Pin {
+  id: string;
+  label: string;
+  content: string;
+  createdAt: Date;
+}
+
+interface PinState {
+  pins: Pin[];
+  hydrated: boolean;
+  hydrate: () => void;
+  addPin: (pin: Pin) => void;
+  updatePin: (id: string, updates: Partial<Pin>) => void;
+  removePin: (id: string) => void;
+  clearAll: () => void;
+}
+
+export const usePinStore = create<PinState>((set) => ({
+  pins: [],
+  hydrated: false,
+
+  hydrate: () => {
+    set({ hydrated: true });
   },
 
-  removePin: () => {
-    savePinData(null, false);
-    localStorage.removeItem(TIMEOUT_KEY);
-    set({ pinHash: null, pinEnabled: false, isLocked: false });
+  addPin: (pin) => {
+    set((state) => ({
+      pins: [...state.pins, pin],
+    }));
   },
 
-  verifyPin: (pin: string): boolean => {
-    const hash = hashPinSync(pin);
-    return hash === get().pinHash;
+  updatePin: (id, updates) => {
+    set((state) => ({
+      pins: state.pins.map((p) =>
+        p.id === id ? { ...p, ...updates } : p
+      ),
+    }));
   },
 
-  unlock: () => {
-    localStorage.setItem(TIMEOUT_KEY, Date.now().toString());
-    set({ isLocked: false });
+  removePin: (id) => {
+    set((state) => ({
+      pins: state.pins.filter((p) => p.id !== id),
+    }));
   },
 
-  checkTimeout: () => {
-    const state = get();
-    if (!state.pinEnabled || !state.pinHash) return;
-    const lastActive = localStorage.getItem(TIMEOUT_KEY);
-    if (!lastActive) {
-      set({ isLocked: true });
-      return;
-    }
-    const elapsed = Date.now() - parseInt(lastActive, 10);
-    if (elapsed > TIMEOUT_MS) {
-      set({ isLocked: true });
-    }
+  clearAll: () => {
+    set({ pins: [] });
   },
-
-  touchActivity: () => {
-    if (get().pinEnabled) {
-      localStorage.setItem(TIMEOUT_KEY, Date.now().toString());
-    }
-  }),
-    {
-      name: "pin",
-      storage: createDebouncedStorage(),
-    }
-  )
-);
+}));

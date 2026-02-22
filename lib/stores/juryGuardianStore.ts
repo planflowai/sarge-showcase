@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import { persist, createJSONStorage, StateStorage }
+import { persist, createJSONStorage, StateStorage } from "zustand/middleware";
 import { createDebouncedStorage } from "@/lib/utils/debouncedStorage";
 import type {
   SharedContextLedger,

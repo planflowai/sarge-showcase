@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import nodePath from "path";
+import { validatePathWithinProject, logForensicEvent } from "@/lib/security/pathValidator";
 
 /**
  * POST /api/builder/check-folder
@@ -9,17 +10,25 @@ import nodePath from "path";
  * Used by NewProjectModal to prevent overwriting.
  */
 export async function POST(req: NextRequest) {
+  const clientIp = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
+
   try {
     const { path: inputPath } = await req.json();
 
     if (!inputPath) {
+      logForensicEvent({
+        event: 'Check folder rejected: missing path',
+        severity: 'warning',
+        category: 'file_operation',
+        details: { operation: 'check', error: 'Path is required', clientIp },
+      });
       return NextResponse.json(
         { error: "Path is required" },
         { status: 400 }
       );
     }
 
-    // Normalize cross-platform: resolve handles both forward and back slashes
+    // Validate path - allow absolute paths for check-folder since it's for new projects
     const normalizedPath = nodePath.normalize(nodePath.resolve(inputPath));
 
     // Check if exists

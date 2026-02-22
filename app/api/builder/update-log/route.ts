@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
+import { logForensicEvent } from '@/lib/security/pathValidator';
 import {
   appendChangeEntry,
   generateNewLog,
@@ -11,6 +12,8 @@ import {
 const LOG_FILENAME = 'BUILDER_LOG.md';
 
 export async function POST(request: NextRequest) {
+  const clientIp = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+
   try {
     const body = await request.json();
     const {
@@ -24,10 +27,18 @@ export async function POST(request: NextRequest) {
     console.log('[update-log] Request:', { projectPath, projectName, action });
 
     if (!projectPath) {
+      logForensicEvent({
+        event: 'Update log rejected: missing projectPath',
+        severity: 'warning',
+        category: 'file_operation',
+        details: { operation: 'update-log', error: 'Project path is required', clientIp },
+      });
       return NextResponse.json({ error: 'Project path is required' }, { status: 400 });
     }
 
-    const logPath = path.join(projectPath, LOG_FILENAME);
+    // Normalize the project path to prevent traversal
+    const normalizedProjectPath = path.normalize(path.resolve(projectPath));
+    const logPath = path.join(normalizedProjectPath, LOG_FILENAME);
     let existingContent = '';
 
     // Read existing log if it exists
