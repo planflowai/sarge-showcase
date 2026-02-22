@@ -9,6 +9,8 @@ export interface Model {
   contextWindow: number;
 }
 
+export type EffectiveModel = Model;
+
 interface ModelState {
   models: Model[];
   currentModel: Model | null;
