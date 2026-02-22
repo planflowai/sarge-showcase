@@ -40,10 +40,10 @@ interface ParallelChatState {
   setColumnCount: (count: number) => void;
   setColumnModel: (columnId: string, model: string, provider: string) => void;
   setColumnRole: (columnId: string, roleId: string | undefined) => void;
-  sendToColumn: (columnId: string, content: string) => void;
-  sendToAll: (content: string, options?: any, imageUrls?: string[]) => void;
-  shareMessage: (sourceColumnId: string, targetColumnId: string, message: any) => void;
-  shareMessageToAll: (sourceColumnId: string, message: any) => void;
+  sendToColumn: (columnId: string, content: string) => Promise<void>;
+  sendToAll: (content: string, options?: any, imageUrls?: string[]) => Promise<void>;
+  shareMessage: (sourceColumnId: string, targetColumnId: string, message: any) => Promise<void>;
+  shareMessageToAll: (sourceColumnId: string, message: any) => Promise<void>;
   clearColumn: (columnId: string) => void;
   clearAllColumns: () => void;
   getOtherColumns: (columnId: string) => ChatThread[];
@@ -160,38 +160,133 @@ export const useParallelChatStore = create<ParallelChatState>((set, get) => ({
     }));
   },
 
-  sendToColumn: (columnId, content) => {
-    set((state) => ({
-      columns: state.columns.map((c) => {
-        if (c.id === columnId) {
-          return {
-            ...c,
-            messages: [
-              ...c.messages,
-              {
-                id: crypto.randomUUID(),
-                role: "user" as const,
-                content,
-                timestamp: new Date(),
-              },
-            ],
-          };
-        }
-        return c;
-      }),
+  sendToColumn: async (columnId, content) => {
+    const state = get();
+    const column = state.columns.find((c) => c.id === columnId);
+    if (!column) return;
+
+    // Add user message to column
+    set((s) => ({
+      columns: s.columns.map((c) =>
+        c.id === columnId
+          ? {
+              ...c,
+              messages: [
+                ...c.messages,
+                {
+                  id: crypto.randomUUID(),
+                  role: "user" as const,
+                  content,
+                  timestamp: new Date(),
+                },
+              ],
+            }
+          : c
+      ),
     }));
+
+    // Set sending state
+    set((s) => ({
+      columns: s.columns.map((c) =>
+        c.id === columnId ? { ...c, sending: true } : c
+      ),
+    }));
+
+    const startTime = Date.now();
+    try {
+      // Get current messages from the updated state
+      const updatedState = get();
+      const updatedColumn = updatedState.columns.find((c) => c.id === columnId);
+      if (!updatedColumn) return;
+
+      const messagesToSend = updatedColumn.messages;
+
+      // Call API
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: messagesToSend,
+          provider: column.provider,
+          model: column.model,
+          roleId: column.roleId,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const latencyMs = Date.now() - startTime;
+
+      // Add assistant message
+      set((s) => ({
+        columns: s.columns.map((c) =>
+          c.id === columnId
+            ? {
+                ...c,
+                messages: [
+                  ...c.messages,
+                  {
+                    id: crypto.randomUUID(),
+                    role: "assistant" as const,
+                    content: data.content || "",
+                    timestamp: new Date(),
+                    provider: column.provider,
+                    model: column.model,
+                    tokenCount: data.tokens,
+                    latencyMs,
+                  },
+                ],
+                sending: false,
+              }
+            : c
+        ),
+      }));
+    } catch (err) {
+      const errorMsg =
+        err instanceof Error ? err.message : "Failed to get response";
+
+      // Add error message
+      set((s) => ({
+        columns: s.columns.map((c) =>
+          c.id === columnId
+            ? {
+                ...c,
+                messages: [
+                  ...c.messages,
+                  {
+                    id: crypto.randomUUID(),
+                    role: "assistant" as const,
+                    content: `🔴 Error: ${errorMsg}`,
+                    timestamp: new Date(),
+                    isError: true,
+                  },
+                ],
+                sending: false,
+              }
+            : c
+        ),
+      }));
+
+      console.error(`[ParallelChat] Column ${columnId} error:`, err);
+    }
   },
 
-  sendToAll: (content, options, imageUrls) => {
-    const { columns, activeColumnCount, sendToColumn } = get();
-    // Send message to all visible columns
-    columns.slice(0, activeColumnCount).forEach((col) => {
-      sendToColumn(col.id, content);
-    });
+  sendToAll: async (content, options, imageUrls) => {
+    const { columns, activeColumnCount } = get();
+    const visibleColumns = columns.slice(0, activeColumnCount);
+
+    // Send to all visible columns in parallel
+    await Promise.all(
+      visibleColumns.map((col) => get().sendToColumn(col.id, content))
+    );
   },
 
-  shareMessage: (sourceColumnId, targetColumnId, message) => {
-    const { columns, sendToColumn } = get();
+  shareMessage: async (sourceColumnId, targetColumnId, message) => {
+    const { columns } = get();
     const fromColumn = columns.find(c => c.id === sourceColumnId);
 
     if (!fromColumn) return;
@@ -203,11 +298,11 @@ export const useParallelChatStore = create<ParallelChatState>((set, get) => ({
     const contextContent = `Context from another model (${fromModelName}):\n${message.content}`;
 
     // Send as a new user message to the target column
-    sendToColumn(targetColumnId, contextContent);
+    await get().sendToColumn(targetColumnId, contextContent);
   },
 
-  shareMessageToAll: (sourceColumnId, message) => {
-    const { columns, sendToColumn, activeColumnCount } = get();
+  shareMessageToAll: async (sourceColumnId, message) => {
+    const { columns, activeColumnCount } = get();
     const fromColumn = columns.find(c => c.id === sourceColumnId);
 
     if (!fromColumn) return;
@@ -218,12 +313,14 @@ export const useParallelChatStore = create<ParallelChatState>((set, get) => ({
     // Create context message
     const contextContent = `Context from another model (${fromModelName}):\n${message.content}`;
 
-    // Send to all OTHER columns (not the source) that are currently visible
-    columns.slice(0, activeColumnCount).forEach(col => {
-      if (col.id !== sourceColumnId) {
-        sendToColumn(col.id, contextContent);
-      }
-    });
+    // Send to all OTHER columns (not the source) that are currently visible in parallel
+    const otherColumns = columns
+      .slice(0, activeColumnCount)
+      .filter(col => col.id !== sourceColumnId);
+
+    await Promise.all(
+      otherColumns.map(col => get().sendToColumn(col.id, contextContent))
+    );
   },
 
   clearColumn: (columnId) => {

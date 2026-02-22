@@ -272,9 +272,8 @@ export function ParallelChatView() {
   };
 
   const handleColumnSend = useCallback(
-    (columnId: string, content: string) => {
-      // Just add the message locally (no AI calls for now)
-      sendToColumn(columnId, content);
+    async (columnId: string, content: string) => {
+      await sendToColumn(columnId, content);
     },
     [sendToColumn]
   );
@@ -286,12 +285,12 @@ export function ParallelChatView() {
     }
   };
 
-  const handleShare = (message: Message, fromColumnId: string, targetColumnId: string) => {
-    shareMessage(fromColumnId, targetColumnId, message);
+  const handleShare = async (message: Message, fromColumnId: string, targetColumnId: string) => {
+    await shareMessage(fromColumnId, targetColumnId, message);
   };
 
-  const handleShareToAll = (message: Message, fromColumnId: string) => {
-    shareMessageToAll(fromColumnId, message);
+  const handleShareToAll = async (message: Message, fromColumnId: string) => {
+    await shareMessageToAll(fromColumnId, message);
   };
 
   const anySending = columns.some(c => c.sending);
