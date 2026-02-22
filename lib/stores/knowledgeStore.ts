@@ -15,7 +15,7 @@ export interface KnowledgeDocument {
   name: string;
   content: string;
   tags?: string[];
-  size?: number;
+  size: number;
   type?: string;
   createdAt: Date;
 }
@@ -28,7 +28,7 @@ interface KnowledgeState {
   addItem: (item: KnowledgeItem) => void;
   updateItem: (id: string, updates: Partial<KnowledgeItem>) => void;
   deleteItem: (id: string) => void;
-  addDocument: (doc: KnowledgeDocument) => void;
+  addDocument: (name: string, content: string, tags?: string[]) => void;
   deleteDocument: (id: string) => void;
   clearAll: () => void;
 }
@@ -62,9 +62,19 @@ export const useKnowledgeStore = create<KnowledgeState>((set) => ({
     }));
   },
 
-  addDocument: (doc) => {
+  addDocument: (name, content, tags) => {
     set((state) => ({
-      documents: [...state.documents, doc],
+      documents: [
+        ...state.documents,
+        {
+          id: crypto.randomUUID(),
+          name,
+          content,
+          tags: tags || [],
+          size: content.length,
+          createdAt: new Date(),
+        },
+      ],
     }));
   },
 

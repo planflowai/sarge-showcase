@@ -12,18 +12,26 @@ export interface Pin {
 interface PinState {
   pins: Pin[];
   pinEnabled: boolean;
+  pinHash: string | null;
+  isLocked: boolean;
   hydrated: boolean;
   hydrate: () => void;
   setPin: (pin: string) => void;
   addPin: (pin: Pin) => void;
   updatePin: (id: string, updates: Partial<Pin>) => void;
   removePin: () => void;
+  verifyPin: (pin: string) => boolean;
+  unlock: () => void;
+  checkTimeout: () => void;
+  touchActivity: () => void;
   clearAll: () => void;
 }
 
-export const usePinStore = create<PinState>((set) => ({
+export const usePinStore = create<PinState>((set, get) => ({
   pins: [],
   pinEnabled: false,
+  pinHash: null,
+  isLocked: false,
   hydrated: false,
 
   hydrate: () => {
@@ -31,7 +39,7 @@ export const usePinStore = create<PinState>((set) => ({
   },
 
   setPin: (pin) => {
-    set({ pinEnabled: pin.length > 0 });
+    set({ pinEnabled: pin.length > 0, pinHash: pin.length > 0 ? pin : null });
   },
 
   addPin: (pin) => {
@@ -49,10 +57,27 @@ export const usePinStore = create<PinState>((set) => ({
   },
 
   removePin: () => {
-    set({ pinEnabled: false });
+    set({ pinEnabled: false, pinHash: null });
+  },
+
+  verifyPin: (pin) => {
+    const state = get();
+    return state.pinHash === pin;
+  },
+
+  unlock: () => {
+    set({ isLocked: false });
+  },
+
+  checkTimeout: () => {
+    // Placeholder for timeout check logic
+  },
+
+  touchActivity: () => {
+    // Placeholder for activity tracking logic
   },
 
   clearAll: () => {
-    set({ pins: [] });
+    set({ pins: [], pinHash: null, isLocked: false });
   },
 }));

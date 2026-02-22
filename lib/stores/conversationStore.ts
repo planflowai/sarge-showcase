@@ -1,19 +1,13 @@
 "use client";
 
 import { create } from "zustand";
-
-export interface Conversation {
-  id: string;
-  title: string;
-  messages: any[];
-  createdAt: Date;
-  updatedAt: Date;
-}
+import type { Conversation } from "@/lib/types";
 
 interface ConversationState {
   conversations: Conversation[];
   currentId: string | null;
   currentConversationId: string | null;
+  loading: boolean;
   hydrated: boolean;
   hydrate: () => void;
   loadConversations: () => void;
@@ -23,13 +17,16 @@ interface ConversationState {
   deleteConversation: (id: string) => void;
   setCurrentId: (id: string | null) => void;
   setCurrent: (id: string | null) => void;
+  setCurrentForMode: (id: string | null, mode: string) => void;
+  subscribe: (callback?: (state: ConversationState) => void) => () => void;
   clearAll: () => void;
 }
 
-export const useConversationStore = create<ConversationState>((set) => ({
+export const useConversationStore = create<ConversationState>((set, get) => ({
   conversations: [],
   currentId: null,
   currentConversationId: null,
+  loading: false,
   hydrated: false,
 
   hydrate: () => {
@@ -46,6 +43,7 @@ export const useConversationStore = create<ConversationState>((set) => ({
       id: `conv_${Date.now()}`,
       title,
       messages: [],
+      mode,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -86,11 +84,21 @@ export const useConversationStore = create<ConversationState>((set) => ({
     set({ currentId: id, currentConversationId: id });
   },
 
+  setCurrentForMode: (id, mode) => {
+    set({ currentId: id, currentConversationId: id });
+  },
+
+  subscribe: (callback) => {
+    // Placeholder for subscription
+    return () => {};
+  },
+
   clearAll: () => {
     set({
       conversations: [],
       currentId: null,
       currentConversationId: null,
+      loading: false,
     });
   },
 }));
