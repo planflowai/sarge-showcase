@@ -129,11 +129,39 @@ export const useParallelChatStore = create<ParallelChatState>((set, get) => ({
   },
 
   shareMessage: (sourceColumnId, targetColumnId, message) => {
-    // Placeholder for sharing message between columns
+    const { columns, sendToColumn } = get();
+    const fromColumn = columns.find(c => c.id === sourceColumnId);
+
+    if (!fromColumn) return;
+
+    // Get model display name
+    const fromModelName = fromColumn.model.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+
+    // Create context message
+    const contextContent = `Context from another model (${fromModelName}):\n${message.content}`;
+
+    // Send as a new user message to the target column
+    sendToColumn(targetColumnId, contextContent);
   },
 
   shareMessageToAll: (sourceColumnId, message) => {
-    // Placeholder for sharing message to all columns
+    const { columns, sendToColumn, activeColumnCount } = get();
+    const fromColumn = columns.find(c => c.id === sourceColumnId);
+
+    if (!fromColumn) return;
+
+    // Get model display name
+    const fromModelName = fromColumn.model.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+
+    // Create context message
+    const contextContent = `Context from another model (${fromModelName}):\n${message.content}`;
+
+    // Send to all OTHER columns (not the source) that are currently visible
+    columns.slice(0, activeColumnCount).forEach(col => {
+      if (col.id !== sourceColumnId) {
+        sendToColumn(col.id, contextContent);
+      }
+    });
   },
 
   clearColumn: (columnId) => {
