@@ -16,6 +16,8 @@ interface TestModeState {
   questions: SavedQuestion[];
   poisons: SavedPoison[];
   isRunning: boolean;
+  showingTestMode: boolean;
+  testModeHidden: boolean;
   hydrated: boolean;
   hydrate: () => void;
   hydrateBatchHistory: () => void;
@@ -39,6 +41,8 @@ export const useTestModeStore = create<TestModeState>((set) => ({
   questions: [],
   poisons: [],
   isRunning: false,
+  showingTestMode: false,
+  testModeHidden: false,
   hydrated: false,
 
   hydrate: () => {
