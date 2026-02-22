@@ -161,11 +161,33 @@ export const useParallelChatStore = create<ParallelChatState>((set, get) => ({
   },
 
   sendToColumn: (columnId, content) => {
-    // Placeholder for sending message to specific column
+    set((state) => ({
+      columns: state.columns.map((c) => {
+        if (c.id === columnId) {
+          return {
+            ...c,
+            messages: [
+              ...c.messages,
+              {
+                id: crypto.randomUUID(),
+                role: "user" as const,
+                content,
+                timestamp: new Date(),
+              },
+            ],
+          };
+        }
+        return c;
+      }),
+    }));
   },
 
   sendToAll: (content, options, imageUrls) => {
-    // Placeholder for sending message to all columns
+    const { columns, activeColumnCount, sendToColumn } = get();
+    // Send message to all visible columns
+    columns.slice(0, activeColumnCount).forEach((col) => {
+      sendToColumn(col.id, content);
+    });
   },
 
   shareMessage: (sourceColumnId, targetColumnId, message) => {
