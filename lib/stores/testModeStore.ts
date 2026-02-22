@@ -30,6 +30,7 @@ interface TestModeState {
     source: "local" | "cloud";
     savedAt: number;
     question: string;
+    passLogs?: Array<{ model: string }>;
   }>;
   hydrated: boolean;
   hydrate: () => void;
