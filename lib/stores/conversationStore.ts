@@ -8,11 +8,14 @@ export interface Conversation {
   messages: any[];
   createdAt: Date;
   updatedAt: Date;
+  mode?: string;
 }
 
 interface ConversationState {
   conversations: Conversation[];
   currentId: string | null;
+  currentConversationId: string | null;
+  loading: boolean;
   hydrated: boolean;
   hydrate: () => void;
   loadConversations: () => void;
@@ -20,12 +23,16 @@ interface ConversationState {
   updateConversation: (id: string, conversation: Partial<Conversation>) => void;
   deleteConversation: (id: string) => void;
   setCurrentId: (id: string | null) => void;
+  setCurrentForMode: (id: string | null, mode: string) => void;
+  subscribe: () => () => void;
   clearAll: () => void;
 }
 
-export const useConversationStore = create<ConversationState>((set) => ({
+export const useConversationStore = create<ConversationState>((set, get) => ({
   conversations: [],
   currentId: null,
+  currentConversationId: null,
+  loading: false,
   hydrated: false,
 
   hydrate: () => {
@@ -34,7 +41,7 @@ export const useConversationStore = create<ConversationState>((set) => ({
 
   loadConversations: () => {
     // Placeholder - loads conversations from storage/API
-    set({ hydrated: true });
+    set({ hydrated: true, loading: false });
   },
 
   addConversation: (conversation) => {
@@ -55,17 +62,30 @@ export const useConversationStore = create<ConversationState>((set) => ({
     set((state) => ({
       conversations: state.conversations.filter((c) => c.id !== id),
       currentId: state.currentId === id ? null : state.currentId,
+      currentConversationId: state.currentConversationId === id ? null : state.currentConversationId,
     }));
   },
 
   setCurrentId: (id) => {
-    set({ currentId: id });
+    set({ currentId: id, currentConversationId: id });
+  },
+
+  setCurrentForMode: (id, mode) => {
+    set({ currentId: id, currentConversationId: id });
+  },
+
+  subscribe: () => {
+    // Returns an unsubscribe function
+    // This is a placeholder - actual implementation would use Zustand's subscribe
+    return () => {};
   },
 
   clearAll: () => {
     set({
       conversations: [],
       currentId: null,
+      currentConversationId: null,
+      loading: false,
     });
   },
 }));
