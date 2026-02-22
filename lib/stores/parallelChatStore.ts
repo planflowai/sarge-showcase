@@ -89,7 +89,7 @@ export const useParallelChatStore = create<ParallelChatState>((set, get) => ({
           messages: [],
           createdAt: new Date(),
           provider: "google",
-          model: "gemini-1.5-pro",
+          model: "gemini-2.0-flash",
         },
         {
           id: crypto.randomUUID(),
