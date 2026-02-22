@@ -1,6 +1,8 @@
 "use client";
 
 import { create } from "zustand";
+import { queueResponse, runInterventionCheck } from "@/lib/juryGuardian/engine";
+import { useJuryGuardianStore } from "@/lib/stores/juryGuardianStore";
 
 export interface ChatThread {
   id: string;
@@ -221,25 +223,71 @@ export const useParallelChatStore = create<ParallelChatState>((set, get) => ({
       const data = await response.json();
       const latencyMs = Date.now() - startTime;
 
-      // Add assistant message
+      const assistantMessageId = crypto.randomUUID();
+      const assistantMessage = {
+        id: assistantMessageId,
+        role: "assistant" as const,
+        content: data.content || "",
+        timestamp: new Date(),
+        provider: column.provider,
+        model: column.model,
+        tokenCount: data.tokens,
+        latencyMs,
+      };
+
+      // Queue response for Jury Guardian monitoring
+      queueResponse(columnId, {
+        pane: 0, // Placeholder - could track which pane this is
+        model: column.model,
+        provider: column.provider,
+        content: assistantMessage.content,
+        timestamp: new Date(),
+      });
+
+      // Check if response should be intercepted by Jury Guardian
+      const juryStore = useJuryGuardianStore.getState();
+      let messageToAdd = assistantMessage;
+      let isKilled = false;
+
+      if (juryStore.enabled && juryStore.behavior.interventionEnabled) {
+        const check = runInterventionCheck(columnId, assistantMessage.content, column.model);
+        if (check.blocked) {
+          isKilled = true;
+          // Log the kill if it's a valid type
+          if (check.type === "echo" || check.type === "contradiction") {
+            juryStore.logKill(columnId, {
+              content: assistantMessage.content,
+              reason: check.reason,
+              model: column.model,
+              type: check.type,
+            });
+          }
+
+          // Create killed message instead
+          messageToAdd = {
+            ...assistantMessage,
+            content: `🛑 Response Killed\n\n**Reason:** ${check.reason}`,
+            isKilled: true,
+            killedReason: check.reason,
+          };
+
+          // Add toast notification
+          juryStore.addToast({
+            type: "killed",
+            title: "🛑 Response Killed",
+            message: check.reason,
+            sessionId: columnId,
+          });
+        }
+      }
+
+      // Add message to column
       set((s) => ({
         columns: s.columns.map((c) =>
           c.id === columnId
             ? {
                 ...c,
-                messages: [
-                  ...c.messages,
-                  {
-                    id: crypto.randomUUID(),
-                    role: "assistant" as const,
-                    content: data.content || "",
-                    timestamp: new Date(),
-                    provider: column.provider,
-                    model: column.model,
-                    tokenCount: data.tokens,
-                    latencyMs,
-                  },
-                ],
+                messages: [...c.messages, messageToAdd],
                 sending: false,
               }
             : c
