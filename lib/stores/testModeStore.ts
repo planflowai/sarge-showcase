@@ -20,6 +20,7 @@ interface TestModeState {
   hydrated: boolean;
   hydrate: () => void;
   hydrateBatchHistory: () => void;
+  updateSlot: (index: number, updates: Partial<{ provider: string; model: string }>) => void;
   streamLLM: (model: string, prompt: string, system: string, onChunk: (chunk: string) => void, source: "local" | "cloud") => Promise<void>;
   addTestCase: (testCase: TestCase) => void;
   updateTestCase: (id: string, updates: Partial<TestCase>) => void;
@@ -54,6 +55,12 @@ export const useTestModeStore = create<TestModeState>((set) => ({
 
   hydrateBatchHistory: () => {
     set({ hydrated: true });
+  },
+
+  updateSlot: (index, updates) => {
+    set((state) => ({
+      slots: state.slots.map((s, i) => (i === index ? { ...s, ...updates } : s)),
+    }));
   },
 
   streamLLM: async (model, prompt, system, onChunk, source) => {
