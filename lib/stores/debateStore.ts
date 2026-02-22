@@ -26,6 +26,8 @@ export interface Debate {
   messages: any[];
   critiques: any[];
   roundSummaries: any[];
+  judge: Participant;
+  agreements: string[];
 }
 
 interface DebateState {
@@ -107,7 +109,7 @@ export const useDebateStore = create<DebateState>((set) => ({
   },
 
   setSourceConversation: (conversationId) => {
-    set({ debate: { sourceConversationId: conversationId, participants: [], topic: "", messages: [], rounds: 0, critiques: [], roundSummaries: [] }, sourceConversationId: conversationId });
+    set({ debate: { sourceConversationId: conversationId, participants: [], topic: "", messages: [], rounds: 0, critiques: [], roundSummaries: [], judge: { provider: "", model: "" }, agreements: [] }, sourceConversationId: conversationId });
   },
 
   startDebate: (topic, participants, judge, rounds) => {

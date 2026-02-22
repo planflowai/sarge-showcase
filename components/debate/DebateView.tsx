@@ -90,7 +90,7 @@ interface SlotConfig {
 
 const emptySlot = (): SlotConfig => ({ provider: null, model: "", roleId: undefined });
 
-function getProviderName(provider: Provider): string {
+function getProviderName(provider: string): string {
   return providers.find((p) => p.id === provider)?.name ?? provider;
 }
 
