@@ -17,9 +17,14 @@ interface TestModeState {
   poisons: SavedPoison[];
   isRunning: boolean;
   slots: Array<{ provider: string; model: string }>;
+  batchHistory: Array<{ batchId: string; source: "local" | "cloud"; testCount: number; savedAt: number }>;
+  testHistory: Array<{ testId: string; source: "local" | "cloud"; savedAt: number; question: string; passLogs?: Array<{ model: string }> }>;
+  promptPools: Record<string, Array<{ id: string; name: string }>>;
+  debateLogic: { challengeKeywords: string; flagKeywords: string; caughtKeywords: string };
   hydrated: boolean;
   hydrate: () => void;
   hydrateBatchHistory: () => void;
+  hydrateTestHistory: () => void;
   updateSlot: (index: number, updates: Partial<{ provider: string; model: string }>) => void;
   streamLLM: (model: string, prompt: string, system: string, onChunk: (chunk: string) => void, source: "local" | "cloud") => Promise<void>;
   addTestCase: (testCase: TestCase) => void;
@@ -47,6 +52,10 @@ export const useTestModeStore = create<TestModeState>((set) => ({
     { provider: "ollama", model: "" },
     { provider: "ollama", model: "" },
   ],
+  batchHistory: [],
+  testHistory: [],
+  promptPools: { D1: [], D2: [], D3: [], Judge: [] },
+  debateLogic: { challengeKeywords: "", flagKeywords: "", caughtKeywords: "" },
   hydrated: false,
 
   hydrate: () => {
@@ -54,6 +63,10 @@ export const useTestModeStore = create<TestModeState>((set) => ({
   },
 
   hydrateBatchHistory: () => {
+    set({ hydrated: true });
+  },
+
+  hydrateTestHistory: () => {
     set({ hydrated: true });
   },
 
