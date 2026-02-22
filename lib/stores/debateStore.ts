@@ -101,8 +101,7 @@ export const useDebateStore = create<DebateState>((set) => ({
   },
 
   openDebate: () => {
-    // Placeholder - triggers debate opening
-    set({ hydrated: true });
+    set({ showingSetup: true, debateHidden: false, hydrated: true });
   },
 
   endDebate: () => {
@@ -114,7 +113,20 @@ export const useDebateStore = create<DebateState>((set) => ({
   },
 
   startDebate: (topic, participants, judge, rounds) => {
-    set({ isRunning: true, showingSetup: false, topic, currentPhase: "round-1" });
+    const debate: Debate = {
+      id: `debate-${Date.now()}`,
+      participants,
+      topic,
+      rounds,
+      currentRound: 1,
+      status: "ongoing",
+      messages: [],
+      critiques: [],
+      roundSummaries: [],
+      judge,
+      agreements: [],
+    };
+    set({ debate, isRunning: true, showingSetup: false, topic, currentPhase: "round-1", debateHidden: false });
   },
 
   startQuickDebate: (topic, useLocal, modelIds) => {
