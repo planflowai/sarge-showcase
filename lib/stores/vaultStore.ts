@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 
-export type FileCategory = 'document' | 'image' | 'code' | 'data' | 'other';
+export type FileCategory = 'all' | 'image' | 'document' | 'spreadsheet' | 'text' | 'code' | 'archive' | 'other';
 
 export interface VaultItem {
   id: string;
