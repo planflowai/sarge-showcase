@@ -13,6 +13,7 @@ export interface VaultItem {
   isBase64?: boolean;
   mimeType?: string;
   originalName: string;
+  tags?: string[];
   createdAt: Date;
 }
 
