@@ -7,6 +7,7 @@ export interface Model {
   name: string;
   provider: string;
   contextWindow: number;
+  isBuiltIn?: boolean;
 }
 
 export type EffectiveModel = Model;
