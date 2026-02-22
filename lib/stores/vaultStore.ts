@@ -37,6 +37,9 @@ interface VaultState {
   removeItem: (id: string) => void;
   updateItem: (id: string, updates: Partial<VaultItem>) => void;
   deleteItem: (id: string) => void;
+  getFilteredItems: () => VaultItem[];
+  getItemContent: (id: string) => string | undefined;
+  clearVault: () => void;
   clearAll: () => void;
 }
 
@@ -93,6 +96,22 @@ export const useVaultStore = create<VaultState>((set) => ({
     set((state) => ({
       items: state.items.filter((i) => i.id !== id),
     }));
+  },
+
+  getFilteredItems: () => {
+    // Returns filtered items based on current search and category settings
+    // This is a placeholder - actual implementation would be in a selector
+    return [];
+  },
+
+  getItemContent: (id) => {
+    // Returns content of a specific item by ID
+    // This is a placeholder - actual implementation would use get()
+    return undefined;
+  },
+
+  clearVault: () => {
+    set({ items: [] });
   },
 
   clearAll: () => {
