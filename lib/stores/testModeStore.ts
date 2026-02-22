@@ -32,6 +32,12 @@ interface TestModeState {
     question: string;
     passLogs?: Array<{ model: string }>;
   }>;
+  promptPools: Record<string, Array<{ id: string; name: string }>>;
+  debateLogic: {
+    challengeKeywords: string;
+    flagKeywords: string;
+    caughtKeywords: string;
+  };
   hydrated: boolean;
   hydrate: () => void;
   hydrateBatchHistory: () => void;
@@ -73,6 +79,17 @@ export const useTestModeStore = create<TestModeState>((set) => ({
   ],
   batchHistory: [],
   testHistory: [],
+  promptPools: {
+    D1: [],
+    D2: [],
+    D3: [],
+    Judge: [],
+  },
+  debateLogic: {
+    challengeKeywords: "",
+    flagKeywords: "",
+    caughtKeywords: "",
+  },
   hydrated: false,
 
   hydrate: () => {
