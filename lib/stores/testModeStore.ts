@@ -16,6 +16,8 @@ interface TestModeState {
   questions: SavedQuestion[];
   poisons: SavedPoison[];
   isRunning: boolean;
+  showingTestMode: boolean;
+  testModeHidden: boolean;
   slots: Array<{ provider: string; model: string }>;
   batchHistory: Array<{ batchId: string; source: "local" | "cloud"; testCount: number; savedAt: number }>;
   testHistory: Array<{ testId: string; source: "local" | "cloud"; savedAt: number; question: string; passLogs?: Array<{ model: string }> }>;
@@ -47,6 +49,8 @@ export const useTestModeStore = create<TestModeState>((set) => ({
   questions: [],
   poisons: [],
   isRunning: false,
+  showingTestMode: false,
+  testModeHidden: false,
   slots: [
     { provider: "ollama", model: "" },
     { provider: "ollama", model: "" },

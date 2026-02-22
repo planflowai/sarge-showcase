@@ -13,6 +13,8 @@ interface DebateState {
   topic: string;
   arguments: Argument[];
   debate: any;
+  showingSetup: boolean;
+  debateHidden: boolean;
   hydrated: boolean;
   hydrate: () => void;
   setTopic: (topic: string) => void;
@@ -27,6 +29,8 @@ export const useDebateStore = create<DebateState>((set) => ({
   topic: "",
   arguments: [],
   debate: null,
+  showingSetup: false,
+  debateHidden: false,
   hydrated: false,
 
   hydrate: () => {
