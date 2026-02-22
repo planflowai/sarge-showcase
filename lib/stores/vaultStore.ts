@@ -34,7 +34,7 @@ interface VaultState {
   setFilterCategory: (category: FileCategory) => void;
   setSortBy: (sortBy: "name" | "date" | "size") => void;
   setSortOrder: (order: "asc" | "desc") => void;
-  addItem: (item: VaultItem) => void;
+  addItem: (item: VaultItem | File) => void;
   removeItem: (id: string) => void;
   updateItem: (id: string, updates: Partial<VaultItem>) => void;
   deleteItem: (id: string) => void;
@@ -74,8 +74,18 @@ export const useVaultStore = create<VaultState>((set) => ({
   },
 
   addItem: (item) => {
+    // Convert File to VaultItem if needed
+    const vaultItem: VaultItem = item instanceof File ? {
+      id: `vault_${Date.now()}`,
+      name: item.name,
+      data: "", // File data would be loaded separately
+      category: "other" as FileCategory,
+      size: item.size,
+      createdAt: new Date(),
+    } : item;
+
     set((state) => ({
-      items: [...state.items, item],
+      items: [...state.items, vaultItem],
     }));
   },
 
