@@ -23,6 +23,7 @@ interface ConversationState {
   addConversation: (conversation: Conversation) => void;
   updateConversation: (id: string, conversation: Partial<Conversation>) => void;
   deleteConversation: (id: string) => void;
+  setCurrent: (id: string | null) => void;
   setCurrentId: (id: string | null) => void;
   setCurrentForMode: (id: string | null, mode: string) => void;
   subscribe: () => () => void;
@@ -81,6 +82,10 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
       currentId: state.currentId === id ? null : state.currentId,
       currentConversationId: state.currentConversationId === id ? null : state.currentConversationId,
     }));
+  },
+
+  setCurrent: (id) => {
+    set({ currentId: id, currentConversationId: id });
   },
 
   setCurrentId: (id) => {
