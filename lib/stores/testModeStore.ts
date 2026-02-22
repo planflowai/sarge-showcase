@@ -27,12 +27,26 @@ interface TestModeState {
   showingTestMode: boolean;
   testModeHidden: boolean;
   batchModeActive: boolean;
+  batchRunning: boolean;
+  batchPaused: boolean;
+  batchCurrentPass: number;
+  batchCurrentTest: number;
+  batchProgress: number;
   currentView: 'batch' | 'test' | 'review' | 'config' | null;
   slots: Array<{ provider: string; model: string }>;
   batchHistory: BatchHistoryEntry[];
   testHistory: Array<{ testId: string; source: "local" | "cloud"; savedAt: number; question: string; passLogs?: Array<{ model: string }> }>;
   promptPools: Record<string, Array<{ id: string; name: string }>>;
-  debateLogic: { challengeKeywords: string; flagKeywords: string; caughtKeywords: string };
+  debateLogic: {
+    d1Prompt: string;
+    d1PromptWithContext: string;
+    d2Prompt: string;
+    d3Prompt: string;
+    poisonInjection: string;
+    challengeKeywords: string;
+    flagKeywords: string;
+    caughtKeywords: string;
+  };
   hydrated: boolean;
   hydrate: () => void;
   hydrateBatchHistory: () => void;
@@ -53,7 +67,16 @@ interface TestModeState {
   addPoison: (poison: SavedPoison) => void;
   updatePoison: (id: string, poison: Partial<SavedPoison>) => void;
   removePoison: (id: string) => void;
-  updateDebateLogic: (updates: Partial<{ challengeKeywords: string; flagKeywords: string; caughtKeywords: string }>) => void;
+  updateDebateLogic: (updates: Partial<{
+    d1Prompt: string;
+    d1PromptWithContext: string;
+    d2Prompt: string;
+    d3Prompt: string;
+    poisonInjection: string;
+    challengeKeywords: string;
+    flagKeywords: string;
+    caughtKeywords: string;
+  }>) => void;
   setCurrentView: (view: 'batch' | 'test' | 'review' | 'config' | null) => void;
   clearAll: () => void;
 }
@@ -66,6 +89,11 @@ export const useTestModeStore = create<TestModeState>((set) => ({
   showingTestMode: false,
   testModeHidden: false,
   batchModeActive: false,
+  batchRunning: false,
+  batchPaused: false,
+  batchCurrentPass: 0,
+  batchCurrentTest: 0,
+  batchProgress: 0,
   currentView: null,
   slots: [
     { provider: "ollama", model: "" },
@@ -75,7 +103,16 @@ export const useTestModeStore = create<TestModeState>((set) => ({
   batchHistory: [],
   testHistory: [],
   promptPools: { D1: [], D2: [], D3: [], Judge: [] },
-  debateLogic: { challengeKeywords: "", flagKeywords: "", caughtKeywords: "" },
+  debateLogic: {
+    d1Prompt: "",
+    d1PromptWithContext: "",
+    d2Prompt: "",
+    d3Prompt: "",
+    poisonInjection: "",
+    challengeKeywords: "",
+    flagKeywords: "",
+    caughtKeywords: "",
+  },
   hydrated: false,
 
   hydrate: () => {
