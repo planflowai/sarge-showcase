@@ -14,6 +14,7 @@ export interface VaultItem {
   mimeType?: string;
   originalName: string;
   tags?: string[];
+  notes?: string;
   createdAt: Date;
 }
 
