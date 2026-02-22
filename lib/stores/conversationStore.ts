@@ -14,6 +14,7 @@ interface ConversationState {
   createConversation: (title: string, mode?: string) => void;
   addConversation: (conversation: Conversation) => void;
   updateConversation: (id: string, conversation: Partial<Conversation>) => void;
+  updateConversationTitle: (id: string, title: string) => void;
   deleteConversation: (id: string) => void;
   setCurrentId: (id: string | null) => void;
   setCurrent: (id: string | null) => void;
@@ -64,6 +65,14 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     set((state) => ({
       conversations: state.conversations.map((c) =>
         c.id === id ? { ...c, ...updates, updatedAt: new Date() } : c
+      ),
+    }));
+  },
+
+  updateConversationTitle: (id, title) => {
+    set((state) => ({
+      conversations: state.conversations.map((c) =>
+        c.id === id ? { ...c, title, updatedAt: new Date() } : c
       ),
     }));
   },
