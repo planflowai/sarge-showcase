@@ -12,6 +12,7 @@ import { JuryToastContainer } from "@/components/chat/JuryToast";
 import { TruthAnchorsPanel } from "@/components/debate/TruthAnchorsPanel";
 import { cn } from "@/lib/utils";
 import type { Message, Provider } from "@/lib/types";
+import { useMessageStore } from "@/lib/stores/messageStore";
 
 // ─── Attachment types ───────────────────────────────────────────────────────
 
@@ -230,7 +231,7 @@ export function ParallelChatView() {
     }
   }, [hydrated, hydrate]);
 
-  const handleSendToAll = () => {
+  const handleSendToAll = async () => {
     if (!sharedInput.trim() && attachments.length === 0) return;
     const anySending = columns.some(c => c.sending);
     if (anySending) return;
@@ -266,13 +267,112 @@ export function ParallelChatView() {
       content = "Please analyze this image.";
     }
 
-    // Pass image URLs separately for proper handling
-    const imageUrls = imageAttachments.map(a => a.content);
+    // Add user message to all columns first
+    sendToAll(content);
 
-    sendToAll(content, undefined, imageUrls);
+    // Then call AI for each visible column
+    const visibleColumns = columns.slice(0, activeColumnCount);
+    for (const column of visibleColumns) {
+      try {
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            messages: [
+              ...column.messages,
+              { role: "user", content }
+            ],
+            provider: column.provider,
+            model: column.model,
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const aiMessage = data.message || data.content || "";
+
+          // Add AI response to column
+          useParallelChatStore.setState((state) => ({
+            columns: state.columns.map((c) =>
+              c.id === column.id
+                ? {
+                    ...c,
+                    messages: [
+                      ...c.messages,
+                      {
+                        id: crypto.randomUUID(),
+                        role: "assistant" as const,
+                        content: aiMessage,
+                        timestamp: new Date(),
+                      },
+                    ],
+                  }
+                : c
+            ),
+          }));
+        }
+      } catch (error) {
+        console.error(`Error sending to ${column.id}:`, error);
+      }
+    }
+
     setSharedInput("");
     setAttachments([]);
   };
+
+  const handleColumnSend = useCallback(
+    async (columnId: string, content: string) => {
+      // Add user message to column
+      sendToColumn(columnId, content);
+
+      // Get the column to send to AI
+      const column = columns.find((c) => c.id === columnId);
+      if (!column) return;
+
+      try {
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            messages: [
+              ...column.messages,
+              { role: "user", content }
+            ],
+            provider: column.provider,
+            model: column.model,
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const aiMessage = data.message || data.content || "";
+
+          // Add AI response to column
+          useParallelChatStore.setState((state) => ({
+            columns: state.columns.map((c) =>
+              c.id === columnId
+                ? {
+                    ...c,
+                    messages: [
+                      ...c.messages,
+                      {
+                        id: crypto.randomUUID(),
+                        role: "assistant" as const,
+                        content: aiMessage,
+                        timestamp: new Date(),
+                      },
+                    ],
+                  }
+                : c
+            ),
+          }));
+        }
+      } catch (error) {
+        console.error(`Error in column ${columnId}:`, error);
+      }
+    },
+    [columns, sendToColumn]
+  );
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -515,7 +615,7 @@ export function ParallelChatView() {
               column={column}
               onModelChange={(provider: Provider, model: string) => setColumnModel(column.id, provider, model)}
               onRoleChange={(roleId: string | undefined) => setColumnRole(column.id, roleId)}
-              onSend={(content: string) => sendToColumn(column.id, content)}
+              onSend={(content: string) => handleColumnSend(column.id, content)}
               onClear={() => clearColumn(column.id)}
               onShare={(message: Message, targetColumnId: string) => handleShare(message, column.id, targetColumnId)}
               onShareToAll={(message: Message) => handleShareToAll(message, column.id)}
