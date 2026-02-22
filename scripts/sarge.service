@@ -1,0 +1,47 @@
+# ============================================
+# SARGE Linux Systemd Service
+# ============================================
+# Installation:
+#   1. Copy this file to /etc/systemd/system/sarge.service
+#   2. Edit the paths below to match your installation
+#   3. Run: sudo systemctl daemon-reload
+#   4. Run: sudo systemctl enable sarge
+#   5. Run: sudo systemctl start sarge
+# ============================================
+
+[Unit]
+Description=SARGE - AI Safety Research Guard Engine
+Documentation=https://github.com/your-repo/sarge
+After=network.target
+
+[Service]
+Type=simple
+User=sarge
+Group=sarge
+
+# Update these paths to match your installation
+WorkingDirectory=/opt/sarge
+ExecStart=/usr/bin/node /opt/sarge/scripts/sarge-daemon.js start
+ExecStop=/usr/bin/node /opt/sarge/scripts/sarge-daemon.js stop
+ExecReload=/usr/bin/node /opt/sarge/scripts/sarge-daemon.js restart
+
+# Process management
+Restart=on-failure
+RestartSec=10
+StandardOutput=append:/opt/sarge/logs/sarge.log
+StandardError=append:/opt/sarge/logs/sarge-error.log
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/sarge/logs
+
+# Environment
+Environment=NODE_ENV=production
+Environment=SARGE_PORT=3000
+Environment=SARGE_HOST=0.0.0.0
+
+[Install]
+WantedBy=multi-user.target

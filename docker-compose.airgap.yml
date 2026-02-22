@@ -1,0 +1,71 @@
+# ============================================
+# SARGE Docker Compose - Air-Gap Mode
+# ============================================
+# For fully offline/isolated environments.
+# No network access to external APIs.
+# Requires local Ollama for LLM inference.
+#
+# Usage:
+#   docker-compose -f docker-compose.airgap.yml up -d
+# ============================================
+
+version: '3.8'
+
+services:
+  sarge:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sarge-airgap
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./logs:/app/logs
+      - ./.env:/app/.env:ro
+    environment:
+      - NODE_ENV=production
+      - SARGE_PORT=3000
+      - SARGE_HOST=0.0.0.0
+      # Force air-gap mode - no external network calls
+      - SARGE_AIR_GAP=1
+      # Local Ollama only
+      - OLLAMA_BASE_URL=http://ollama:11434
+    networks:
+      - sarge-internal
+    # No external network access
+    dns: []
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      - ollama
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: sarge-ollama-airgap
+    restart: unless-stopped
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - sarge-internal
+    # No external network access
+    dns: []
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+networks:
+  sarge-internal:
+    driver: bridge
+    internal: true  # No external connectivity
+
+volumes:
+  ollama_data:

@@ -1,0 +1,61 @@
+# ============================================
+# SARGE Docker Compose Configuration
+# ============================================
+# Usage:
+#   docker-compose up -d      Start in background
+#   docker-compose logs -f    View logs
+#   docker-compose down       Stop and remove
+# ============================================
+
+version: '3.8'
+
+services:
+  sarge:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sarge
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./logs:/app/logs
+      - ./.env:/app/.env:ro
+    environment:
+      - NODE_ENV=production
+      - SARGE_PORT=3000
+      - SARGE_HOST=0.0.0.0
+      # Air-gap mode: set to 1 to disable all cloud API calls (fully local)
+      - SARGE_AIR_GAP=${SARGE_AIR_GAP:-0}
+      # Pass through API keys from host (optional)
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://ollama:11434}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - GOOGLE_AI_API_KEY=${GOOGLE_AI_API_KEY:-}
+      - XAI_API_KEY=${XAI_API_KEY:-}
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Optional: Ollama for local LLM support
+  ollama:
+    image: ollama/ollama:latest
+    container_name: sarge-ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+volumes:
+  ollama_data:

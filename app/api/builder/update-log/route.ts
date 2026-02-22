@@ -1,0 +1,137 @@
+import { NextRequest, NextResponse } from 'next/server';
+import fs from 'fs/promises';
+import path from 'path';
+import {
+  appendChangeEntry,
+  generateNewLog,
+  generateSessionSummary,
+  type ChangeEntry
+} from '@/lib/builderLogger';
+
+const LOG_FILENAME = 'BUILDER_LOG.md';
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const {
+      projectPath,
+      projectName,
+      action,
+      entry,
+      sessionSummary
+    } = body;
+
+    console.log('[update-log] Request:', { projectPath, projectName, action });
+
+    if (!projectPath) {
+      return NextResponse.json({ error: 'Project path is required' }, { status: 400 });
+    }
+
+    const logPath = path.join(projectPath, LOG_FILENAME);
+    let existingContent = '';
+
+    // Read existing log if it exists
+    try {
+      existingContent = await fs.readFile(logPath, 'utf-8');
+      console.log('[update-log] Existing log found, length:', existingContent.length);
+    } catch (err: any) {
+      if (err.code !== 'ENOENT') {
+        throw err;
+      }
+      console.log('[update-log] No existing log, will create new');
+    }
+
+    let newContent: string;
+
+    if (action === 'append' && entry) {
+      // Append a single change entry
+      const changeEntry: ChangeEntry = {
+        ...entry,
+        timestamp: new Date(entry.timestamp || Date.now())
+      };
+      newContent = appendChangeEntry(existingContent, changeEntry, projectName || 'Project');
+      console.log('[update-log] Appended change entry for:', entry.filePath);
+    } else if (action === 'summary' && sessionSummary) {
+      // Generate full session summary
+      const { recentChanges, currentState, nextSteps } = sessionSummary;
+      const entries: ChangeEntry[] = (recentChanges || []).map((e: any) => ({
+        ...e,
+        timestamp: new Date(e.timestamp || Date.now())
+      }));
+      newContent = generateSessionSummary(
+        existingContent,
+        projectName || 'Project',
+        entries,
+        currentState || '',
+        nextSteps || []
+      );
+      console.log('[update-log] Generated session summary');
+    } else if (action === 'init') {
+      // Initialize new log (only if doesn't exist)
+      if (existingContent.trim()) {
+        return NextResponse.json({
+          success: true,
+          message: 'Log already exists',
+          path: logPath
+        });
+      }
+      newContent = generateNewLog(projectName || 'Project');
+      console.log('[update-log] Initialized new log');
+    } else {
+      return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+    }
+
+    // Write the updated log
+    await fs.writeFile(logPath, newContent, 'utf-8');
+    console.log('[update-log] Written to:', logPath);
+
+    return NextResponse.json({
+      success: true,
+      path: logPath,
+      action
+    });
+  } catch (error: any) {
+    console.error('[update-log] Error:', error);
+    return NextResponse.json(
+      { error: error.message || 'Failed to update log' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const projectPath = searchParams.get('projectPath');
+
+    if (!projectPath) {
+      return NextResponse.json({ error: 'Project path is required' }, { status: 400 });
+    }
+
+    const logPath = path.join(projectPath, LOG_FILENAME);
+
+    try {
+      const content = await fs.readFile(logPath, 'utf-8');
+      return NextResponse.json({
+        exists: true,
+        content,
+        path: logPath
+      });
+    } catch (err: any) {
+      if (err.code === 'ENOENT') {
+        return NextResponse.json({
+          exists: false,
+          content: null,
+          path: logPath
+        });
+      }
+      throw err;
+    }
+  } catch (error: any) {
+    console.error('[update-log] GET Error:', error);
+    return NextResponse.json(
+      { error: error.message || 'Failed to read log' },
+      { status: 500 }
+    );
+  }
+}
