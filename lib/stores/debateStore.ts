@@ -60,6 +60,7 @@ interface DebateState {
   saveToKnowledge: () => void;
   closeSetup: () => void;
   hideDebate: () => void;
+  showDebate: () => void;
   endDebateToThread: () => void;
   setSourceConversation: (conversationId: string) => void;
   clearAll: () => void;
@@ -154,6 +155,10 @@ export const useDebateStore = create<DebateState>((set) => ({
 
   hideDebate: () => {
     set({ debateHidden: true });
+  },
+
+  showDebate: () => {
+    set({ debateHidden: false });
   },
 
   endDebateToThread: () => {

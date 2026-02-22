@@ -11,6 +11,8 @@ export interface DebateRecord {
   messages: any[];
   critiques: any[];
   roundSummaries: any[];
+  judge: { provider: string; model?: string };
+  agreements: string[];
   createdAt: Date;
 }
 

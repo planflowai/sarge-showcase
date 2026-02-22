@@ -18,6 +18,7 @@ interface TestModeState {
   isRunning: boolean;
   showingTestMode: boolean;
   testModeHidden: boolean;
+  batchModeActive: boolean;
   slots: Array<{ provider: string; model: string }>;
   batchHistory: Array<{ batchId: string; source: "local" | "cloud"; testCount: number; savedAt: number }>;
   testHistory: Array<{ testId: string; source: "local" | "cloud"; savedAt: number; question: string; passLogs?: Array<{ model: string }> }>;
@@ -34,6 +35,8 @@ interface TestModeState {
   deleteTestCase: (id: string) => void;
   setIsRunning: (running: boolean) => void;
   openTestMode: () => void;
+  showTestMode: () => void;
+  hideTestMode: () => void;
   openBatchMode: () => void;
   addQuestion: (question: SavedQuestion) => void;
   updateQuestion: (id: string, question: Partial<SavedQuestion>) => void;
@@ -51,6 +54,7 @@ export const useTestModeStore = create<TestModeState>((set) => ({
   isRunning: false,
   showingTestMode: false,
   testModeHidden: false,
+  batchModeActive: false,
   slots: [
     { provider: "ollama", model: "" },
     { provider: "ollama", model: "" },
@@ -142,7 +146,15 @@ export const useTestModeStore = create<TestModeState>((set) => ({
 
   openBatchMode: () => {
     // Placeholder - triggers batch mode opening
-    set({ hydrated: true });
+    set({ hydrated: true, batchModeActive: true });
+  },
+
+  showTestMode: () => {
+    set({ showingTestMode: true, testModeHidden: false });
+  },
+
+  hideTestMode: () => {
+    set({ testModeHidden: true });
   },
 
   addQuestion: (question) => {
