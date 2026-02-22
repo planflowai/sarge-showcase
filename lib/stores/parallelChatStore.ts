@@ -65,41 +65,33 @@ export const useParallelChatStore = create<ParallelChatState>((set, get) => ({
   savedSessions: [],
 
   hydrate: () => {
-    // Initialize columns with defaults if empty
+    // Initialize blank columns - user selects provider/model
     const state = get();
     if (state.columns.length === 0) {
       const defaultColumns: ChatThread[] = [
         {
           id: crypto.randomUUID(),
-          topic: "Claude",
+          topic: "Column 1",
           messages: [],
           createdAt: new Date(),
-          provider: "anthropic",
-          model: "claude-sonnet-4-20250514",
+          provider: "" as any,
+          model: "",
         },
         {
           id: crypto.randomUUID(),
-          topic: "GPT-4",
+          topic: "Column 2",
           messages: [],
           createdAt: new Date(),
-          provider: "openai",
-          model: "gpt-4o",
+          provider: "" as any,
+          model: "",
         },
         {
           id: crypto.randomUUID(),
-          topic: "Gemini",
+          topic: "Column 3",
           messages: [],
           createdAt: new Date(),
-          provider: "google",
-          model: "gemini-1.5-pro",
-        },
-        {
-          id: crypto.randomUUID(),
-          topic: "Ollama",
-          messages: [],
-          createdAt: new Date(),
-          provider: "ollama",
-          model: "llama3.2:latest",
+          provider: "" as any,
+          model: "",
         },
       ];
       set({ columns: defaultColumns, hydrated: true });
@@ -166,6 +158,31 @@ export const useParallelChatStore = create<ParallelChatState>((set, get) => ({
     const state = get();
     const column = state.columns.find((c) => c.id === columnId);
     if (!column) return;
+
+    // Check if provider/model are selected
+    if (!column.provider || !column.model) {
+      // Add error message instead
+      set((s) => ({
+        columns: s.columns.map((c) =>
+          c.id === columnId
+            ? {
+                ...c,
+                messages: [
+                  ...c.messages,
+                  {
+                    id: crypto.randomUUID(),
+                    role: "assistant" as const,
+                    content: "⚠️ Please select a provider and model for this column first.",
+                    timestamp: new Date(),
+                    isError: true,
+                  },
+                ],
+              }
+            : c
+        ),
+      }));
+      return;
+    }
 
     // Add user message to column
     set((s) => ({
