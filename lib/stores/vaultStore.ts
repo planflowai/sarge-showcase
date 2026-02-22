@@ -10,6 +10,8 @@ export interface VaultItem {
   data: string;
   category: FileCategory;
   size: number;
+  isBase64?: boolean;
+  mimeType?: string;
   createdAt: Date;
 }
 
