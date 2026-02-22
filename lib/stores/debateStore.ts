@@ -12,18 +12,21 @@ export interface Argument {
 interface DebateState {
   topic: string;
   arguments: Argument[];
+  debate: any;
   hydrated: boolean;
   hydrate: () => void;
   setTopic: (topic: string) => void;
   addArgument: (argument: Argument) => void;
   removeArgument: (id: string) => void;
   openDebate: () => void;
+  setSourceConversation: (conversationId: string) => void;
   clearAll: () => void;
 }
 
 export const useDebateStore = create<DebateState>((set) => ({
   topic: "",
   arguments: [],
+  debate: null,
   hydrated: false,
 
   hydrate: () => {
@@ -51,10 +54,15 @@ export const useDebateStore = create<DebateState>((set) => ({
     set({ hydrated: true });
   },
 
+  setSourceConversation: (conversationId) => {
+    set({ debate: { sourceConversationId: conversationId } });
+  },
+
   clearAll: () => {
     set({
       topic: "",
       arguments: [],
+      debate: null,
     });
   },
 }));
