@@ -12,7 +12,7 @@ export interface VaultItem {
   size: number;
   isBase64?: boolean;
   mimeType?: string;
-  originalName?: string;
+  originalName: string;
   createdAt: Date;
 }
 
@@ -84,6 +84,8 @@ export const useVaultStore = create<VaultState>((set) => ({
       data: "", // File data would be loaded separately
       category: "other" as FileCategory,
       size: item.size,
+      originalName: item.name,
+      mimeType: item.type,
       createdAt: new Date(),
     } : item;
 
