@@ -353,10 +353,11 @@ export const useParallelChatStore = create<ParallelChatState>((set, get) => ({
     const { columns, activeColumnCount } = get();
     const visibleColumns = columns.slice(0, activeColumnCount);
 
-    // Send to all visible columns in parallel
-    await Promise.all(
-      visibleColumns.map((col) => get().sendToColumn(col.id, content))
-    );
+    // Send to all visible columns sequentially (faster for local Ollama)
+    // Each model waits for the previous one to finish before starting
+    for (const col of visibleColumns) {
+      await get().sendToColumn(col.id, content);
+    }
   },
 
   shareMessage: async (sourceColumnId, targetColumnId, message) => {
