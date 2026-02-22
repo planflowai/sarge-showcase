@@ -10,18 +10,32 @@ export interface KnowledgeItem {
   createdAt: Date;
 }
 
+export interface KnowledgeDocument {
+  id: string;
+  name: string;
+  content: string;
+  tags?: string[];
+  size?: number;
+  type?: string;
+  createdAt: Date;
+}
+
 interface KnowledgeState {
   items: KnowledgeItem[];
+  documents: KnowledgeDocument[];
   hydrated: boolean;
   hydrate: () => void;
   addItem: (item: KnowledgeItem) => void;
   updateItem: (id: string, updates: Partial<KnowledgeItem>) => void;
   deleteItem: (id: string) => void;
+  addDocument: (doc: KnowledgeDocument) => void;
+  deleteDocument: (id: string) => void;
   clearAll: () => void;
 }
 
 export const useKnowledgeStore = create<KnowledgeState>((set) => ({
   items: [],
+  documents: [],
   hydrated: false,
 
   hydrate: () => {
@@ -48,7 +62,19 @@ export const useKnowledgeStore = create<KnowledgeState>((set) => ({
     }));
   },
 
+  addDocument: (doc) => {
+    set((state) => ({
+      documents: [...state.documents, doc],
+    }));
+  },
+
+  deleteDocument: (id) => {
+    set((state) => ({
+      documents: state.documents.filter((d) => d.id !== id),
+    }));
+  },
+
   clearAll: () => {
-    set({ items: [] });
+    set({ items: [], documents: [] });
   },
 }));
