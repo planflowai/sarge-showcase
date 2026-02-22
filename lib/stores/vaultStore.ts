@@ -9,7 +9,7 @@ export interface VaultItem {
   name: string;
   data: string;
   category: FileCategory;
-  size?: number;
+  size: number;
   createdAt: Date;
 }
 
