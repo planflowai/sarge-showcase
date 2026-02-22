@@ -21,7 +21,7 @@ interface ModelState {
   hydrated: boolean;
   hydrate: () => void;
   addModel: (model: Model) => void;
-  removeModel: (id: string) => void;
+  removeModel: (id: string, modelId?: string) => void;
   setModels: (models: Model[]) => void;
   setCurrentModel: (model: Model | null) => void;
   updateModel: (id: string, updates: Partial<Model>) => void;
@@ -53,9 +53,11 @@ export const useModelStore = create<ModelState>((set, get) => ({
     }));
   },
 
-  removeModel: (id) => {
+  removeModel: (id, modelId?: string) => {
+    // Accept both provider ID and model ID for compatibility, but only use model ID
+    const idToRemove = modelId || id;
     set((state) => ({
-      models: state.models.filter((m) => m.id !== id),
+      models: state.models.filter((m) => m.id !== idToRemove),
     }));
   },
 
