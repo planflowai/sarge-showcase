@@ -1,13 +1,50 @@
-      storage: createDebouncedStorage(),
-    }
-  )
-    },
-    {
-      name: "message",
-      storage: createDebouncedStorage(),
-    }
-  )
-);
+"use client";
+
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { createDebouncedStorage } from "@/lib/utils/debouncedStorage";
+import { useKnowledgeStore } from "./knowledgeStore";
+import { useConversationStore } from "./conversationStore";
+import { useThreadGuardianStore } from "./threadGuardianStore";
+import { useJuryGuardianStore } from "./juryGuardianStore";
+import { sanitizeForCloud, summarizeThread } from "@/lib/utils/summarize";
+import { countTokens } from "@/lib/threadGuardian/engine";
+import { buildContextForModel, shouldInjectContext } from "@/lib/threadGuardian/contextBuilder";
+import { runInterventionCheck } from "@/lib/juryGuardian/engine";
+import type { Provider } from "@/lib/types";
+
+const STORAGE_PREFIX = "messages_";
+const ARTIFACT_SYSTEM_PROMPT = `You are a helpful assistant. When generating code, structure it as a complete, self-contained artifact. HTML must include CSS and JavaScript in <style> and <script> tags. React components should be complete and ready to render.`;
+
+export interface Message {
+  id: string;
+  conversationId: string;
+  role: "user" | "assistant" | "system";
+  content: string;
+  provider: Provider;
+  model: string;
+  timestamp: Date;
+  tokenCount?: number;
+  latencyMs?: number;
+  vaultAttachments?: { id: string; name: string; truncated: boolean }[];
+  imageUrl?: string;
+  isError?: boolean;
+  errorCode?: "MISSING_API_KEY" | "PROVIDER_ERROR";
+  isKilled?: boolean;
+  killedReason?: string;
+  fallback?: {
+    originalProvider: Provider;
+    originalModel: string;
+    fallbackProvider: Provider;
+    fallbackModel: string;
+    attempts: number;
+  };
+}
+
+// Helper function to add model attribution to messages
+function addModelAttribution(messages: Message[], modelName: string, provider: Provider): Message[] {
+  return messages.map((msg) => {
+    if (msg.role === "assistant" && msg.provider !== provider) {
       const providerName = msg.provider ? `${msg.provider}` : '';
       const attribution = providerName
         ? `[Response from ${modelName} (${providerName})]:\n`
@@ -492,6 +529,7 @@ export const useMessageStore = create<MessageState>()(persist(
 
   clearMessages: () => {
     set({ messages: [] });
+  }
   }),
     {
       name: "message",

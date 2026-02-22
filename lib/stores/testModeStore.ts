@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import type { SavedQuestion, SavedPoison } from "@/lib/types";
+import type { SavedQuestion, SavedPoison, BatchPassLog } from "@/lib/types";
 
 export interface TestCase {
   id: string;
@@ -9,6 +9,14 @@ export interface TestCase {
   input: string;
   expected: string;
   createdAt: Date;
+}
+
+export interface BatchHistoryEntry {
+  batchId: string; // Unique batch identifier
+  source: "local" | "cloud";
+  testCount: number; // Total tests in batch
+  savedAt: number; // Timestamp when saved
+  passLogs: BatchPassLog[]; // Array of pass results (pass1, pass2, pass3, etc.)
 }
 
 interface TestModeState {
@@ -19,8 +27,9 @@ interface TestModeState {
   showingTestMode: boolean;
   testModeHidden: boolean;
   batchModeActive: boolean;
+  currentView: 'batch' | 'test' | 'review' | 'config' | null;
   slots: Array<{ provider: string; model: string }>;
-  batchHistory: Array<{ batchId: string; source: "local" | "cloud"; testCount: number; savedAt: number }>;
+  batchHistory: BatchHistoryEntry[];
   testHistory: Array<{ testId: string; source: "local" | "cloud"; savedAt: number; question: string; passLogs?: Array<{ model: string }> }>;
   promptPools: Record<string, Array<{ id: string; name: string }>>;
   debateLogic: { challengeKeywords: string; flagKeywords: string; caughtKeywords: string };
@@ -45,6 +54,7 @@ interface TestModeState {
   updatePoison: (id: string, poison: Partial<SavedPoison>) => void;
   removePoison: (id: string) => void;
   updateDebateLogic: (updates: Partial<{ challengeKeywords: string; flagKeywords: string; caughtKeywords: string }>) => void;
+  setCurrentView: (view: 'batch' | 'test' | 'review' | 'config' | null) => void;
   clearAll: () => void;
 }
 
@@ -56,6 +66,7 @@ export const useTestModeStore = create<TestModeState>((set) => ({
   showingTestMode: false,
   testModeHidden: false,
   batchModeActive: false,
+  currentView: null,
   slots: [
     { provider: "ollama", model: "" },
     { provider: "ollama", model: "" },
@@ -204,10 +215,15 @@ export const useTestModeStore = create<TestModeState>((set) => ({
     }));
   },
 
+  setCurrentView: (view) => {
+    set({ currentView: view });
+  },
+
   clearAll: () => {
     set({
       testCases: [],
       isRunning: false,
+      currentView: null,
     });
   },
 }));

@@ -38,7 +38,7 @@ export function Sidebar() {
 
   const handleNewChat = async () => {
     clearMessages();
-    await createConversation();
+    await createConversation(`Chat ${new Date().toLocaleTimeString()}`, "chat");
   };
 
   // Hide sidebar when debate or test mode is active — full-width view
