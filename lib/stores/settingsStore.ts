@@ -40,8 +40,8 @@ const defaultSettings: Settings = {
 export const useSettingsStore = create<SettingsState>((set) => ({
   settings: defaultSettings,
   theme: defaultSettings.theme,
-  defaultProvider: "",
-  defaultModel: "",
+  defaultProvider: "anthropic",
+  defaultModel: "claude-sonnet-4-5-20250929",
   localEndpoint: "",
   buildDocsAutoInject: false,
   airGapMode: false,

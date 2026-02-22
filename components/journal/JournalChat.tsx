@@ -44,7 +44,7 @@ export function JournalChat({ onBack }: JournalChatProps) {
   const todayEntries = useMemo(() => {
     const today = new Date();
     return entries.filter((e) => {
-      const entryDate = new Date(e.timestamp);
+      const entryDate = new Date(e.createdAt);
       return (
         entryDate.getFullYear() === today.getFullYear() &&
         entryDate.getMonth() === today.getMonth() &&
@@ -130,10 +130,10 @@ export function JournalChat({ onBack }: JournalChatProps) {
             currentDraft,
             batchLogs: last5Batches,
             prompts: {
-              d1: d1Role?.systemPrompt || debateLogic?.d1Prompt,
-              d2: d2Role?.systemPrompt || debateLogic?.d2Prompt,
-              d3: d3Role?.systemPrompt || debateLogic?.d3Prompt,
-              judge: judgeRole?.systemPrompt || debateLogic?.judgePrompt,
+              d1: d1Role?.systemPrompt || "",
+              d2: d2Role?.systemPrompt || "",
+              d3: d3Role?.systemPrompt || "",
+              judge: judgeRole?.systemPrompt || "",
             },
           },
         }),
@@ -311,7 +311,7 @@ export function JournalChat({ onBack }: JournalChatProps) {
           </div>
         ) : (
           <>
-            {activeConversation.messages.map((msg) => (
+            {activeConversation.messages.map((msg: any) => (
               <div
                 key={msg.id}
                 className={cn(

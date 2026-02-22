@@ -92,7 +92,7 @@ export function JournalChatPanel() {
   const todayEntries = useMemo(() => {
     const today = new Date();
     return entries.filter((e) => {
-      const entryDate = new Date(e.timestamp);
+      const entryDate = new Date(e.createdAt);
       return (
         entryDate.getFullYear() === today.getFullYear() &&
         entryDate.getMonth() === today.getMonth() &&
@@ -190,10 +190,10 @@ export function JournalChatPanel() {
 
       // Use shared context prompts if available, otherwise fall back to role store
       const prompts = {
-        d1: sharedContext.currentPrompts.d1 || d1Role?.systemPrompt || debateLogic?.d1Prompt,
-        d2: sharedContext.currentPrompts.d2 || d2Role?.systemPrompt || debateLogic?.d2Prompt,
-        d3: sharedContext.currentPrompts.d3 || d3Role?.systemPrompt || debateLogic?.d3Prompt,
-        judge: sharedContext.currentPrompts.judge || judgeRole?.systemPrompt || debateLogic?.judgePrompt,
+        d1: sharedContext.currentPrompts.d1 || d1Role?.systemPrompt || "",
+        d2: sharedContext.currentPrompts.d2 || d2Role?.systemPrompt || "",
+        d3: sharedContext.currentPrompts.d3 || d3Role?.systemPrompt || "",
+        judge: sharedContext.currentPrompts.judge || judgeRole?.systemPrompt || "",
       };
 
       const response = await fetch("/api/journal/chat", {
@@ -427,7 +427,7 @@ export function JournalChatPanel() {
           </div>
         ) : (
           <>
-            {activeConversation.messages.map((msg) => {
+            {activeConversation.messages.map((msg: any) => {
               // Parse suggestions from assistant messages
               const suggestions = msg.role === "assistant" ? parsePromptSuggestions(msg.content) : [];
 

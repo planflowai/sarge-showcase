@@ -62,10 +62,10 @@ export function AnalysisPanel() {
       const judgeRole = roles.find((r) => r.id === "default-judge");
 
       const promptsSnapshot = {
-        d1: d1Role?.systemPrompt || debateLogic?.d1Prompt,
-        d2: d2Role?.systemPrompt || debateLogic?.d2Prompt,
-        d3: d3Role?.systemPrompt || debateLogic?.d3Prompt,
-        judge: judgeRole?.systemPrompt || debateLogic?.judgePrompt,
+        d1: d1Role?.systemPrompt || "",
+        d2: d2Role?.systemPrompt || "",
+        d3: d3Role?.systemPrompt || "",
+        judge: judgeRole?.systemPrompt || "",
       };
 
       const response = await fetch("/api/journal/analyze", {
@@ -78,10 +78,10 @@ export function AnalysisPanel() {
           batchLogs: last5Batches,
           prompts: promptsSnapshot,
           debateLogic: {
-            d1Prompt: debateLogic?.d1Prompt,
-            d2Prompt: debateLogic?.d2Prompt,
-            d3Prompt: debateLogic?.d3Prompt,
-            judgePrompt: debateLogic?.judgePrompt,
+            d1Prompt: "",
+            d2Prompt: "",
+            d3Prompt: "",
+            judgePrompt: "",
           },
         }),
       });
@@ -119,7 +119,7 @@ export function AnalysisPanel() {
   const handleSelectFromHistory = (record: AnalysisRecord) => {
     setResult({
       analysis: record.analysis,
-      provider: record.provider,
+      provider: (record.provider as any) || "ollama",
     });
     setViewMode("current");
 

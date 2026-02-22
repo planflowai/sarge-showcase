@@ -35,7 +35,7 @@ export function MobileNav({ open, onOpenChange }: MobileNavProps) {
           <Button
             className="w-full bg-indigo-600 text-white hover:bg-indigo-700"
             onClick={() => {
-              createConversation();
+              createConversation("New Conversation");
               onOpenChange(false);
             }}
           >

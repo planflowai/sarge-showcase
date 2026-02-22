@@ -1,6 +1,7 @@
 "use client";
 
 import { create } from "zustand";
+import { providers } from "@/lib/providers";
 
 export interface Model {
   id: string;
@@ -37,8 +38,27 @@ interface ModelState {
   clearAll: () => void;
 }
 
+// Build initial models from provider registry
+const getInitialModels = (): Model[] => {
+  const models: Model[] = [];
+  providers.forEach(provider => {
+    if (provider.models && provider.models.length > 0) {
+      provider.models.forEach(m => {
+        models.push({
+          id: m.id,
+          name: m.name,
+          provider: provider.id,
+          contextWindow: m.contextWindow,
+          isBuiltIn: true,
+        });
+      });
+    }
+  });
+  return models;
+};
+
 export const useModelStore = create<ModelState>((set, get) => ({
-  models: [],
+  models: getInitialModels(),
   currentModel: null,
   hydrated: false,
   nicknames: {},

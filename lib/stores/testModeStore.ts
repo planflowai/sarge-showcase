@@ -44,6 +44,7 @@ interface TestModeState {
   addPoison: (poison: SavedPoison) => void;
   updatePoison: (id: string, poison: Partial<SavedPoison>) => void;
   removePoison: (id: string) => void;
+  updateDebateLogic: (updates: Partial<{ challengeKeywords: string; flagKeywords: string; caughtKeywords: string }>) => void;
   clearAll: () => void;
 }
 
@@ -194,6 +195,12 @@ export const useTestModeStore = create<TestModeState>((set) => ({
   removePoison: (id) => {
     set((state) => ({
       poisons: state.poisons.filter((p) => p.id !== id),
+    }));
+  },
+
+  updateDebateLogic: (updates) => {
+    set((state) => ({
+      debateLogic: { ...state.debateLogic, ...updates },
     }));
   },
 

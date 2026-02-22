@@ -23,7 +23,7 @@ export const useProviderStore = create<ProviderState>()(
   persist(
     (set) => ({
       currentProvider: "anthropic",
-      currentModel: "claude-sonnet-4-20250514",
+      currentModel: "claude-sonnet-4-5-20250929",
       summarizeForCloud: false,
       sanitizeForCloud: false,
       hydrated: false,

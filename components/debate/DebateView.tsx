@@ -387,7 +387,7 @@ export function DebateView() {
         transcript += `${roundSummary.summary}\n`;
         if (roundSummary.agreements && roundSummary.agreements.length > 0) {
           transcript += "\nConsensus Points:\n";
-          roundSummary.agreements.forEach((a) => {
+          roundSummary.agreements.forEach((a: any) => {
             transcript += `- [${a.consensusLevel}] ${a.statement}\n`;
           });
         }
@@ -480,7 +480,6 @@ export function DebateView() {
   };
 
   const isComplete = debate?.status === "completed";
-  const isError = debate?.status === "error";
 
   // ═══════════════════════════════════════════════════════════════════
   // UNIFIED VIEW
@@ -512,7 +511,7 @@ export function DebateView() {
                 <div className="h-px w-full bg-zinc-300 dark:bg-zinc-700" />
 
                 {/* Run Round / Play button */}
-                {!isRunning && !isComplete && !isError && (
+                {!isRunning && !isComplete && (
                   <button
                     onClick={runRound}
                     className="relative group w-10 h-10 flex items-center justify-center rounded-lg bg-emerald-600 hover:bg-emerald-700 transition-colors"
@@ -579,7 +578,7 @@ export function DebateView() {
                 {/* Export Summary button */}
                 <button
                   onClick={() => {
-                    exportDebateSummaryToPDF(debate);
+                    exportDebateSummaryToPDF(debate as any);
                     showToast({ message: "Exported debate summary as PDF", type: "success" });
                   }}
                   disabled={!debate.executiveSummary}
@@ -594,7 +593,7 @@ export function DebateView() {
                 {/* Export Thread button */}
                 <button
                   onClick={() => {
-                    exportDebateThreadToPDF(debate);
+                    exportDebateThreadToPDF(debate as any);
                     showToast({ message: "Exported debate thread as PDF", type: "success" });
                   }}
                   disabled={debate.messages.length === 0}
@@ -752,7 +751,7 @@ export function DebateView() {
             {/* Run Round button - also starts debate if none exists */}
             <Button
               onClick={!debate ? handleStart : runRound}
-              disabled={!debate ? !isValid : (isRunning || isComplete || isError)}
+              disabled={!debate ? !isValid : (isRunning || isComplete)}
               className="w-full bg-emerald-600 text-white hover:bg-emerald-700 h-7 text-xs font-bold px-2 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Play className="h-3 w-3 mr-1" />
@@ -988,7 +987,7 @@ export function DebateView() {
               size="sm"
               onClick={() => {
                 if (debate) {
-                  exportDebateSummaryToPDF(debate);
+                  exportDebateSummaryToPDF(debate as any);
                   showToast({ message: "Exported debate summary as PDF", type: "success" });
                 }
               }}
@@ -1005,7 +1004,7 @@ export function DebateView() {
               size="sm"
               onClick={() => {
                 if (debate) {
-                  exportDebateThreadToPDF(debate);
+                  exportDebateThreadToPDF(debate as any);
                   showToast({ message: "Exported debate thread as PDF", type: "success" });
                 }
               }}
@@ -1022,7 +1021,7 @@ export function DebateView() {
               size="sm"
               onClick={() => {
                 if (debate) {
-                  exportDebateToCSV(debate);
+                  exportDebateToCSV(debate as any);
                   showToast({ message: "Exported debate as CSV", type: "success" });
                 }
               }}
@@ -1201,11 +1200,6 @@ export function DebateView() {
                     Completed
                   </span>
                 )}
-                {isError && (
-                  <span className="rounded-full bg-red-600/15 px-2.5 py-1 text-[11px] font-medium text-red-400">
-                    Error
-                  </span>
-                )}
                 {isPaused && (
                   <span className="rounded-full bg-amber-600/15 px-2.5 py-1 text-[11px] font-medium text-amber-400">
                     Paused
@@ -1267,7 +1261,7 @@ export function DebateView() {
                   const roundSummary = debate.roundSummaries.find((rs) => rs.round === round);
                   const participantCount = debate.participants.length;
                   const researchStartIdx = getResearchStartIndex(round, participantCount, debate.roundSummaries.length);
-                  const isCurrentRound = debate.currentRound === round && debate.status === 'running';
+                  const isCurrentRound = debate.currentRound === round && debate.status === 'ongoing';
 
                   return (
                     <DebateRoundGroup
@@ -1387,7 +1381,7 @@ export function DebateView() {
                     variant="ghost"
                     size="sm"
                     onClick={() => {
-                      exportDebateSummaryToPDF(debate);
+                      exportDebateSummaryToPDF(debate as any);
                       showToast({ message: "Exported debate summary as PDF", type: "success" });
                     }}
                     className="h-8 gap-1 px-3 text-xs text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 border border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600"
@@ -1399,7 +1393,7 @@ export function DebateView() {
                     variant="ghost"
                     size="sm"
                     onClick={() => {
-                      exportDebateThreadToPDF(debate);
+                      exportDebateThreadToPDF(debate as any);
                       showToast({ message: "Exported debate thread as PDF", type: "success" });
                     }}
                     className="h-8 gap-1 px-3 text-xs text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 border border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600"
@@ -1442,7 +1436,7 @@ export function DebateView() {
           </div>
 
           {/* Fixed Input Bar - Redirect/Ask Questions */}
-          {debate && !isComplete && !isError && (
+          {debate && !isComplete && (
             <div className="border-t border-zinc-300 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900/80 p-3">
               <div className="flex items-center gap-2">
                 <input
