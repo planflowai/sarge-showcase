@@ -30,14 +30,14 @@ interface VaultState {
   items: VaultItem[];
   searchQuery: string;
   filterCategory: FileCategory;
-  sortBy: "name" | "date" | "size";
+  sortBy: "name" | "date" | "size" | "type";
   sortOrder: "asc" | "desc";
   isUploading: boolean;
   hydrated: boolean;
   hydrate: () => void;
   setSearchQuery: (query: string) => void;
   setFilterCategory: (category: FileCategory) => void;
-  setSortBy: (sortBy: "name" | "date" | "size") => void;
+  setSortBy: (sortBy: "name" | "date" | "size" | "type") => void;
   setSortOrder: (order: "asc" | "desc") => void;
   addItem: (item: VaultItem | File) => void;
   removeItem: (id: string) => void;
