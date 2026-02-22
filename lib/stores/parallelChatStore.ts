@@ -12,8 +12,10 @@ export interface ChatThread {
 interface ParallelChatState {
   threads: ChatThread[];
   activeThreadId: string | null;
+  enabled: boolean;
   hydrated: boolean;
   hydrate: () => void;
+  toggleParallelMode: () => void;
   addThread: (thread: ChatThread) => void;
   setActiveThread: (id: string | null) => void;
   updateThread: (id: string, updates: Partial<ChatThread>) => void;
@@ -24,10 +26,15 @@ interface ParallelChatState {
 export const useParallelChatStore = create<ParallelChatState>((set) => ({
   threads: [],
   activeThreadId: null,
+  enabled: false,
   hydrated: false,
 
   hydrate: () => {
     set({ hydrated: true });
+  },
+
+  toggleParallelMode: () => {
+    set((state) => ({ enabled: !state.enabled }));
   },
 
   addThread: (thread) => {
