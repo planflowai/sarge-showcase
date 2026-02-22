@@ -20,7 +20,8 @@ interface ModelState {
   builderFlags: Record<string, boolean>;
   hydrated: boolean;
   hydrate: () => void;
-  addModel: (model: Model) => void;
+  addModel: (providerId: string, modelId: string, modelName: string) => void;
+  addModelObject?: (model: Model) => void;
   removeModel: (id: string, modelId?: string) => void;
   setModels: (models: Model[]) => void;
   setCurrentModel: (model: Model | null) => void;
@@ -47,9 +48,15 @@ export const useModelStore = create<ModelState>((set, get) => ({
     set({ hydrated: true });
   },
 
-  addModel: (model) => {
+  addModel: (providerId, modelId, modelName) => {
+    const newModel: Model = {
+      id: modelId,
+      name: modelName,
+      provider: providerId,
+      contextWindow: 8192, // Default value
+    };
     set((state) => ({
-      models: [...state.models, model],
+      models: [...state.models, newModel],
     }));
   },
 
