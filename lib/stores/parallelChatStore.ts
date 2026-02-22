@@ -161,33 +161,124 @@ export const useParallelChatStore = create<ParallelChatState>((set, get) => ({
   },
 
   sendToColumn: (columnId, content) => {
-    set((state) => ({
-      columns: state.columns.map((c) => {
-        if (c.id === columnId) {
-          return {
-            ...c,
-            messages: [
-              ...c.messages,
-              {
-                id: crypto.randomUUID(),
-                role: "user" as const,
-                content,
-                timestamp: new Date(),
-              },
-            ],
-          };
-        }
-        return c;
-      }),
+    const state = get();
+    const column = state.columns.find((c) => c.id === columnId);
+    if (!column) return;
+
+    // Add user message first
+    set((s) => ({
+      columns: s.columns.map((c) =>
+        c.id === columnId
+          ? {
+              ...c,
+              messages: [
+                ...c.messages,
+                {
+                  id: crypto.randomUUID(),
+                  role: "user" as const,
+                  content,
+                  provider: c.provider,
+                  model: c.model,
+                  timestamp: new Date(),
+                },
+              ],
+              sending: true,
+            }
+          : c
+      ),
     }));
+
+    // Call API in background
+    (async () => {
+      try {
+        const currentState = get();
+        const currentColumn = currentState.columns.find((c) => c.id === columnId);
+        if (!currentColumn) return;
+
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            messages: currentColumn.messages,
+            provider: currentColumn.provider,
+            model: currentColumn.model,
+          }),
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || `API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const assistantContent = data.content || data.message || "";
+
+        if (assistantContent) {
+          // Add assistant message
+          set((s) => ({
+            columns: s.columns.map((c) =>
+              c.id === columnId
+                ? {
+                    ...c,
+                    messages: [
+                      ...c.messages,
+                      {
+                        id: crypto.randomUUID(),
+                        role: "assistant" as const,
+                        content: assistantContent,
+                        provider: c.provider,
+                        model: c.model,
+                        timestamp: new Date(),
+                      },
+                    ],
+                    sending: false,
+                  }
+                : c
+            ),
+          }));
+        } else {
+          throw new Error("No response content");
+        }
+      } catch (error) {
+        console.error(`Error in column ${columnId}:`, error);
+        // Add error message
+        set((s) => ({
+          columns: s.columns.map((c) =>
+            c.id === columnId
+              ? {
+                  ...c,
+                  messages: [
+                    ...c.messages,
+                    {
+                      id: crypto.randomUUID(),
+                      role: "assistant" as const,
+                      content: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+                      provider: c.provider,
+                      model: c.model,
+                      timestamp: new Date(),
+                    },
+                  ],
+                  sending: false,
+                }
+              : c
+          ),
+        }));
+      }
+    })();
   },
 
   sendToAll: (content, options, imageUrls) => {
     const { columns, activeColumnCount, sendToColumn } = get();
-    // Send message to all visible columns
-    columns.slice(0, activeColumnCount).forEach((col) => {
-      sendToColumn(col.id, content);
-    });
+    // Send to all visible columns in parallel
+    Promise.all(
+      columns.slice(0, activeColumnCount).map((col) =>
+        // Each call happens async in background via sendToColumn
+        new Promise((resolve) => {
+          sendToColumn(col.id, content);
+          resolve(null);
+        })
+      )
+    );
   },
 
   shareMessage: (sourceColumnId, targetColumnId, message) => {
