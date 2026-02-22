@@ -63,7 +63,47 @@ export const useParallelChatStore = create<ParallelChatState>((set, get) => ({
   savedSessions: [],
 
   hydrate: () => {
-    set({ hydrated: true });
+    // Initialize columns with defaults if empty
+    const state = get();
+    if (state.columns.length === 0) {
+      const defaultColumns: ChatThread[] = [
+        {
+          id: crypto.randomUUID(),
+          topic: "Claude",
+          messages: [],
+          createdAt: new Date(),
+          provider: "anthropic",
+          model: "claude-sonnet-4-20250514",
+        },
+        {
+          id: crypto.randomUUID(),
+          topic: "GPT-4",
+          messages: [],
+          createdAt: new Date(),
+          provider: "openai",
+          model: "gpt-4o",
+        },
+        {
+          id: crypto.randomUUID(),
+          topic: "Gemini",
+          messages: [],
+          createdAt: new Date(),
+          provider: "google",
+          model: "gemini-1.5-pro",
+        },
+        {
+          id: crypto.randomUUID(),
+          topic: "Ollama",
+          messages: [],
+          createdAt: new Date(),
+          provider: "ollama",
+          model: "llama3.2:latest",
+        },
+      ];
+      set({ columns: defaultColumns, hydrated: true });
+    } else {
+      set({ hydrated: true });
+    }
   },
 
   toggleParallelMode: () => {
