@@ -289,27 +289,33 @@ export function ParallelChatView() {
 
         if (response.ok) {
           const data = await response.json();
-          const aiMessage = data.message || data.content || "";
+          const aiMessage = data.message || data.content || data.response || "";
 
-          // Add AI response to column
-          useParallelChatStore.setState((state) => ({
-            columns: state.columns.map((c) =>
-              c.id === column.id
-                ? {
-                    ...c,
-                    messages: [
-                      ...c.messages,
-                      {
-                        id: crypto.randomUUID(),
-                        role: "assistant" as const,
-                        content: aiMessage,
-                        timestamp: new Date(),
-                      },
-                    ],
-                  }
-                : c
-            ),
-          }));
+          if (aiMessage) {
+            // Add AI response to column
+            useParallelChatStore.setState((state) => ({
+              columns: state.columns.map((c) =>
+                c.id === column.id
+                  ? {
+                      ...c,
+                      messages: [
+                        ...c.messages,
+                        {
+                          id: crypto.randomUUID(),
+                          role: "assistant" as const,
+                          content: aiMessage,
+                          timestamp: new Date(),
+                        },
+                      ],
+                    }
+                  : c
+              ),
+            }));
+          } else {
+            console.warn(`No message content from ${column.provider}:${column.model}`, data);
+          }
+        } else {
+          console.error(`API error for ${column.provider}:${column.model}:`, response.status, response.statusText);
         }
       } catch (error) {
         console.error(`Error sending to ${column.id}:`, error);
@@ -345,27 +351,33 @@ export function ParallelChatView() {
 
         if (response.ok) {
           const data = await response.json();
-          const aiMessage = data.message || data.content || "";
+          const aiMessage = data.message || data.content || data.response || "";
 
-          // Add AI response to column
-          useParallelChatStore.setState((state) => ({
-            columns: state.columns.map((c) =>
-              c.id === columnId
-                ? {
-                    ...c,
-                    messages: [
-                      ...c.messages,
-                      {
-                        id: crypto.randomUUID(),
-                        role: "assistant" as const,
-                        content: aiMessage,
-                        timestamp: new Date(),
-                      },
-                    ],
-                  }
-                : c
-            ),
-          }));
+          if (aiMessage) {
+            // Add AI response to column
+            useParallelChatStore.setState((state) => ({
+              columns: state.columns.map((c) =>
+                c.id === columnId
+                  ? {
+                      ...c,
+                      messages: [
+                        ...c.messages,
+                        {
+                          id: crypto.randomUUID(),
+                          role: "assistant" as const,
+                          content: aiMessage,
+                          timestamp: new Date(),
+                        },
+                      ],
+                    }
+                  : c
+              ),
+            }));
+          } else {
+            console.warn(`No message content from column ${columnId}`, data);
+          }
+        } else {
+          console.error(`API error in column ${columnId}:`, response.status, response.statusText);
         }
       } catch (error) {
         console.error(`Error in column ${columnId}:`, error);
