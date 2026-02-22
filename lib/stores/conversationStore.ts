@@ -19,6 +19,7 @@ interface ConversationState {
   hydrated: boolean;
   hydrate: () => void;
   loadConversations: () => void;
+  createConversation: (title: string, mode?: string) => void;
   addConversation: (conversation: Conversation) => void;
   updateConversation: (id: string, conversation: Partial<Conversation>) => void;
   deleteConversation: (id: string) => void;
@@ -42,6 +43,22 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
   loadConversations: () => {
     // Placeholder - loads conversations from storage/API
     set({ hydrated: true, loading: false });
+  },
+
+  createConversation: (title, mode = "chat") => {
+    const newConversation: Conversation = {
+      id: `conv_${Date.now()}`,
+      title,
+      messages: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      mode,
+    };
+    set((state) => ({
+      conversations: [...state.conversations, newConversation],
+      currentId: newConversation.id,
+      currentConversationId: newConversation.id,
+    }));
   },
 
   addConversation: (conversation) => {
