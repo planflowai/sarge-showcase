@@ -517,7 +517,7 @@ export function ParallelChatView() {
           >
             <ChatColumn
               column={column}
-              onModelChange={(provider: Provider, model: string) => setColumnModel(column.id, provider, model)}
+              onModelChange={(provider: Provider, model: string) => setColumnModel(column.id, model, provider)}
               onRoleChange={(roleId: string | undefined) => setColumnRole(column.id, roleId)}
               onSend={(content: string) => handleColumnSend(column.id, content)}
               onClear={() => clearColumn(column.id)}
