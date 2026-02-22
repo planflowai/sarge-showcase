@@ -24,10 +24,14 @@ interface VaultState {
   items: VaultItem[];
   searchQuery: string;
   filterCategory: FileCategory;
+  sortBy: "name" | "date" | "size";
+  sortOrder: "asc" | "desc";
   hydrated: boolean;
   hydrate: () => void;
   setSearchQuery: (query: string) => void;
   setFilterCategory: (category: FileCategory) => void;
+  setSortBy: (sortBy: "name" | "date" | "size") => void;
+  setSortOrder: (order: "asc" | "desc") => void;
   addItem: (item: VaultItem) => void;
   updateItem: (id: string, updates: Partial<VaultItem>) => void;
   deleteItem: (id: string) => void;
@@ -38,6 +42,8 @@ export const useVaultStore = create<VaultState>((set) => ({
   items: [],
   searchQuery: "",
   filterCategory: "all",
+  sortBy: "date",
+  sortOrder: "desc",
   hydrated: false,
 
   hydrate: () => {
@@ -50,6 +56,14 @@ export const useVaultStore = create<VaultState>((set) => ({
 
   setFilterCategory: (category) => {
     set({ filterCategory: category });
+  },
+
+  setSortBy: (sortBy) => {
+    set({ sortBy });
+  },
+
+  setSortOrder: (order) => {
+    set({ sortOrder: order });
   },
 
   addItem: (item) => {
