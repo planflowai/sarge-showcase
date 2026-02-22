@@ -231,16 +231,13 @@ export function ParallelChatView() {
     }
   }, [hydrated, hydrate]);
 
-  const handleSendToAll = async () => {
+  const handleSendToAll = () => {
     if (!sharedInput.trim() && attachments.length === 0) return;
-    const anySending = columns.some(c => c.sending);
-    if (anySending) return;
 
     // Build the message content
     let content = sharedInput.trim();
 
     // Separate images from non-image files
-    // Also check if content looks like base64 image data (safety check)
     const imageAttachments = attachments.filter(a =>
       a.isImage || a.content.startsWith('data:image/')
     );
@@ -248,10 +245,10 @@ export function ParallelChatView() {
       !a.isImage && !a.content.startsWith('data:image/')
     );
 
-    // For non-image files, include the content as text (but NOT binary/base64 data)
+    // For non-image files, include the content as text
     if (fileAttachments.length > 0) {
       const fileDescriptions = fileAttachments
-        .filter(att => !att.content.startsWith('data:')) // Skip any data URLs
+        .filter(att => !att.content.startsWith('data:'))
         .map(att => `[File: ${att.name}]\n\`\`\`\n${att.content}\n\`\`\``);
       if (fileDescriptions.length > 0) {
         if (content) {
@@ -267,123 +264,19 @@ export function ParallelChatView() {
       content = "Please analyze this image.";
     }
 
-    // Add user message to all columns first
+    // Just add the message to all columns (no AI calls)
     sendToAll(content);
-
-    // Then call AI for each visible column
-    const visibleColumns = columns.slice(0, activeColumnCount);
-    for (const column of visibleColumns) {
-      try {
-        const response = await fetch("/api/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            messages: [
-              ...column.messages,
-              { role: "user", content }
-            ],
-            provider: column.provider,
-            model: column.model,
-          }),
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          const aiMessage = data.message || data.content || data.response || "";
-
-          if (aiMessage) {
-            // Add AI response to column
-            useParallelChatStore.setState((state) => ({
-              columns: state.columns.map((c) =>
-                c.id === column.id
-                  ? {
-                      ...c,
-                      messages: [
-                        ...c.messages,
-                        {
-                          id: crypto.randomUUID(),
-                          role: "assistant" as const,
-                          content: aiMessage,
-                          timestamp: new Date(),
-                        },
-                      ],
-                    }
-                  : c
-              ),
-            }));
-          } else {
-            console.warn(`No message content from ${column.provider}:${column.model}`, data);
-          }
-        } else {
-          console.error(`API error for ${column.provider}:${column.model}:`, response.status, response.statusText);
-        }
-      } catch (error) {
-        console.error(`Error sending to ${column.id}:`, error);
-      }
-    }
 
     setSharedInput("");
     setAttachments([]);
   };
 
   const handleColumnSend = useCallback(
-    async (columnId: string, content: string) => {
-      // Add user message to column
+    (columnId: string, content: string) => {
+      // Just add the message locally (no AI calls for now)
       sendToColumn(columnId, content);
-
-      // Get the column to send to AI
-      const column = columns.find((c) => c.id === columnId);
-      if (!column) return;
-
-      try {
-        const response = await fetch("/api/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            messages: [
-              ...column.messages,
-              { role: "user", content }
-            ],
-            provider: column.provider,
-            model: column.model,
-          }),
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          const aiMessage = data.message || data.content || data.response || "";
-
-          if (aiMessage) {
-            // Add AI response to column
-            useParallelChatStore.setState((state) => ({
-              columns: state.columns.map((c) =>
-                c.id === columnId
-                  ? {
-                      ...c,
-                      messages: [
-                        ...c.messages,
-                        {
-                          id: crypto.randomUUID(),
-                          role: "assistant" as const,
-                          content: aiMessage,
-                          timestamp: new Date(),
-                        },
-                      ],
-                    }
-                  : c
-              ),
-            }));
-          } else {
-            console.warn(`No message content from column ${columnId}`, data);
-          }
-        } else {
-          console.error(`API error in column ${columnId}:`, response.status, response.statusText);
-        }
-      } catch (error) {
-        console.error(`Error in column ${columnId}:`, error);
-      }
     },
-    [columns, sendToColumn]
+    [sendToColumn]
   );
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
