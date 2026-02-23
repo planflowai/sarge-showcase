@@ -361,10 +361,19 @@ export const useParallelChatStore = create<ParallelChatState>((set, get) => ({
     const { columns, activeColumnCount } = get();
     const visibleColumns = columns.slice(0, activeColumnCount);
 
-    // Send to all visible columns sequentially (faster for local Ollama)
-    // Each model waits for the previous one to finish before starting
-    for (const col of visibleColumns) {
-      await get().sendToColumn(col.id, content);
+    // Auto-detect execution mode based on providers
+    const hasCloudProvider = visibleColumns.some(col => col.provider && col.provider !== "ollama" && col.provider !== "lmstudio");
+
+    if (hasCloudProvider) {
+      // Cloud providers: send in parallel (different endpoints, no GPU contention)
+      await Promise.all(
+        visibleColumns.map((col) => get().sendToColumn(col.id, content))
+      );
+    } else {
+      // Local Ollama/LM Studio: send sequentially (GPU can only run one model at a time)
+      for (const col of visibleColumns) {
+        await get().sendToColumn(col.id, content);
+      }
     }
   },
 
