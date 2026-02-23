@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import type { SavedQuestion, SavedPoison, BatchPassLog } from "@/lib/types";
+import type { SavedQuestion, SavedPoison, BatchPassLog, EnhancedForensicEvent, ForensicEvent } from "@/lib/types";
 
 export interface TestCase {
   id: string;
@@ -15,8 +15,21 @@ export interface BatchHistoryEntry {
   batchId: string; // Unique batch identifier
   source: "local" | "cloud";
   testCount: number; // Total tests in batch
-  savedAt: number; // Timestamp when saved
+  savedAt: string; // Timestamp when saved
   passLogs: BatchPassLog[]; // Array of pass results (pass1, pass2, pass3, etc.)
+  events: ForensicEvent[]; // Forensic events from the batch
+}
+
+export interface DebateLogicTemplates {
+  d1Prompt: string;
+  d1PromptWithContext: string;
+  d2Prompt: string;
+  d3Prompt: string;
+  poisonInjection: string;
+  judgePrompt: string;
+  challengeKeywords?: string;
+  flagKeywords?: string;
+  caughtKeywords?: string;
 }
 
 interface TestModeState {
@@ -32,21 +45,22 @@ interface TestModeState {
   batchCurrentPass: number;
   batchCurrentTest: number;
   batchProgress: number;
+  batchTotalTests: number;
+  batchId: string;
+  batchPassLogs: BatchPassLog[];
+  batchEvents: EnhancedForensicEvent[];
+  batchActivity: string;
+  batchLockedRotation: { [key: string]: any } | null;
+  batchBaselineResults: { [key: string]: any } | null;
+  agentMode: string;
+  speedMode: number;
+  cloudModels: { d1?: string; d2?: string; d3?: string; judge?: string };
   currentView: 'batch' | 'test' | 'review' | 'config' | null;
   slots: Array<{ provider: string; model: string }>;
   batchHistory: BatchHistoryEntry[];
   testHistory: Array<{ testId: string; source: "local" | "cloud"; savedAt: number; question: string; passLogs?: Array<{ model: string }> }>;
   promptPools: Record<string, Array<{ id: string; name: string }>>;
-  debateLogic: {
-    d1Prompt: string;
-    d1PromptWithContext: string;
-    d2Prompt: string;
-    d3Prompt: string;
-    poisonInjection: string;
-    challengeKeywords: string;
-    flagKeywords: string;
-    caughtKeywords: string;
-  };
+  debateLogic: DebateLogicTemplates;
   hydrated: boolean;
   hydrate: () => void;
   hydrateBatchHistory: () => void;
@@ -77,6 +91,14 @@ interface TestModeState {
     flagKeywords: string;
     caughtKeywords: string;
   }>) => void;
+  runBatch: (source?: string, testCount?: number) => void;
+  stopBatch: () => void;
+  pauseBatch: () => void;
+  resumeBatch: () => void;
+  setAgentMode: (mode: string) => void;
+  setSpeedMode: (speed: number) => void;
+  setCloudModels: (models: Partial<{ d1?: string; d2?: string; d3?: string; judge?: string }>) => void;
+  clearResults: () => void;
   setCurrentView: (view: 'batch' | 'test' | 'review' | 'config' | null) => void;
   clearAll: () => void;
 }
@@ -94,6 +116,16 @@ export const useTestModeStore = create<TestModeState>((set) => ({
   batchCurrentPass: 0,
   batchCurrentTest: 0,
   batchProgress: 0,
+  batchTotalTests: 0,
+  batchId: "",
+  batchPassLogs: [],
+  batchEvents: [],
+  batchActivity: "",
+  batchLockedRotation: null,
+  batchBaselineResults: null,
+  agentMode: "",
+  speedMode: 0,
+  cloudModels: {},
   currentView: null,
   slots: [
     { provider: "ollama", model: "" },
@@ -109,6 +141,7 @@ export const useTestModeStore = create<TestModeState>((set) => ({
     d2Prompt: "",
     d3Prompt: "",
     poisonInjection: "",
+    judgePrompt: "",
     challengeKeywords: "",
     flagKeywords: "",
     caughtKeywords: "",
@@ -250,6 +283,38 @@ export const useTestModeStore = create<TestModeState>((set) => ({
     set((state) => ({
       debateLogic: { ...state.debateLogic, ...updates },
     }));
+  },
+
+  runBatch: (source, testCount) => {
+    set({ batchRunning: true, batchPaused: false, batchTotalTests: testCount || 0 });
+  },
+
+  stopBatch: () => {
+    set({ batchRunning: false, batchPaused: false });
+  },
+
+  pauseBatch: () => {
+    set({ batchPaused: true });
+  },
+
+  resumeBatch: () => {
+    set({ batchPaused: false, batchRunning: true });
+  },
+
+  setAgentMode: (mode) => {
+    set({ agentMode: mode });
+  },
+
+  setSpeedMode: (speed) => {
+    set({ speedMode: speed });
+  },
+
+  setCloudModels: (models) => {
+    set((state) => ({ cloudModels: { ...state.cloudModels, ...models } }));
+  },
+
+  clearResults: () => {
+    set({ batchPassLogs: [], batchEvents: [], batchActivity: "" });
   },
 
   setCurrentView: (view) => {
