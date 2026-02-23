@@ -93,6 +93,14 @@ export const useParallelChatStore = create<ParallelChatState>((set, get) => ({
           provider: "" as any,
           model: "",
         },
+        {
+          id: crypto.randomUUID(),
+          topic: "Column 4",
+          messages: [],
+          createdAt: new Date(),
+          provider: "" as any,
+          model: "",
+        },
       ];
       set({ columns: defaultColumns, hydrated: true });
     } else {
