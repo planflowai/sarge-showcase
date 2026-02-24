@@ -97,9 +97,19 @@ export const useModelStore = create<ModelState>((set, get) => ({
           const existingIds = new Set(get().models.map(m => m.id));
           const newModels = data.models.filter((m: any) => !existingIds.has(m.id));
           if (newModels.length > 0) {
-            set((state) => ({
-              models: [...state.models, ...newModels],
-            }));
+            set((state) => {
+              // Auto-tag newly added Ollama models as builders
+              const newFlags = { ...state.builderFlags };
+              newModels.forEach((m: any) => {
+                if (m.provider === 'ollama') {
+                  newFlags[m.id] = true;
+                }
+              });
+              return {
+                models: [...state.models, ...newModels],
+                builderFlags: newFlags,
+              };
+            });
             console.log('[modelStore] Loaded', newModels.length, 'models from API scan');
           }
         }
