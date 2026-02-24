@@ -125,6 +125,44 @@ Preserve ALL existing content unless specifically asked to change it.
 Keep the Tailwind CDN script tag intact.`;
 
 // ============================================
+// HELPER: Extract CSS and JS from HTML
+// ============================================
+
+function extractStylesAndScripts(html: string): {
+  cleanHtml: string;
+  css: string;
+  js: string;
+} {
+  let cleanHtml = html;
+  let cssContent = '';
+  let jsContent = '';
+
+  // Extract all <style> tags and their content
+  const styleRegex = /<style[^>]*>([\s\S]*?)<\/style>/gi;
+  cleanHtml = cleanHtml.replace(styleRegex, (match, content) => {
+    cssContent += content + '\n';
+    return '';
+  });
+
+  // Extract all <script> tags (except Tailwind CDN)
+  const scriptRegex = /<script[^>]*>([\s\S]*?)<\/script>/gi;
+  cleanHtml = cleanHtml.replace(scriptRegex, (match, content) => {
+    // Keep Tailwind CDN script in HTML
+    if (match.includes('cdn.tailwindcss.com')) {
+      return match;
+    }
+    jsContent += content + '\n';
+    return '';
+  });
+
+  return {
+    cleanHtml: cleanHtml.trim(),
+    css: cssContent.trim(),
+    js: jsContent.trim(),
+  };
+}
+
+// ============================================
 // EXPORT TO ZIP
 // ============================================
 
@@ -136,20 +174,34 @@ export async function exportToZip(
 ): Promise<Blob> {
   const zip = new JSZip();
 
-  // Add index.html
-  zip.file('index.html', html);
+  // Extract CSS and JS from HTML artifact
+  const { cleanHtml, css: extractedCss, js: extractedJs } = extractStylesAndScripts(html);
 
-  // Add styles.css if there's custom CSS beyond Tailwind
-  if (css && css.trim().length > 0) {
-    zip.file('styles.css', css);
+  // Add index.html (with styles and scripts removed)
+  zip.file('index.html', cleanHtml);
+
+  // Add style.css if there's extracted CSS
+  if (extractedCss.length > 0) {
+    zip.file('style.css', extractedCss);
   }
 
-  // Add script.js if there's custom JS
-  if (js && js.trim().length > 0) {
+  // Add script.js if there's extracted JS
+  if (extractedJs.length > 0) {
+    zip.file('script.js', extractedJs);
+  }
+
+  // Add custom CSS/JS passed as parameters (fallback)
+  if (css && css.trim().length > 0 && extractedCss.length === 0) {
+    zip.file('style.css', css);
+  }
+  if (js && js.trim().length > 0 && extractedJs.length === 0) {
     zip.file('script.js', js);
   }
 
   // Add deploy instructions
+  const hasStyles = extractedCss.length > 0 || (css && css.trim().length > 0);
+  const hasScripts = extractedJs.length > 0 || (js && js && js.trim().length > 0);
+
   const deployInstructions = `# Deploy Instructions for ${projectName}
 
 ## Option 1: Netlify (Recommended)
@@ -169,7 +221,7 @@ The site is pure HTML/CSS/JS — no build step needed.
 
 ## Files Included
 - index.html — Your website
-${css && css.trim().length > 0 ? '- styles.css — Custom styles\n' : ''}${js && js.trim().length > 0 ? '- script.js — Custom functionality\n' : ''}- README.txt — This file
+${hasStyles ? '- style.css — Stylesheets\n' : ''}${hasScripts ? '- script.js — JavaScript functionality\n' : ''}- README.txt — This file
 
 Built with SargeBuild — Fast AI-Assisted Website Builder
 `;
