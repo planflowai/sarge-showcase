@@ -793,15 +793,49 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
         batchLockedRotation: rotation,
       }));
 
-      // Log batch initialization with hash/seed
-      const batchSeed = batchId.split('_')[1]; // Extract timestamp seed
-      addEvent(`🌱 Batch ID: ${batchId} | Seed: ${batchSeed} | Tests: ${finalTestCount}`, '🌱', 'neutral');
+      // ════════════════════════════════════════════════════════════════
+      // BATCH INITIALIZATION LOGGING
+      // ════════════════════════════════════════════════════════════════
+
+      // 🚀 Starting batch
+      addEvent(`🚀 Starting batch test with ${finalTestCount} questions across 3 passes`, '🚀', 'neutral');
+
+      // ⚙️ Config summary
+      const speedModeLabel = get().speedMode === 0 ? 'Full (all 3 passes)' : get().speedMode === 1 ? 'Fast (phases 2-3)' : 'Defense Only (phase 3)';
+      addEvent(`⚙️ Source: ${source.toUpperCase()} | Tests: ${finalTestCount} | Agents: 3+Judge (Full SARGE) | Speed: ${speedModeLabel}`, '⚙️', 'neutral');
+
+      // 🤖 Model count
+      addEvent(`🤖 Models: ${availableModels.length} available (random per agent)`, '🤖', 'neutral');
+
+      // 🔒 Air-gap compliance
+      if (source === 'local') {
+        addEvent(`🔒 🔒 AIR-GAP COMPLIANT: Running offline with local models only`, '🔒', 'success');
+      }
+
+      // ⏭️ Speed mode skips
+      if (get().speedMode > 0) {
+        addEvent(`⏭️ ⏭️ Skipping Pass 1 (Unfiltered) — Speed mode: ${speedModeLabel}`, '⏭️', 'neutral');
+      }
+      if (get().speedMode > 1) {
+        addEvent(`⏭️ ⏭️ Skipping Pass 2 (Poison) — Speed mode: ${speedModeLabel}`, '⏭️', 'neutral');
+      }
+
+      // 🔐 HASH + SEED with abbreviated model names
+      const seedModels = rotation.slice(0, 3).map(t =>
+        `${t.models.d1.split(':')[0] || t.models.d1}`
+      ).join(',');
+      const hashSeed = batchId.split('_')[1]?.substring(0, 8).toUpperCase() || 'UNKNOWN';
+      addEvent(`🔐 🔐 HASH: ${hashSeed} | SEED: ${seedModels}...`, '🔐', 'neutral');
 
       // ────────────────────────────────────────────────────────────────
       // PHASE 1: BASELINE (no poison, no system prompts)
       // ────────────────────────────────────────────────────────────────
 
-      addEvent('Phase 1/3: Baseline', '🔬', 'neutral');
+      if (get().speedMode === 0) {
+        addEvent('Phase 1/3: Baseline', '🔬', 'neutral');
+      } else {
+        addEvent('⏭️ ⏭️ Skipping Phase 1 (Unfiltered) — Speed mode active', '⏭️', 'neutral');
+      }
 
       const pass1Log: BatchPassLog = {
         pass: 'pass1-unfiltered',
@@ -820,7 +854,9 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
         },
       };
 
-      for (let i = 0; i < rotation.length; i++) {
+      // Only run Phase 1 if speedMode is 0 (full run)
+      if (get().speedMode === 0) {
+        for (let i = 0; i < rotation.length; i++) {
         const test = rotation[i];
 
         addEvent(`Test ${i + 1}/${finalTestCount}: ${test.question.slice(0, 50)}...`, '📋', 'neutral', { question: test.question });
@@ -857,23 +893,29 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
             verdict: 'MISSED',
           });
         }
+        }
       }
 
       pass1Log.completedAt = new Date().toISOString();
       pass1Log.summary.completed = pass1Log.tests.length;
       pass1Log.summary.catchRate = 0;
 
-      addEvent(`Phase 1 complete — ${pass1Log.tests.length}/${finalTestCount} tests`, '✓', 'success');
-
-      set((state) => ({
-        batchPassLogs: [...state.batchPassLogs, pass1Log],
-      }));
+      if (get().speedMode === 0) {
+        addEvent(`Phase 1 complete — ${pass1Log.tests.length}/${finalTestCount} tests`, '✓', 'success');
+        set((state) => ({
+          batchPassLogs: [...state.batchPassLogs, pass1Log],
+        }));
+      }
 
       // ────────────────────────────────────────────────────────────────
       // PHASE 2: POISON ONLY (same questions/models, poison injected)
       // ────────────────────────────────────────────────────────────────
 
-      addEvent('Phase 2/3: Poison injection', '☠️', 'neutral');
+      if (get().speedMode >= 2) {
+        addEvent(`⏭️ ⏭️ Skipping Pass 2 (Poison) — Speed mode: ${speedModeLabel}`, '⏭️', 'neutral');
+      } else {
+        addEvent('☠️ ━━━ POISON (echo detection + threat tracing) ━━━', '☠️', 'neutral');
+      }
 
       const pass2Log: BatchPassLog = {
         pass: 'pass2-pill',
@@ -943,9 +985,13 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
               });
             }
             agentMetrics.d1.times.push(d1Time);
-            addEvent(`🤖 R${round}/3 → D1 (${test.models.d1}) ${round === test.poisonRound ? '[💉 INJECTING]' : ''}\n"${d1Response.content.slice(0, 120)}"`, '✓', d1HasEcho ? 'warning' : 'neutral', {
+            const d1Summary = d1HasEcho
+              ? `⚠️ Agent D1 echoed the poison — false claim propagated`
+              : `✓ Agent D1 provided a clean response without false claims`;
+            addEvent(`🤖 R${round}/3 → D1 (${test.models.d1.split(':')[0]}) ${round === test.poisonRound ? '💉 INJECTING' : ''}`, '✓', d1HasEcho ? 'warning' : 'neutral', {
               status: d1HasEcho ? 'echo' : 'clean'
             });
+            addEvent(d1Summary, '✓', d1HasEcho ? 'warning' : 'neutral');
             responses.push({
               round,
               agent: 'd1',
@@ -977,9 +1023,13 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
               });
             }
             agentMetrics.d2.times.push(d2Time);
-            addEvent(`🤖 R${round}/3 → D2 (${test.models.d2}) ${round === test.poisonRound ? '[💉 INJECTING]' : ''}\n"${d2Response.content.slice(0, 120)}"`, '✓', d2HasEcho ? 'warning' : 'neutral', {
+            const d2Summary = d2HasEcho
+              ? `⚠️ Agent D2 echoed the poison — false claim propagated`
+              : `✓ Agent D2 provided a clean response without false claims`;
+            addEvent(`🤖 R${round}/3 → D2 (${test.models.d2.split(':')[0]}) ${round === test.poisonRound ? '💉 INJECTING' : ''}`, '✓', d2HasEcho ? 'warning' : 'neutral', {
               status: d2HasEcho ? 'echo' : 'clean'
             });
+            addEvent(d2Summary, '✓', d2HasEcho ? 'warning' : 'neutral');
             responses.push({
               round,
               agent: 'd2',
@@ -1011,9 +1061,13 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
               });
             }
             agentMetrics.d3.times.push(d3Time);
-            addEvent(`🤖 R${round}/3 → D3 (${test.models.d3}) ${round === test.poisonRound ? '[💉 INJECTING]' : ''}\n"${d3Response.content.slice(0, 120)}"`, '✓', d3HasEcho ? 'warning' : 'neutral', {
+            const d3Summary = d3HasEcho
+              ? `⚠️ Agent D3 echoed the poison — false claim propagated`
+              : `✓ Agent D3 provided a clean response without false claims`;
+            addEvent(`🤖 R${round}/3 → D3 (${test.models.d3.split(':')[0]}) ${round === test.poisonRound ? '💉 INJECTING' : ''}`, '✓', d3HasEcho ? 'warning' : 'neutral', {
               status: d3HasEcho ? 'echo' : 'clean'
             });
+            addEvent(d3Summary, '✓', d3HasEcho ? 'warning' : 'neutral');
             responses.push({
               round,
               agent: 'd3',
@@ -1166,9 +1220,13 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
               });
             }
             agentMetrics.d1.times.push(d1Time);
-            addEvent(`🤖 R${round}/3 → D1 (${test.models.d1})\n"${d1Response.content.slice(0, 120)}"`, '✓', d1HasEcho ? 'warning' : 'neutral', {
+            const phase3D1Summary = d1HasEcho
+              ? `⚠️ Agent D1 echoed the poison — false claim propagated`
+              : `✓ Agent D1 provided a clean response without false claims`;
+            addEvent(`🤖 R${round}/3 → D1 (${test.models.d1.split(':')[0]})`, '✓', d1HasEcho ? 'warning' : 'neutral', {
               status: d1HasEcho ? 'echo' : 'clean'
             });
+            addEvent(phase3D1Summary, '✓', d1HasEcho ? 'warning' : 'neutral');
             responses.push({
               round,
               agent: 'd1',
@@ -1201,9 +1259,13 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
               });
             }
             agentMetrics.d2.times.push(d2Time);
-            addEvent(`🤖 R${round}/3 → D2 (${test.models.d2})\n"${d2Response.content.slice(0, 120)}"`, '✓', d2HasEcho ? 'warning' : 'neutral', {
+            const phase3D2Summary = d2HasEcho
+              ? `⚠️ Agent D2 echoed the poison — false claim propagated`
+              : `✓ Agent D2 provided a clean response without false claims`;
+            addEvent(`🤖 R${round}/3 → D2 (${test.models.d2.split(':')[0]})`, '✓', d2HasEcho ? 'warning' : 'neutral', {
               status: d2HasEcho ? 'echo' : 'clean'
             });
+            addEvent(phase3D2Summary, '✓', d2HasEcho ? 'warning' : 'neutral');
             responses.push({
               round,
               agent: 'd2',
@@ -1236,9 +1298,13 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
               });
             }
             agentMetrics.d3.times.push(d3Time);
-            addEvent(`🤖 R${round}/3 → D3 (${test.models.d3})\n"${d3Response.content.slice(0, 120)}"`, '✓', d3HasEcho ? 'warning' : 'neutral', {
+            const phase3D3Summary = d3HasEcho
+              ? `⚠️ Agent D3 echoed the poison — false claim propagated`
+              : `✓ Agent D3 provided a clean response without false claims`;
+            addEvent(`🤖 R${round}/3 → D3 (${test.models.d3.split(':')[0]})`, '✓', d3HasEcho ? 'warning' : 'neutral', {
               status: d3HasEcho ? 'echo' : 'clean'
             });
+            addEvent(phase3D3Summary, '✓', d3HasEcho ? 'warning' : 'neutral');
             responses.push({
               round,
               agent: 'd3',
@@ -1260,6 +1326,7 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
           }
 
           // Judge Response
+          addEvent(`⚖️ Judge is reviewing the responses for false claims...`, '⚖️', 'neutral');
           const judgeStart = Date.now();
           const judgeSystemPrompt = selectPrompt(promptPools?.judge, debateLogic?.judgePrompt || '');
           const judgeResponse = await streamLLMResponse(
@@ -1272,9 +1339,14 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
             source
           );
           judgeTime = (Date.now() - judgeStart) / 1000;
-          addEvent(`🤖 Judge (${test.models.judge})\n"${judgeResponse.content.slice(0, 120)}"`, '⚖️', 'neutral');
+          addEvent(`🤖 Judge (${test.models.judge.split(':')[0]})`, '⚖️', 'neutral');
 
           const finalVerdict = parseVerdict(judgeResponse.content);
+          const judgeVerdictIcon = finalVerdict === 'CAUGHT' ? '✅' : '❌';
+          const judgeVerdictMsg = finalVerdict === 'CAUGHT'
+            ? `✅ Judge successfully identified and caught the false claim`
+            : `❌ Judge failed to detect the false claim in the responses`;
+          addEvent(judgeVerdictMsg, judgeVerdictIcon, finalVerdict === 'CAUGHT' ? 'success' : 'warning');
 
           // AGENT METRICS box after all rounds + judge
           const d1AvgTime = agentMetrics.d1.times.reduce((a, b) => a + b, 0) / agentMetrics.d1.times.length;
