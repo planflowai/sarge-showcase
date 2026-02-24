@@ -328,7 +328,7 @@ export default function BuilderMessageBubble({
         {/* Timestamp */}
         {!message.isStreaming && (
           <div className={cn("mt-2 text-[10px]", isUser ? "text-indigo-200" : "text-zinc-500")}>
-            {formatDate(message.timestamp)}
+            {formatDate(message.timestamp instanceof Date ? message.timestamp : new Date(message.timestamp))}
           </div>
         )}
       </div>
