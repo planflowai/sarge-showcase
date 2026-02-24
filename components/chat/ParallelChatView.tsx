@@ -73,6 +73,7 @@ export function ParallelChatView() {
     sendToAll,
     shareMessage,
     shareMessageToAll,
+    compareAnswers,
     clearColumn,
     clearAllColumns,
     getOtherColumns,
@@ -86,6 +87,7 @@ export function ParallelChatView() {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [showAnchorsPanel, setShowAnchorsPanel] = useState(false);
+  const [isComparing, setIsComparing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropRef = useRef<HTMLDivElement>(null);
   const dragCounter = useRef(0);
@@ -230,6 +232,16 @@ export function ParallelChatView() {
       hydrate();
     }
   }, [hydrated, hydrate]);
+
+  const handleCompare = async () => {
+    if (isComparing) return;
+    setIsComparing(true);
+    try {
+      await compareAnswers();
+    } finally {
+      setIsComparing(false);
+    }
+  };
 
   const handleSendToAll = () => {
     if (!sharedInput.trim() && attachments.length === 0) return;
@@ -635,6 +647,20 @@ export function ParallelChatView() {
                 <Send className="h-4 w-4" />
               )}
               <span className="font-medium">Send to All</span>
+            </Button>
+            <Button
+              onClick={handleCompare}
+              disabled={columns.slice(0, activeColumnCount).some(c => c.messages.length === 0) || anySending || isComparing}
+              variant="outline"
+              className="h-11 px-6 gap-2"
+              title="Show all answers to each model and let them comment"
+            >
+              {isComparing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <MessageSquare className="h-4 w-4" />
+              )}
+              <span className="font-medium">Compare</span>
             </Button>
           </div>
           <p className="text-[10px] text-zinc-500 dark:text-zinc-600 text-center mt-2">

@@ -49,6 +49,7 @@ interface ParallelChatState {
   clearColumn: (columnId: string) => void;
   clearAllColumns: () => void;
   getOtherColumns: (columnId: string) => ChatThread[];
+  compareAnswers: () => Promise<void>;
   saveCurrentSession: (name?: string) => void;
   loadSession: (sessionId: string) => void;
   deleteSession: (sessionId: string) => void;
@@ -411,6 +412,36 @@ export const useParallelChatStore = create<ParallelChatState>((set, get) => ({
 
     await Promise.all(
       otherColumns.map(col => get().sendToColumn(col.id, contextContent))
+    );
+  },
+
+  compareAnswers: async () => {
+    const { columns, activeColumnCount } = get();
+    const activeColumns = columns.slice(0, activeColumnCount);
+
+    // Get the last assistant message from each column
+    const answers = activeColumns.map(col => {
+      const lastAssistantMsg = col.messages
+        .slice()
+        .reverse()
+        .find(m => m.role === "assistant");
+
+      return {
+        columnId: col.id,
+        modelName: col.model.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase()),
+        content: lastAssistantMsg?.content || "(no answer)",
+      };
+    });
+
+    // Create context message with all answers
+    const contextParts = answers.map(
+      (ans, idx) => `**Model ${idx + 1} (${ans.modelName}):**\n${ans.content}`
+    );
+    const contextContent = `Here are all the answers to consider:\n\n${contextParts.join("\n\n---\n\n")}\n\n---\n\nPlease provide your comment on these responses.`;
+
+    // Send to all columns
+    await Promise.all(
+      activeColumns.map(col => get().sendToColumn(col.id, contextContent))
     );
   },
 
