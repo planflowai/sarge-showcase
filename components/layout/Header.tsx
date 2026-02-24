@@ -10,6 +10,7 @@ import { useDebateStore } from "@/lib/stores/debateStore";
 import { useTestModeStore } from "@/lib/stores/testModeStore";
 import { useForensicLogStore } from "@/lib/stores/forensicLogStore";
 import { useAirGapStore } from "@/lib/stores/airGapStore";
+import { useAIAnalysisStore } from "@/lib/stores/aiAnalysisStore";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -64,7 +65,9 @@ export function Header() {
 
   const showingTestMode = useTestModeStore((s) => s.showingTestMode);
   const testModeHidden = useTestModeStore((s) => s.testModeHidden);
+  const batchModeActive = useTestModeStore((s) => s.batchModeActive);
   const openTestMode = useTestModeStore((s) => s.openTestMode);
+  const openBatchMode = useTestModeStore((s) => s.openBatchMode);
   const hideTestMode = useTestModeStore((s) => s.hideTestMode);
 
   const showingForensicLog = useForensicLogStore((s) => s.showingForensicLog);
@@ -95,6 +98,8 @@ export function Header() {
   };
 
   // Determine active mode
+  const activeSubTab = useAIAnalysisStore((s) => s.activeSubTab);
+
   const getActiveMode = (): NavMode => {
     if (pathname === '/dashboard') return 'dashboard';
     if (pathname === '/builder') return 'builder';
@@ -107,12 +112,13 @@ export function Header() {
     if (pathname === '/live-checker') return 'live-checker';
     if (pathname === '/real-world') return 'real-world';
     if (pathname === '/diagnostics') return 'diagnostics';
-    if (pathname === '/ai-analysis') return 'ai-analysis';
+    if (pathname === '/ai-analysis') {
+      return activeSubTab === 'batch' ? 'batch' : 'ai-analysis';
+    }
     if (pathname === '/demo') return 'demo';
     if (showingForensicLog) return 'forensic';
     if ((debate || showingSetup) && !debateHidden) return 'debate';
     if (showingTestMode && !testModeHidden) {
-      const batchModeActive = useTestModeStore.getState().batchModeActive;
       return batchModeActive ? 'batch' : 'test';
     }
     return 'chat';
@@ -140,20 +146,10 @@ export function Header() {
 
     switch (mode) {
       case 'batch':
-        if (isOnSubPage) {
-          setTimeout(() => {
-            if (showingTestMode && testModeHidden) {
-              useTestModeStore.getState().showTestMode();
-              useTestModeStore.getState().openBatchMode();
-            } else {
-              useTestModeStore.getState().openBatchMode();
-            }
-          }, 100);
-        } else if (showingTestMode && testModeHidden) {
+        if (showingTestMode && testModeHidden) {
           useTestModeStore.getState().showTestMode();
-          useTestModeStore.getState().openBatchMode();
         } else {
-          useTestModeStore.getState().openBatchMode();
+          openBatchMode();
         }
         break;
       case 'test':

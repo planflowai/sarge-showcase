@@ -1,75 +1,91 @@
 "use client";
 
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
-export interface DebateRecord {
+export interface SavedDebate {
   id: string;
-  title: string;
   topic: string;
-  participants: Array<{ provider: string; model?: string }>;
-  rounds: number;
-  messages: any[];
-  critiques: any[];
-  roundSummaries: any[];
-  judge: { provider: string; model?: string };
-  agreements: string[];
   createdAt: Date;
+  updatedAt: Date;
+  agentSlots: Array<{ provider: string | null; model: string | null; role?: string }>;
+  judgeSlot: { provider: string | null; model: string | null };
+  passMode: "blind" | "sequential";
+  totalRounds: number;
+  currentRound: number;
+  rounds: any[];
+  debateComplete: boolean;
+  finalJudgeSummary: string;
 }
 
 interface DebateHistoryState {
-  records: DebateRecord[];
-  debates: DebateRecord[];
-  hydrated: boolean;
-  hydrate: () => void;
-  addRecord: (record: DebateRecord) => void;
-  deleteRecord: (id: string) => void;
-  loadDebates: () => Promise<void>;
+  debates: SavedDebate[];
+  currentDebateId: string | null;
+
+  saveDebate: (debate: SavedDebate) => void;
+  updateDebate: (id: string, debate: Partial<SavedDebate>) => void;
   deleteDebate: (id: string) => void;
-  loadDebateById: (id: string) => DebateRecord | undefined;
-  clearAll: () => void;
+  getDebate: (id: string) => SavedDebate | undefined;
+  setCurrent: (id: string | null) => void;
+  loadDebates: () => void;
 }
 
-export const useDebateHistoryStore = create<DebateHistoryState>((set, get) => ({
-  records: [],
-  debates: [],
-  hydrated: false,
+export const useDebateHistoryStore = create<DebateHistoryState>()(
+  persist(
+    (set, get) => ({
+      debates: [],
+      currentDebateId: null,
 
-  hydrate: () => {
-    set({ hydrated: true });
-  },
+      saveDebate: (debate: SavedDebate) => {
+        set((state) => {
+          const existing = state.debates.find(d => d.id === debate.id);
+          let updatedDebates;
 
-  addRecord: (record) => {
-    set((state) => ({
-      records: [...state.records, record],
-      debates: [...state.records, record],
-    }));
-  },
+          if (existing) {
+            updatedDebates = state.debates.map(d =>
+              d.id === debate.id ? { ...debate, updatedAt: new Date() } : d
+            );
+          } else {
+            updatedDebates = [{ ...debate, createdAt: new Date(), updatedAt: new Date() }, ...state.debates];
+          }
 
-  deleteRecord: (id) => {
-    set((state) => ({
-      records: state.records.filter((r) => r.id !== id),
-      debates: state.records.filter((r) => r.id !== id),
-    }));
-  },
+          // Keep only the 10 most recent debates to prevent localStorage quota issues
+          updatedDebates = updatedDebates.slice(0, 10);
 
-  loadDebates: async () => {
-    // Placeholder for loading debates
-    set({ hydrated: true });
-  },
+          return { debates: updatedDebates };
+        });
+      },
 
-  deleteDebate: (id) => {
-    set((state) => ({
-      records: state.records.filter((r) => r.id !== id),
-      debates: state.debates.filter((d) => d.id !== id),
-    }));
-  },
+      updateDebate: (id: string, updates: Partial<SavedDebate>) => {
+        set((state) => ({
+          debates: state.debates.map(d =>
+            d.id === id ? { ...d, ...updates, updatedAt: new Date() } : d
+          ),
+        }));
+      },
 
-  loadDebateById: (id) => {
-    const state = get();
-    return state.debates.find((d) => d.id === id);
-  },
+      deleteDebate: (id: string) => {
+        set((state) => ({
+          debates: state.debates.filter(d => d.id !== id),
+          currentDebateId: state.currentDebateId === id ? null : state.currentDebateId,
+        }));
+      },
 
-  clearAll: () => {
-    set({ records: [], debates: [] });
-  },
-}));
+      getDebate: (id: string) => {
+        return get().debates.find(d => d.id === id);
+      },
+
+      setCurrent: (id: string | null) => {
+        set({ currentDebateId: id });
+      },
+
+      loadDebates: () => {
+        // Hydration happens automatically with persist middleware
+      },
+    }),
+    {
+      name: "debate-history",
+      version: 1,
+    }
+  )
+);

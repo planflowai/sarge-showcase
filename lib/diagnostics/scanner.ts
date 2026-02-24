@@ -226,7 +226,6 @@ export function scanFile(filePath: string): Finding[] {
           column,
           message,
           code: codeLine.trim(),
-          canAutoFix: false,
         });
       }
     }

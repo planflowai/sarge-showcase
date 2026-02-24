@@ -550,7 +550,6 @@ export const useJuryGuardianStore = create<JuryGuardianState>()(
     {
       name: "jury-guardian-storage",
       storage: createJSONStorage(() => safeStorage),
-      storage: createDebouncedStorage(),
       partialize: (state) => ({
         enabled: state.enabled,
         scope: state.scope,

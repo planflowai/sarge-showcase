@@ -613,7 +613,6 @@ export const useForensicLogStore = create<ForensicLogState>()(
     {
       name: "sarge-forensic-log",
       // Only persist the data, not UI state or intervals
-      storage: createDebouncedStorage(),
       partialize: (state) => ({
         // Dev mode: persist everything; Production: limit to MAX_ENTRIES_PERSIST (5000)
         entries: isDevNoTrim()

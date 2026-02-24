@@ -239,7 +239,6 @@ export const useBuilderStore = create<BuilderState>()(
         }
         return persisted;
       },
-      storage: createDebouncedStorage(),
       partialize: (state) => ({
         projectPath: state.projectPath,
         projectName: state.projectName,

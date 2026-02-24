@@ -5,14 +5,12 @@ import { useAIAnalysisStore, type AIAnalysisSubTab } from "@/lib/stores/aiAnalys
 import { AIChatView } from "@/components/aiAnalysis/chat/AIChatView";
 import { AIDebateView } from "@/components/aiAnalysis/debate/AIDebateView";
 import { AITestView } from "@/components/aiAnalysis/test/AITestView";
-import { AIBatchView } from "@/components/aiAnalysis/batch/AIBatchView";
 import { AIForensicView } from "@/components/aiAnalysis/forensic/AIForensicView";
 import { AIReviewView } from "@/components/aiAnalysis/review/AIReviewView";
 import {
   MessageSquare,
   Swords,
   FlaskConical,
-  Layers,
   Shield,
   FileSearch,
 } from "lucide-react";
@@ -22,7 +20,6 @@ const TABS: { id: AIAnalysisSubTab; label: string; icon: typeof MessageSquare; c
   { id: "chat", label: "AI Chat", icon: MessageSquare, color: "#3b82f6" },
   { id: "debate", label: "AI Debate", icon: Swords, color: "#f97316" },
   { id: "test", label: "AI Test", icon: FlaskConical, color: "#ef4444" },
-  { id: "batch", label: "AI Batch", icon: Layers, color: "#22c55e" },
   { id: "forensic", label: "AI Forensic", icon: Shield, color: "#f43f5e" },
   { id: "review", label: "AI Review", icon: FileSearch, color: "#6366f1" },
 ];
@@ -40,8 +37,6 @@ export default function AIAnalysisPage() {
         return <AIDebateView />;
       case "test":
         return <AITestView />;
-      case "batch":
-        return <AIBatchView />;
       case "forensic":
         return <AIForensicView />;
       case "review":

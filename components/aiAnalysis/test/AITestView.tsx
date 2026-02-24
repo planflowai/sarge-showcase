@@ -33,9 +33,9 @@ export function AITestView() {
                 <button
                   key={mode}
                   onClick={() => aiTestSetMode(mode)}
-                  disabled={aiTest.isRunning}
+                  disabled={aiTest?.isRunning ?? false}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                    aiTest.mode === mode
+                    aiTest?.mode === mode
                       ? 'bg-indigo-600 text-white'
                       : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-300 dark:hover:bg-zinc-700'
                   }`}
@@ -52,9 +52,9 @@ export function AITestView() {
               Question
             </label>
             <textarea
-              value={aiTest.question}
+              value={aiTest?.question ?? ''}
               onChange={(e) => aiTestSetQuestion(e.target.value)}
-              disabled={aiTest.isRunning}
+              disabled={aiTest?.isRunning ?? false}
               placeholder="Enter your test question..."
               rows={3}
               className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-3 text-sm text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:border-indigo-500 disabled:opacity-50"
@@ -62,16 +62,16 @@ export function AITestView() {
           </div>
 
           {/* Poison Input (if pill mode) */}
-          {(aiTest.mode === 'pill' || aiTest.mode === 'pill-prompt') && (
+          {(aiTest?.mode === 'pill' || aiTest?.mode === 'pill-prompt') && (
             <div className="space-y-2">
               <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
                 Poison Text
               </label>
               <input
                 type="text"
-                value={aiTest.poison}
+                value={aiTest?.poison ?? ''}
                 onChange={(e) => aiTestSetPoison(e.target.value)}
-                disabled={aiTest.isRunning}
+                disabled={aiTest?.isRunning ?? false}
                 placeholder="Enter false claim to inject..."
                 className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-2 text-sm text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:border-indigo-500 disabled:opacity-50"
               />
@@ -82,14 +82,14 @@ export function AITestView() {
           <div className="flex gap-2">
             <button
               onClick={() => aiTestRunTest()}
-              disabled={aiTest.isRunning || !aiTest.question.trim()}
+              disabled={(aiTest?.isRunning ?? false) || !aiTest?.question?.trim()}
               className="px-6 py-2 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {aiTest.isRunning ? 'Running...' : 'Run Test'}
+              {(aiTest?.isRunning ?? false) ? 'Running...' : 'Run Test'}
             </button>
             <button
               onClick={aiTestClearResults}
-              disabled={aiTest.isRunning || aiTest.responses.length === 0}
+              disabled={(aiTest?.isRunning ?? false) || (aiTest?.responses?.length ?? 0) === 0}
               className="px-6 py-2 bg-zinc-600 text-white rounded-lg font-medium hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Clear Results
@@ -97,13 +97,13 @@ export function AITestView() {
           </div>
 
           {/* Results */}
-          {aiTest.responses.length > 0 && (
+          {(aiTest?.responses?.length ?? 0) > 0 && (
             <div className="space-y-2">
               <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                 Test Results
               </h3>
               <div className="space-y-2">
-                {aiTest.responses.map((response, idx) => (
+                {(aiTest?.responses ?? []).map((response, idx) => (
                   <div
                     key={idx}
                     className="p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900"

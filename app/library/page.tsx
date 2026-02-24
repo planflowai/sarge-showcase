@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   HelpCircle,
   FlaskConical,
@@ -51,6 +51,11 @@ export default function LibraryPage() {
   const addPoison = useTestModeStore((s) => s.addPoison);
   const updatePoison = useTestModeStore((s) => s.updatePoison);
   const removePoison = useTestModeStore((s) => s.removePoison);
+
+  // Hydrate store on mount to seed defaults
+  useEffect(() => {
+    useTestModeStore.getState().hydrate();
+  }, []);
 
   // Filter by search
   const filteredQuestions = useMemo(() => {

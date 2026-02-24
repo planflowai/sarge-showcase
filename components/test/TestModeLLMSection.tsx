@@ -1,10 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ChevronDown, ChevronUp, Settings2, AlertTriangle } from "lucide-react";
+import { ChevronDown, ChevronUp, AlertTriangle } from "lucide-react";
 import { useUIStore } from "@/lib/stores/uiStore";
 import { useTestModeStore } from "@/lib/stores/testModeStore";
-import { useRoleStore } from "@/lib/stores/roleStore";
 import { useModelRegistryStore, type SargePool } from "@/lib/stores/modelRegistryStore";
 import { providers } from "@/lib/providers";
 import { fetchOllamaModels } from "@/lib/providers/localModels";
@@ -22,7 +21,6 @@ export function TestModeLLMSection() {
   const slots = useTestModeStore((s) => s.slots);
   const updateSlot = useTestModeStore((s) => s.updateSlot);
 
-  const { roles, hydrated: rolesHydrated, hydrate: hydrateRoles } = useRoleStore();
   const {
     registry,
     hydrated: registryHydrated,
@@ -32,14 +30,12 @@ export function TestModeLLMSection() {
   } = useModelRegistryStore();
 
   const [ollamaModels, setOllamaModels] = useState<any[]>([]);
-  const [showRoles, setShowRoles] = useState(false);
   const [useRegistry, setUseRegistry] = useState(true);  // Toggle for registry filtering
 
   // Hydrate stores on mount
   useEffect(() => {
-    if (!rolesHydrated) hydrateRoles();
     if (!registryHydrated) hydrateRegistry();
-  }, [rolesHydrated, hydrateRoles, registryHydrated, hydrateRegistry]);
+  }, [registryHydrated, hydrateRegistry]);
 
   // Fetch Ollama models and register them
   useEffect(() => {
@@ -52,6 +48,10 @@ export function TestModeLLMSection() {
             id: m.id,
             name: m.name,
             provider: 'ollama',
+            category: 'code',
+            enabled: true,
+            strength: 'medium',
+            pools: [],
           })));
         }
       })
@@ -60,9 +60,6 @@ export function TestModeLLMSection() {
         setOllamaModels([]);
       });
   }, [registerModels]);
-
-  // Filter roles for agents vs judge
-  const agentRoles = roles.filter(r => !r.isDefault);
 
   const handleProviderChange = (index: number, providerId: string) => {
     const prov = providers.find(p => p.id === providerId);
@@ -74,7 +71,6 @@ export function TestModeLLMSection() {
     updateSlot(index, {
       provider: providerId as Provider,
       model: defaultModel,
-      roleId: undefined
     });
   };
 
@@ -110,16 +106,6 @@ export function TestModeLLMSection() {
             title={useRegistry ? "Registry filter ON - showing only pool-assigned models" : "Registry filter OFF - showing all models"}
           >
             {useRegistry ? '✓' : '○'} Filter
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowRoles(!showRoles)}
-            className={`h-5 px-1.5 text-[10px] gap-1 ${showRoles ? 'text-indigo-400' : 'text-zinc-500'}`}
-            title="Toggle role prompts"
-          >
-            <Settings2 className="h-3 w-3" />
-            Roles
           </Button>
           <Button
             variant="ghost"
@@ -202,32 +188,6 @@ export function TestModeLLMSection() {
                   </select>
                 )}
               </div>
-
-              {/* Role - only when expanded */}
-              {showRoles && slot.provider && (
-                <select
-                  value={slot.roleId ?? ""}
-                  onChange={(e) => updateSlot(idx, { roleId: e.target.value || undefined })}
-                  disabled={isRunning}
-                  className="w-full h-5 px-1 mt-1 text-[10px] rounded border bg-zinc-50 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 disabled:opacity-50 text-zinc-900 dark:text-zinc-100"
-                  title="Role prompt"
-                >
-                  {isJudge ? (
-                    roles.map(r => (
-                      <option key={r.id} value={r.id}>
-                        {r.name}{r.isDefault ? " ★" : ""}
-                      </option>
-                    ))
-                  ) : (
-                    <>
-                      <option value="">No Role</option>
-                      {agentRoles.map(r => (
-                        <option key={r.id} value={r.id}>{r.name}</option>
-                      ))}
-                    </>
-                  )}
-                </select>
-              )}
             </div>
           );
         })}

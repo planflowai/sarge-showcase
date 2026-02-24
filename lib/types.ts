@@ -292,15 +292,11 @@ export interface BatchTestResult {
   mode?: 'unfiltered' | 'pill' | 'pill-prompt' | 'defense';
   responses?: {
     round: number;
-    role: 'd1' | 'd2' | 'd3';
-    model: string;
+    agent: 'd1' | 'd2' | 'd3';
     content: string;
-    tokens: number;
-    timeMs: number;
-    status: 'clean' | 'echo' | 'echoed' | 'flagged' | 'kill-triggered';
-    highlightText?: string;
+    hasEcho: boolean;
+    model?: string;
     matchedMarkers?: string[];
-    echoExcerpt?: string;
     poisonInjected?: boolean;
   }[];
   judgeResponse?: {
@@ -311,6 +307,7 @@ export interface BatchTestResult {
     verdict: 'caught' | 'missed';
   };
   echoCount?: number;
+  caughtRound?: number | null;
   killRound?: number;
   killAgent?: string;
   killTriggered?: boolean;

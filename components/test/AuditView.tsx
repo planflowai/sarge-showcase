@@ -305,11 +305,11 @@ export function AuditView({ theme, passLogs }: AuditViewProps) {
                     </div>
                     {(() => {
                       const killResponse = (selectedTest.responses ?? []).find(
-                        r => r.round === selectedTest.killRound && r.status === 'flagged'
+                        r => r.round === selectedTest.killRound && r.hasEcho === true
                       );
                       return killResponse ? (
                         <div className={`text-sm ${theme.textSecondary}`}>
-                          <span className="font-bold text-emerald-400">{killResponse.role.toUpperCase()}</span>:
+                          <span className="font-bold text-emerald-400">{killResponse.agent.toUpperCase()}</span>:
                           "{killResponse.content.slice(0, 300)}..."
                         </div>
                       ) : null;
@@ -346,29 +346,22 @@ export function AuditView({ theme, passLogs }: AuditViewProps) {
 
                         <div className="space-y-2">
                           {roundResponses.map(resp => (
-                            <div key={`${round}-${resp.role}`} className={`text-xs p-2 rounded ${
-                              resp.status === 'echo' ? 'bg-red-500/10 border border-red-500/20' :
-                              resp.status === 'flagged' ? 'bg-emerald-500/10 border border-emerald-500/20' :
+                            <div key={`${round}-${resp.agent}`} className={`text-xs p-2 rounded ${
+                              resp.hasEcho ? 'bg-red-500/10 border border-red-500/20' :
                               'bg-zinc-800'
                             }`}>
                               <div className="flex items-center gap-2 mb-1">
                                 <span className={`font-bold ${
-                                  resp.status === 'echo' ? 'text-red-400' :
-                                  resp.status === 'flagged' ? 'text-emerald-400' :
+                                  resp.hasEcho ? 'text-red-400' :
                                   theme.text
                                 }`}>
-                                  {resp.role.toUpperCase()}
+                                  {resp.agent.toUpperCase()}
                                 </span>
                                 <span className={`text-[10px] ${theme.textMuted}`}>({resp.model})</span>
 
-                                {resp.status === 'echo' && (
+                                {resp.hasEcho && (
                                   <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/30 text-red-300 font-bold">
                                     ⚠️ ECHOED: {resp.matchedMarkers?.join(', ')}
-                                  </span>
-                                )}
-                                {resp.status === 'flagged' && (
-                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/30 text-emerald-300 font-bold">
-                                    🔍 CHALLENGED
                                   </span>
                                 )}
                                 {resp.poisonInjected && (
@@ -378,19 +371,9 @@ export function AuditView({ theme, passLogs }: AuditViewProps) {
                                 )}
                               </div>
 
-                              {/* Show excerpt with highlighted markers if echoed */}
-                              {resp.status === 'echo' && resp.echoExcerpt ? (
-                                <div className={`${theme.textSecondary} mt-1 p-2 rounded bg-red-900/20`}>
-                                  <span className="text-[10px] text-red-400 font-bold block mb-1">PROOF - Found lie in response:</span>
-                                  <span className="italic">
-                                    "{highlightMarkers(resp.echoExcerpt, resp.matchedMarkers || [])}"
-                                  </span>
-                                </div>
-                              ) : (
-                                <div className={`${theme.textSecondary} line-clamp-2`}>
-                                  {resp.content.slice(0, 200)}...
-                                </div>
-                              )}
+                              <div className={`${theme.textSecondary} line-clamp-2`}>
+                                {resp.content.slice(0, 200)}...
+                              </div>
                             </div>
                           ))}
                         </div>

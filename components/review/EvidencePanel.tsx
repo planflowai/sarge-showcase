@@ -271,10 +271,10 @@ function analyzeAgentPerformance(passLog: BatchPassLog) {
 
   passLog.tests.forEach((test) => {
     test.responses?.forEach((resp) => {
-      if (resp.status === 'flagged') {
-        if (resp.role === 'd1') d1Flagged++;
-        if (resp.role === 'd2') d2Flagged++;
-        if (resp.role === 'd3') d3Flagged++;
+      if (resp.hasEcho === true) {
+        if (resp.agent === 'd1') d1Flagged++;
+        if (resp.agent === 'd2') d2Flagged++;
+        if (resp.agent === 'd3') d3Flagged++;
       }
     });
   });

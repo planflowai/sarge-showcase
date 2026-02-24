@@ -32,6 +32,7 @@ export default function Home() {
 
   // Overlay states
   const debate = useDebateStore((s) => s.debate);
+  const debateComplete = useDebateStore((s) => s.debateComplete);
   const showingSetup = useDebateStore((s) => s.showingSetup);
   const debateHidden = useDebateStore((s) => s.debateHidden);
   const showingTestMode = useTestModeStore((s) => s.showingTestMode);
@@ -75,7 +76,7 @@ export default function Home() {
     );
   }
 
-  if ((debate || showingSetup) && !debateHidden) {
+  if ((debate || showingSetup || debateComplete) && !debateHidden) {
     return (
       <ErrorBoundary fallbackTitle="Debate Arena Error">
         <DebateView />

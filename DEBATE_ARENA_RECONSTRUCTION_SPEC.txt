@@ -1,0 +1,376 @@
+                                  S.A.R.G.E.
+             Synthetic Adversarial Reasoning & Guarding Engine
+                   DEBATE ARENA  --  Full Reconstruction Spec
+                      Recovery Document  --  February 2026
+Compiled from 2+ months of build history, design decisions, and architecture sessions
+--------------------------------------------------------------------------------
+  ⚠️  RECOVERY CONTEXT: Claude Code replaced your working Debate Arena with placeholders. This document contains everything you built  --  architecture, logic, UI layout, colors, component specs, data flows, and the judge prompt templates  --  so you can instruct Claude Code to rebuild it exactly.
+
+1.  What the Debate Arena Is
+The Debate Arena is SARGE's multi-agent AI orchestration system. It is NOT a simple chatbot comparison. It is a structured adversarial debate engine where 2 - 3 AI agents argue a topic for N rounds, and a separate Judge agent produces a structured verdict.
+
+This is one of the core patented features of SARGE. The specific combination of:
+ User-controlled poison pill injection for testing
+ Dispute isolation + auto-escalation to Round 2
+ Full JSON artifact logging with detection metrics (echo kill rate, detection recall)
+ Local-only execution with forensic audit trail
+ Blind pass mode (agents cannot see who said what in previous rounds)
+
+...is what distinguishes SARGE from existing multi-agent debate tools. File date: ~January 15 - 17, 2026.
+
+2.  Architecture Overview
+2.1  Agent Structure
+The debate uses a 3+1 model: up to 3 configurable agent slots plus one always-active Judge.
+
+SlotColorNotesAgent 1Blue (#3B82F6)Always activeAgent 2Purple (#8B5CF6)Always activeAgent 3Pink/Rose (#EC4899)Optional  --  set to 'No LLM' to disableJudgeAmber (#D97706)Always active. Runs after all agent rounds complete.
+--------------------------------------------------------------------------------
+  IMPORTANT COLOR FIX: Agent 2 was changed to PURPLE to avoid conflict with the amber Judge. Do NOT use amber for any agent  --  that color is reserved exclusively for the Judge slot.
+
+2.2  Debate Execution Logic (Pseudocode)
+   activeAgents = agents.filter(a => a.provider !== 'No LLM')
+
+   for round in 1 to totalRounds:
+     for agent in activeAgents:
+       context = buildContext(previousRounds, passMode)
+       // Blind mode: 'Participant N said:'  --  no role names
+       // Sequential mode: full role + content visible
+       messages = [system: agent.role, user: topic + context]
+       response = await streamFromProvider(agent)
+       roundResponses.push({ agent, response })
+
+   // Judge runs AFTER all rounds complete
+   judgePrompt = buildJudgePrompt(allRounds, topic)
+   summary = await streamFromProvider(judge)
+
+2.3  Pass Modes
+Feature / ControlSpecification / BehaviorBlind PassEach agent sees previous round CONTENT but NOT role names or agent identity. Context shows 'Participant 1 said:'  --  prevents agents copying each other's framing. This is the key anti-echo-chamber mechanism.Sequential / Open PassEach agent sees full round history including role names and which model said what. Agents can reference each other directly.DefaultBlind Pass  --  always default to blind to prevent sycophancy cascade.
+2.4  The 'No LLM' Option
+If the user wants only 2 agents, they set Agent 3 to 'No LLM'. That slot is skipped entirely  --  no API call, no empty panel, no placeholder. The UI collapses or grays out that slot cleanly. The Judge always runs regardless.
+
+3.  UI Layout  --  Exact Specification
+3.1  Top Controls Bar
+The top of the Debate Arena page contains, left to right:
+ Topic input field (full-width text input, placeholder: 'Enter debate topic...')
+ Rounds selector: dropdown, options 1, 2, 3, 4, 5 (default: 3)
+ Local / Cloud toggle (switches all agent providers between local Ollama and cloud)
+ Blind / Open pass mode toggle
+ [Start] button  --  green, disabled while debate running
+ [Pause] button  --  pauses between rounds
+ [Resume] button  --  appears after Pause
+ [Redirect] button  --  inject a new prompt mid-debate to steer agents
+ [Swap Judge] button  --  change the Judge model mid-debate
+ [Stop] button  --  red, kills current debate immediately
+ [Export] button  --  opens export options (PDF, JSON, Markdown)
+
+3.2  Agent Panel Layout
+3 - 4 column layout side by side. Each panel:
+ Header: Role name (e.g., 'Researcher') + model badge + provider icon
+ Colored left border matching agent color (see Section 2.1)
+ Status indicator: Waiting (gray dot) | Thinking (yellow pulsing dot) | Complete (green check)
+ Content area: scrollable, shows all rounds labeled 'Round 1', 'Round 2', etc.
+ Streaming: content streams in token-by-token as AI generates
+
+3.3  Judge Panel
+The Judge panel is visually distinct from agent panels:
+ Amber (#D97706) border and header accent  --  NOT blue/purple/pink
+ Shows 'Waiting for all rounds...' until all agents complete
+ Then streams the judge verdict in real-time
+ Judge panel is always rightmost / last in the layout
+
+3.4  Executive Summary / Judge Summary Card
+After the Judge completes, a full-width card appears BELOW the panels:
+ Full-screen capable (95vw wide, expandable to overlay)
+ Rendered as formatted markdown (not raw text)
+ Font: bold, high-contrast for readability in both dark and light mode
+ Light mode: enhanced with bold fonts and better contrast (specifically noted as fixed)
+ Sections parsed and displayed: CONSENSUS | DISAGREEMENTS | KEY INSIGHTS | RECOMMENDATION | CONFIDENCE
+ Action buttons: [📋 Copy] [📄 Export PDF] [↩️ Send to Chat] [🔄 Another Round]
+
+--------------------------------------------------------------------------------
+  IMPORTANT: The executive summary was explicitly fixed to render at 95vw full-screen with proper markdown formatting. This was a confirmed working state in BUILD_LOCK (Feb 1, 2026 6:22 AM). Do not revert to a narrow card layout.
+
+3.5  Debate History
+A collapsible history panel (sidebar or dropdown) shows past debates:
+ Grouped by day with headers
+ Each entry shows: topic preview + timestamp
+ Click to reload that debate's transcript
+ History persists to localStorage and/or Supabase
+
+4.  Per-Agent Configuration
+4.1  Configuration Fields (Each Agent Slot)
+Feature / ControlSpecification / BehaviorProvider dropdownAnthropic, OpenAI, Google, xAI, Ollama, LM Studio, HuggingFace, DeepSeek. Dynamic based on what's configured in Settings.Model dropdownPopulates based on selected provider. Shows all available models for that provider.Role selectorBlank (no system prompt) | Researcher | Engineer | Analyst | Critic | CustomCustom role textareaAppears when 'Custom' selected. User writes their own system prompt.'No LLM' optionSlot skipped entirely. UI hides/grays that column.
+4.2  Default Role System Prompts
+These are the exact prompts used when a predefined role is selected:
+
+Researcher
+   You are a Researcher. Find facts, cite sources, focus on evidence and data. Be thorough but concise.
+
+Engineer
+   You are an Engineer. Focus on implementation, feasibility, technical constraints, and practical solutions.
+
+Analyst
+   You are an Analyst. Analyze trade-offs, compare options, identify patterns, and evaluate risks.
+
+Critic
+   You are a Critic. Challenge assumptions, find flaws, play devil's advocate, and stress-test ideas.
+
+4.3  Judge Configuration
+The Judge slot has its own provider/model dropdowns, separate from agents. Default: Claude (Anthropic). Can be swapped mid-debate using [Swap Judge].
+
+5.  Judge Prompt Template
+This is the exact structured prompt sent to the Judge after all agent rounds complete:
+
+--------------------------------------------------------------------------------
+  You are the judge in a multi-perspective debate.
+   
+  TOPIC: {topic}
+   
+  PARTICIPANTS AND THEIR ARGUMENTS:
+   
+  {for each round}
+  --- Round {N} ---
+  {for each agent}
+  [{ROLE}]: {content}
+  {/for}
+  {/for}
+   
+  Provide a structured summary:
+  1. CONSENSUS: Points all participants agreed on
+  2. DISAGREEMENTS: Points of contention with different perspectives
+  3. KEY INSIGHTS: Most valuable contribution from each role
+  4. RECOMMENDATION: Your synthesis and recommendation
+  5. CONFIDENCE: Rate reliability (Low/Medium/High) with reasoning
+
+In Blind Pass mode, agents are anonymized in the judge prompt: '[Participant 1]:', '[Participant 2]:' instead of role names.
+
+6.  Debate Engine  --  lib/debate/engine.ts
+6.1  Type Definitions
+   interface DebateAgent {
+     id: string
+     provider: string          // 'anthropic' | 'openai' | 'google' | 'xai' | 'ollama' | 'No LLM'
+     model: string
+     role: string              // '' | 'researcher' | 'engineer' | 'analyst' | 'critic' | 'custom'
+     customPrompt?: string     // used when role === 'custom'
+     color: string             // hex color for UI border
+   }
+
+   interface DebateRound {
+     roundNumber: number
+     responses: { agentId: string; content: string; model: string }[]
+   }
+
+   interface DebateConfig {
+     topic: string
+     agents: DebateAgent[]     // filter out 'No LLM' before use
+     judge: DebateAgent
+     totalRounds: number       // 1 - 5
+     passMode: 'blind' | 'sequential'
+   }
+
+   interface DebateEvent {
+     type: 'round_start' | 'chunk' | 'round_complete' | 'judge_start' | 'judge_chunk' | 'complete'
+     agentId?: string
+     roundNumber?: number
+     chunk?: string
+     debate?: Debate           // only on 'complete'
+   }
+
+6.2  Main Function
+   export async function* runDebate(
+     config: DebateConfig,
+     abortSignal?: AbortSignal
+   ): AsyncGenerator<DebateEvent>
+
+The engine yields events as the debate progresses. The UI subscribes and updates in real-time.
+
+6.3  Context Building
+For each round, the engine builds context from previous rounds:
+   function buildContext(rounds: DebateRound[], passMode: 'blind' | 'sequential'): string {
+     if (passMode === 'blind') {
+       // Replace role names with 'Participant N'
+       // Agents cannot see who said what
+     } else {
+       // Full transcript with role names visible
+     }
+   }
+
+7.  Debate Store  --  lib/stores/debateStore.ts
+   interface DebateState {
+     // Config
+     topic: string
+     agents: DebateAgent[]
+     judge: DebateAgent
+     totalRounds: number
+     passMode: 'blind' | 'sequential'
+
+     // Runtime state
+     currentDebate: Debate | null
+     isRunning: boolean
+     isPaused: boolean
+     currentRound: number
+     rounds: DebateRound[]
+     judgeSummary: string
+     isJudgeStreaming: boolean
+
+     // History (persisted)
+     debateHistory: Debate[]
+
+     // Actions
+     startDebate: () => Promise<void>
+     pauseDebate: () => void
+     resumeDebate: () => void
+     stopDebate: () => void
+     redirectDebate: (newPrompt: string) => void
+     swapJudge: (newJudge: DebateAgent) => void
+     clearDebate: () => void
+     updateAgent: (id: string, updates: Partial<DebateAgent>) => void
+     setTopic: (topic: string) => void
+     setRounds: (n: number) => void
+     setPassMode: (mode: 'blind' | 'sequential') => void
+   }
+
+Store uses Zustand with persist middleware. Debate history is persisted to localStorage. Config (agents, topic, rounds) also persists so user doesn't have to reconfigure on each visit.
+
+8.  Component File Structure
+Feature / ControlSpecification / Behaviorapp/debate/page.tsxFull-page route. Renders DebateView. Has Back button to return to chat.components/debate/DebateView.tsxMain container. Header controls + agent columns + judge panel + summary card.components/debate/DebateConfig.tsxConfig bar: rounds selector, pass mode toggle, Local/Cloud toggle, Start/Stop/Pause buttons.components/debate/AgentPanel.tsxSingle agent column: header (role + model badge + colored border), rounds content, status indicator, streaming support.components/debate/JudgePanel.tsxJudge column with amber styling. Shows 'Waiting...' until agents complete, then streams verdict.components/debate/JudgeSummary.tsxFull-width summary card below panels. Fullscreen capable (95vw). Markdown rendered. Copy/Export/Send/Another Round buttons.components/debate/RoleConfig.tsxPer-agent config: provider dropdown, model dropdown, role selector, custom prompt textarea.components/debate/DebateHistory.tsxSidebar/dropdown showing past debates grouped by day. Click to replay.lib/debate/engine.tsCore async generator. Manages round flow, context building, streaming.lib/stores/debateStore.tsZustand store. Config + runtime state + history. Persisted.app/api/debate/route.tsPOST endpoint. Receives DebateConfig. Streams debate events via SSE. Saves to Supabase.
+9.  Control Buttons  --  Exact Behavior
+Feature / ControlSpecification / Behavior[Start]Validates config (topic not empty, at least 1 active agent). Calls startDebate(). Disables itself while running.[Pause]Sets isPaused = true. Current agent completes its response, then debate pauses before next agent/round starts. Does NOT cut off mid-stream.[Resume]Sets isPaused = false. Continues from where paused. Only visible when isPaused = true.[Redirect]Opens a small input modal mid-debate. User enters new prompt/direction. This is injected as additional context for the NEXT round. Agents receive: 'New direction from user: [redirect prompt]. Adjust your responses accordingly.'[Swap Judge]Opens a quick model-picker modal. User selects new judge provider + model. Takes effect for the judge summary step (not retroactively for rounds already done).[Stop]Immediately aborts via AbortController. All streaming halts. Debate marked as incomplete.[Export]Opens export options: PDF (full transcript + summary), JSON (raw data for forensics), Markdown (readable format). Saves to file.[Another Round]Appears in JudgeSummary after judge completes. Adds one more round with the same agents, then re-runs the judge.
+10.  Colors & Styling
+10.1  Agent Colors
+ Agent 1 (Blue)  #3B82F6Border, header accent, status dot for Agent 1
+ Agent 2 (Purple)  #8B5CF6Border, header accent for Agent 2. CHANGED from amber to avoid clash with Judge.
+ Agent 3 (Pink)  #EC4899Border, header accent for Agent 3 (optional slot)
+ Judge (Amber)  #D97706EXCLUSIVE to Judge. No agent may use this color.
+10.2  Background Colors (Dark Mode  --  Primary Theme)
+ bg-primary  #09090bMain page background (zinc-950)
+ bg-secondary  #18181bPanel backgrounds (zinc-900)
+ bg-tertiary  #27272aInput areas, cards (zinc-800)
+ border  #3f3f46All borders (zinc-700)
+10.3  Text Colors
+ text-primary  #fafafaPrimary text (zinc-50)
+ text-secondary  #a1a1aaLabels, metadata (zinc-400)
+ text-muted  #71717aTimestamps, inactive (zinc-500)
+10.4  Light Mode Notes
+--------------------------------------------------------------------------------
+  CONFIRMED WORKING STATE (Build Lock Feb 1, 2026): Light mode was enhanced with bold fonts and better contrast. The executive summary in light mode specifically required stronger font weights and higher contrast ratios. Do not revert to low-contrast light mode.
+
+10.5  Executive Summary Typography
+ Font: System default (Arial/sans-serif)
+ All sections: font-semibold on section headers
+ Buttons: font-semibold with box shadows
+ Width: 95vw in fullscreen expansion
+ Markdown rendering required (not raw text dump)
+
+11.  History & Persistence
+Feature / ControlSpecification / BehaviorlocalStorage key'sarge-debate-history'  --  array of completed Debate objectsSupabase table'debates'  --  debate config + transcript. 'debate_rounds'  --  round-by-round data linked to debate IDHistory displayGrouped by day. Shows: topic preview (first 60 chars) + timestamp + model names usedReloadClick history entry --> loads full transcript into current view (read-only replay mode)LimitKeep last 50 debates in localStorage. Older entries in Supabase only.
+12.  Export Functionality
+Feature / ControlSpecification / BehaviorPDF ExportUses jsPDF. Includes: title (topic), config summary (models, rounds, pass mode), full round-by-round transcript with role headings, judge summary highlighted. Professional formatting.JSON ExportRaw Debate object as JSON. Includes all metadata, timestamps, full content, model info. Used for forensic logging.Markdown ExportHuman-readable format. Sections with ## headers for each round and agent. Judge summary at end.Copy SummaryCopies only the judge summary text to clipboard. Quick action button.Send to ChatInjects judge summary as a message into the main Chat conversation.
+13.  API Route  --  /api/debate
+13.1  POST Body
+   { config: DebateConfig }
+
+13.2  Response
+Server-Sent Events (SSE) stream. Content-Type: text/event-stream. Each event is a JSON-encoded DebateEvent. Final event type 'complete' includes the full Debate object.
+
+13.3  Supabase Save
+When debate completes, save to:
+ debates table: id, topic, config (JSON), summary, created_at, model_names
+ debate_rounds table: debate_id, round_number, agent_id, role, model, content, created_at
+
+14.  Confirmed Working State (Build Lock)
+The following features were CONFIRMED WORKING in the locked build dated Sunday, February 1, 2026, 6:22 AM:
+
+ Executive summary fullscreen (95vw) with proper markdown formatting
+ Light mode enhanced with bold fonts and better contrast
+ Debate Agent 2 changed to PURPLE (no conflict with amber Judge)
+ All buttons font-semibold with shadows
+ Text area 4 lines, full width alignment
+ LLM bubbles w-full, user bubbles 85%
+ All debate features working:
+   --> Blind research mode
+   --> Cross-check pass
+   --> Judge verdicts
+   --> Multi-round (1 - 5 rounds)
+   --> Auto-advance between rounds
+   --> Pause / Resume
+   --> Redirect mid-debate
+   --> Judge Swap
+   --> Role assignment (Researcher / Engineer / Analyst / Critic / Custom)
+   --> Executive summary (fullscreen, formatted markdown)
+   --> Debate history
+   --> Export options
+ Build successful: Sun, Feb 1, 2026 6:22:56
+
+--------------------------------------------------------------------------------
+  This is the target state. Claude Code must restore ALL of the above. If Claude Code asks which features to implement, the answer is: all of them. No placeholders, no stubs.
+
+15.  Rebuild Prompt for Claude Code
+Paste this into Claude Code to start the rebuild:
+
+--------------------------------------------------------------------------------
+  STOP. Read this entire prompt before writing a single line of code.
+
+  The Debate Arena in SARGE was replaced with placeholders. I need you to rebuild it EXACTLY as it was. The full spec is in this session context. Key requirements:
+
+  1. 3 agent slots + 1 Judge slot. Agent 2 = PURPLE. Judge = AMBER. Never use amber for agents.
+  2. Top bar: Topic | Rounds 1 - 5 | Local/Cloud toggle | Blind/Open pass mode | Start | Pause | Resume | Redirect | Swap Judge | Stop | Export
+  3. Streaming: all responses stream token-by-token. Use SSE or equivalent.
+  4. Blind pass: agents see content but NOT role names in previous rounds.
+  5. Executive summary: 95vw full-screen, proper markdown, font-semibold buttons with shadows.
+  6. Debate history: persisted, grouped by day, click to reload.
+  7. Export: PDF, JSON, Markdown. Copy to clipboard. Send to Chat.
+  8. Light mode: bold fonts, high contrast. Dark mode: zinc-950/900/800 scale.
+  9. Do NOT create placeholders, TODOs, or stub implementations. Deliver the full working system.
+
+16.  Verification Checklist
+After rebuild, verify every item:
+
+Core Debate Flow
+ [ ]  Debate page loads at /debate (or as overlay from dashboard)
+ [ ]  Can configure 2 - 3 agents with different providers + models
+ [ ]  Agent 2 border is PURPLE, Judge border is AMBER
+ [ ]  'No LLM' option hides that agent slot cleanly
+ [ ]  Topic input accepts text
+ [ ]  Rounds selector: 1, 2, 3, 4, 5
+ [ ]  Start button begins the debate
+ [ ]  All agents stream responses simultaneously (or sequentially if so configured)
+ [ ]  Round labels: 'Round 1', 'Round 2', etc.
+ [ ]  Status indicators: Waiting | Thinking (pulsing) | Complete
+ [ ]  Judge waits until all agent rounds complete, then streams verdict
+
+Controls
+ [ ]  Pause halts after current agent completes
+ [ ]  Resume continues from paused state
+ [ ]  Redirect injects new prompt for next round
+ [ ]  Swap Judge changes judge model for the summary step
+ [ ]  Stop immediately halts all streaming
+
+Pass Mode
+ [ ]  Blind pass: agents see content but 'Participant N' not role names
+ [ ]  Sequential: agents see full history with role names
+
+Executive Summary
+ [ ]  Judge summary card appears below panels after judge completes
+ [ ]  Markdown rendered (not raw text)
+ [ ]  Sections visible: CONSENSUS, DISAGREEMENTS, KEY INSIGHTS, RECOMMENDATION, CONFIDENCE
+ [ ]  [Copy] button works
+ [ ]  [Export PDF] generates PDF
+ [ ]  [Send to Chat] injects summary into main chat
+ [ ]  [Another Round] adds a round and re-runs judge
+ [ ]  Fullscreen expansion works (95vw)
+
+History & Export
+ [ ]  Completed debates appear in history
+ [ ]  History grouped by day
+ [ ]  Click history item loads that debate transcript
+ [ ]  JSON export downloads full debate data
+ [ ]  Markdown export downloads readable format
+
+Style
+ [ ]  Dark mode uses zinc-950/900/800 scale
+ [ ]  Light mode: bold fonts, high contrast
+ [ ]  All buttons font-semibold with shadow
+ [ ]  No amber on agents, no blue/purple/pink on Judge
+
+                 --  End of Debate Arena Reconstruction Spec  -- 
+              SARGE v2  ·  February 2026  ·  Recovery Document

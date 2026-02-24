@@ -43,11 +43,11 @@ const SPEED_MODES = [
 ];
 
 export function TestModeView() {
+  console.log('[TestModeView] Component rendered');
   const batchModeActive = useTestModeStore((s) => s.batchModeActive);
   const batchConfig = useTestModeStore((s) => s.batchConfig);
   const setBatchConfig = useTestModeStore((s) => s.setBatchConfig);
   const stats = useTestModeStore((s) => s.stats);
-  const fetchModels = useTestModeStore((s) => s.fetchModels);
 
   // Test page state (segregated from Batch)
   const testSpeedMode = useTestModeStore((s) => s.testSpeedMode);
@@ -69,6 +69,8 @@ export function TestModeView() {
   const setPoison = useTestModeStore((s) => s.setPoison);
   const question = useTestModeStore((s) => s.question);
   const setQuestion = useTestModeStore((s) => s.setQuestion);
+
+  console.log('[TestModeView] question:', JSON.stringify(question), 'poison:', JSON.stringify(poison), 'button disabled:', !question.trim() || !poison.trim());
   const poisons = useTestModeStore((s) => s.poisons);
   const questions = useTestModeStore((s) => s.questions);
   const source = useTestModeStore((s) => s.source);
@@ -90,15 +92,28 @@ export function TestModeView() {
   const darkMode = mainTheme === "dark";
   const theme = getTestTheme(darkMode);
 
-  // Fetch models on mount
-  useEffect(() => {
-    fetchModels();
-  }, [fetchModels]);
-
   // Handle running test
   const handleRunTest = async () => {
-    const markerList = markers.split(',').map(m => m.trim().toLowerCase()).filter(Boolean);
-    await runSingleTest(question, poison, markerList, source);
+    try {
+      console.log('[handleRunTest] Button clicked');
+      console.log('[handleRunTest] runSingleTest type:', typeof runSingleTest);
+      console.log('[handleRunTest] Question:', question);
+      console.log('[handleRunTest] Poison:', poison);
+      console.log('[handleRunTest] Source:', source);
+
+      if (typeof runSingleTest !== 'function') {
+        console.error('[handleRunTest] ERROR: runSingleTest is not a function!', runSingleTest);
+        return;
+      }
+
+      const markerList = markers.split(',').map(m => m.trim().toLowerCase()).filter(Boolean);
+      console.log('[handleRunTest] Marker list:', markerList);
+      console.log('[handleRunTest] Calling runSingleTest');
+      await runSingleTest(question, poison, markerList, source);
+      console.log('[handleRunTest] runSingleTest completed');
+    } catch (error) {
+      console.error('[handleRunTest] Error:', error);
+    }
   };
 
   // Handle clear
@@ -303,7 +318,6 @@ export function TestModeView() {
             <>
               <button
                 onClick={handleRunTest}
-                disabled={!question.trim() || !poison.trim()}
                 className="px-4 py-1.5 bg-emerald-500 dark:bg-emerald-600 hover:bg-emerald-400 dark:hover:bg-emerald-500 rounded-md text-xs font-bold text-white disabled:opacity-50"
               >
                 RUN TEST

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback, useState } from "react";
+import { useEffect, useRef, useCallback, useState, useMemo } from "react";
 import { useAIAnalysisStore } from "@/lib/stores/aiAnalysisStore";
 import { useProviderStore } from "@/lib/stores/providerStore";
 import { providers } from "@/lib/providers";
@@ -13,13 +13,14 @@ import { exportChatToCSV } from "@/lib/export/csv";
 import type { Message } from "@/lib/types";
 
 export function AIChatView() {
-  const aiChat = useAIAnalysisStore((s) => ({
-    currentConversationId: s.aiChat.currentConversationId,
-    conversations: s.aiChat.conversations ?? [],
-    messages: s.aiChat.messages ?? [],
-    loading: s.aiChat.loading ?? false,
-    sending: s.aiChat.sending ?? false,
-  }));
+  const currentConversationId = useAIAnalysisStore((s) => s.aiChat.currentConversationId);
+  const loading = useAIAnalysisStore((s) => s.aiChat.loading ?? false);
+  const sending = useAIAnalysisStore((s) => s.aiChat.sending ?? false);
+  const rawConversations = useAIAnalysisStore((s) => s.aiChat.conversations);
+  const rawMessages = useAIAnalysisStore((s) => s.aiChat.messages);
+
+  const conversations = useMemo(() => rawConversations ?? [], [rawConversations]);
+  const messages = useMemo(() => rawMessages ?? [], [rawMessages]);
   const aiChatSendMessage = useAIAnalysisStore((s) => s.aiChatSendMessage);
   const aiChatLoadMessages = useAIAnalysisStore((s) => s.aiChatLoadMessages);
   const aiChatCreateConversation = useAIAnalysisStore((s) => s.aiChatCreateConversation);
@@ -33,16 +34,16 @@ export function AIChatView() {
 
   // Create initial conversation if none exists
   useEffect(() => {
-    if (!aiChat.currentConversationId && aiChat.conversations.length === 0) {
+    if (!currentConversationId && conversations.length === 0) {
       aiChatCreateConversation("AI Analysis Chat").then((id) => {
         if (id) {
           setConversationId(id);
         }
       });
-    } else if (aiChat.currentConversationId) {
-      setConversationId(aiChat.currentConversationId);
+    } else if (currentConversationId) {
+      setConversationId(currentConversationId);
     }
-  }, [aiChat.currentConversationId, aiChat.conversations.length, aiChatCreateConversation]);
+  }, [currentConversationId, conversations.length, aiChatCreateConversation]);
 
   // Load messages when conversation changes
   useEffect(() => {
@@ -62,7 +63,7 @@ export function AIChatView() {
     scrollToBottom();
     const t = setTimeout(scrollToBottom, 100);
     return () => clearTimeout(t);
-  }, [aiChat.messages, aiChat.sending, scrollToBottom]);
+  }, [messages, sending, scrollToBottom]);
 
   const handleSend = async (content: string) => {
     if (!conversationId || !content.trim()) return;
@@ -74,7 +75,7 @@ export function AIChatView() {
       {/* Messages */}
       <div className="flex min-h-0 flex-1 flex-col-reverse overflow-y-auto" ref={scrollRef}>
         <div>
-          {aiChat.loading ? (
+          {loading ? (
             <div className="space-y-4 px-4 sm:px-6 py-4 mx-auto max-w-7xl">
               {/* Loading skeletons */}
               {[1, 2, 3].map((i) => (
@@ -87,16 +88,16 @@ export function AIChatView() {
                 </div>
               ))}
             </div>
-          ) : aiChat.messages.length === 0 ? (
+          ) : messages.length === 0 ? (
             <div className="flex h-full items-center justify-center py-20">
               <p className="text-sm text-zinc-500">Start typing to begin your AI analysis conversation</p>
             </div>
           ) : (
             <div className="mx-auto max-w-7xl space-y-4 px-4 sm:px-6 py-4">
-              {aiChat.messages.map((msg) => (
+              {messages.map((msg) => (
                 <MessageBubble key={msg.id} message={msg} />
               ))}
-              {aiChat.sending && (
+              {sending && (
                 <div className="flex items-start gap-3">
                   <div className="relative rounded-2xl bg-gradient-to-br from-zinc-800 to-zinc-900 px-6 py-4 border border-zinc-700/50 shadow-lg">
                     {/* Animated glow background */}
@@ -143,12 +144,12 @@ export function AIChatView() {
               )}
 
               {/* Export buttons when there are messages */}
-              {aiChat.messages.length > 0 && !aiChat.sending && (
+              {messages.length > 0 && !sending && (
                 <div className="flex justify-center gap-2 pt-2 opacity-0 transition-opacity hover:opacity-100">
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => exportChatToPDF(aiChat.messages as Message[], "AI Analysis Chat Export")}
+                    onClick={() => exportChatToPDF(messages as Message[], "AI Analysis Chat Export")}
                     className="h-6 gap-1 px-2 text-[10px] text-zinc-600 hover:text-zinc-400"
                   >
                     <FileText className="h-3 w-3" /> Export PDF
@@ -156,7 +157,7 @@ export function AIChatView() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => exportChatToCSV(aiChat.messages as Message[], "AI Analysis Chat Export")}
+                    onClick={() => exportChatToCSV(messages as Message[], "AI Analysis Chat Export")}
                     className="h-6 gap-1 px-2 text-[10px] text-zinc-600 hover:text-zinc-400"
                   >
                     <Download className="h-3 w-3" /> Export CSV
@@ -171,7 +172,7 @@ export function AIChatView() {
       {/* Input area */}
       <InputArea
         onSend={handleSend}
-        disabled={aiChat.sending || !conversationId}
+        disabled={sending || !conversationId}
       />
     </div>
   );

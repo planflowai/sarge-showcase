@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import type { Conversation } from "@/lib/types";
+import type { Conversation, ChatMode } from "@/lib/types";
 
 interface ConversationState {
   conversations: Conversation[];
@@ -11,14 +11,14 @@ interface ConversationState {
   hydrated: boolean;
   hydrate: () => void;
   loadConversations: () => void;
-  createConversation: (title: string, mode?: string) => void;
+  createConversation: (title: string, mode?: ChatMode) => void;
   addConversation: (conversation: Conversation) => void;
   updateConversation: (id: string, conversation: Partial<Conversation>) => void;
   updateConversationTitle: (id: string, title: string) => void;
   deleteConversation: (id: string) => void;
   setCurrentId: (id: string | null) => void;
   setCurrent: (id: string | null) => void;
-  setCurrentForMode: (id: string | null, mode: string) => void;
+  setCurrentForMode: (id: string | null, mode: ChatMode) => void;
   subscribe: (callback?: (state: ConversationState) => void) => () => void;
   clearAll: () => void;
 }
@@ -39,12 +39,15 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     set({ hydrated: true });
   },
 
-  createConversation: (title, mode = "chat") => {
+  createConversation: (title: string, mode: ChatMode = "chat") => {
     const conversation: Conversation = {
       id: `conv_${Date.now()}`,
       title,
       messages: [],
       mode,
+      contextFiles: [],
+      provider: "anthropic",
+      model: "claude-opus-4-6",
       createdAt: new Date(),
       updatedAt: new Date(),
     };

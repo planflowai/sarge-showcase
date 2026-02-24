@@ -39,6 +39,7 @@ interface ModelRegistryState {
   setPools: (modelId: string, pools: SargePool[]) => void;
   classifyWithAI: (modelIds: string[], classifierModel: string) => Promise<void>;
   getUnclassifiedModels: () => ModelRegistryEntry[];
+  getModelsForPool: (pool: SargePool) => ModelRegistryEntry[];
   clearRegistry: () => void;
   clearAll: () => void;
 }
@@ -124,6 +125,11 @@ export const useModelRegistryStore = create<ModelRegistryState>((set, get) => ({
   getUnclassifiedModels: () => {
     const state = get();
     return Object.values(state.registry).filter(m => m.category === 'unknown');
+  },
+
+  getModelsForPool: (pool) => {
+    const state = get();
+    return Object.values(state.registry).filter(m => m.pools.includes(pool));
   },
 
   clearRegistry: () => {

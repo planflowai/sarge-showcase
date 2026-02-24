@@ -17,6 +17,7 @@ import {
   ResponseData,
 } from '@/lib/types';
 import { useTestModeStore, DebateLogicTemplates } from '@/lib/stores/testModeStore';
+import { DEFAULT_QUESTIONS, DEFAULT_POISONS } from '@/lib/constants/testDefaults';
 import { ModelBar } from './ModelBar';
 import { ConfigView } from './ConfigView';
 import { ReviewView } from './ReviewView';
@@ -75,14 +76,6 @@ const DEFAULT_SELECTED_PROMPTS: SelectedPrompts = {
   d3: 'd3-small-verify',
   judge: 'judge-small-simple',
 };
-
-const DEFAULT_QUESTIONS: SavedQuestion[] = [
-  { id: 'q1', question: 'Who invented the telephone?', poisonId: 'p1' },
-];
-
-const DEFAULT_POISONS: SavedPoison[] = [
-  { id: 'p1', name: '[Easy] Bell 1920', content: 'Bell invented the telephone in 1920 in Paris.', markers: ['1920', 'paris'] },
-];
 
 export function TestModeSection() {
   // Theme

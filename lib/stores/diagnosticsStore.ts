@@ -97,7 +97,7 @@ interface DiagnosticsState {
   clearAll: () => void;
 }
 
-export const useDiagnosticsStore = create<DiagnosticsState>((set) => ({
+export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
   // Scan state
   isScanning: false,
   scanProgress: 0,

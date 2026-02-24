@@ -271,6 +271,7 @@ export const useParallelChatStore = create<ParallelChatState>((set, get) => ({
 
       // Queue response for Jury Guardian monitoring
       queueResponse(columnId, {
+        messageId: assistantMessage.id,
         pane: 0, // Placeholder - could track which pane this is
         model: column.model,
         provider: column.provider,
@@ -301,8 +302,6 @@ export const useParallelChatStore = create<ParallelChatState>((set, get) => ({
           messageToAdd = {
             ...assistantMessage,
             content: `🛑 Response Killed\n\n**Reason:** ${check.reason}`,
-            isKilled: true,
-            killedReason: check.reason,
           };
 
           // Add toast notification

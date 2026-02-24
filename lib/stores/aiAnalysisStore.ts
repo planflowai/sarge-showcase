@@ -3,6 +3,9 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { createDebouncedStorage } from "@/lib/utils/debouncedStorage";
+import { useTestModeStore } from "@/lib/stores/testModeStore";
+import { useDebateStore } from "@/lib/stores/debateStore";
+import { providers } from "@/lib/providers";
 import type {
   Provider,
   Message,
@@ -231,16 +234,6 @@ interface AIAnalysisState {
   aiTestRunTest: () => Promise<void>;
   aiTestStopTest: () => void;
   aiTestClearResults: () => void;
-
-  // AI Batch actions
-  aiBatchRunBatch: (source: 'local' | 'cloud', testCount?: number) => Promise<void>;
-  aiBatchStopBatch: () => void;
-  aiBatchPauseBatch: () => void;
-  aiBatchResumeBatch: () => void;
-  aiBatchSetSpeedMode: (mode: 1 | 2 | 3) => void;
-  aiBatchLoadRun: (batchId: string) => void;
-  aiBatchDeleteRun: (batchId: string) => void;
-  aiBatchSaveToHistory: () => void;
 
   // AI Forensic actions
   aiForensicOpenLog: () => void;
@@ -949,121 +942,7 @@ export const useAIAnalysisStore = create<AIAnalysisState>()(
       },
 
       // ========================================================================
-      // AI BATCH ACTIONS
-      // ========================================================================
-
-      aiBatchRunBatch: async (source: 'local' | 'cloud', testCount?: number) => {
-        const batchId = generateAIId();
-        set((state) => ({
-          aiBatch: {
-            ...state.aiBatch,
-            batchRunning: true,
-            batchPaused: false,
-            batchId,
-            batchSource: source,
-            batchCurrentPass: 1,
-            batchCurrentTest: 0,
-            batchTotalTests: testCount || 100,
-            batchActivity: 'Starting batch run...',
-          },
-        }));
-
-        try {
-          // Simplified batch run logic
-          // Actual implementation would include full batch testing
-
-          set((state) => ({
-            aiBatch: {
-              ...state.aiBatch,
-              batchRunning: false,
-              batchActivity: 'Batch complete',
-            },
-          }));
-        } catch (err) {
-          console.error("[AI Batch] Error:", err);
-          set((state) => ({
-            aiBatch: {
-              ...state.aiBatch,
-              batchRunning: false,
-              batchActivity: 'Batch failed',
-            },
-          }));
-        }
-      },
-
-      aiBatchStopBatch: () => {
-        set((state) => ({
-          aiBatch: {
-            ...state.aiBatch,
-            batchRunning: false,
-            batchPaused: false,
-            batchActivity: 'Batch stopped',
-          },
-        }));
-      },
-
-      aiBatchPauseBatch: () => {
-        set((state) => ({
-          aiBatch: { ...state.aiBatch, batchPaused: true },
-        }));
-      },
-
-      aiBatchResumeBatch: () => {
-        set((state) => ({
-          aiBatch: { ...state.aiBatch, batchPaused: false },
-        }));
-      },
-
-      aiBatchSetSpeedMode: (mode) => {
-        set((state) => ({
-          aiBatch: { ...state.aiBatch, speedMode: mode },
-        }));
-      },
-
-      aiBatchLoadRun: (batchId: string) => {
-        const state = get();
-        const batch = state.aiBatch.history.find((b) => b.batchId === batchId);
-        if (batch) {
-          set({
-            aiBatch: {
-              ...state.aiBatch,
-              selectedBatchId: batchId,
-              batchPassLogs: batch.passLogs,
-            },
-          });
-        }
-      },
-
-      aiBatchDeleteRun: (batchId: string) => {
-        set((state) => ({
-          aiBatch: {
-            ...state.aiBatch,
-            history: state.aiBatch.history.filter((b) => b.batchId !== batchId),
-            selectedBatchId:
-              state.aiBatch.selectedBatchId === batchId
-                ? null
-                : state.aiBatch.selectedBatchId,
-          },
-        }));
-      },
-
-      aiBatchSaveToHistory: () => {
-        const state = get();
-        const entry: AIBatchHistoryEntry = {
-          batchId: state.aiBatch.batchId,
-          savedAt: new Date().toISOString(),
-          source: state.aiBatch.batchSource,
-          testCount: state.aiBatch.batchTotalTests,
-          passLogs: state.aiBatch.batchPassLogs,
-        };
-        set((s) => ({
-          aiBatch: {
-            ...s.aiBatch,
-            history: [...s.aiBatch.history, entry],
-          },
-        }));
-      },
-
+      // AI BATCH HELPER FUNCTIONS
       // ========================================================================
       // AI FORENSIC ACTIONS
       // ========================================================================

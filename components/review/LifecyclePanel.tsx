@@ -138,9 +138,9 @@ export function LifecyclePanel({ batch }: LifecyclePanelProps) {
 
                       // Get responses for this round
                       const roundResponses = (test.responses ?? []).filter(r => r.round === round);
-                      const d1 = roundResponses.find(r => r.role === 'd1');
-                      const d2 = roundResponses.find(r => r.role === 'd2');
-                      const d3 = roundResponses.find(r => r.role === 'd3');
+                      const d1 = roundResponses.find(r => r.agent === 'd1');
+                      const d2 = roundResponses.find(r => r.agent === 'd2');
+                      const d3 = roundResponses.find(r => r.agent === 'd3');
 
                       return (
                         <div

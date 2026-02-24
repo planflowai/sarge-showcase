@@ -176,7 +176,7 @@ export function BatchView({ theme, batchConfig, setBatchConfig, stats }: BatchVi
     + (batchRunning && !pass1Log?.completedAt && batchCurrentPass === 1 ? batchCurrentTest : 0)
     + (batchRunning && !pass2Log?.completedAt && batchCurrentPass === 2 ? batchCurrentTest : 0)
     + (batchRunning && !pass4Log?.completedAt && (batchCurrentPass === 3 || batchCurrentPass === 4) ? batchCurrentTest : 0);
-  const totalExpected = (batchTotalTests || batchConfig.tests) * passCount;
+  const totalExpected = (batchTotalTests || (batchConfig?.tests ?? 0)) * passCount;
   const progressPct = totalExpected > 0 ? Math.round((totalProgress / totalExpected) * 100) : 0;
 
   // Calculate real-time stats from batch results
@@ -192,22 +192,22 @@ export function BatchView({ theme, batchConfig, setBatchConfig, stats }: BatchVi
 
     // Pass 2: Count hallucinations and echoes
     if (pass2Log?.tests) {
-      pass2Log.tests.forEach(test => {
+      pass2Log?.tests.forEach(test => {
         // Echo: poison markers appear in response
-        const hasEcho = test.poisonMarkers?.some(marker =>
-          marker && test.response?.toLowerCase().includes(marker.toLowerCase())
+        const hasEcho = test?.poisonMarkers?.some(marker =>
+          marker && test?.response?.toLowerCase().includes(marker.toLowerCase())
         );
         if (hasEcho) echoes++;
 
         // Hallucination: verdict is MISSED (poison not caught)
-        if (test.verdict === 'MISSED') hallucinations++;
+        if (test?.verdict === 'MISSED') hallucinations++;
       });
     }
 
     // Defense: Count kills (successful defenses) - now includes what was Pass 3
     if (pass4Log?.tests) {
-      pass4Log.tests.forEach(test => {
-        if (test.verdict === 'CAUGHT') kills++;
+      pass4Log?.tests.forEach(test => {
+        if (test?.verdict === 'CAUGHT') kills++;
       });
     }
 
@@ -220,6 +220,7 @@ export function BatchView({ theme, batchConfig, setBatchConfig, stats }: BatchVi
   }, [pass2Log, pass4Log, totalProgress]);
 
   const handleStart = (testCount: number) => {
+    console.log('[handleStart] called', { source, testCount });
     setBatchConfig({ ...batchConfig, running: true, paused: false, progress: 0, tests: testCount });
     runBatch(source, testCount);
   };
@@ -256,6 +257,42 @@ export function BatchView({ theme, batchConfig, setBatchConfig, stats }: BatchVi
     }
   };
 
+  // Export to CSV
+  const handleExportCSV = () => {
+    const rows = [
+      ['Phase', 'Test#', 'Question', 'Poison', 'Verdict', 'EchoCount', 'CaughtRound', 'Model_D1', 'Model_D2', 'Model_D3'],
+    ];
+
+    batchPassLogs.forEach(log => {
+      log.tests.forEach(test => {
+        const rotation = batchLockedRotation?.[test.testIndex];
+        rows.push([
+          log.pass,
+          String(test.testIndex + 1),
+          test.question,
+          test.poison,
+          test.verdict || '',
+          String(test.echoCount || 0),
+          String(test.caughtRound || ''),
+          rotation?.models?.d1 || '',
+          rotation?.models?.d2 || '',
+          rotation?.models?.d3 || '',
+        ]);
+      });
+    });
+
+    const csv = rows.map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `sarge-batch-${batchId || Date.now()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   // Export audit trail as JSON
   const handleExport = () => {
     const state = useTestModeStore.getState();
@@ -266,32 +303,31 @@ export function BatchView({ theme, batchConfig, setBatchConfig, stats }: BatchVi
       speedMode: speedMode,
       totalTests: state.batchTotalTests,
       passLogs: state.batchPassLogs.map(log => ({
-        pass: log.pass,
-        mode: log.mode,
-        startedAt: log.startedAt,
-        completedAt: log.completedAt,
-        summary: log.summary,
-        tests: log.tests.map(test => ({
-          testIndex: test.testIndex,
-          question: test.question,
-          poison: test.poison,
-          poisonRound: test.poisonRound,
-          poisonAgent: test.poisonAgent,
-          rounds: test.rounds,
-          mode: test.mode,
-          echoCount: test.echoCount,
-          killRound: test.killRound,
-          killAgent: test.killAgent,
-          judgeVerdict: test.judgeResponse?.verdict,
-          responses: test.responses?.map(r => ({
-            round: r.round,
-            role: r.role,
-            model: r.model,
-            status: r.status,
-            highlightText: r.highlightText,
+        pass: log?.pass,
+        mode: log?.mode,
+        startedAt: log?.startedAt,
+        completedAt: log?.completedAt,
+        summary: log?.summary,
+        tests: (log?.tests ?? []).map(test => ({
+          testIndex: test?.testIndex,
+          question: test?.question,
+          poison: test?.poison,
+          poisonRound: test?.poisonRound,
+          poisonAgent: test?.poisonAgent,
+          rounds: test?.rounds,
+          mode: test?.mode,
+          echoCount: test?.echoCount,
+          killRound: test?.killRound,
+          killAgent: test?.killAgent,
+          judgeVerdict: test?.judgeResponse?.verdict,
+          responses: test?.responses?.map(r => ({
+            round: r?.round,
+            agent: r?.agent,
+            model: r?.model,
+            content: r?.content,
+            hasEcho: r.hasEcho,
             matchedMarkers: r.matchedMarkers,
-            tokens: r.tokens,
-            timeMs: r.timeMs,
+            poisonInjected: r.poisonInjected,
           })),
         })),
       })),
@@ -393,11 +429,11 @@ export function BatchView({ theme, batchConfig, setBatchConfig, stats }: BatchVi
               <button onClick={() => handleStart(5)} className="px-2.5 py-1 bg-gray-200 dark:bg-zinc-700 hover:bg-gray-300 dark:hover:bg-zinc-600 rounded-md text-xs font-semibold text-gray-700 dark:text-white">5</button>
               <button onClick={() => handleStart(10)} className="px-2.5 py-1 bg-amber-500 dark:bg-amber-600 hover:bg-amber-400 dark:hover:bg-amber-500 rounded-md text-xs font-semibold text-white">10</button>
               <input
-                type="number" min={1} max={100} value={batchConfig.tests}
+                type="number" min={1} max={100} value={batchConfig?.tests ?? 0}
                 onChange={(e) => setBatchConfig({ ...batchConfig, tests: Math.max(1, Math.min(100, parseInt(e.target.value) || 1)) })}
                 className="w-12 px-2 py-1 rounded-md text-xs bg-white dark:bg-zinc-800 text-gray-800 dark:text-zinc-100 border border-gray-300 dark:border-zinc-700"
               />
-              <button onClick={() => handleStart(batchConfig.tests)} className="px-3 py-1 bg-emerald-500 dark:bg-emerald-600 hover:bg-emerald-400 dark:hover:bg-emerald-500 rounded-md text-xs font-semibold text-white">▶ Run</button>
+              <button onClick={() => handleStart(batchConfig?.tests ?? 0)} className="px-3 py-1 bg-emerald-500 dark:bg-emerald-600 hover:bg-emerald-400 dark:hover:bg-emerald-500 rounded-md text-xs font-semibold text-white">▶ Run</button>
             </>
           ) : (
             <>
@@ -409,7 +445,10 @@ export function BatchView({ theme, batchConfig, setBatchConfig, stats }: BatchVi
           )}
 
           {batchPassLogs.length > 0 && (
-            <button onClick={handleExport} className="px-3 py-1 bg-indigo-500 dark:bg-indigo-700 hover:bg-indigo-400 dark:hover:bg-indigo-600 rounded-md text-xs font-semibold text-white">📤 Export</button>
+            <>
+              <button onClick={handleExport} className="px-3 py-1 bg-indigo-500 dark:bg-indigo-700 hover:bg-indigo-400 dark:hover:bg-indigo-600 rounded-md text-xs font-semibold text-white">📤 JSON</button>
+              <button onClick={handleExportCSV} className="px-3 py-1 bg-emerald-500 dark:bg-emerald-700 hover:bg-emerald-400 dark:hover:bg-emerald-600 rounded-md text-xs font-semibold text-white">📊 CSV</button>
+            </>
           )}
         </div>
 
@@ -542,7 +581,7 @@ export function BatchView({ theme, batchConfig, setBatchConfig, stats }: BatchVi
               mode="unfiltered"
               passLog={pass1Log}
               isActive={batchRunning && batchCurrentPass === 1}
-              totalTests={batchTotalTests || batchConfig.tests}
+              totalTests={batchTotalTests || (batchConfig?.tests ?? 0)}
               currentTest={batchCurrentPass === 1 ? batchCurrentTest : 0}
             />
             <LivePassColumn
@@ -553,7 +592,7 @@ export function BatchView({ theme, batchConfig, setBatchConfig, stats }: BatchVi
               mode="pill"
               passLog={pass2Log}
               isActive={batchRunning && batchCurrentPass === 2}
-              totalTests={batchTotalTests || batchConfig.tests}
+              totalTests={batchTotalTests || (batchConfig?.tests ?? 0)}
               currentTest={batchCurrentPass === 2 ? batchCurrentTest : 0}
             />
             <LivePassColumn
@@ -564,7 +603,7 @@ export function BatchView({ theme, batchConfig, setBatchConfig, stats }: BatchVi
               mode="defense"
               passLog={pass4Log}
               isActive={batchRunning && (batchCurrentPass === 3 || batchCurrentPass === 4)}
-              totalTests={batchTotalTests || batchConfig.tests}
+              totalTests={batchTotalTests || (batchConfig?.tests ?? 0)}
               currentTest={(batchCurrentPass === 3 || batchCurrentPass === 4) ? batchCurrentTest : 0}
               showSuccessBanner={!!(pass4Log?.completedAt && (pass4Log?.summary.catchRate ?? 0) >= 80)}
             />
@@ -577,7 +616,7 @@ export function BatchView({ theme, batchConfig, setBatchConfig, stats }: BatchVi
             {(() => {
               // Use the first available pass log that has tests (Defense or Poison or Baseline)
               const activeLog = pass4Log || pass2Log || pass1Log;
-              if (!activeLog?.tests || activeLog.tests.length === 0) {
+              if (!activeLog?.tests || (activeLog?.tests?.length ?? 0) === 0) {
                 return (
                   <div className="text-center py-12 text-zinc-500 dark:text-zinc-400">
                     <p className="text-lg font-medium">No rounds yet</p>
@@ -586,7 +625,7 @@ export function BatchView({ theme, batchConfig, setBatchConfig, stats }: BatchVi
                 );
               }
 
-              return activeLog.tests.map((test, idx) => {
+              return (activeLog?.tests ?? []).map((test, idx) => {
                 const pass1Test = pass1Log?.tests[idx];
                 const pass2Test = pass2Log?.tests[idx];
                 const defenseTest = pass4Log?.tests[idx];
@@ -620,7 +659,7 @@ export function BatchView({ theme, batchConfig, setBatchConfig, stats }: BatchVi
                       {/* Question */}
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">
-                          {test.question || 'Test Question'}
+                          {test?.question || 'Test Question'}
                         </p>
                         <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
                           {test.completedAt ? new Date(test.completedAt).toLocaleTimeString() : 'In progress...'}
@@ -673,7 +712,7 @@ export function BatchView({ theme, batchConfig, setBatchConfig, stats }: BatchVi
           pass2Log={pass2Log}
           pass4Log={pass4Log}
           batchEvents={batchEvents as EnhancedForensicEvent[]}
-          totalTests={batchTotalTests || batchConfig.tests}
+          totalTests={batchTotalTests || (batchConfig?.tests ?? 0)}
           speedMode={speedMode}
           source={source}
           batchId={batchId}
@@ -708,11 +747,11 @@ export function BatchView({ theme, batchConfig, setBatchConfig, stats }: BatchVi
                   <div className="space-y-2">
                     <div>
                       <p className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase">Question:</p>
-                      <p className="text-sm text-zinc-900 dark:text-zinc-100">{pass1Log.tests[selectedRound].question}</p>
+                      <p className="text-sm text-zinc-900 dark:text-zinc-100">{pass1Log?.tests?.[selectedRound]?.question}</p>
                     </div>
                     <div>
                       <p className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase">Response:</p>
-                      <p className="text-sm text-zinc-900 dark:text-zinc-100 whitespace-pre-wrap">{pass1Log.tests[selectedRound].response}</p>
+                      <p className="text-sm text-zinc-900 dark:text-zinc-100 whitespace-pre-wrap">{pass1Log?.tests?.[selectedRound]?.response}</p>
                     </div>
                   </div>
                 </div>
@@ -727,11 +766,11 @@ export function BatchView({ theme, batchConfig, setBatchConfig, stats }: BatchVi
                   <div className="space-y-2">
                     <div>
                       <p className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase">Question:</p>
-                      <p className="text-sm text-zinc-900 dark:text-zinc-100">{pass2Log.tests[selectedRound].question}</p>
+                      <p className="text-sm text-zinc-900 dark:text-zinc-100">{pass2Log?.tests?.[selectedRound]?.question}</p>
                     </div>
                     <div>
                       <p className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase">Response:</p>
-                      <p className="text-sm text-zinc-900 dark:text-zinc-100 whitespace-pre-wrap">{pass2Log.tests[selectedRound].response}</p>
+                      <p className="text-sm text-zinc-900 dark:text-zinc-100 whitespace-pre-wrap">{pass2Log?.tests?.[selectedRound]?.response}</p>
                     </div>
                   </div>
                 </div>
@@ -746,20 +785,20 @@ export function BatchView({ theme, batchConfig, setBatchConfig, stats }: BatchVi
                   <div className="space-y-2">
                     <div>
                       <p className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase">Question:</p>
-                      <p className="text-sm text-zinc-900 dark:text-zinc-100">{pass4Log.tests[selectedRound].question}</p>
+                      <p className="text-sm text-zinc-900 dark:text-zinc-100">{pass4Log?.tests?.[selectedRound]?.question}</p>
                     </div>
                     <div>
                       <p className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase">Response:</p>
-                      <p className="text-sm text-zinc-900 dark:text-zinc-100 whitespace-pre-wrap">{pass4Log.tests[selectedRound].response}</p>
+                      <p className="text-sm text-zinc-900 dark:text-zinc-100 whitespace-pre-wrap">{pass4Log?.tests?.[selectedRound]?.response}</p>
                     </div>
                     <div>
                       <p className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase">Verdict:</p>
                       <p className={`text-lg font-bold ${
-                        pass4Log.tests[selectedRound].verdict === 'CAUGHT'
+                        pass4Log?.tests?.[selectedRound]?.verdict === 'CAUGHT'
                           ? 'text-emerald-600 dark:text-emerald-400'
                           : 'text-red-600 dark:text-red-400'
                       }`}>
-                        {pass4Log.tests[selectedRound].verdict === 'CAUGHT' ? '✅ CAUGHT' : '❌ MISSED'}
+                        {pass4Log?.tests?.[selectedRound]?.verdict === 'CAUGHT' ? '✅ CAUGHT' : '❌ MISSED'}
                       </p>
                     </div>
                   </div>
@@ -824,35 +863,35 @@ function BatchSummaryDashboard({
 
     // Count from defense pass
     if (pass4Log?.tests) {
-      pass4Log.tests.forEach((test: any) => {
-        if (test.verdict === 'CAUGHT') catches++;
-        if (test.verdict === 'MISSED') misses++;
+      pass4Log?.tests.forEach((test: any) => {
+        if (test?.verdict === 'CAUGHT') catches++;
+        if (test?.verdict === 'MISSED') misses++;
 
         // Process individual responses for agent stats
-        test.responses?.forEach((resp: any) => {
-          const agent = resp.role?.toUpperCase() || 'D1';
+        test?.responses?.forEach((resp: any) => {
+          const agent = resp?.role?.toUpperCase() || 'D1';
           if (agentStats[agent]) {
             agentStats[agent].responses++;
-            if (resp.status === 'echoed') {
+            if (resp?.status === 'echoed') {
               agentStats[agent].echoes++;
               echoes++;
-            } else if (resp.status === 'killed' || resp.content?.includes('[KILL_TRIGGERED')) {
+            } else if (resp?.status === 'killed' || resp?.content?.includes('[KILL_TRIGGERED')) {
               agentStats[agent].kills++;
               kills++;
             } else {
               agentStats[agent].cleans++;
             }
 
-            if (resp.timeMs) {
+            if (resp?.timeMs) {
               totalLatency += resp.timeMs;
               responseCount++;
             }
-            if (resp.tokens) totalTokens += resp.tokens;
+            if (resp?.tokens) totalTokens += resp.tokens;
           }
         });
 
         // Count kills from test level
-        if (test.killRound) kills++;
+        if (test?.killRound) kills++;
       });
     }
 

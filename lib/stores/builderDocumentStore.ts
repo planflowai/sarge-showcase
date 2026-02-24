@@ -599,7 +599,6 @@ console.log('${name} loaded');
     {
       name: 'builder-documents',
       version: 1,
-      storage: createDebouncedStorage(),
       partialize: (state) => ({
         // Only persist project info, not file contents
         currentProject: state.currentProject ? {

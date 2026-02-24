@@ -28,18 +28,14 @@ function formatDate(date: Date): string {
 }
 
 export function DebateHistory() {
-  const { debates, loadDebates, deleteDebate, loadDebateById } = useDebateHistoryStore();
+  const { debates, deleteDebate, getDebate } = useDebateHistoryStore();
   const currentDebate = useDebateStore((s) => s.debate);
 
-  useEffect(() => {
-    loadDebates();
-  }, [loadDebates]);
-
   const handleLoadDebate = (id: string) => {
-    const debate = loadDebateById(id);
+    const debate = getDebate(id);
     if (debate) {
       // Load this debate into the debate store
-      useDebateStore.setState({ debate, showingSetup: false });
+      useDebateStore.setState({ debate: debate as any, showingSetup: false });
     }
   };
 
@@ -115,7 +111,7 @@ export function DebateHistory() {
                           </p>
                         </div>
                         <p className="mt-0.5 text-[10px] opacity-70">
-                          {debate.rounds} rounds • {debate.participants.length} agents •{" "}
+                          {debate.totalRounds} rounds • {debate.agentSlots.length} agents •{" "}
                           {formatDate(debate.createdAt)}
                         </p>
                       </div>

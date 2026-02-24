@@ -1,1765 +1,955 @@
 "use client";
 
-import { useRef, useEffect, useState, useCallback } from "react";
-import ReactMarkdown from "react-markdown";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useDebateStore } from "@/lib/stores/debateStore";
+import { useDebateHistoryStore } from "@/lib/stores/debateHistoryStore";
+import { useConversationStore } from "@/lib/stores/conversationStore";
+import { useParallelChatStore } from "@/lib/stores/parallelChatStore";
 import { useMessageStore } from "@/lib/stores/messageStore";
-import { useRoleStore } from "@/lib/stores/roleStore";
 import { useUIStore } from "@/lib/stores/uiStore";
-import { providers } from "@/lib/providers";
-import { fetchOllamaModels, fetchLMStudioModels, type LocalModel } from "@/lib/providers/localModels";
+import { useRoleStore } from "@/lib/stores/roleStore";
+import { runDebate, type DebateConfig, type DebateEvent, type DebateAgent } from "@/lib/debate/engine";
+import { AgentPanel } from "./AgentPanel";
+import { JudgePanel } from "./JudgePanel";
+import { JudgeSummary } from "./JudgeSummary";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { exportDebateSummaryToPDF, exportDebateThreadToPDF } from "@/lib/export/pdf";
-import { exportDebateToCSV } from "@/lib/export/csv";
-import { cn } from "@/lib/utils";
-import type { Provider, DebateParticipant, Message, Critique, RoundSummary, Debate } from "@/lib/types";
+import { providers } from "@/lib/providers";
+import { fetchOllamaModels, fetchLMStudioModels, type LocalModel } from "@/lib/providers/localModels";
 import {
-  Swords,
-  FileText,
-  Download,
-  X,
-  ChevronDown,
-  ChevronRight,
-  ChevronLeft,
   Play,
   Pause,
-  SkipForward,
-  RotateCcw,
-  Copy,
-  Check,
-  Scale,
-  Brain,
-  ArrowRight,
-  BookmarkPlus,
-  Maximize2,
-  Terminal,
-  Send,
-  Zap,
-  Loader2,
-  Code2,
+  Play as Resume,
+  Square,
+  ChevronDown,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useBuilderChatStore } from "@/lib/stores/builderChatStore";
-import { CollapsibleRow } from "./CollapsibleRow";
-import { ExecutiveSummaryModal } from "./ExecutiveSummaryModal";
-import { DebateHistory } from "./DebateHistory";
-import { useAIModeStore } from "@/lib/stores/aiModeStore";
-import Link from "next/link";
+import { cn } from "@/lib/utils";
 
-// ─── Utilities ──────────────────────────────────────────────────────────────
-
-/**
- * Calculate the starting index for a debate round's research messages.
- * Accounts for judge messages interleaved between rounds.
- *
- * Message ordering: [R1 agents...] [R1 judge] [R2 agents...] [R2 judge] ...
- *
- * @param round - The 1-indexed round number
- * @param participantCount - Number of debate participants (not including judge)
- * @param roundSummariesCount - Number of judge summaries created so far
- * @returns The starting index in the messages array for this round's research
- */
-function getResearchStartIndex(round: number, participantCount: number, roundSummariesCount: number): number {
-  const completedRoundsBefore = round - 1;
-  const judgeMessagesBefore = Math.min(completedRoundsBefore, roundSummariesCount);
-  return (round - 1) * participantCount + judgeMessagesBefore;
+interface AgentState {
+  id: string;
+  content: string;
+  status: "waiting" | "thinking" | "complete";
 }
-
-// ─── Constants ──────────────────────────────────────────────────────────────
-
-const AGENT_COLORS = ["#6366f1", "#8b5cf6", "#10b981", "#ef4444"];
-const AGENT_LABEL_COLORS = [
-  "text-indigo-600 dark:text-indigo-400",
-  "text-purple-600 dark:text-purple-400",
-  "text-emerald-600 dark:text-emerald-400",
-  "text-rose-600 dark:text-rose-400",
-];
-const AGENT_BG_COLORS = [
-  "border-indigo-500/30 bg-indigo-50 dark:bg-indigo-950/20",
-  "border-purple-500/30 bg-purple-50 dark:bg-purple-950/20",
-  "border-emerald-500/30 bg-emerald-50 dark:bg-emerald-950/20",
-  "border-rose-500/30 bg-rose-50 dark:bg-rose-950/20",
-];
 
 interface SlotConfig {
-  provider: Provider | null;
-  model: string;
-  roleId?: string;
+  provider: string | null;
+  model: string | null;
+  role?: string;
 }
 
-const emptySlot = (): SlotConfig => ({ provider: null, model: "", roleId: undefined });
-
-function getProviderName(provider: string): string {
-  return providers.find((p) => p.id === provider)?.name ?? provider;
-}
-
-// ─── Copy button helper ─────────────────────────────────────────────────────
-
-function CopyButton({ text, label }: { text: string; label?: string }) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch { /* ignore */ }
-  }, [text]);
-
-  return (
-    <button
-      onClick={handleCopy}
-      title={label || "Copy"}
-      className="rounded p-1 text-zinc-500 dark:text-zinc-500 hover:text-zinc-300 hover:bg-zinc-300 dark:bg-zinc-700/50 transition-colors"
-    >
-      {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
-    </button>
-  );
-}
-
-// ─── Animated dots ──────────────────────────────────────────────────────────
-
-function AnimatedDots({ label }: { label: string }) {
-  return (
-    <div className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400 py-4 justify-center">
-      <span className="inline-flex gap-0.5">
-        <span className="animate-bounce" style={{ animationDelay: "0ms" }}>.</span>
-        <span className="animate-bounce" style={{ animationDelay: "150ms" }}>.</span>
-        <span className="animate-bounce" style={{ animationDelay: "300ms" }}>.</span>
-      </span>
-      {label}
-    </div>
-  );
-}
-
-// ─── Main Component ─────────────────────────────────────────────────────────
+const AGENT_COLORS = ["#3B82F6", "#8B5CF6", "#EC4899"];
+const JUDGE_COLOR = "#D97706";
 
 export function DebateView() {
   const {
     debate,
     isRunning,
     isPaused,
-    autoAdvance,
-    currentPhase,
-    activeAgentIndex,
-    showingSetup,
-    startDebate,
-    startQuickDebate,
-    runRound,
     pauseDebate,
     resumeDebate,
-    redirectDebate,
-    swapJudge,
-    setAutoAdvance,
-    saveToKnowledge,
     endDebate,
-    closeSetup,
-    hideDebate,
-    endDebateToThread,
-    sourceConversationId,
+    clearDebate,
   } = useDebateStore();
 
-  const { roles, hydrated: rolesHydrated, hydrate: hydrateRoles } = useRoleStore();
+  const { roles, hydrate } = useRoleStore();
 
-  const debateSidebarCollapsed = useUIStore((s) => s.debateSidebarCollapsed);
-  const toggleDebateSidebar = useUIStore((s) => s.toggleDebateSidebar);
-  const setDebateSidebarCollapsed = useUIStore((s) => s.setDebateSidebarCollapsed);
-  const llmSectionCollapsed = useUIStore((s) => s.llmSectionCollapsed);
-  const setLlmSectionCollapsed = useUIStore((s) => s.setLlmSectionCollapsed);
-  const showToast = useUIStore((s) => s.showToast);
-
-  // AI Mode store
-  const aiModeDisplayName = useAIModeStore((s) => s.getDisplayName);
-  const executionMode = useAIModeStore((s) => s.executionMode);
-
-  // Builder integration
-  const router = useRouter();
-  const setPrefilledInput = useBuilderChatStore((s) => s.setPrefilledInput);
-
-  // Handler for sending agent response to Builder
-  const handleSendToBuilder = useCallback((content: string) => {
-    const prefillText = `Based on the debate agent's suggestion, build: ${content.slice(0, 800)}${content.length > 800 ? '...' : ''}`;
-    setPrefilledInput(prefillText);
-    endDebate();
-    router.push('/builder');
-  }, [setPrefilledInput, endDebate, router]);
-
-  // ─── Setup state ────────────────────────────────────────────────
-  const [topic, setTopic] = useState("");
-  const [rounds, setRounds] = useState(3);
-  const [slots, setSlots] = useState<[SlotConfig, SlotConfig, SlotConfig, SlotConfig]>([
-    emptySlot(),
-    emptySlot(),
-    emptySlot(),
-    { provider: null, model: "", roleId: "default-judge" },
+  // Agent slot configuration (3 agents + 1 judge)
+  const [agentSlots, setAgentSlots] = useState<SlotConfig[]>([
+    { provider: null, model: null, role: undefined },
+    { provider: null, model: null, role: undefined },
+    { provider: null, model: null, role: undefined },
   ]);
+  const [judgeSlot, setJudgeSlot] = useState<SlotConfig>({ provider: null, model: null });
+
+  // UI state for debate execution
+  const [passMode, setPassMode] = useState<"blind" | "sequential">("blind");
+  const [useLocal, setUseLocal] = useState(true);
+  const [totalRounds, setTotalRounds] = useState(3);
+  const [topicInput, setTopicInput] = useState("");
+  const [judgeState, setJudgeState] = useState({
+    content: "",
+    status: "waiting" as const,
+  });
+  const [currentRound, setCurrentRound] = useState(0);
+  const [debateComplete, setDebateComplete] = useState(false);
+
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const currentRoundRef = useRef(0);
+
+  const [expandedRounds, setExpandedRounds] = useState<Set<number>>(new Set());
+
+  interface RoundData {
+    roundNumber: number;
+    agents: {
+      id: string;
+      content: string;
+      status: "waiting" | "thinking" | "complete";
+    }[];
+    judgeSummary: string;
+    judgeStatus: "waiting" | "thinking" | "complete";
+  }
+
+  const [rounds, setRounds] = useState<RoundData[]>([]);
+  const [expandedAgents, setExpandedAgents] = useState<Set<string>>(new Set());
+  const [expandedJudges, setExpandedJudges] = useState<Set<number>>(new Set());
+  const [currentActiveRound, setCurrentActiveRound] = useState(0);
+  const [finalJudgeSummary, setFinalJudgeSummary] = useState("");
+
+  // Local model fetching
   const [ollamaModels, setOllamaModels] = useState<LocalModel[]>([]);
-  const [ollamaLoading, setOllamaLoading] = useState(false);
   const [lmstudioModels, setLmstudioModels] = useState<LocalModel[]>([]);
+  const [ollamaLoading, setOllamaLoading] = useState(false);
   const [lmstudioLoading, setLmstudioLoading] = useState(false);
+  const [ollamaError, setOllamaError] = useState<string | null>(null);
+  const [lmstudioError, setLmstudioError] = useState<string | null>(null);
 
-  // ─── Pre-fill topic from thread when sourceConversationId is set ─
-  const threadMessages = useMessageStore((s) => s.messages);
+  // Per-agent Cloud vs Local model selection
+  const [agentUseCloud, setAgentUseCloud] = useState<boolean[]>([true, true, true]);
+  const [judgeUseCloud, setJudgeUseCloud] = useState(true);
+
+  // Debate history and saving
+  const { debates, saveDebate, setCurrent: setCurrentDebate } = useDebateHistoryStore();
+  const { enabled: multiChatEnabled } = useParallelChatStore();
+  const { createConversation, setCurrent: setCurrentConversation } = useConversationStore();
+
+  // Stable keys to trigger refetch only when provider selection changes
+  const hasOllamaLocal = agentUseCloud.some(v => !v) || !judgeUseCloud;
+  const hasLMStudioLocal = agentUseCloud.some(v => !v) || !judgeUseCloud;
+  const ollamaProviderKey = hasOllamaLocal ? "has-ollama" : "no-ollama";
+  const lmstudioProviderKey = hasLMStudioLocal ? "has-lmstudio" : "no-lmstudio";
+
+  // Fetch Ollama models when Ollama provider is selected
   useEffect(() => {
-    // Only prefill if we have a source conversation and topic is empty
-    if (!sourceConversationId || topic) return;
-    const recent = threadMessages.slice(-8);
-    if (recent.length === 0) return;
-    const formatted = recent
-      .map((m) => `[${m.role === "user" ? "User" : "Assistant"}]: ${m.content}`)
-      .join("\n\n");
-    setTopic(`Debate the following discussion:\n\n${formatted}`);
-  }, [sourceConversationId, threadMessages, topic]);
-
-  // ─── Debate interaction state ───────────────────────────────────
-  const [redirectInput, setRedirectInput] = useState("");
-  const [showRedirect, setShowRedirect] = useState(false);
-  const [showJudgeSwap, setShowJudgeSwap] = useState(false);
-  const [judgeSwapSlot, setJudgeSwapSlot] = useState<SlotConfig>({ provider: null, model: "", roleId: "default-judge" });
-  const [savedToMemory, setSavedToMemory] = useState(false);
-  const [showExecModal, setShowExecModal] = useState(false);
-  const [allExpanded, setAllExpanded] = useState(false);
-  const [debateCopied, setDebateCopied] = useState(false);
-  const [quickInput, setQuickInput] = useState("");
-  const [quickDebateLoading, setQuickDebateLoading] = useState(false);
-  const [quickDebateUseLocal, setQuickDebateUseLocal] = useState(true);
-
-  // ─── Hydrate roles + fetch ollama ───────────────────────────────
-  useEffect(() => {
-    if (!rolesHydrated) hydrateRoles();
-  }, [rolesHydrated, hydrateRoles]);
-
-  useEffect(() => {
-    setOllamaLoading(true);
-    fetchOllamaModels()
-      .then(setOllamaModels)
-      .catch(() => setOllamaModels([]))
-      .finally(() => setOllamaLoading(false));
-
-    setLmstudioLoading(true);
-    fetchLMStudioModels()
-      .then(setLmstudioModels)
-      .catch(() => setLmstudioModels([]))
-      .finally(() => setLmstudioLoading(false));
-  }, []);
-
-  // ─── Setup helpers ──────────────────────────────────────────────
-  const updateSlot = (index: number, updates: Partial<SlotConfig>) => {
-    setSlots((prev) => {
-      const next = [...prev] as typeof prev;
-      next[index] = { ...next[index], ...updates };
-      return next;
-    });
-  };
-
-  const handleProviderChange = (index: number, providerId: string) => {
-    if (!providerId) {
-      updateSlot(index, { provider: null, model: "", roleId: index === 3 ? "default-judge" : undefined });
+    if (ollamaProviderKey === "no-ollama") {
+      setOllamaModels([]);
       return;
     }
-    const prov = providers.find((p) => p.id === providerId);
-    let defaultModel = "";
 
-    if (providerId === "lmstudio") {
-      defaultModel = lmstudioModels[0]?.id ?? "";
-    } else if (prov?.type === "local") {
-      defaultModel = ollamaModels[0]?.id ?? "";
-    } else {
-      defaultModel = prov?.models[0]?.id ?? "";
-    }
-    updateSlot(index, { provider: providerId as Provider, model: defaultModel });
-  };
+    setOllamaLoading(true);
+    setOllamaError(null);
 
-  const agentCount = slots.slice(0, 3).filter((s) => s.provider).length;
-  const hasJudge = slots[3].provider !== null;
-  const isValid = topic.trim() && agentCount >= 2 && hasJudge;
+    fetchOllamaModels()
+      .then(models => setOllamaModels(models))
+      .catch(() => {
+        setOllamaModels([]);
+        setOllamaError("Cannot reach Ollama. Make sure it's running at http://localhost:11434");
+      })
+      .finally(() => setOllamaLoading(false));
+  }, [ollamaProviderKey]);
 
-  const handleStart = async () => {
-    if (!isValid) return;
-    const participants: DebateParticipant[] = slots
-      .slice(0, 3)
-      .filter((s) => s.provider)
-      .map((s) => ({ provider: s.provider!, model: s.model, roleId: s.roleId }));
-    const judge: DebateParticipant = {
-      provider: slots[3].provider!,
-      model: slots[3].model,
-      roleId: slots[3].roleId || "default-judge",
-    };
-    startDebate(topic.trim(), participants, judge, rounds);
-    // Auto-collapse sidebar when debate starts
-    setDebateSidebarCollapsed(true);
-    // Auto-start Round 1 immediately
-    await runRound();
-  };
-
-  const handleQuickDebate = async () => {
-    if (!topic.trim()) return;
-    setQuickDebateLoading(true);
-    setDebateSidebarCollapsed(true);
-    setLlmSectionCollapsed(true);
-    try {
-      const modelIds = ollamaModels.map((m) => m.id);
-      await startQuickDebate(topic.trim(), quickDebateUseLocal, modelIds);
-    } finally {
-      setQuickDebateLoading(false);
-    }
-  };
-
-  // Auto-collapse sidebar and LLM section when debate starts
+  // Fetch LM Studio models when LM Studio provider is selected
   useEffect(() => {
-    if (debate && !showingSetup) {
-      setDebateSidebarCollapsed(true);
-      setLlmSectionCollapsed(true);
-    }
-  }, [debate, showingSetup, setDebateSidebarCollapsed, setLlmSectionCollapsed]);
-
-  const handleRedirectSubmit = () => {
-    if (!redirectInput.trim()) return;
-    redirectDebate(redirectInput.trim());
-    setRedirectInput("");
-    setShowRedirect(false);
-  };
-
-  const handleJudgeSwap = () => {
-    if (!judgeSwapSlot.provider) return;
-    swapJudge({
-      provider: judgeSwapSlot.provider,
-      model: judgeSwapSlot.model,
-      roleId: judgeSwapSlot.roleId || "default-judge",
-    });
-    setShowJudgeSwap(false);
-  };
-
-  const handleSaveToMemory = () => {
-    saveToKnowledge();
-    setSavedToMemory(true);
-    setTimeout(() => setSavedToMemory(false), 3000);
-  };
-
-  const handleCopyExecSummary = useCallback(async () => {
-    if (!debate?.executiveSummary) return;
-    try {
-      await navigator.clipboard.writeText(debate.executiveSummary);
-    } catch { /* ignore */ }
-  }, [debate?.executiveSummary]);
-
-  const handleCopyDebate = useCallback(async () => {
-    if (!debate || debate.messages.length === 0) return;
-
-    let transcript = `DEBATE: ${debate.topic}\n`;
-    transcript += `${"=".repeat(50)}\n\n`;
-
-    for (let round = 1; round <= debate.rounds; round++) {
-      const roundCritiques = debate.critiques.filter((c) => c.round === round);
-      const roundSummary = debate.roundSummaries.find((rs) => rs.round === round);
-      const participantCount = debate.participants.length;
-      const researchStartIdx = getResearchStartIndex(round, participantCount, debate.roundSummaries.length);
-
-      transcript += `ROUND ${round}\n`;
-      transcript += `${"-".repeat(30)}\n\n`;
-
-      // Research phase
-      transcript += "** Research Phase **\n\n";
-      debate.participants.forEach((participant, pIdx) => {
-        const msg = debate.messages[researchStartIdx + pIdx];
-        if (msg) {
-          transcript += `[Agent ${pIdx + 1} - ${getProviderName(participant.provider)}/${participant.model}]\n`;
-          transcript += `${msg.content}\n\n`;
-        }
-      });
-
-      // Cross-check phase
-      if (roundCritiques.length > 0) {
-        transcript += "** Cross-Check Phase **\n\n";
-        roundCritiques.forEach((critique) => {
-          const participant = debate.participants[critique.fromParticipantIndex];
-          if (!participant) return; // Skip invalid participant references
-          transcript += `[Agent ${critique.fromParticipantIndex + 1} - ${getProviderName(participant.provider)}/${participant.model}]\n`;
-          transcript += `${critique.content}\n\n`;
-        });
-      }
-
-      // Judge summary
-      if (roundSummary) {
-        transcript += "** Judge Summary **\n";
-        transcript += `[${getProviderName(debate.judge.provider)}/${debate.judge.model}]\n`;
-        transcript += `${roundSummary.summary}\n`;
-        if (roundSummary.agreements && roundSummary.agreements.length > 0) {
-          transcript += "\nConsensus Points:\n";
-          roundSummary.agreements.forEach((a: any) => {
-            transcript += `- [${a.consensusLevel}] ${a.statement}\n`;
-          });
-        }
-        transcript += "\n";
-      }
-
-      transcript += "\n";
+    if (lmstudioProviderKey === "no-lmstudio") {
+      setLmstudioModels([]);
+      return;
     }
 
-    // Executive summary
-    if (debate.executiveSummary) {
-      transcript += `${"=".repeat(50)}\n`;
-      transcript += "EXECUTIVE SUMMARY\n";
-      transcript += `${"=".repeat(50)}\n\n`;
-      transcript += debate.executiveSummary;
+    setLmstudioLoading(true);
+    setLmstudioError(null);
+
+    fetchLMStudioModels()
+      .then(models => setLmstudioModels(models))
+      .catch(() => {
+        setLmstudioModels([]);
+        setLmstudioError("Cannot reach LM Studio. Make sure it's running on port 1240");
+      })
+      .finally(() => setLmstudioLoading(false));
+  }, [lmstudioProviderKey]);
+
+  // Hydrate roles on mount
+  useEffect(() => {
+    hydrate();
+  }, [hydrate]);
+
+  // Fetch local models when any agent or judge switches to Local mode
+  useEffect(() => {
+    const needsLocal = agentUseCloud.some(v => !v) || !judgeUseCloud;
+    if (!needsLocal) return;
+
+    // Only fetch if we don't have models yet
+    if (ollamaModels.length === 0 && !ollamaError) {
+      setOllamaLoading(true);
+      setOllamaError(null);
+      fetchOllamaModels()
+        .then(models => setOllamaModels(models))
+        .catch(() => {
+          setOllamaModels([]);
+          setOllamaError("Cannot reach Ollama. Make sure it's running at http://localhost:11434");
+        })
+        .finally(() => setOllamaLoading(false));
     }
 
-    try {
-      await navigator.clipboard.writeText(transcript);
-      setDebateCopied(true);
-      setTimeout(() => setDebateCopied(false), 2000);
-    } catch { /* ignore */ }
-  }, [debate]);
+    if (lmstudioModels.length === 0 && !lmstudioError) {
+      setLmstudioLoading(true);
+      setLmstudioError(null);
+      fetchLMStudioModels()
+        .then(models => setLmstudioModels(models))
+        .catch(() => {
+          setLmstudioModels([]);
+          setLmstudioError("Cannot reach LM Studio. Make sure it's running on port 1240");
+        })
+        .finally(() => setLmstudioLoading(false));
+    }
+  }, [agentUseCloud, judgeUseCloud, ollamaModels.length, lmstudioModels.length, ollamaError, lmstudioError]);
 
-  const handleToggleExpandAll = useCallback(() => {
-    setAllExpanded((prev) => !prev);
+  // Get available models for a provider (dynamic for local, static for cloud)
+  const getModelsForProvider = useCallback(
+    (providerId: string | null) => {
+      if (!providerId) return [];
+      if (providerId === "ollama") return ollamaModels;
+      if (providerId === "lmstudio") return lmstudioModels;
+      const provider = providers.find((p) => p.id === providerId);
+      return provider?.models || [];
+    },
+    [ollamaModels, lmstudioModels]
+  );
+
+  // Get all cloud models from all cloud providers
+  const cloudModels = useMemo(() => {
+    return providers
+      .filter(p => p.id !== "ollama" && p.id !== "lmstudio")
+      .flatMap(p => p.models.map(m => ({ ...m, providerId: p.id })));
   }, []);
 
-  const handleQuickInput = () => {
-    if (!quickInput.trim() || !debate || isRunning || isComplete) return;
-    redirectDebate(quickInput.trim());
-    setQuickInput("");
+  // Get all local models combined
+  const localModels = useMemo(() => {
+    return [
+      ...ollamaModels.map(m => ({ ...m, providerId: "ollama" })),
+      ...lmstudioModels.map(m => ({ ...m, providerId: "lmstudio" }))
+    ];
+  }, [ollamaModels, lmstudioModels]);
+
+  // Get models for a specific agent slot (cloud or local based on agentUseCloud)
+  const getAgentModels = useCallback((slotIdx: number) => {
+    return agentUseCloud[slotIdx] ? cloudModels : localModels;
+  }, [agentUseCloud, cloudModels, localModels]);
+
+  // Get models for judge (cloud or local based on judgeUseCloud)
+  const getJudgeModels = useCallback(() => {
+    return judgeUseCloud ? cloudModels : localModels;
+  }, [judgeUseCloud, cloudModels, localModels]);
+
+  // Handle agent provider change
+  const handleAgentProviderChange = (slotIdx: number, providerId: string) => {
+    const newSlots = [...agentSlots];
+    const models = getModelsForProvider(providerId);
+    newSlots[slotIdx] = {
+      provider: providerId === "none" ? null : providerId,
+      model: models.length > 0 ? models[0].id : null,
+      role: newSlots[slotIdx].role,
+    };
+    setAgentSlots(newSlots);
   };
 
-  const agentRoles = roles.filter((r) => !r.isDefault);
-  const slotLabels = ["Agent 1", "Agent 2", "Agent 3 (Optional)", "Judge"];
-
-  // ─── Render model select for a slot ─────────────────────────────
-  const renderModelSelect = (slot: SlotConfig, index: number, onChange: (model: string) => void) => {
-    if (!slot.provider) return null;
-    const prov = providers.find((p) => p.id === slot.provider);
-    const isLocal = prov?.type === "local";
-
-    // Handle LM Studio separately
-    if (slot.provider === "lmstudio") {
-      if (lmstudioLoading) return <p className="px-1 text-[10px] text-zinc-500 dark:text-zinc-500">Loading...</p>;
-      if (lmstudioModels.length === 0) return <p className="px-1 text-[10px] text-red-400">No models</p>;
-      return (
-        <select
-          value={slot.model}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-full rounded bg-zinc-300 dark:bg-zinc-700 px-2 py-1 text-xs text-zinc-800 dark:text-zinc-200 border-0 focus:ring-1 focus:ring-indigo-500"
-        >
-          {lmstudioModels.map((m) => (
-            <option key={m.id} value={m.id}>{m.name}</option>
-          ))}
-        </select>
-      );
-    }
-
-    // Handle Ollama
-    if (isLocal) {
-      if (ollamaLoading) return <p className="px-1 text-[10px] text-zinc-500 dark:text-zinc-500">Loading...</p>;
-      if (ollamaModels.length === 0) return <p className="px-1 text-[10px] text-red-400">No models</p>;
-      return (
-        <select
-          value={slot.model}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-full rounded bg-zinc-300 dark:bg-zinc-700 px-2 py-1 text-xs text-zinc-800 dark:text-zinc-200 border-0 focus:ring-1 focus:ring-indigo-500"
-        >
-          {ollamaModels.map((m) => (
-            <option key={m.id} value={m.id}>{m.name}</option>
-          ))}
-        </select>
-      );
-    }
-
-    // Handle cloud providers
-    return (
-      <select
-        value={slot.model}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded bg-zinc-300 dark:bg-zinc-700 px-2 py-1 text-xs text-zinc-800 dark:text-zinc-200 border-0 focus:ring-1 focus:ring-indigo-500"
-      >
-        {prov?.models.map((m) => (
-          <option key={m.id} value={m.id}>{m.name}</option>
-        ))}
-      </select>
-    );
+  // Handle agent model change
+  const handleAgentModelChange = (slotIdx: number, modelId: string) => {
+    const newSlots = [...agentSlots];
+    newSlots[slotIdx].model = modelId || null;
+    setAgentSlots(newSlots);
   };
 
-  const isComplete = debate?.status === "completed";
+  // Toggle agent cloud/local mode
+  const handleAgentCloudLocalToggle = (slotIdx: number) => {
+    const newUseCloud = [...agentUseCloud];
+    newUseCloud[slotIdx] = !newUseCloud[slotIdx];
+    setAgentUseCloud(newUseCloud);
+    // Reset model selection when switching modes
+    const newSlots = [...agentSlots];
+    newSlots[slotIdx].model = null;
+    newSlots[slotIdx].provider = null;
+    setAgentSlots(newSlots);
+  };
 
-  // ═══════════════════════════════════════════════════════════════════
-  // UNIFIED VIEW
-  // ═══════════════════════════════════════════════════════════════════
+  // Toggle judge cloud/local mode
+  const handleJudgeCloudLocalToggle = () => {
+    setJudgeUseCloud(!judgeUseCloud);
+    // Reset judge model selection when switching modes
+    setJudgeSlot({ provider: null, model: null });
+  };
+
+  // Handle agent role change
+  const handleAgentRoleChange = (slotIdx: number, roleId: string) => {
+    const newSlots = [...agentSlots];
+    newSlots[slotIdx].role = roleId || undefined;
+    setAgentSlots(newSlots);
+  };
+
+  // Handle judge provider change
+  const handleJudgeProviderChange = (providerId: string) => {
+    const models = getModelsForProvider(providerId);
+    setJudgeSlot({
+      provider: providerId,
+      model: models.length > 0 ? models[0].id : null,
+    });
+  };
+
+  // Handle judge model change
+  const handleJudgeModelChange = (modelId: string) => {
+    setJudgeSlot((prev) => ({ ...prev, model: modelId }));
+  };
+
+  // Check if debate is valid (at least 2 agents + judge)
+  const activeAgentCount = agentSlots.filter((s) => s.provider).length;
+  const isDebateValid = topicInput.trim() && activeAgentCount >= 2 && judgeSlot.provider;
+
+  // Start debate handler
+  const handleStartDebate = useCallback(async () => {
+    if (!isDebateValid) return;
+
+    // Build active agents from slots
+    const activeAgents = agentSlots.filter((s) => s.provider);
+
+    // Reset judge state
+    setJudgeState({ content: "", status: "waiting" });
+    setCurrentRound(0);
+    setDebateComplete(false);
+
+    // Build participants and judge objects for store
+    const participants = activeAgents.map((slot) => ({
+      provider: slot.provider!,
+      model: slot.model,
+    }));
+    const judge = {
+      provider: judgeSlot.provider!,
+      model: judgeSlot.model,
+    };
+
+    // Initialize store state with debate object (for UI)
+    const { startDebate: storeStartDebate } = useDebateStore.getState();
+    storeStartDebate(topicInput.trim(), participants, judge, totalRounds);
+
+    // Create abort controller
+    abortControllerRef.current = new AbortController();
+
+    // Build config from local component state (NO setTimeout, NO store read)
+    const config: DebateConfig = {
+      topic: topicInput.trim(),
+      agents: activeAgents.map((slot, idx) => {
+        const selectedRole = slot.role ? roles.find(r => r.id === slot.role) : null;
+        return {
+          id: `agent-${idx}`,
+          provider: slot.provider!,
+          model: slot.model || "",
+          role: selectedRole?.systemPrompt || "",
+          color: AGENT_COLORS[idx],
+        };
+      }),
+      judge: {
+        id: "judge",
+        provider: judgeSlot.provider!,
+        model: judgeSlot.model || "",
+        role: "judge",
+        color: JUDGE_COLOR,
+      },
+      totalRounds,
+      passMode,
+    };
+
+    // Run debate engine IMMEDIATELY
+    try {
+      for await (const event of runDebate(config, abortControllerRef.current?.signal)) {
+        switch (event.type) {
+          case "round_start":
+            currentRoundRef.current = event.roundNumber || 0;
+            setCurrentRound(event.roundNumber || 0);
+            setCurrentActiveRound(event.roundNumber || 0);
+            const activeAgentCount = agentSlots.filter(s => s.provider).length;
+            setRounds(prev => [...prev, {
+              roundNumber: event.roundNumber || 0,
+              agents: Array(activeAgentCount).fill(null).map((_, idx) => ({
+                id: `agent-${idx}`,
+                content: "",
+                status: "waiting" as const
+              })),
+              judgeSummary: "",
+              judgeStatus: "waiting" as const
+            }]);
+            setExpandedRounds(prev => new Set(prev).add(event.roundNumber || 0));
+            break;
+
+          case "agent_start":
+            if (event.agentId) {
+              const idx = parseInt(event.agentId.split("-")[1]);
+              setRounds(prev => prev.map(r =>
+                r.roundNumber === currentRoundRef.current
+                  ? {
+                      ...r,
+                      agents: r.agents.map((a, i) =>
+                        i === idx ? { ...a, status: "thinking" as const } : a
+                      )
+                    }
+                  : r
+              ));
+            }
+            break;
+
+          case "chunk":
+            if (event.agentId && event.chunk) {
+              const idx = parseInt(event.agentId.split("-")[1]);
+              setRounds(prev => prev.map(r =>
+                r.roundNumber === currentRoundRef.current
+                  ? {
+                      ...r,
+                      agents: r.agents.map((a, i) =>
+                        i === idx ? { ...a, content: a.content + event.chunk } : a
+                      )
+                    }
+                  : r
+              ));
+            }
+            break;
+
+          case "agent_complete":
+            if (event.agentId) {
+              const idx = parseInt(event.agentId.split("-")[1]);
+              setRounds(prev => prev.map(r =>
+                r.roundNumber === currentRoundRef.current
+                  ? {
+                      ...r,
+                      agents: r.agents.map((a, i) =>
+                        i === idx ? { ...a, status: "complete" as const } : a
+                      )
+                    }
+                  : r
+              ));
+            }
+            break;
+
+          case "judge_start":
+            if (event.roundNumber !== undefined) {
+              setRounds(prev => prev.map(r =>
+                r.roundNumber === event.roundNumber
+                  ? { ...r, judgeStatus: "thinking" as const, judgeSummary: "" }
+                  : r
+              ));
+              setExpandedJudges(prev => new Set(prev).add(event.roundNumber!));
+            }
+            break;
+
+          case "judge_chunk":
+            if (event.chunk && event.roundNumber) {
+              setRounds(prev => prev.map(r =>
+                r.roundNumber === event.roundNumber
+                  ? { ...r, judgeSummary: r.judgeSummary + event.chunk }
+                  : r
+              ));
+            }
+            break;
+
+          case "judge_complete":
+            if (event.roundNumber) {
+              setRounds(prev => prev.map(r =>
+                r.roundNumber === event.roundNumber
+                  ? { ...r, judgeStatus: "complete" as const }
+                  : r
+              ));
+              // If this is the last round, store as final summary
+              const isLastRound = event.roundNumber === totalRounds;
+              if (isLastRound) {
+                setRounds(prev => {
+                  const lastRound = prev.find(r => r.roundNumber === event.roundNumber);
+                  if (lastRound) {
+                    setFinalJudgeSummary(lastRound.judgeSummary);
+                    setDebateComplete(true);
+                  }
+                  return prev;
+                });
+              }
+            }
+            break;
+
+          case "error":
+            console.error("Debate error:", event.error);
+            break;
+        }
+      }
+    } catch (error) {
+      console.error("Debate execution failed:", error);
+    } finally {
+      endDebate();  // sets isRunning: false, isPaused: false, debateComplete: true
+    }
+  }, [topicInput, totalRounds, passMode, agentSlots, judgeSlot, isDebateValid, endDebate]);
+
+  const handlePause = useCallback(() => {
+    pauseDebate();
+  }, [pauseDebate]);
+
+  const handleResume = useCallback(() => {
+    resumeDebate();
+  }, [resumeDebate]);
+
+  const handleStop = useCallback(() => {
+    abortControllerRef.current?.abort();
+    endDebate();
+
+    // Save debate state before clearing
+    if (topicInput.trim() && activeAgentCount >= 2 && judgeSlot.provider) {
+      saveDebate({
+        id: `debate-${Date.now()}`,
+        topic: topicInput.trim(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        agentSlots: agentSlots.filter(s => s.provider),
+        judgeSlot,
+        passMode,
+        totalRounds,
+        currentRound: currentRound || 0,
+        rounds: rounds as any,
+        debateComplete: false,
+        finalJudgeSummary: "",
+      });
+    }
+
+    setRounds([]);
+    setJudgeState({ content: "", status: "waiting" });
+    setDebateComplete(false);
+  }, [endDebate, topicInput, activeAgentCount, judgeSlot, agentSlots, passMode, totalRounds, currentRound, rounds, saveDebate]);
+
+  const handleCopyJudgment = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(judgeState.content);
+    } catch {
+      /* ignore */
+    }
+  }, [judgeState.content]);
+
+  // Auto-save debate state when debate completes
+  useEffect(() => {
+    if (!topicInput.trim() || activeAgentCount < 2 || !judgeSlot.provider || !debateComplete) return;
+
+    saveDebate({
+      id: `debate-${Date.now()}`,
+      topic: topicInput.trim(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      agentSlots: agentSlots.filter(s => s.provider),
+      judgeSlot,
+      passMode,
+      totalRounds,
+      currentRound: currentRound || 0,
+      rounds: rounds as any,
+      debateComplete: true,
+      finalJudgeSummary,
+    });
+  }, [debateComplete, finalJudgeSummary, topicInput, activeAgentCount, judgeSlot, agentSlots, passMode, totalRounds, currentRound, rounds, saveDebate]);
+
+  // Send final summary to chat
+  const handleSendToChat = useCallback(async () => {
+    if (!finalJudgeSummary) return;
+
+    if (multiChatEnabled) {
+      // Send to multi-chat (parallel chat)
+      console.log("Sending to multi-chat");
+      // This would be implemented by the parallel chat store
+    } else {
+      // Send to single chat - create a new message
+      const convo = useConversationStore.getState().conversations[0];
+      if (convo) {
+        setCurrentConversation(convo.id);
+        // Message will be added by chat view
+      }
+    }
+  }, [finalJudgeSummary, multiChatEnabled, setCurrentConversation]);
+
+  // Send final summary to multi-chat
+  const handleSendToMultiChat = useCallback(async () => {
+    if (!finalJudgeSummary) return;
+
+    if (multiChatEnabled) {
+      console.log("Sending to multi-chat");
+    } else {
+      console.log("Multi-chat not enabled");
+    }
+  }, [finalJudgeSummary, multiChatEnabled]);
 
   return (
-    <div className="flex h-full flex-col bg-white dark:bg-zinc-950">
-      {/* ═══════════════════════════════════════════════════════════════════
-          MAIN CONTENT: TWO-COLUMN LAYOUT (Left Sidebar + Right Content)
-          ═══════════════════════════════════════════════════════════════════ */}
-      <div className="flex flex-1 min-h-0">
-        {/* ─── LEFT SIDEBAR: Input Controls ─────────────────────────── */}
-        {debateSidebarCollapsed ? (
-          // COLLAPSED SIDEBAR - Thin vertical bar with icon buttons
-          <div className="w-16 border-r border-zinc-300 dark:border-zinc-800 p-2 space-y-2 overflow-y-auto flex flex-col items-center">
-            {/* Expand button */}
-            <button
-              onClick={toggleDebateSidebar}
-              className="relative group w-10 h-10 flex items-center justify-center rounded-lg bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:bg-zinc-700 border border-zinc-400 dark:border-zinc-700 hover:border-zinc-600 transition-colors"
+    <div className="flex flex-col h-full bg-zinc-950 text-zinc-50">
+      {/* Header / Control Bar */}
+      <div className="border-b border-zinc-800 bg-zinc-900/50 px-6 py-4 space-y-4 max-h-[50vh] overflow-auto">
+        {/* Topic, Rounds, and Debate Selector */}
+        <div className="flex gap-3">
+          <Input
+            value={topicInput}
+            onChange={(e) => setTopicInput(e.target.value)}
+            placeholder="Enter debate topic..."
+            disabled={isRunning}
+            className="flex-1 bg-zinc-800 border-zinc-700 text-zinc-50 placeholder:text-zinc-500"
+          />
+          <select
+            value={totalRounds}
+            onChange={(e) => setTotalRounds(Number(e.target.value))}
+            disabled={isRunning}
+            className="px-3 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-50 text-sm font-medium"
+          >
+            {[1, 2, 3, 4, 5].map((n) => (
+              <option key={n} value={n}>
+                {n} Round{n !== 1 ? "s" : ""}
+              </option>
+            ))}
+          </select>
+          {/* Saved Debates Dropdown */}
+          {debates.length > 0 && (
+            <select
+              onChange={(e) => {
+                const debate = debates.find(d => d.id === e.target.value);
+                if (debate) {
+                  setTopicInput(debate.topic);
+                  setTotalRounds(debate.totalRounds);
+                  setCurrentRound(debate.currentRound);
+                  setRounds(debate.rounds);
+                  setDebateComplete(debate.debateComplete);
+                  setFinalJudgeSummary(debate.finalJudgeSummary);
+                  setAgentSlots(debate.agentSlots as SlotConfig[]);
+                  setJudgeSlot(debate.judgeSlot);
+                }
+              }}
+              className="px-3 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-50 text-sm font-medium"
             >
-              <ChevronRight className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
-              <span className="absolute left-full ml-2 hidden group-hover:block whitespace-nowrap rounded bg-zinc-100 dark:bg-zinc-900 px-2 py-1 text-xs text-white z-50">
-                Expand Sidebar
-              </span>
-            </button>
+              <option value="">Load Debate</option>
+              {debates.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.topic.substring(0, 30)}... ({new Date(d.createdAt).toLocaleDateString()})
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
 
-            {debate && (
-              <>
-                <div className="h-px w-full bg-zinc-300 dark:bg-zinc-700" />
+        {/* Agent Slot Configuration */}
+        {!isRunning && (
+          <div className="space-y-2 border-t border-zinc-800 pt-3">
+            <h3 className="text-sm font-semibold text-zinc-300">Agents & Models</h3>
 
-                {/* Run Round / Play button */}
-                {!isRunning && !isComplete && (
-                  <button
-                    onClick={runRound}
-                    className="relative group w-10 h-10 flex items-center justify-center rounded-lg bg-emerald-600 hover:bg-emerald-700 transition-colors"
-                  >
-                    <Play className="h-4 w-4 text-white" />
-                    <span className="absolute left-full ml-2 hidden group-hover:block whitespace-nowrap rounded bg-zinc-100 dark:bg-zinc-900 px-2 py-1 text-xs text-white z-50">
-                      Run Round {debate.currentRound}
-                    </span>
-                  </button>
-                )}
-
-                {/* Pause button */}
-                {isRunning && !isPaused && (
-                  <button
-                    onClick={pauseDebate}
-                    className="relative group w-10 h-10 flex items-center justify-center rounded-lg bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:bg-zinc-700 border border-amber-700 hover:border-amber-600 transition-colors"
-                  >
-                    <Pause className="h-4 w-4 text-amber-400" />
-                    <span className="absolute left-full ml-2 hidden group-hover:block whitespace-nowrap rounded bg-zinc-100 dark:bg-zinc-900 px-2 py-1 text-xs text-white z-50">
-                      Pause
-                    </span>
-                  </button>
-                )}
-
-                {/* Resume button */}
-                {isPaused && (
-                  <button
-                    onClick={resumeDebate}
-                    className="relative group w-10 h-10 flex items-center justify-center rounded-lg bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:bg-zinc-700 border border-emerald-700 hover:border-emerald-600 transition-colors"
-                  >
-                    <Play className="h-4 w-4 text-emerald-400" />
-                    <span className="absolute left-full ml-2 hidden group-hover:block whitespace-nowrap rounded bg-zinc-100 dark:bg-zinc-900 px-2 py-1 text-xs text-white z-50">
-                      Resume
-                    </span>
-                  </button>
-                )}
-
-                {/* Redirect button */}
-                {!isRunning && !isComplete && (
-                  <button
-                    onClick={() => setShowRedirect((v) => !v)}
-                    className="relative group w-10 h-10 flex items-center justify-center rounded-lg bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:bg-zinc-700 border border-zinc-400 dark:border-zinc-700 hover:border-zinc-600 transition-colors"
-                  >
-                    <RotateCcw className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
-                    <span className="absolute left-full ml-2 hidden group-hover:block whitespace-nowrap rounded bg-zinc-100 dark:bg-zinc-900 px-2 py-1 text-xs text-white z-50">
-                      Redirect
-                    </span>
-                  </button>
-                )}
-
-                {/* Swap Judge button */}
-                {!isRunning && !isComplete && (
-                  <button
-                    onClick={() => setShowJudgeSwap((v) => !v)}
-                    className="relative group w-10 h-10 flex items-center justify-center rounded-lg bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:bg-zinc-700 border border-zinc-400 dark:border-zinc-700 hover:border-zinc-600 transition-colors"
-                  >
-                    <Scale className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
-                    <span className="absolute left-full ml-2 hidden group-hover:block whitespace-nowrap rounded bg-zinc-100 dark:bg-zinc-900 px-2 py-1 text-xs text-white z-50">
-                      Swap Judge
-                    </span>
-                  </button>
-                )}
-
-                {/* Export Summary button */}
+            {agentSlots.map((slot, idx) => {
+              const agentRoles = roles.filter(r => r.id !== "default-judge");
+              const agentModels = getAgentModels(idx);
+              const isCloud = agentUseCloud[idx];
+              return (
+              <div key={idx} className="flex gap-2 items-center text-xs">
+                <span className="text-zinc-400 font-medium w-16">Agent {idx + 1}</span>
+                {/* Per-agent Cloud/Local toggle */}
                 <button
-                  onClick={() => {
-                    exportDebateSummaryToPDF(debate as any);
-                    showToast({ message: "Exported debate summary as PDF", type: "success" });
-                  }}
-                  disabled={!debate.executiveSummary}
-                  className="relative group w-10 h-10 flex items-center justify-center rounded-lg bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:bg-zinc-700 border border-zinc-400 dark:border-zinc-700 hover:border-zinc-600 transition-colors disabled:opacity-30"
-                >
-                  <FileText className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
-                  <span className="absolute left-full ml-2 hidden group-hover:block whitespace-nowrap rounded bg-zinc-100 dark:bg-zinc-900 px-2 py-1 text-xs text-white z-50">
-                    Export Summary
-                  </span>
-                </button>
-
-                {/* Export Thread button */}
-                <button
-                  onClick={() => {
-                    exportDebateThreadToPDF(debate as any);
-                    showToast({ message: "Exported debate thread as PDF", type: "success" });
-                  }}
-                  disabled={debate.messages.length === 0}
-                  className="relative group w-10 h-10 flex items-center justify-center rounded-lg bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:bg-zinc-700 border border-zinc-400 dark:border-zinc-700 hover:border-zinc-600 transition-colors disabled:opacity-30"
-                >
-                  <Download className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
-                  <span className="absolute left-full ml-2 hidden group-hover:block whitespace-nowrap rounded bg-zinc-100 dark:bg-zinc-900 px-2 py-1 text-xs text-white z-50">
-                    Export Thread
-                  </span>
-                </button>
-
-                <div className="h-px w-full bg-zinc-300 dark:bg-zinc-700" />
-
-                {/* End Debate button */}
-                <button
-                  onClick={endDebate}
-                  className="relative group w-10 h-10 flex items-center justify-center rounded-lg bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:bg-zinc-700 border border-red-700 hover:border-red-600 transition-colors"
-                >
-                  <X className="h-4 w-4 text-red-400" />
-                  <span className="absolute left-full ml-2 hidden group-hover:block whitespace-nowrap rounded bg-zinc-100 dark:bg-zinc-900 px-2 py-1 text-xs text-white z-50">
-                    End Debate
-                  </span>
-                </button>
-
-                {/* Back to Workbench button */}
-                <button
-                  onClick={hideDebate}
-                  className="relative group w-10 h-10 flex items-center justify-center rounded-lg bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:bg-zinc-700 border border-indigo-700 hover:border-indigo-600 transition-colors"
-                >
-                  <Terminal className="h-4 w-4 text-indigo-400" />
-                  <span className="absolute left-full ml-2 hidden group-hover:block whitespace-nowrap rounded bg-zinc-100 dark:bg-zinc-900 px-2 py-1 text-xs text-white z-50">
-                    Back to Workbench
-                  </span>
-                </button>
-
-                <div className="flex-1" />
-
-                {/* Bottom section - Progress visuals */}
-                <div className="space-y-2 w-full">
-                  <div className="h-px w-full bg-zinc-300 dark:bg-zinc-700" />
-
-                  {/* Current round */}
-                  <div className="relative group flex flex-col items-center justify-center rounded-lg bg-zinc-200 dark:bg-zinc-800 border border-zinc-400 dark:border-zinc-700 p-2">
-                    <span className="text-[10px] text-zinc-500 dark:text-zinc-500">R</span>
-                    <span className="text-sm font-bold text-indigo-400">{debate.currentRound}</span>
-                    <span className="absolute left-full ml-2 hidden group-hover:block whitespace-nowrap rounded bg-zinc-100 dark:bg-zinc-900 px-2 py-1 text-xs text-white z-50">
-                      Round {debate.currentRound} of {debate.rounds}
-                    </span>
-                  </div>
-
-                  {/* Phase indicator */}
-                  {currentPhase && (
-                    <div className="relative group flex items-center justify-center rounded-lg bg-zinc-200 dark:bg-zinc-800 border border-zinc-400 dark:border-zinc-700 p-2">
-                      <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                        {currentPhase === "research" ? "R" : currentPhase === "cross-check" ? "C" : "J"}
-                      </span>
-                      <span className="absolute left-full ml-2 hidden group-hover:block whitespace-nowrap rounded bg-zinc-100 dark:bg-zinc-900 px-2 py-1 text-xs text-white z-50">
-                        {currentPhase}
-                      </span>
-                    </div>
+                  onClick={() => handleAgentCloudLocalToggle(idx)}
+                  className={cn(
+                    "px-2 py-1 rounded text-xs font-medium transition-colors",
+                    isCloud
+                      ? "bg-purple-600/40 text-purple-300 border border-purple-500/50"
+                      : "bg-cyan-600/40 text-cyan-300 border border-cyan-500/50"
                   )}
+                >
+                  {isCloud ? "☁️" : "🌐"}
+                </button>
+                <select
+                  value={slot.role || ""}
+                  onChange={(e) => handleAgentRoleChange(idx, e.target.value)}
+                  className="px-2 py-1 rounded bg-zinc-800 border border-zinc-700 text-zinc-50 text-xs w-20"
+                >
+                  <option value="">No Role</option>
+                  {agentRoles.map((role) => (
+                    <option key={role.id} value={role.id}>
+                      {role.name}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={slot.model || ""}
+                  onChange={(e) => {
+                    const selectedModel = agentModels.find(m => m.id === e.target.value);
+                    const newSlots = [...agentSlots];
+                    newSlots[idx].model = selectedModel?.id || null;
+                    newSlots[idx].provider = selectedModel?.providerId || null;
+                    setAgentSlots(newSlots);
+                  }}
+                  disabled={agentModels.length === 0}
+                  className="px-2 py-1 rounded bg-zinc-800 border border-zinc-700 text-zinc-50 text-xs flex-1 disabled:opacity-50"
+                >
+                  <option value="">Model</option>
+                  {agentModels.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            );
+            })}
 
-                  {/* Status badge */}
-                  <div className="relative group flex items-center justify-center rounded-lg p-2">
-                    {isRunning && (
-                      <>
-                        <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
-                        <span className="absolute left-full ml-2 hidden group-hover:block whitespace-nowrap rounded bg-zinc-100 dark:bg-zinc-900 px-2 py-1 text-xs text-white z-50">
-                          Running
-                        </span>
-                      </>
-                    )}
-                    {isPaused && (
-                      <>
-                        <div className="w-2 h-2 rounded-full bg-amber-500" />
-                        <span className="absolute left-full ml-2 hidden group-hover:block whitespace-nowrap rounded bg-zinc-100 dark:bg-zinc-900 px-2 py-1 text-xs text-white z-50">
-                          Paused
-                        </span>
-                      </>
-                    )}
-                    {isComplete && (
-                      <>
-                        <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                        <span className="absolute left-full ml-2 hidden group-hover:block whitespace-nowrap rounded bg-zinc-100 dark:bg-zinc-900 px-2 py-1 text-xs text-white z-50">
-                          Complete
-                        </span>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </>
-            )}
+            {/* Judge Slot */}
+            <div className="border-t border-zinc-800 pt-2">
+              <div className="flex gap-2 items-center text-xs">
+                <span className="text-zinc-400 font-medium w-16">Judge</span>
+                {/* Judge Cloud/Local toggle */}
+                <button
+                  onClick={handleJudgeCloudLocalToggle}
+                  className={cn(
+                    "px-2 py-1 rounded text-xs font-medium transition-colors",
+                    judgeUseCloud
+                      ? "bg-purple-600/40 text-purple-300 border border-purple-500/50"
+                      : "bg-cyan-600/40 text-cyan-300 border border-cyan-500/50"
+                  )}
+                >
+                  {judgeUseCloud ? "☁️" : "🌐"}
+                </button>
+                <select
+                  value={judgeSlot.model || ""}
+                  onChange={(e) => {
+                    const selectedModel = getJudgeModels().find(m => m.id === e.target.value);
+                    setJudgeSlot({
+                      provider: selectedModel?.providerId || null,
+                      model: selectedModel?.id || null,
+                    });
+                  }}
+                  disabled={getJudgeModels().length === 0}
+                  className="px-2 py-1 rounded bg-zinc-800 border border-zinc-700 text-zinc-50 text-xs flex-1 disabled:opacity-50"
+                >
+                  <option value="">Model</option>
+                  {getJudgeModels().map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Controls */}
+        <div className="flex gap-2 flex-wrap pt-3 border-t border-zinc-800">
+          {!isRunning ? (
+            <Button
+              onClick={handleStartDebate}
+              disabled={!isDebateValid}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold disabled:opacity-50"
+            >
+              <Play className="w-4 h-4 mr-2" />
+              Start Debate
+            </Button>
+          ) : (
+            <>
+              {!isPaused ? (
+                <Button
+                  onClick={handlePause}
+                  className="bg-yellow-600 hover:bg-yellow-700 text-white font-semibold"
+                >
+                  <Pause className="w-4 h-4 mr-2" />
+                  Pause
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleResume}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+                >
+                  <Resume className="w-4 h-4 mr-2" />
+                  Resume
+                </Button>
+              )}
+              <Button
+                onClick={handleStop}
+                className="bg-red-600 hover:bg-red-700 text-white font-semibold"
+              >
+                <Square className="w-4 h-4 mr-2" />
+                Stop
+              </Button>
+            </>
+          )}
+
+          {/* Toggles */}
+          <div className="ml-auto flex gap-2">
+            <button
+              onClick={() => setUseLocal(!useLocal)}
+              disabled={isRunning}
+              className={cn(
+                "px-3 py-2 rounded-lg font-semibold text-sm transition-colors disabled:opacity-50",
+                useLocal
+                  ? "bg-cyan-600/30 text-cyan-400 border border-cyan-500/50"
+                  : "bg-purple-600/30 text-purple-400 border border-purple-500/50"
+              )}
+            >
+              {useLocal ? "🌐 Local" : "☁️ Cloud"}
+            </button>
+            <button
+              onClick={() =>
+                setPassMode(passMode === "blind" ? "sequential" : "blind")
+              }
+              disabled={isRunning}
+              className={cn(
+                "px-3 py-2 rounded-lg font-semibold text-sm transition-colors disabled:opacity-50",
+                passMode === "blind"
+                  ? "bg-indigo-600/30 text-indigo-400 border border-indigo-500/50"
+                  : "bg-rose-600/30 text-rose-400 border border-rose-500/50"
+              )}
+            >
+              {passMode === "blind" ? "👁️ Blind" : "👀 Open"}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content Area */}
+      <div className="flex-1 overflow-auto">
+        {!debate ? (
+          <div className="h-full flex items-center justify-center">
+            <div className="text-center text-zinc-400">
+              <p className="text-lg mb-2">Configure agents, judge, and topic above</p>
+              <p className="text-sm">Then click Start Debate to begin</p>
+            </div>
           </div>
         ) : (
-          // EXPANDED SIDEBAR - Narrower with all controls
-          <div className="w-64 border-r border-zinc-300 dark:border-zinc-800 p-3 space-y-1.5 flex flex-col h-full">
-            {/* Header with collapse button and AI mode pill */}
-            <div className="flex items-center justify-between">
-              {/* AI Mode Quick Toggle */}
-              <Link
-                href="/settings"
-                className={cn(
-                  "flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-medium transition-all",
-                  "hover:ring-1 hover:ring-zinc-500",
-                  executionMode === "local" && "bg-emerald-500/20 text-emerald-500 dark:text-emerald-400",
-                  executionMode === "cloud" && "bg-violet-500/20 text-violet-500 dark:text-violet-400",
-                  executionMode === "hybrid" && "bg-amber-500/20 text-amber-500 dark:text-amber-400"
-                )}
-                title="AI Orchestration Mode"
-              >
-                <Zap className="h-2.5 w-2.5" />
-                {aiModeDisplayName()}
-              </Link>
+          <div className="p-6 space-y-6">
+            {/* Sequential Rounds Display */}
+            {rounds.map((round, roundIdx) => {
+              // Only show rounds up to and including current active round
+              if (round.roundNumber > currentActiveRound && round.judgeStatus === "waiting") {
+                return null;
+              }
 
-              {/* Collapse button */}
-              <button
-                onClick={toggleDebateSidebar}
-                className="h-7 flex items-center justify-end px-2 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors text-xs text-zinc-600 dark:text-zinc-400"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-            </div>
+              const isCurrentRound = round.roundNumber === currentActiveRound;
+              const isRoundExpanded = expandedRounds.has(round.roundNumber);
 
-            {/* Rounds selector - only show in setup mode (no debate yet) */}
-            {!debate && (
-              <>
-                <div className="h-px bg-zinc-300 dark:bg-zinc-700" />
-                <div className="space-y-1">
-                  <label className="block px-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-500">
-                    Rounds
-                  </label>
-                  <div className="grid grid-cols-5 gap-1">
-                    {[1, 2, 3, 4, 5].map((n) => (
-                      <button
-                        key={n}
-                        onClick={() => setRounds(n)}
-                        className={cn(
-                          "rounded px-2 py-1 text-xs font-semibold transition-colors",
-                          rounds === n
-                            ? "bg-indigo-600 text-white"
-                            : "bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-300 dark:hover:bg-zinc-700"
-                        )}
-                      >
-                        {n}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="h-px bg-zinc-300 dark:bg-zinc-700" />
-              </>
-            )}
-
-            {/* All controls - always visible, disabled when not applicable */}
-
-            {/* Run Round button - also starts debate if none exists */}
-            <Button
-              onClick={!debate ? handleStart : runRound}
-              disabled={!debate ? !isValid : (isRunning || isComplete)}
-              className="w-full bg-emerald-600 text-white hover:bg-emerald-700 h-7 text-xs font-bold px-2 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              <Play className="h-3 w-3 mr-1" />
-              {!debate ? "Start Debate" : `Run Round ${debate.currentRound}`}
-            </Button>
-
-            {/* Quick Debate button - only show when no debate active */}
-            {!debate && !quickDebateLoading && (
-              <div className="space-y-1">
-                <Button
-                  onClick={handleQuickDebate}
-                  disabled={!topic.trim() || quickDebateLoading}
-                  className="w-full bg-cyan-600 text-white hover:bg-cyan-700 h-7 text-xs font-bold px-2 disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  <Zap className="h-3 w-3 mr-1" />
-                  Quick Debate This
-                </Button>
-                <div className="flex items-center justify-center gap-2">
+              return (
+                <div key={round.roundNumber} className="border border-zinc-700 rounded-lg bg-zinc-900/30 overflow-hidden">
+                  {/* Round Header */}
                   <button
-                    onClick={() => setQuickDebateUseLocal(true)}
-                    className={cn(
-                      "text-[10px] px-2 py-0.5 rounded transition-colors",
-                      quickDebateUseLocal
-                        ? "bg-amber-500/20 text-amber-400 border border-amber-500/50"
-                        : "text-zinc-500 hover:text-zinc-400"
-                    )}
-                  >
-                    Local
-                  </button>
-                  <button
-                    onClick={() => setQuickDebateUseLocal(false)}
-                    className={cn(
-                      "text-[10px] px-2 py-0.5 rounded transition-colors",
-                      !quickDebateUseLocal
-                        ? "bg-indigo-500/20 text-indigo-400 border border-indigo-500/50"
-                        : "text-zinc-500 hover:text-zinc-400"
-                    )}
-                  >
-                    Cloud
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Quick Debate Progress Indicator */}
-            {quickDebateLoading && (
-              <div className="rounded-lg border border-cyan-500/50 bg-cyan-950/20 p-3 space-y-2">
-                <div className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 text-cyan-400 animate-spin" />
-                  <span className="text-xs font-bold text-cyan-400">Quick Debate Running</span>
-                </div>
-                <div className="text-[11px] text-cyan-300/80">
-                  {currentPhase === "research" && activeAgentIndex >= 0 && (
-                    <span>Agent {activeAgentIndex + 1} of {debate?.participants.length || 3} researching...</span>
-                  )}
-                  {currentPhase === "cross-check" && activeAgentIndex >= 0 && (
-                    <span>Agent {activeAgentIndex + 1} cross-checking...</span>
-                  )}
-                  {currentPhase === "judging" && (
-                    <span>Judge summarizing...</span>
-                  )}
-                  {currentPhase === "idle" && !debate && (
-                    <span>Starting debate...</span>
-                  )}
-                  {currentPhase === "idle" && debate && (
-                    <span>Generating executive summary...</span>
-                  )}
-                </div>
-                <div className="h-1.5 bg-cyan-900/50 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-cyan-500 transition-all duration-500"
-                    style={{
-                      width: currentPhase === "judging"
-                        ? "90%"
-                        : currentPhase === "cross-check"
-                          ? `${50 + ((activeAgentIndex + 1) / (debate?.participants.length || 3)) * 25}%`
-                          : currentPhase === "research" && activeAgentIndex >= 0
-                            ? `${((activeAgentIndex + 1) / (debate?.participants.length || 3)) * 50}%`
-                            : "5%"
+                    onClick={() => {
+                      const next = new Set(expandedRounds);
+                      next.has(round.roundNumber)
+                        ? next.delete(round.roundNumber)
+                        : next.add(round.roundNumber);
+                      setExpandedRounds(next);
                     }}
-                  />
-                </div>
-              </div>
-            )}
+                    className={cn(
+                      "w-full px-6 py-3 flex items-center justify-between transition-colors",
+                      isCurrentRound
+                        ? "bg-amber-900/40 hover:bg-amber-800/40"
+                        : "bg-zinc-800 hover:bg-zinc-700"
+                    )}
+                  >
+                    <h3 className="text-lg font-semibold text-zinc-100">
+                      Round {round.roundNumber}
+                      {isCurrentRound && <span className="ml-2 text-sm text-amber-400">(Active)</span>}
+                      {round.judgeStatus === "complete" && <span className="ml-2 text-sm text-emerald-400">✓</span>}
+                    </h3>
+                    <span className="text-zinc-400">{isRoundExpanded ? '▼' : '▶'}</span>
+                  </button>
 
-            {/* Pause / Resume buttons - side by side */}
-            <div className="grid grid-cols-2 gap-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={pauseDebate}
-                disabled={!debate || !isRunning || isPaused}
-                className="h-6 gap-1 px-1 text-[10px] text-amber-400 hover:text-amber-300 border border-amber-700 hover:border-amber-600 disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                <Pause className="h-2.5 w-2.5" />
-                Pause
-              </Button>
+                  {/* Round Content */}
+                  {isRoundExpanded && (
+                    <div className="p-6 space-y-4">
+                      {/* Agent Panels for this round */}
+                      <div className="space-y-3">
+                        {round.agents.map((agent, idx) =>
+                          agentSlots[idx]?.provider ? (
+                            <div key={`round-${round.roundNumber}-agent-${idx}`} className="border border-zinc-600 rounded-lg bg-zinc-800/20">
+                              {/* Agent Header (Collapsible) */}
+                              <button
+                                onClick={() => {
+                                  const agentKey = `agent-${round.roundNumber}-${idx}`;
+                                  const next = new Set(expandedAgents);
+                                  next.has(agentKey)
+                                    ? next.delete(agentKey)
+                                    : next.add(agentKey);
+                                  setExpandedAgents(next);
+                                }}
+                                className="w-full px-4 py-2 flex items-center justify-between bg-zinc-700 hover:bg-zinc-600 transition-colors"
+                              >
+                                <span className="font-semibold text-zinc-100">
+                                  Agent {idx + 1} {["Researcher", "Engineer", "Analyst"][idx] || ""}
+                                </span>
+                                <span className="text-zinc-400">
+                                  {expandedAgents.has(`agent-${round.roundNumber}-${idx}`) ? '▼' : '▶'}
+                                </span>
+                              </button>
 
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={resumeDebate}
-                disabled={!debate || !isPaused}
-                className="h-6 gap-1 px-1 text-[10px] text-emerald-400 hover:text-emerald-300 border border-emerald-700 hover:border-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                <Play className="h-2.5 w-2.5" />
-                Resume
-              </Button>
-            </div>
+                              {/* Agent Content */}
+                              {expandedAgents.has(`agent-${round.roundNumber}-${idx}`) && (
+                                <div className="p-4">
+                                  <AgentPanel
+                                    agent={{
+                                      id: agent.id,
+                                      provider: agentSlots[idx].provider,
+                                      model: agentSlots[idx].model || "",
+                                      role: ["Researcher", "Engineer", "Analyst"][idx] || "Agent",
+                                      color: AGENT_COLORS[idx],
+                                    }}
+                                    agentNumber={idx + 1}
+                                    roundNumber={round.roundNumber}
+                                    isStreaming={agent.status === "thinking"}
+                                    content={agent.content}
+                                    status={agent.status}
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          ) : null
+                        )}
+                      </div>
 
-            {/* Redirect button + expandable input */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowRedirect((v) => !v)}
-              disabled={!debate || isRunning || isComplete}
-              className={cn(
-                "w-full h-6 gap-1 px-2 text-[10px] border disabled:opacity-40 disabled:cursor-not-allowed",
-                showRedirect
-                  ? "text-indigo-400 border-indigo-700"
-                  : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:text-zinc-200 border-zinc-400 dark:border-zinc-700 hover:border-zinc-600"
-              )}
-            >
-              <RotateCcw className="h-2.5 w-2.5" />
-              Redirect
-            </Button>
-
-            {showRedirect && debate && !isRunning && !isComplete && (
-              <div className="space-y-2">
-                <label className="block text-[10px] font-medium text-indigo-400 uppercase tracking-wider">
-                  Redirect Debate
-                </label>
-                <Input
-                  value={redirectInput}
-                  onChange={(e) => setRedirectInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleRedirectSubmit()}
-                  placeholder="Enter new direction for the debate..."
-                  className="w-full bg-zinc-200 dark:bg-zinc-800 border-zinc-400 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 text-xs h-8"
-                  autoFocus
-                />
-                <Button
-                  size="sm"
-                  onClick={handleRedirectSubmit}
-                  disabled={!redirectInput.trim()}
-                  className="w-full bg-indigo-600 text-white hover:bg-indigo-700 h-8 text-sm font-semibold px-3"
-                >
-                  Redirect & Run
-                </Button>
-              </div>
-            )}
-
-            {/* Swap Judge button + expandable picker */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowJudgeSwap((v) => !v)}
-              disabled={!debate || isRunning || isComplete}
-              className={cn(
-                "w-full h-6 gap-1 px-2 text-[10px] border disabled:opacity-40 disabled:cursor-not-allowed",
-                showJudgeSwap
-                  ? "text-amber-400 border-amber-700"
-                  : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:text-zinc-200 border-zinc-400 dark:border-zinc-700 hover:border-zinc-600"
-              )}
-            >
-              <Scale className="h-2.5 w-2.5" />
-              Swap Judge
-            </Button>
-
-            {showJudgeSwap && debate && !isRunning && !isComplete && (
-                      <div className="space-y-2">
-                        <label className="block text-[10px] font-medium text-amber-400 uppercase tracking-wider">
-                          Swap Judge
-                        </label>
-                        <div>
-                          <label className="block mb-1 text-[10px] text-zinc-500 dark:text-zinc-500">Provider</label>
-                          <select
-                            value={judgeSwapSlot.provider ?? ""}
-                            onChange={(e) => {
-                              const pid = e.target.value;
-                              if (!pid) {
-                                setJudgeSwapSlot({ provider: null, model: "", roleId: "default-judge" });
-                                return;
-                              }
-                              const prov = providers.find((p) => p.id === pid);
-                              const isLocal = prov?.type === "local";
-                              setJudgeSwapSlot({
-                                provider: pid as Provider,
-                                model: isLocal ? (ollamaModels[0]?.id ?? "") : (prov?.models[0]?.id ?? ""),
-                                roleId: "default-judge",
-                              });
+                      {/* Judge Summary for this round (Collapsible) */}
+                      {round.judgeStatus !== "waiting" && (
+                        <div className="border border-amber-700/50 rounded-lg bg-amber-900/20">
+                          <button
+                            onClick={() => {
+                              const next = new Set(expandedJudges);
+                              next.has(round.roundNumber)
+                                ? next.delete(round.roundNumber)
+                                : next.add(round.roundNumber);
+                              setExpandedJudges(next);
                             }}
-                            className="w-full rounded bg-zinc-300 dark:bg-zinc-700 px-2 py-1 text-xs text-zinc-800 dark:text-zinc-200 border-0 focus:ring-1 focus:ring-amber-500"
+                            className="w-full px-4 py-2 flex items-center justify-between bg-amber-800/40 hover:bg-amber-800/50 transition-colors"
                           >
-                            <option value="">Select provider</option>
-                            {providers.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                          </select>
-                        </div>
-                        {judgeSwapSlot.provider && (
-                          <div>
-                            <label className="block mb-1 text-[10px] text-zinc-500 dark:text-zinc-500">Model</label>
-                            {renderModelSelect(judgeSwapSlot, 3, (model) => setJudgeSwapSlot((s) => ({ ...s, model })))}
-                          </div>
-                        )}
-                        <Button
-                          size="sm"
-                          onClick={handleJudgeSwap}
-                          disabled={!judgeSwapSlot.provider}
-                          className="w-full bg-amber-600 text-white hover:bg-amber-700 h-8 text-sm font-semibold px-3"
-                        >
-                          <Scale className="h-3.5 w-3.5 mr-1.5" />
-                          Swap
-                        </Button>
-              </div>
-            )}
+                            <span className="font-semibold text-amber-100">
+                              Judge Summary — Round {round.roundNumber}
+                              {round.judgeStatus === "complete" && <span className="ml-2 text-sm text-emerald-400">✓</span>}
+                            </span>
+                            <span className="text-amber-400">
+                              {expandedJudges.has(round.roundNumber) ? '▼' : '▶'}
+                            </span>
+                          </button>
 
-            {/* End Debate button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={endDebate}
-              disabled={!debate}
-              className="w-full h-6 gap-1 px-2 text-[10px] text-red-400 hover:text-red-300 border border-red-700 hover:border-red-600 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              <X className="h-2.5 w-2.5" />
-              End Debate
-            </Button>
-
-            <div className="h-px bg-zinc-300 dark:bg-zinc-700" />
-
-            {/* Export Summary PDF */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                if (debate) {
-                  exportDebateSummaryToPDF(debate as any);
-                  showToast({ message: "Exported debate summary as PDF", type: "success" });
-                }
-              }}
-              disabled={!debate || !debate.executiveSummary}
-              className="w-full h-6 gap-1 px-2 text-[10px] text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:text-zinc-200 border border-zinc-400 dark:border-zinc-700 hover:border-zinc-600 disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              <FileText className="h-2.5 w-2.5" />
-              Export Summary
-            </Button>
-
-            {/* Export Thread PDF */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                if (debate) {
-                  exportDebateThreadToPDF(debate as any);
-                  showToast({ message: "Exported debate thread as PDF", type: "success" });
-                }
-              }}
-              disabled={!debate || debate.messages.length === 0}
-              className="w-full h-6 gap-1 px-2 text-[10px] text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:text-zinc-200 border border-zinc-400 dark:border-zinc-700 hover:border-zinc-600 disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              <Download className="h-2.5 w-2.5" />
-              Export Thread
-            </Button>
-
-            {/* Export CSV */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                if (debate) {
-                  exportDebateToCSV(debate as any);
-                  showToast({ message: "Exported debate as CSV", type: "success" });
-                }
-              }}
-              disabled={!debate || debate.messages.length === 0}
-              className="w-full h-6 gap-1 px-2 text-[10px] text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:text-zinc-200 border border-zinc-400 dark:border-zinc-700 hover:border-zinc-600 disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              <Download className="h-2.5 w-2.5" />
-              Export CSV
-            </Button>
-
-            {/* Save to Memory */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleSaveToMemory}
-              disabled={!debate || debate.messages.length === 0}
-              className={cn(
-                "w-full h-6 gap-1 px-2 text-[10px] border disabled:opacity-30 disabled:cursor-not-allowed",
-                savedToMemory
-                  ? "text-emerald-400 border-emerald-700"
-                  : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:text-zinc-200 border-zinc-400 dark:border-zinc-700 hover:border-zinc-600"
-              )}
-            >
-              {savedToMemory ? <Check className="h-2.5 w-2.5" /> : <BookmarkPlus className="h-2.5 w-2.5" />}
-              {savedToMemory ? "Saved" : "Save to Memory"}
-            </Button>
-
-            <div className="h-px bg-zinc-300 dark:bg-zinc-700" />
-
-            {/* Debate History - with flex-1 to take remaining space */}
-            <div className="flex-1 min-h-0 flex flex-col">
-              <div className="mb-1 flex items-center justify-between px-1">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-500">
-                  Debate History
-                </p>
-              </div>
-              <div className="flex-1 min-h-0 overflow-y-auto">
-                <DebateHistory />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ─── RIGHT SIDE: Output/Visual Content ───────────────────── */}
-        <div className="flex-1 flex flex-col min-h-0">
-          {/* LLM Section - Collapsible */}
-          {!llmSectionCollapsed ? (
-            <div className="border-b border-zinc-300 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900/50 p-3 space-y-2">
-              {/* Collapse button */}
-              <div className="flex items-center justify-between">
-                <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-500">LLM Configuration</h2>
-                <button
-                  onClick={() => setLlmSectionCollapsed(true)}
-                  className="flex items-center gap-1 text-xs text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:text-zinc-200 transition-colors"
-                >
-                  <ChevronDown className="h-3.5 w-3.5" />
-                  Collapse
-                </button>
-              </div>
-
-              {/* Participant slots */}
-              <div>
-                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-500">
-                  Participants
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-                  {slots.map((slot, idx) => {
-                    const isJudge = idx === 3;
-                    return (
-                      <div
-                        key={idx}
-                        className={cn(
-                          "rounded-lg border p-2 space-y-1",
-                          isJudge
-                            ? "border-amber-700/50 bg-amber-50 dark:bg-amber-950/20"
-                            : AGENT_BG_COLORS[idx] || "border-zinc-400 dark:border-zinc-700 bg-zinc-200 dark:bg-zinc-800/50"
-                        )}
-                      >
-                        <p className={cn(
-                          "text-[11px] font-bold uppercase tracking-wider",
-                          isJudge ? "text-amber-700 dark:text-amber-400" : AGENT_LABEL_COLORS[idx]
-                        )}>
-                          {slotLabels[idx]}
-                        </p>
-                        <select
-                          value={slot.provider ?? ""}
-                          onChange={(e) => handleProviderChange(idx, e.target.value)}
-                          disabled={!!debate}
-                          className="w-full rounded bg-zinc-300 dark:bg-zinc-700 px-2 py-1 text-xs text-zinc-800 dark:text-zinc-200 border-0 focus:ring-1 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <option value="">No LLM</option>
-                          {providers.map((p) => (
-                            <option key={p.id} value={p.id}>{p.name}</option>
-                          ))}
-                        </select>
-                        {renderModelSelect(slot, idx, (model) => updateSlot(idx, { model }))}
-                        {slot.provider && (
-                          <select
-                            value={slot.roleId ?? ""}
-                            onChange={(e) => updateSlot(idx, { roleId: e.target.value || undefined })}
-                            disabled={!!debate}
-                            className="w-full rounded bg-zinc-300 dark:bg-zinc-700 px-2 py-1 text-xs text-zinc-800 dark:text-zinc-200 border-0 focus:ring-1 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {isJudge ? (
-                              roles.map((r) => (
-                                <option key={r.id} value={r.id}>
-                                  {r.name}{r.isDefault ? " (Default)" : ""}
-                                </option>
-                              ))
-                            ) : (
-                              <>
-                                <option value="">No Role (General)</option>
-                                {agentRoles.map((r) => (
-                                  <option key={r.id} value={r.id}>{r.name}</option>
-                                ))}
-                              </>
-                            )}
-                          </select>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-            </div>
-          ) : (
-            <div className="border-b border-zinc-300 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900/50 h-12 flex items-center justify-between px-4">
-              <span className="text-xs text-zinc-600 dark:text-zinc-400">
-                {agentCount} LLMs configured ({debate ? `${debate.participants.length} agents + judge` : `${agentCount} agents + judge`})
-              </span>
-              <button
-                onClick={() => setLlmSectionCollapsed(false)}
-                className="flex items-center gap-1 text-xs text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:text-zinc-200 transition-colors"
-              >
-                <ChevronRight className="h-3.5 w-3.5" />
-                Expand
-              </button>
-            </div>
-          )}
-
-          {/* Topic + Debate output - scrollable */}
-          <div className="flex-1 overflow-y-auto p-3 space-y-3">
-            {/* Topic */}
-            <div>
-              <div className="mb-1 flex items-center gap-2">
-                <label className="block text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-500">
-                  Research Question
-                </label>
-                {sourceConversationId && (
-                  <span className="rounded-full bg-indigo-600/20 px-2 py-0.5 text-[10px] font-medium text-indigo-400 border border-indigo-500/30">
-                    From thread
-                  </span>
-                )}
-              </div>
-              <textarea
-                value={topic}
-                onChange={(e) => setTopic(e.target.value)}
-                placeholder="Enter debate topic or paste content..."
-                rows={4}
-                disabled={!!debate}
-                className="w-full rounded-lg border border-zinc-400 dark:border-zinc-700 bg-zinc-200 dark:bg-zinc-800 px-2 py-1.5 text-sm text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-500 dark:text-zinc-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed resize-y"
-              />
-            </div>
-
-            {/* Status badges + Current Round/Phase info */}
-            {debate && (
-              <div className="flex flex-wrap items-center gap-2">
-                {isRunning && (
-                  <span className="rounded-full bg-indigo-600/20 px-2.5 py-1 text-[11px] font-medium text-indigo-400 border border-indigo-500/30">
-                    Running - Round {debate.currentRound}
-                  </span>
-                )}
-                {isComplete && (
-                  <span className="rounded-full bg-emerald-600/15 px-2.5 py-1 text-[11px] font-medium text-emerald-400">
-                    Completed
-                  </span>
-                )}
-                {isPaused && (
-                  <span className="rounded-full bg-amber-600/15 px-2.5 py-1 text-[11px] font-medium text-amber-400">
-                    Paused
-                  </span>
-                )}
-                {currentPhase && (
-                  <span className="rounded-full bg-zinc-300 dark:bg-zinc-700/50 px-2.5 py-1 text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
-                    {currentPhase}
-                  </span>
-                )}
-              </div>
-            )}
-
-            {/* Debate Transcript - Grouped by Round */}
-            {debate && debate.messages.length > 0 && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">Debate Transcript</h2>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={handleToggleExpandAll}
-                      className="flex items-center gap-1 px-2 py-1 rounded text-xs text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
-                      title={allExpanded ? "Collapse All" : "Expand All"}
-                    >
-                      {allExpanded ? (
-                        <>
-                          <ChevronDown className="h-3.5 w-3.5" />
-                          Collapse All
-                        </>
-                      ) : (
-                        <>
-                          <ChevronRight className="h-3.5 w-3.5" />
-                          Expand All
-                        </>
-                      )}
-                    </button>
-                    <button
-                      onClick={handleCopyDebate}
-                      className="flex items-center gap-1 px-2 py-1 rounded text-xs text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
-                      title="Copy entire debate"
-                    >
-                      {debateCopied ? (
-                        <>
-                          <Check className="h-3.5 w-3.5 text-emerald-400" />
-                          Copied
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="h-3.5 w-3.5" />
-                          Copy Debate
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-                {Array.from({ length: debate.rounds }, (_, roundIdx) => {
-                  const round = roundIdx + 1;
-                  const roundCritiques = debate.critiques.filter((c) => c.round === round);
-                  const roundSummary = debate.roundSummaries.find((rs) => rs.round === round);
-                  const participantCount = debate.participants.length;
-                  const researchStartIdx = getResearchStartIndex(round, participantCount, debate.roundSummaries.length);
-                  const isCurrentRound = debate.currentRound === round && debate.status === 'ongoing';
-
-                  return (
-                    <DebateRoundGroup
-                      key={round}
-                      round={round}
-                      isCurrentRound={isCurrentRound}
-                      defaultExpanded={round === debate.currentRound || round === debate.rounds}
-                      forceExpanded={allExpanded}
-                    >
-                      {/* Research Phase */}
-                      <div className="space-y-1.5">
-                        <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-500 px-1">Research Phase</div>
-                        {debate.participants.map((participant, pIdx) => {
-                          const msg = debate.messages[researchStartIdx + pIdx];
-                          if (!msg) return null;
-                          return (
-                            <AgentMessageCard
-                              key={`r${round}-research-${pIdx}`}
-                              agentIndex={pIdx}
-                              agentLabel={`Agent ${pIdx + 1}`}
-                              model={`${getProviderName(participant.provider)} / ${participant.model}`}
-                              phase="Research"
-                              content={msg.content}
-                              forceExpanded={allExpanded}
-                              onSendToBuilder={handleSendToBuilder}
-                            />
-                          );
-                        })}
-                      </div>
-
-                      {/* Cross-Check Phase */}
-                      {roundCritiques.length > 0 && (
-                        <div className="space-y-1.5">
-                          <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-500 px-1">Cross-Check Phase</div>
-                          {debate.participants.map((participant, pIdx) => {
-                            const critique = roundCritiques.find((c) => c.fromParticipantIndex === pIdx);
-                            if (!critique) return null;
-                            return (
-                              <AgentMessageCard
-                                key={`r${round}-critique-${pIdx}`}
-                                agentIndex={pIdx}
-                                agentLabel={`Agent ${pIdx + 1}`}
-                                model={`${getProviderName(participant.provider)} / ${participant.model}`}
-                                phase="Cross-Check"
-                                content={critique.content}
-                                forceExpanded={allExpanded}
-                                onSendToBuilder={handleSendToBuilder}
-                              />
-                            );
-                          })}
+                          {expandedJudges.has(round.roundNumber) && (
+                            <div className="p-4">
+                              {round.judgeStatus === "thinking" && (
+                                <div className="text-amber-200 flex items-center gap-2">
+                                  <span className="inline-block w-2 h-2 bg-amber-400 rounded-full animate-pulse" />
+                                  Analyzing...
+                                </div>
+                              )}
+                              {round.judgeSummary && (
+                                <div className="prose prose-invert dark:prose-invert max-w-none text-zinc-200">
+                                  {round.judgeSummary}
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       )}
-
-                      {/* Judge Summary */}
-                      {roundSummary && (
-                        <JudgeSummaryCard
-                          model={`${getProviderName(debate.judge.provider)} / ${debate.judge.model}`}
-                          summary={roundSummary.summary}
-                          agreements={roundSummary.agreements}
-                          forceExpanded={allExpanded}
-                        />
-                      )}
-                    </DebateRoundGroup>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Executive Summary */}
-            {debate?.executiveSummary && (
-              <div className="border-2 border-indigo-400 dark:border-indigo-500 rounded-lg bg-indigo-50 dark:bg-indigo-950/30 p-3 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Brain className="h-5 w-5 text-indigo-500 dark:text-indigo-400" />
-                    <h2 className="text-lg font-bold text-indigo-700 dark:text-indigo-300">Executive Summary</h2>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowExecModal(true)}
-                    className="h-7 gap-1 px-2 text-sm font-semibold text-indigo-500 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
-                  >
-                    <Maximize2 className="h-3.5 w-3.5" />
-                    Expand
-                  </Button>
-                </div>
-
-                <div className="rounded-lg border border-indigo-300 dark:border-indigo-500/30 bg-white dark:bg-zinc-900/50 p-4 max-h-[24rem] overflow-y-auto">
-                  <ReactMarkdown
-                    components={{
-                      p: ({ children }) => <p className="mb-4 text-base leading-relaxed text-zinc-700 dark:text-zinc-300">{children}</p>,
-                      h1: ({ children }) => <h1 className="mb-4 mt-6 text-2xl font-bold text-zinc-900 dark:text-zinc-100">{children}</h1>,
-                      h2: ({ children }) => <h2 className="mb-3 mt-5 text-xl font-bold text-zinc-900 dark:text-zinc-100">{children}</h2>,
-                      h3: ({ children }) => <h3 className="mb-2 mt-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">{children}</h3>,
-                      ul: ({ children }) => <ul className="mb-4 space-y-2 pl-5 list-disc text-base text-zinc-700 dark:text-zinc-300">{children}</ul>,
-                      ol: ({ children }) => <ol className="mb-4 space-y-2 pl-5 list-decimal text-base text-zinc-700 dark:text-zinc-300">{children}</ol>,
-                      li: ({ children }) => <li className="leading-relaxed">{children}</li>,
-                      blockquote: ({ children }) => <blockquote className="my-4 border-l-4 border-indigo-400 dark:border-indigo-500 pl-4 italic text-zinc-600 dark:text-zinc-400">{children}</blockquote>,
-                      strong: ({ children }) => <strong className="font-bold text-zinc-900 dark:text-zinc-100">{children}</strong>,
-                    }}
-                  >
-                    {debate.executiveSummary}
-                  </ReactMarkdown>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowExecModal(true)}
-                    className="h-8 gap-1 px-3 text-xs text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 border border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600"
-                  >
-                    <Maximize2 className="h-3.5 w-3.5" />
-                    Maximize
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      exportDebateSummaryToPDF(debate as any);
-                      showToast({ message: "Exported debate summary as PDF", type: "success" });
-                    }}
-                    className="h-8 gap-1 px-3 text-xs text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 border border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600"
-                  >
-                    <FileText className="h-3.5 w-3.5" />
-                    Export Summary
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      exportDebateThreadToPDF(debate as any);
-                      showToast({ message: "Exported debate thread as PDF", type: "success" });
-                    }}
-                    className="h-8 gap-1 px-3 text-xs text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 border border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600"
-                  >
-                    <Download className="h-3.5 w-3.5" />
-                    Export Thread
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleSaveToMemory}
-                    className="h-8 gap-1 px-3 text-xs text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 border border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600"
-                  >
-                    <BookmarkPlus className="h-3.5 w-3.5" />
-                    Save to Memory
-                  </Button>
-                  {sourceConversationId && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={endDebateToThread}
-                      className="h-8 gap-1 px-3 text-xs text-indigo-500 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 border border-indigo-400 dark:border-indigo-700 hover:border-indigo-500 dark:hover:border-indigo-600"
-                    >
-                      <ArrowRight className="h-3.5 w-3.5" />
-                      Return to Thread
-                    </Button>
+                    </div>
                   )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleCopyExecSummary}
-                    className="h-8 gap-1 px-3 text-xs text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 border border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600"
-                  >
-                    <Copy className="h-3.5 w-3.5" />
-                    Copy
-                  </Button>
                 </div>
+              );
+            })}
+
+            {/* Final Judge Summary — shown after all rounds complete */}
+            {debateComplete && finalJudgeSummary && (
+              <div className="w-full mt-8 border-t border-zinc-700 pt-6">
+                <h2 className="text-2xl font-bold text-zinc-100 mb-4">Final Verdict</h2>
+                <JudgeSummary
+                  summary={finalJudgeSummary}
+                  onCopy={handleCopyJudgment}
+                  onExportPDF={() => {
+                    // Export PDF functionality to be implemented
+                    console.log("Export PDF clicked");
+                  }}
+                  onSendToChat={handleSendToChat}
+                  onSendToMultiChat={handleSendToMultiChat}
+                  onClear={clearDebate}
+                />
               </div>
             )}
           </div>
-
-          {/* Fixed Input Bar - Redirect/Ask Questions */}
-          {debate && !isComplete && (
-            <div className="border-t border-zinc-300 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900/80 p-3">
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={quickInput}
-                  onChange={(e) => setQuickInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleQuickInput()}
-                  placeholder={isRunning ? "Debate in progress..." : "Ask a question or redirect the debate..."}
-                  disabled={isRunning}
-                  className="flex-1 rounded-lg border border-zinc-400 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                />
-                <Button
-                  onClick={handleQuickInput}
-                  disabled={isRunning || !quickInput.trim()}
-                  className="h-9 px-3 bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  <Send className="h-4 w-4" />
-                </Button>
-              </div>
-              <p className="mt-1 text-[10px] text-zinc-500 dark:text-zinc-500">
-                Press Enter to redirect the debate with your question or instruction
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Executive Summary Modal */}
-      {debate?.executiveSummary && (
-        <ExecutiveSummaryModal
-          open={showExecModal}
-          onOpenChange={setShowExecModal}
-          summary={debate.executiveSummary}
-          topic={debate.topic}
-        />
-      )}
-    </div>
-  );
-}
-
-// ─── Round Group ─────────────────────────────────────────────────────────────
-
-function DebateRoundGroup({
-  round,
-  isCurrentRound,
-  defaultExpanded,
-  forceExpanded,
-  children,
-}: {
-  round: number;
-  isCurrentRound: boolean;
-  defaultExpanded: boolean;
-  forceExpanded?: boolean;
-  children: React.ReactNode;
-}) {
-  const [expanded, setExpanded] = useState(defaultExpanded);
-  const [userOverride, setUserOverride] = useState<boolean | null>(null);
-
-  // User click overrides forceExpanded, otherwise use forceExpanded or local state
-  const isExpanded = userOverride !== null ? userOverride : (forceExpanded !== undefined ? forceExpanded : expanded);
-
-  const handleToggle = () => {
-    if (forceExpanded !== undefined) {
-      // Override the forceExpanded with user's choice
-      setUserOverride(userOverride === null ? !forceExpanded : !userOverride);
-    } else {
-      setExpanded(!expanded);
-    }
-  };
-
-  return (
-    <div className={cn(
-      "rounded-xl border-2 overflow-hidden transition-colors",
-      isCurrentRound
-        ? "border-amber-500/50 bg-amber-950/5 dark:bg-amber-950/10"
-        : "border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900/30",
-    )}>
-      {/* Round Header */}
-      <button
-        onClick={handleToggle}
-        className={cn(
-          "w-full flex items-center justify-between px-3 py-2 transition-colors",
-          isCurrentRound
-            ? "bg-amber-500/10 hover:bg-amber-500/15"
-            : "bg-zinc-100 dark:bg-zinc-800/50 hover:bg-zinc-200 dark:hover:bg-zinc-800",
         )}
-      >
-        <div className="flex items-center gap-3">
-          {isExpanded ? (
-            <ChevronDown className="h-4 w-4 text-zinc-500" />
-          ) : (
-            <ChevronRight className="h-4 w-4 text-zinc-500" />
-          )}
-          <span className={cn(
-            "text-sm font-bold",
-            isCurrentRound ? "text-amber-600 dark:text-amber-400" : "text-zinc-800 dark:text-zinc-200"
-          )}>
-            Round {round}
-          </span>
-          {isCurrentRound && (
-            <span className="text-xs font-medium text-amber-500 animate-pulse">In Progress</span>
-          )}
-        </div>
-      </button>
-
-      {/* Round Content */}
-      {isExpanded && (
-        <div className="px-3 py-2 space-y-2">
-          {children}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Agent Message Card ──────────────────────────────────────────────────────
-
-const AGENT_LEFT_BORDER = [
-  "border-l-indigo-500",
-  "border-l-purple-500",
-  "border-l-emerald-500",
-  "border-l-rose-500",
-];
-
-const AGENT_BADGE_COLORS = [
-  "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400",
-  "bg-purple-500/15 text-purple-600 dark:text-purple-400",
-  "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
-  "bg-rose-500/15 text-rose-600 dark:text-rose-400",
-];
-
-function AgentMessageCard({
-  agentIndex,
-  agentLabel,
-  model,
-  phase,
-  content,
-  forceExpanded,
-  onSendToBuilder,
-}: {
-  agentIndex: number;
-  agentLabel: string;
-  model: string;
-  phase: string;
-  content: string;
-  forceExpanded?: boolean;
-  onSendToBuilder?: (content: string) => void;
-}) {
-  const [expanded, setExpanded] = useState(false);
-  const [userOverride, setUserOverride] = useState<boolean | null>(null);
-  const isExpanded = userOverride !== null ? userOverride : (forceExpanded !== undefined ? forceExpanded : expanded);
-  const [copied, setCopied] = useState(false);
-  const colorIdx = agentIndex % AGENT_LEFT_BORDER.length;
-
-  const handleToggle = () => {
-    if (forceExpanded !== undefined) {
-      setUserOverride(userOverride === null ? !forceExpanded : !userOverride);
-    } else {
-      setExpanded(!expanded);
-    }
-  };
-
-  const handleCopy = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    await navigator.clipboard.writeText(content);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleSendToBuilder = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onSendToBuilder?.(content);
-  };
-
-  return (
-    <div className={cn(
-      "rounded-lg border border-zinc-200 dark:border-zinc-700 border-l-4 overflow-hidden",
-      AGENT_LEFT_BORDER[colorIdx],
-    )}>
-      <div className="flex items-center justify-between px-3 py-2 bg-zinc-50 dark:bg-zinc-800/40">
-        <button
-          onClick={handleToggle}
-          className="flex items-center gap-2 flex-1 min-w-0 text-left"
-        >
-          {isExpanded ? (
-            <ChevronDown className="h-3.5 w-3.5 text-zinc-400 flex-shrink-0" />
-          ) : (
-            <ChevronRight className="h-3.5 w-3.5 text-zinc-400 flex-shrink-0" />
-          )}
-          <span className={cn(
-            "text-xs font-bold px-2 py-0.5 rounded-full",
-            AGENT_BADGE_COLORS[colorIdx],
-          )}>
-            {agentLabel}
-          </span>
-          <span className="text-[11px] text-zinc-500 dark:text-zinc-400 truncate">{model}</span>
-          <span className="text-[10px] font-medium text-zinc-400 dark:text-zinc-500 ml-auto flex-shrink-0">{phase}</span>
-        </button>
-        <div className="flex items-center gap-1 flex-shrink-0 ml-2">
-          <button
-            onClick={handleSendToBuilder}
-            className="rounded p-1 text-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-colors"
-            title="Send to Builder"
-          >
-            <Code2 className="h-3.5 w-3.5" />
-          </button>
-          <button
-            onClick={handleCopy}
-            className="rounded p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
-            title="Copy"
-          >
-            {copied ? <Check className="h-3.5 w-3.5 text-green-400" /> : <Copy className="h-3.5 w-3.5" />}
-          </button>
-        </div>
       </div>
-
-      {isExpanded && (
-        <div className="border-t border-zinc-200 dark:border-zinc-700 px-4 py-3 max-h-80 overflow-y-auto bg-white dark:bg-zinc-900/50">
-          <div className="prose prose-sm prose-zinc dark:prose-invert max-w-none">
-            <ReactMarkdown
-              components={{
-                p: ({ children }) => <p className="mb-3 leading-relaxed text-sm">{children}</p>,
-                h1: ({ children }) => <h1 className="mb-3 mt-4">{children}</h1>,
-                h2: ({ children }) => <h2 className="mb-2 mt-4">{children}</h2>,
-                h3: ({ children }) => <h3 className="mb-2 mt-3">{children}</h3>,
-                ul: ({ children }) => <ul className="mb-3 space-y-1.5 pl-4">{children}</ul>,
-                ol: ({ children }) => <ol className="mb-3 space-y-1.5 pl-4">{children}</ol>,
-                li: ({ children }) => <li className="leading-relaxed">{children}</li>,
-                blockquote: ({ children }) => <blockquote className="my-3 border-l-2 border-zinc-300 dark:border-zinc-600 pl-3 italic text-zinc-500 dark:text-zinc-400">{children}</blockquote>,
-              }}
-            >
-              {content}
-            </ReactMarkdown>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Judge Summary Card ──────────────────────────────────────────────────────
-
-function JudgeSummaryCard({
-  model,
-  summary,
-  agreements,
-  forceExpanded,
-}: {
-  model: string;
-  summary: string;
-  agreements?: { statement: string; consensusLevel: string }[];
-  forceExpanded?: boolean;
-}) {
-  const [expanded, setExpanded] = useState(true);
-  const [userOverride, setUserOverride] = useState<boolean | null>(null);
-  const [copied, setCopied] = useState(false);
-  const isExpanded = userOverride !== null ? userOverride : (forceExpanded !== undefined ? forceExpanded : expanded);
-
-  const handleToggle = () => {
-    if (forceExpanded !== undefined) {
-      setUserOverride(userOverride === null ? !forceExpanded : !userOverride);
-    } else {
-      setExpanded(!expanded);
-    }
-  };
-
-  const fullContent = summary + (agreements && agreements.length > 0
-    ? `\n\n**Consensus Points:**\n${agreements.map(a => `- [${a.consensusLevel}] ${a.statement}`).join('\n')}`
-    : '');
-
-  const handleCopy = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    await navigator.clipboard.writeText(fullContent);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  return (
-    <div className="rounded-lg border-2 border-amber-400 dark:border-amber-500/60 overflow-hidden bg-amber-50 dark:bg-amber-950/15">
-      <div className="flex items-center justify-between px-3 py-2 bg-amber-100 dark:bg-amber-900/30">
-        <button
-          onClick={handleToggle}
-          className="flex items-center gap-2 flex-1 min-w-0 text-left"
-        >
-          {isExpanded ? (
-            <ChevronDown className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-          ) : (
-            <ChevronRight className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-          )}
-          <Scale className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-          <span className="text-xs font-bold text-amber-700 dark:text-amber-300">JUDGE</span>
-          <span className="text-[11px] text-amber-600/70 dark:text-amber-400/70 truncate">{model}</span>
-        </button>
-        <button
-          onClick={handleCopy}
-          className="flex-shrink-0 rounded p-1 text-amber-500 hover:text-amber-700 dark:hover:text-amber-300 ml-2"
-          title="Copy"
-        >
-          {copied ? <Check className="h-3.5 w-3.5 text-green-400" /> : <Copy className="h-3.5 w-3.5" />}
-        </button>
-      </div>
-
-      {isExpanded && (
-        <div className="border-t border-amber-300 dark:border-amber-500/30 px-4 py-3 max-h-96 overflow-y-auto">
-          <div className="prose prose-sm prose-zinc dark:prose-invert max-w-none">
-            <ReactMarkdown
-              components={{
-                p: ({ children }) => <p className="mb-3 leading-relaxed text-sm text-zinc-700 dark:text-zinc-300">{children}</p>,
-                h1: ({ children }) => <h1 className="mb-3 mt-4 text-amber-800 dark:text-amber-200">{children}</h1>,
-                h2: ({ children }) => <h2 className="mb-2 mt-4 text-amber-800 dark:text-amber-200">{children}</h2>,
-                h3: ({ children }) => <h3 className="mb-2 mt-3 text-amber-800 dark:text-amber-200">{children}</h3>,
-                ul: ({ children }) => <ul className="mb-3 space-y-1.5 pl-4">{children}</ul>,
-                ol: ({ children }) => <ol className="mb-3 space-y-1.5 pl-4">{children}</ol>,
-                li: ({ children }) => <li className="leading-relaxed">{children}</li>,
-                blockquote: ({ children }) => <blockquote className="my-3 border-l-2 border-amber-400 dark:border-amber-500 pl-3 italic text-zinc-500 dark:text-zinc-400">{children}</blockquote>,
-                strong: ({ children }) => <strong className="font-bold text-amber-800 dark:text-amber-200">{children}</strong>,
-              }}
-            >
-              {fullContent}
-            </ReactMarkdown>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
