@@ -622,6 +622,24 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
     // Initialize forensic session ID for logging
     const forensicSessionId = `batch_${batchId}`;
 
+    // Create forensic session so Timeline can find entries by sessionId
+    const forensicSession: any = {
+      id: forensicSessionId,
+      type: 'batch',
+      startTime: new Date().toISOString(),
+      config: {
+        mode: source,
+        rounds: 3,
+        models: { d1: '', d2: '', d3: '', judge: '' },
+      },
+      entryCount: 0,
+    };
+
+    const currentSessions = useForensicLogStore.getState().sessions || [];
+    useForensicLogStore.setState({
+      sessions: [...currentSessions, forensicSession],
+    });
+
     // Helper to add forensic events (pushed to both live feed and forensic log)
     const addEvent = (message: string, icon: string, type: 'neutral' | 'danger' | 'warning' | 'success', details?: EnhancedForensicEvent['details']) => {
       const event: EnhancedForensicEvent = {

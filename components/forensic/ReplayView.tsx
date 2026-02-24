@@ -70,7 +70,7 @@ export function ReplayView() {
       if (e.category === "round") acc.rounds++;
       if (e.category === "response") acc.responses++;
       if (e.modelState) acc.totalTokens += e.modelState.tokens;
-      if (e.systemState.echoCountSoFar !== undefined) acc.echoCount = e.systemState.echoCountSoFar;
+      if (e.systemState?.echoCountSoFar !== undefined) acc.echoCount = e.systemState?.echoCountSoFar;
       acc.alerts = e.alertHistory.length > 0 ? [...e.alertHistory] : acc.alerts;
     }
     return acc;
