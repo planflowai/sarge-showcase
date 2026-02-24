@@ -19,8 +19,30 @@ export default function BuilderDiffEditor({
   language = "plaintext",
   filePath,
 }: BuilderDiffEditorProps) {
+  const diffEditorRef = useRef<any>(null);
+
   // Detect language from file path if not provided
   const detectedLanguage = language !== "plaintext" ? language : detectLanguageFromPath(filePath);
+
+  // Cleanup function for proper Monaco disposal order
+  useEffect(() => {
+    return () => {
+      if (diffEditorRef.current) {
+        try {
+          // Reset models BEFORE disposing editor to prevent race condition
+          diffEditorRef.current.setModel(null);
+        } catch (e) {
+          // Ignore if already disposed
+        }
+        try {
+          diffEditorRef.current.dispose();
+        } catch (e) {
+          // Ignore if already disposed
+        }
+        diffEditorRef.current = null;
+      }
+    };
+  }, []);
 
   return (
     <div className="h-full w-full">
@@ -42,6 +64,9 @@ export default function BuilderDiffEditor({
           originalEditable: false,
           renderOverviewRuler: true,
           diffWordWrap: "on",
+        }}
+        onMount={(editor) => {
+          diffEditorRef.current = editor;
         }}
       />
     </div>
