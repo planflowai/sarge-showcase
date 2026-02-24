@@ -522,10 +522,10 @@ Please provide the complete modified version of this component. Make only the re
 
       {/* Main content area */}
       <div ref={containerRef} className="flex flex-row flex-1 min-h-0 w-full overflow-hidden">
-        {/* Sidebar - 320px fixed width (fits 2x2 template grid, no scrolling) */}
+        {/* Sidebar - 320px fixed width (fits 2x2 template grid, scrollable) */}
         <div
           ref={sidebarRef}
-          className="w-[320px] h-full flex-shrink-0 flex-grow-0 border-r border-zinc-200 dark:border-zinc-800 overflow-hidden"
+          className="w-[320px] h-full flex-shrink-0 flex-grow-0 border-r border-zinc-200 dark:border-zinc-800 overflow-y-auto"
         >
           <BuilderSidebar
             selectedModel={selectedModel}
