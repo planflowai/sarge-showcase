@@ -619,7 +619,7 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
       batchActivity: 'Phase 1/3: Loading questions and poisons...',
     }));
 
-    // Initialize forensic session via store
+    // Initialize forensic session ID for logging
     const forensicSessionId = `batch_${batchId}`;
 
     // Helper to add forensic events (pushed to both live feed and forensic log)
@@ -642,9 +642,26 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
       };
       // Push to live feed
       set((state) => ({ batchEvents: [...state.batchEvents, event] }));
-      // Note: Forensic logging via captureEntry requires complex nested objects.
-      // Events are recorded in batchEvents (live feed) which are persisted to forensic store
-      // when batch completes (via batchHistory → forensic integration).
+      // Push to forensic store entries array directly
+      try {
+        const fState = useForensicLogStore.getState();
+        const newEntry: any = {
+          id: event.id,
+          sequenceNumber: fState._seq,
+          timestamp: event.timestamp,
+          previousHash: fState.entries.length > 0 ? fState.entries[fState.entries.length - 1].hash : 'GENESIS',
+          event: event.message,
+          severity: type === 'danger' ? 'critical' : type === 'warning' ? 'warning' : 'info',
+          category: 'round',
+          sessionId: forensicSessionId,
+        };
+        useForensicLogStore.setState((fstate) => ({
+          entries: [...fstate.entries, newEntry],
+          _seq: fstate._seq + 1,
+        }));
+      } catch (err) {
+        console.error('[Batch] Failed to log to forensic store:', err);
+      }
     };
 
     try {

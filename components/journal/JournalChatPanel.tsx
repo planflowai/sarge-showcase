@@ -190,10 +190,10 @@ export function JournalChatPanel() {
 
       // Use shared context prompts if available, otherwise fall back to role store
       const prompts = {
-        d1: sharedContext.currentPrompts.d1 || d1Role?.systemPrompt || "",
-        d2: sharedContext.currentPrompts.d2 || d2Role?.systemPrompt || "",
-        d3: sharedContext.currentPrompts.d3 || d3Role?.systemPrompt || "",
-        judge: sharedContext.currentPrompts.judge || judgeRole?.systemPrompt || "",
+        d1: sharedContext?.currentPrompts?.d1 || d1Role?.systemPrompt || "",
+        d2: sharedContext?.currentPrompts?.d2 || d2Role?.systemPrompt || "",
+        d3: sharedContext?.currentPrompts?.d3 || d3Role?.systemPrompt || "",
+        judge: sharedContext?.currentPrompts?.judge || judgeRole?.systemPrompt || "",
       };
 
       const response = await fetch("/api/journal/chat", {
@@ -208,9 +208,9 @@ export function JournalChatPanel() {
             currentDraft,
             batchLogs: last5Batches,
             // Use shared context analysis (from Analysis panel)
-            currentAnalysis: sharedContext.currentAnalysis,
-            currentAnalysisProvider: sharedContext.currentAnalysisProvider,
-            selectedBatchLog: sharedContext.selectedBatchLog,
+            currentAnalysis: sharedContext?.currentAnalysis,
+            currentAnalysisProvider: sharedContext?.currentAnalysisProvider,
+            selectedBatchLog: sharedContext?.selectedBatchLog,
             prompts,
           },
         }),
@@ -293,7 +293,7 @@ export function JournalChatPanel() {
   // Data status for user visibility
   const batchCount = batchHistory?.length || 0;
   const hasPrompts = !!(roles.find((r) => r.id === "default-d1-responder")?.systemPrompt);
-  const hasAnalysis = !!sharedContext.currentAnalysis;
+  const hasAnalysis = !!sharedContext?.currentAnalysis;
 
   // Display name for sidebar model
   const displayModelName = currentProvider === "ollama" ? currentModel : currentModel.split("-").slice(0, 2).join(" ");
