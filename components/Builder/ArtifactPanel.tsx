@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { buildPreviewContent, detectLanguage, detectContentType } from "@/lib/contentDetector";
 import { STREAMING_MIN_UPDATE_INTERVAL_MS, STREAMING_MIN_CONTENT_DELTA } from "@/lib/constants";
+import { exportToZip, downloadZip } from "@/lib/sarge-build";
 import { useUIStore } from "@/lib/stores/uiStore";
 import { useArtifactStore } from "@/lib/stores/artifactStore";
 import { useBuilderStore } from "@/lib/stores/builderStore";
@@ -744,6 +745,25 @@ function ArtifactPanelInner({
       {/* Toolbar */}
       <div className="h-10 flex-shrink-0 flex items-center justify-between px-3 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/80">
         <div className="flex items-center gap-1">
+          {/* Export for Client (SargeBuild) */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={async () => {
+              if (!code) return;
+              const name = projectName || storeProjectName || 'client-site';
+              const blob = await exportToZip(code, '', undefined, name);
+              downloadZip(blob, name);
+              showToast({ message: `Exported ${name} as zip`, type: 'success' });
+            }}
+            disabled={!code}
+            className="h-7 gap-1.5 px-2 text-xs text-emerald-600 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-200 hover:bg-emerald-50 dark:hover:bg-emerald-500/10"
+            title="Export as client-ready zip (HTML/CSS/JS + deploy instructions)"
+          >
+            <Download className="h-3.5 w-3.5" />
+            Export for Client
+          </Button>
+
           {/* Download */}
           <Button
             variant="ghost"
