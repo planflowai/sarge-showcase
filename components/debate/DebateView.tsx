@@ -577,65 +577,31 @@ export function DebateView() {
       {/* Header / Control Bar */}
       <div className="border-b border-zinc-800 bg-zinc-900/50 px-6 py-4 space-y-4 max-h-[50vh] overflow-auto">
         {/* Topic, Rounds, and Debate Selector */}
-        <div className="flex gap-3">
-          <Input
-            value={topicInput}
-            onChange={(e) => setTopicInput(e.target.value)}
-            placeholder="Enter debate topic..."
-            disabled={isRunning}
-            className="flex-1 bg-zinc-800 border-zinc-700 text-zinc-50 placeholder:text-zinc-500"
-          />
-          <select
-            value={totalRounds}
-            onChange={(e) => setTotalRounds(Number(e.target.value))}
-            disabled={isRunning}
-            className="px-3 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-50 text-sm font-medium"
-          >
-            {[1, 2, 3, 4, 5].map((n) => (
-              <option key={n} value={n}>
-                {n} Round{n !== 1 ? "s" : ""}
-              </option>
-            ))}
-          </select>
-          {/* Saved Debates Dropdown */}
-          {debates.length > 0 && (
-            <select
-              onChange={(e) => {
-                const debate = debates.find(d => d.id === e.target.value);
-                if (debate) {
-                  setTopicInput(debate.topic);
-                  setTotalRounds(debate.totalRounds);
-                  setCurrentRound(debate.currentRound);
-                  setRounds(debate.rounds);
-                  setDebateComplete(debate.debateComplete);
-                  setFinalJudgeSummary(debate.finalJudgeSummary);
-                  setAgentSlots(debate.agentSlots as SlotConfig[]);
-                  setJudgeSlot(debate.judgeSlot);
-                }
-              }}
-              className="px-3 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-50 text-sm font-medium"
-            >
-              <option value="">Load Debate</option>
-              {debates.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.topic.substring(0, 30)}... ({new Date(d.createdAt).toLocaleDateString()})
-                </option>
-              ))}
-            </select>
-          )}
-        </div>
-
-        {/* Agent Slot Configuration */}
+        {/* Agent Slot Configuration - TOP */}
         {!isRunning && (
-          <div className="space-y-2 border-t border-zinc-800 pt-3">
-            <h3 className="text-sm font-semibold text-zinc-300">Agents & Models</h3>
+          <div className="space-y-1.5 border-b border-zinc-800 pb-3">
+            <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">Agents & Models</h3>
 
             {agentSlots.map((slot, idx) => {
+              const agentRoles = roles.filter(r => r.id !== "default-judge");
               const cloudModels = getCloudModels();
               const localModels = getLocalModels();
               return (
-              <div key={idx} className="flex gap-1.5 items-center text-xs">
-                <span className="text-zinc-400 font-medium w-12">Agent {idx + 1}</span>
+              <div key={idx} className="flex gap-1 items-center text-xs">
+                <span className="text-zinc-500 font-medium w-10">Agent {idx + 1}</span>
+                {/* Role dropdown */}
+                <select
+                  value={slot.role || ""}
+                  onChange={(e) => handleAgentRoleChange(idx, e.target.value)}
+                  className="px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-50 text-xs w-20"
+                >
+                  <option value="">Role</option>
+                  {agentRoles.map((role) => (
+                    <option key={role.id} value={role.id}>
+                      {role.name}
+                    </option>
+                  ))}
+                </select>
                 {/* Cloud dropdown */}
                 <select
                   value={agentUseCloud[idx] && slot.model ? slot.model : ""}
@@ -653,7 +619,7 @@ export function DebateView() {
                     setAgentSlots(newSlots);
                     setAgentUseCloud(newUseCloud);
                   }}
-                  className="px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-50 text-xs flex-1 disabled:opacity-50"
+                  className="px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-50 text-xs w-24 disabled:opacity-50"
                 >
                   <option value="">☁️ Cloud</option>
                   {cloudModels.map((m) => (
@@ -679,7 +645,7 @@ export function DebateView() {
                     setAgentSlots(newSlots);
                     setAgentUseCloud(newUseCloud);
                   }}
-                  className="px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-50 text-xs flex-1 disabled:opacity-50"
+                  className="px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-50 text-xs w-24 disabled:opacity-50"
                 >
                   <option value="">🌐 Local</option>
                   {localModels.map((m) => (
@@ -745,6 +711,60 @@ export function DebateView() {
                   ))}
                 </select>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Topic, Rounds, and Debate Selector - BELOW Agents & Models */}
+        {!isRunning && (
+          <div className="space-y-1.5 py-3 border-b border-zinc-800">
+            <div className="flex gap-2 items-center text-xs">
+              <Input
+                value={topicInput}
+                onChange={(e) => setTopicInput(e.target.value)}
+                placeholder="Enter debate topic..."
+                disabled={isRunning}
+                className="flex-1 h-8 px-2 bg-zinc-800 border border-zinc-700 text-zinc-50 placeholder:text-zinc-500 text-xs"
+              />
+              <select
+                value={totalRounds}
+                onChange={(e) => setTotalRounds(Number(e.target.value))}
+                disabled={isRunning}
+                className="px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-50 text-xs w-20"
+              >
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <option key={n} value={n}>
+                    {n} Round{n !== 1 ? "s" : ""}
+                  </option>
+                ))}
+              </select>
+              {/* Saved Debates Dropdown */}
+              {debates.length > 0 && (
+                <select
+                  onChange={(e) => {
+                    const debate = debates.find(d => d.id === e.target.value);
+                    if (debate) {
+                      setTopicInput(debate.topic);
+                      setTotalRounds(debate.totalRounds);
+                      setCurrentRound(debate.currentRound);
+                      setRounds(debate.rounds);
+                      setDebateComplete(debate.debateComplete);
+                      setFinalJudgeSummary(debate.finalJudgeSummary);
+                      setAgentSlots(debate.agentSlots as SlotConfig[]);
+                      setJudgeSlot(debate.judgeSlot);
+                    }
+                  }}
+                  className="px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-50 text-xs w-32"
+                  defaultValue=""
+                >
+                  <option value="">Load Debate</option>
+                  {debates.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.topic.substring(0, 25)}...
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
           </div>
         )}
