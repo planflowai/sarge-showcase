@@ -25,6 +25,15 @@ import { useForensicLogStore } from "@/lib/stores/forensicLogStore";
 import { useAIModeStore } from "@/lib/stores/aiModeStore";
 import { exportChatToPDF } from "@/lib/export/pdf";
 import { exportChatToCSV } from "@/lib/export/csv";
+import { detectExportIntent, formatLabels, type ExportFormat } from "@/lib/export/exportDetector";
+import {
+  generateAndDownloadPptx,
+  generateAndDownloadXlsx,
+  generateAndDownloadPdf,
+  generateAndDownloadDocx,
+  generateAndDownloadCsv,
+  generateAndDownloadZip,
+} from "@/lib/export/chatDocumentExport";
 import { useUIStore } from "@/lib/stores/uiStore";
 import { Button } from "@/components/ui/button";
 import { FileText, Download, Bot, Sparkles, MessageSquare, Zap, Settings, Columns2 } from "lucide-react";
@@ -320,6 +329,35 @@ export function ChatView({ conversationId }: ChatViewProps) {
   // Get vault documents for context injection
   const vaultDocuments = useKnowledgeStore((s) => s.documents);
 
+  // Helper to trigger the appropriate export function based on format
+  const triggerExport = async (format: ExportFormat, data: any) => {
+    try {
+      switch (format) {
+        case "pptx":
+          await generateAndDownloadPptx(data);
+          break;
+        case "xlsx":
+          await generateAndDownloadXlsx(data);
+          break;
+        case "pdf":
+          generateAndDownloadPdf(data);
+          break;
+        case "docx":
+          await generateAndDownloadDocx(data);
+          break;
+        case "csv":
+          generateAndDownloadCsv(data);
+          break;
+        case "zip":
+          await generateAndDownloadZip(data);
+          break;
+      }
+    } catch (err) {
+      console.error("[ChatView] Export generation error:", err);
+      throw err;
+    }
+  };
+
   const handleSend = async (content: string, attachments?: Attachment[], vaultIds?: string[]) => {
     // /test command — only explicit command triggers test mode
     if (content.trim().toLowerCase() === "/test") {
@@ -380,6 +418,50 @@ export function ChatView({ conversationId }: ChatViewProps) {
         await generateImage(conversationId, imagePrompt, currentProvider, currentModel);
         return;
       }
+    }
+
+    // Export intent detection — generate files (PPTX, PDF, DOCX, XLSX, CSV, ZIP)
+    const exportFormat = detectExportIntent(content);
+    if (exportFormat) {
+      const formatLabel = formatLabels[exportFormat];
+      if (!currentProvider || !currentModel) {
+        showFeedback("Please select a provider and model first");
+        return;
+      }
+
+      // Validate that there are messages in the conversation to use as context
+      if (!messages || messages.length === 0) {
+        showFeedback(`Start a conversation first, then ask me to create the ${formatLabel.toLowerCase()}`);
+        return;
+      }
+
+      showFeedback(`Generating ${formatLabel}...`);
+
+      try {
+        const res = await fetch("/api/chat/export", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            format: exportFormat,
+            messages: messages.slice(-20), // Last 20 messages for context
+            provider: currentProvider,
+            model: currentModel,
+          }),
+        });
+
+        const json = await res.json();
+
+        if (json.data) {
+          await triggerExport(exportFormat, json.data);
+          showFeedback(`✓ ${formatLabel} downloaded!`);
+        } else {
+          showFeedback(`Export failed: ${json.error || "Unknown error"}`);
+        }
+      } catch (err) {
+        console.error("[ChatView] Export error:", err);
+        showFeedback(`Export failed. Try again.`);
+      }
+      return; // Don't send as a chat message
     }
 
     // Build message content with attachments
