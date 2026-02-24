@@ -229,6 +229,16 @@ export function DebateView() {
     return judgeUseCloud ? cloudModels : localModels;
   }, [judgeUseCloud, cloudModels, localModels]);
 
+  // Get only cloud models
+  const getCloudModels = useCallback(() => {
+    return cloudModels;
+  }, [cloudModels]);
+
+  // Get only local models
+  const getLocalModels = useCallback(() => {
+    return localModels;
+  }, [localModels]);
+
   // Handle agent provider change
   const handleAgentProviderChange = (slotIdx: number, providerId: string) => {
     const newSlots = [...agentSlots];
@@ -621,50 +631,58 @@ export function DebateView() {
             <h3 className="text-sm font-semibold text-zinc-300">Agents & Models</h3>
 
             {agentSlots.map((slot, idx) => {
-              const agentRoles = roles.filter(r => r.id !== "default-judge");
-              const agentModels = getAgentModels(idx);
-              const isCloud = agentUseCloud[idx];
+              const cloudModels = getCloudModels();
+              const localModels = getLocalModels();
               return (
-              <div key={idx} className="flex gap-2 items-center text-xs">
-                <span className="text-zinc-400 font-medium w-16">Agent {idx + 1}</span>
-                {/* Per-agent Cloud/Local toggle */}
-                <button
-                  onClick={() => handleAgentCloudLocalToggle(idx)}
-                  className={cn(
-                    "px-2 py-1 rounded text-xs font-medium transition-colors",
-                    isCloud
-                      ? "bg-purple-600/40 text-purple-300 border border-purple-500/50"
-                      : "bg-cyan-600/40 text-cyan-300 border border-cyan-500/50"
-                  )}
-                >
-                  {isCloud ? "☁️" : "🌐"}
-                </button>
+              <div key={idx} className="flex gap-1.5 items-center text-xs">
+                <span className="text-zinc-400 font-medium w-12">Agent {idx + 1}</span>
+                {/* Cloud dropdown */}
                 <select
-                  value={slot.role || ""}
-                  onChange={(e) => handleAgentRoleChange(idx, e.target.value)}
-                  className="px-2 py-1 rounded bg-zinc-800 border border-zinc-700 text-zinc-50 text-xs w-20"
+                  value={agentUseCloud[idx] && slot.model ? slot.model : ""}
+                  onChange={(e) => {
+                    const selectedModel = cloudModels.find(m => m.id === e.target.value);
+                    const newSlots = [...agentSlots];
+                    const newUseCloud = [...agentUseCloud];
+                    if (selectedModel) {
+                      newSlots[idx].model = selectedModel.id;
+                      newSlots[idx].provider = selectedModel.providerId;
+                      newUseCloud[idx] = true;
+                    } else {
+                      newUseCloud[idx] = false;
+                    }
+                    setAgentSlots(newSlots);
+                    setAgentUseCloud(newUseCloud);
+                  }}
+                  className="px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-50 text-xs flex-1 disabled:opacity-50"
                 >
-                  <option value="">No Role</option>
-                  {agentRoles.map((role) => (
-                    <option key={role.id} value={role.id}>
-                      {role.name}
+                  <option value="">☁️ Cloud</option>
+                  {cloudModels.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name}
                     </option>
                   ))}
                 </select>
+                {/* Local dropdown */}
                 <select
-                  value={slot.model || ""}
+                  value={!agentUseCloud[idx] && slot.model ? slot.model : ""}
                   onChange={(e) => {
-                    const selectedModel = agentModels.find(m => m.id === e.target.value);
+                    const selectedModel = localModels.find(m => m.id === e.target.value);
                     const newSlots = [...agentSlots];
-                    newSlots[idx].model = selectedModel?.id || null;
-                    newSlots[idx].provider = selectedModel?.providerId || null;
+                    const newUseCloud = [...agentUseCloud];
+                    if (selectedModel) {
+                      newSlots[idx].model = selectedModel.id;
+                      newSlots[idx].provider = selectedModel.providerId;
+                      newUseCloud[idx] = false;
+                    } else {
+                      newUseCloud[idx] = true;
+                    }
                     setAgentSlots(newSlots);
+                    setAgentUseCloud(newUseCloud);
                   }}
-                  disabled={agentModels.length === 0}
-                  className="px-2 py-1 rounded bg-zinc-800 border border-zinc-700 text-zinc-50 text-xs flex-1 disabled:opacity-50"
+                  className="px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-50 text-xs flex-1 disabled:opacity-50"
                 >
-                  <option value="">Model</option>
-                  {agentModels.map((m) => (
+                  <option value="">🌐 Local</option>
+                  {localModels.map((m) => (
                     <option key={m.id} value={m.id}>
                       {m.name}
                     </option>
@@ -676,34 +694,51 @@ export function DebateView() {
 
             {/* Judge Slot */}
             <div className="border-t border-zinc-800 pt-2">
-              <div className="flex gap-2 items-center text-xs">
-                <span className="text-zinc-400 font-medium w-16">Judge</span>
-                {/* Judge Cloud/Local toggle */}
-                <button
-                  onClick={handleJudgeCloudLocalToggle}
-                  className={cn(
-                    "px-2 py-1 rounded text-xs font-medium transition-colors",
-                    judgeUseCloud
-                      ? "bg-purple-600/40 text-purple-300 border border-purple-500/50"
-                      : "bg-cyan-600/40 text-cyan-300 border border-cyan-500/50"
-                  )}
-                >
-                  {judgeUseCloud ? "☁️" : "🌐"}
-                </button>
+              <div className="flex gap-1.5 items-center text-xs">
+                <span className="text-zinc-400 font-medium w-12">Judge</span>
+                {/* Judge Cloud dropdown */}
                 <select
-                  value={judgeSlot.model || ""}
+                  value={judgeUseCloud && judgeSlot.model ? judgeSlot.model : ""}
                   onChange={(e) => {
-                    const selectedModel = getJudgeModels().find(m => m.id === e.target.value);
-                    setJudgeSlot({
-                      provider: selectedModel?.providerId || null,
-                      model: selectedModel?.id || null,
-                    });
+                    const selectedModel = getCloudModels().find(m => m.id === e.target.value);
+                    if (selectedModel) {
+                      setJudgeSlot({
+                        provider: selectedModel.providerId,
+                        model: selectedModel.id,
+                      });
+                      setJudgeUseCloud(true);
+                    } else {
+                      setJudgeUseCloud(false);
+                    }
                   }}
-                  disabled={getJudgeModels().length === 0}
-                  className="px-2 py-1 rounded bg-zinc-800 border border-zinc-700 text-zinc-50 text-xs flex-1 disabled:opacity-50"
+                  className="px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-50 text-xs flex-1 disabled:opacity-50"
                 >
-                  <option value="">Model</option>
-                  {getJudgeModels().map((m) => (
+                  <option value="">☁️ Cloud</option>
+                  {getCloudModels().map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name}
+                    </option>
+                  ))}
+                </select>
+                {/* Judge Local dropdown */}
+                <select
+                  value={!judgeUseCloud && judgeSlot.model ? judgeSlot.model : ""}
+                  onChange={(e) => {
+                    const selectedModel = getLocalModels().find(m => m.id === e.target.value);
+                    if (selectedModel) {
+                      setJudgeSlot({
+                        provider: selectedModel.providerId,
+                        model: selectedModel.id,
+                      });
+                      setJudgeUseCloud(false);
+                    } else {
+                      setJudgeUseCloud(true);
+                    }
+                  }}
+                  className="px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-50 text-xs flex-1 disabled:opacity-50"
+                >
+                  <option value="">🌐 Local</option>
+                  {getLocalModels().map((m) => (
                     <option key={m.id} value={m.id}>
                       {m.name}
                     </option>
