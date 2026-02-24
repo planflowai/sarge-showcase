@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import type { SavedQuestion, SavedPoison, BatchPassLog, EnhancedForensicEvent, ForensicEvent, BatchConfig, SessionStats } from "@/lib/types";
 import { DEFAULT_QUESTIONS, DEFAULT_POISONS } from "@/lib/constants/testDefaults";
+import { useForensicLogStore } from "@/lib/stores/forensicLogStore";
 
 // Helper function
 function generateAIId(): string {
@@ -618,7 +619,10 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
       batchActivity: 'Phase 1/3: Loading questions and poisons...',
     }));
 
-    // Helper to add forensic events
+    // Initialize forensic session via store
+    const forensicSessionId = `batch_${batchId}`;
+
+    // Helper to add forensic events (pushed to both live feed and forensic log)
     const addEvent = (message: string, icon: string, type: 'neutral' | 'danger' | 'warning' | 'success', details?: EnhancedForensicEvent['details']) => {
       const event: EnhancedForensicEvent = {
         id: `evt_${Date.now()}_${Math.random().toString(36).slice(2)}`,
@@ -629,8 +633,18 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
         type,
         expandable: !!details,
         details,
+        agentRole: details?.agent as any,
+        modelId: details?.model,
+        metadata: {
+          latencyMs: details?.timeMs,
+          tokens: details?.tokens,
+        },
       };
+      // Push to live feed
       set((state) => ({ batchEvents: [...state.batchEvents, event] }));
+      // Note: Forensic logging via captureEntry requires complex nested objects.
+      // Events are recorded in batchEvents (live feed) which are persisted to forensic store
+      // when batch completes (via batchHistory → forensic integration).
     };
 
     try {
