@@ -13,6 +13,8 @@ export interface Model {
 
 export type EffectiveModel = Model;
 
+export type VoicePersona = "default" | "friendly" | "professional" | "casual" | "formal" | "none" | "jarvis" | "friday";
+
 interface ModelState {
   models: Model[];
   currentModel: Model | null;
@@ -34,7 +36,6 @@ interface ModelState {
   setVoicePersona: (persona: string) => void;
   setBuilderFlag: (modelId: string, isBuilder: boolean, providerId?: string) => void;
   isBuilderModel: (modelId: string, providerId?: string) => boolean;
-  removeModel: (providerId: string, modelId: string) => void;
   clearAll: () => void;
 }
 
@@ -66,7 +67,33 @@ export const useModelStore = create<ModelState>((set, get) => ({
   builderFlags: {},
 
   hydrate: () => {
+    // Start async scan but don't block on it
     set({ hydrated: true });
+
+    // Fetch Ollama models in the background
+    fetch('/api/models/scan')
+      .then(response => {
+        if (response.ok) {
+          return response.json();
+        }
+        throw new Error('Failed to fetch models');
+      })
+      .then(data => {
+        if (data.models && Array.isArray(data.models)) {
+          // Merge scan results with existing models
+          const existingIds = new Set(get().models.map(m => m.id));
+          const newModels = data.models.filter((m: any) => !existingIds.has(m.id));
+          if (newModels.length > 0) {
+            set((state) => ({
+              models: [...state.models, ...newModels],
+            }));
+            console.log('[modelStore] Loaded', newModels.length, 'models from API scan');
+          }
+        }
+      })
+      .catch(err => {
+        console.warn('[modelStore] Failed to scan models, using hardcoded defaults:', err);
+      });
   },
 
   setModels: (models) => {
