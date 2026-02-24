@@ -115,9 +115,14 @@ export default function EditCard({
 
         {/* Actions */}
         <div className="flex items-center gap-1.5 flex-shrink-0">
-          {status === "streaming" && (
+          {isStreaming ? (
             <span className="text-[10px] text-blue-400 animate-pulse">Writing...</span>
-          )}
+          ) : status === "pending" && (linesAdded > 0 || linesRemoved > 0) ? (
+            <span className="text-[10px] text-emerald-400 flex items-center gap-1">
+              <Check className="h-3 w-3" />
+              Complete
+            </span>
+          ) : null}
 
           {status === "pending" && (
             <>
