@@ -77,6 +77,7 @@ export function DebateView() {
   const currentRoundRef = useRef(0);
 
   const [expandedRounds, setExpandedRounds] = useState<Set<number>>(new Set());
+  const [expandedConfigBlocks, setExpandedConfigBlocks] = useState<Set<number>>(new Set([0, 1, 2, 3]));
 
   interface RoundData {
     roundNumber: number;
@@ -576,142 +577,243 @@ export function DebateView() {
     <div className="flex flex-col h-full bg-zinc-950 text-zinc-50">
       {/* Header / Control Bar */}
       <div className="border-b border-zinc-800 bg-zinc-900/50 px-6 py-4 space-y-4 max-h-[50vh] overflow-auto">
-        {/* Topic, Rounds, and Debate Selector */}
-        {/* Agent Slot Configuration - TOP */}
+        {/* Agent & Judge Config Blocks - Horizontal Colored Layout */}
         {!isRunning && (
-          <div className="space-y-1.5 border-b border-zinc-800 pb-3">
-            <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">Agents & Models</h3>
-
+          <div className="flex gap-3 pb-4 border-b border-zinc-800 overflow-x-auto">
+            {/* Agent Blocks */}
             {agentSlots.map((slot, idx) => {
+              const isExpanded = expandedConfigBlocks.has(idx);
               const agentRoles = roles.filter(r => r.id !== "default-judge");
               const cloudModels = getCloudModels();
               const localModels = getLocalModels();
+              const agentColor = AGENT_COLORS[idx];
+              const selectedRole = agentRoles.find(r => r.id === slot.role);
+              const selectedModel = [...cloudModels, ...localModels].find(m => m.id === slot.model);
+
               return (
-              <div key={idx} className="flex gap-1 items-center text-xs">
-                <span className="text-zinc-500 font-medium w-10">Agent {idx + 1}</span>
-                {/* Role dropdown */}
-                <select
-                  value={slot.role || ""}
-                  onChange={(e) => handleAgentRoleChange(idx, e.target.value)}
-                  className="px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-50 text-xs w-20"
+                <div
+                  key={idx}
+                  className="rounded-lg border border-opacity-30 overflow-hidden flex-shrink-0 transition-all duration-200"
+                  style={{ borderColor: agentColor, backgroundColor: agentColor + "15" }}
                 >
-                  <option value="">Role</option>
-                  {agentRoles.map((role) => (
-                    <option key={role.id} value={role.id}>
-                      {role.name}
-                    </option>
-                  ))}
-                </select>
-                {/* Cloud dropdown */}
-                <select
-                  value={agentUseCloud[idx] && slot.model ? slot.model : ""}
-                  onChange={(e) => {
-                    const selectedModel = cloudModels.find(m => m.id === e.target.value);
-                    const newSlots = [...agentSlots];
-                    const newUseCloud = [...agentUseCloud];
-                    if (selectedModel) {
-                      newSlots[idx].model = selectedModel.id;
-                      newSlots[idx].provider = selectedModel.providerId;
-                      newUseCloud[idx] = true;
-                    } else {
-                      newUseCloud[idx] = false;
-                    }
-                    setAgentSlots(newSlots);
-                    setAgentUseCloud(newUseCloud);
-                  }}
-                  className="px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-50 text-xs w-24 disabled:opacity-50"
-                >
-                  <option value="">☁️ Cloud</option>
-                  {cloudModels.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name}
-                    </option>
-                  ))}
-                </select>
-                {/* Local dropdown */}
-                <select
-                  value={!agentUseCloud[idx] && slot.model ? slot.model : ""}
-                  onChange={(e) => {
-                    const selectedModel = localModels.find(m => m.id === e.target.value);
-                    const newSlots = [...agentSlots];
-                    const newUseCloud = [...agentUseCloud];
-                    if (selectedModel) {
-                      newSlots[idx].model = selectedModel.id;
-                      newSlots[idx].provider = selectedModel.providerId;
-                      newUseCloud[idx] = false;
-                    } else {
-                      newUseCloud[idx] = true;
-                    }
-                    setAgentSlots(newSlots);
-                    setAgentUseCloud(newUseCloud);
-                  }}
-                  className="px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-50 text-xs w-24 disabled:opacity-50"
-                >
-                  <option value="">🌐 Local</option>
-                  {localModels.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            );
+                  {/* Header - Always visible */}
+                  <button
+                    onClick={() => {
+                      const newSet = new Set(expandedConfigBlocks);
+                      newSet.has(idx) ? newSet.delete(idx) : newSet.add(idx);
+                      setExpandedConfigBlocks(newSet);
+                    }}
+                    className="w-full px-4 py-2 flex items-center gap-2 hover:opacity-80 transition-opacity"
+                    style={{ color: agentColor }}
+                  >
+                    <span className="text-sm font-bold">{isExpanded ? "▼" : "▶"}</span>
+                    <div className="text-left">
+                      <div className="text-sm font-semibold">Agent {idx + 1}</div>
+                      {!isExpanded && selectedRole && (
+                        <div className="text-xs opacity-75">{selectedRole.name}</div>
+                      )}
+                      {!isExpanded && selectedModel && (
+                        <div className="text-xs opacity-75">{selectedModel.name} {agentUseCloud[idx] ? "☁️" : "🌐"}</div>
+                      )}
+                    </div>
+                  </button>
+
+                  {/* Expanded Content */}
+                  {isExpanded && (
+                    <div className="px-4 py-3 space-y-2 border-t border-opacity-20" style={{ borderColor: agentColor }}>
+                      {/* Role Dropdown */}
+                      <div>
+                        <label className="text-xs opacity-75 block mb-1">Role</label>
+                        <select
+                          value={slot.role || ""}
+                          onChange={(e) => handleAgentRoleChange(idx, e.target.value)}
+                          className="w-full px-2 py-1 rounded text-xs border"
+                          style={{
+                            backgroundColor: agentColor + "25",
+                            borderColor: agentColor,
+                            color: agentColor,
+                          }}
+                        >
+                          <option value="">Select role</option>
+                          {agentRoles.map((role) => (
+                            <option key={role.id} value={role.id}>
+                              {role.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Model Selection */}
+                      <div className="flex gap-1">
+                        {/* Cloud Model */}
+                        <select
+                          value={agentUseCloud[idx] && slot.model ? slot.model : ""}
+                          onChange={(e) => {
+                            const selectedModel = cloudModels.find(m => m.id === e.target.value);
+                            const newSlots = [...agentSlots];
+                            const newUseCloud = [...agentUseCloud];
+                            if (selectedModel) {
+                              newSlots[idx].model = selectedModel.id;
+                              newSlots[idx].provider = selectedModel.providerId;
+                              newUseCloud[idx] = true;
+                            } else {
+                              newUseCloud[idx] = false;
+                            }
+                            setAgentSlots(newSlots);
+                            setAgentUseCloud(newUseCloud);
+                          }}
+                          className="flex-1 px-2 py-1 rounded text-xs border"
+                          style={{
+                            backgroundColor: agentColor + "25",
+                            borderColor: agentColor,
+                            color: agentColor,
+                          }}
+                        >
+                          <option value="">☁️ Cloud</option>
+                          {cloudModels.map((m) => (
+                            <option key={m.id} value={m.id}>
+                              {m.name}
+                            </option>
+                          ))}
+                        </select>
+
+                        {/* Local Model */}
+                        <select
+                          value={!agentUseCloud[idx] && slot.model ? slot.model : ""}
+                          onChange={(e) => {
+                            const selectedModel = localModels.find(m => m.id === e.target.value);
+                            const newSlots = [...agentSlots];
+                            const newUseCloud = [...agentUseCloud];
+                            if (selectedModel) {
+                              newSlots[idx].model = selectedModel.id;
+                              newSlots[idx].provider = selectedModel.providerId;
+                              newUseCloud[idx] = false;
+                            } else {
+                              newUseCloud[idx] = true;
+                            }
+                            setAgentSlots(newSlots);
+                            setAgentUseCloud(newUseCloud);
+                          }}
+                          className="flex-1 px-2 py-1 rounded text-xs border"
+                          style={{
+                            backgroundColor: agentColor + "25",
+                            borderColor: agentColor,
+                            color: agentColor,
+                          }}
+                        >
+                          <option value="">🌐 Local</option>
+                          {localModels.map((m) => (
+                            <option key={m.id} value={m.id}>
+                              {m.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
             })}
 
-            {/* Judge Slot */}
-            <div className="border-t border-zinc-800 pt-2">
-              <div className="flex gap-1.5 items-center text-xs">
-                <span className="text-zinc-400 font-medium w-12">Judge</span>
-                {/* Judge Cloud dropdown */}
-                <select
-                  value={judgeUseCloud && judgeSlot.model ? judgeSlot.model : ""}
-                  onChange={(e) => {
-                    const selectedModel = getCloudModels().find(m => m.id === e.target.value);
-                    if (selectedModel) {
-                      setJudgeSlot({
-                        provider: selectedModel.providerId,
-                        model: selectedModel.id,
-                      });
-                      setJudgeUseCloud(true);
-                    } else {
-                      setJudgeUseCloud(false);
-                    }
-                  }}
-                  className="px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-50 text-xs flex-1 disabled:opacity-50"
+            {/* Judge Block */}
+            {(() => {
+              const isExpanded = expandedConfigBlocks.has(3);
+              const selectedModel = [...getCloudModels(), ...getLocalModels()].find(m => m.id === judgeSlot.model);
+
+              return (
+                <div
+                  className="rounded-lg border border-opacity-30 overflow-hidden flex-shrink-0 transition-all duration-200"
+                  style={{ borderColor: JUDGE_COLOR, backgroundColor: JUDGE_COLOR + "15" }}
                 >
-                  <option value="">☁️ Cloud</option>
-                  {getCloudModels().map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name}
-                    </option>
-                  ))}
-                </select>
-                {/* Judge Local dropdown */}
-                <select
-                  value={!judgeUseCloud && judgeSlot.model ? judgeSlot.model : ""}
-                  onChange={(e) => {
-                    const selectedModel = getLocalModels().find(m => m.id === e.target.value);
-                    if (selectedModel) {
-                      setJudgeSlot({
-                        provider: selectedModel.providerId,
-                        model: selectedModel.id,
-                      });
-                      setJudgeUseCloud(false);
-                    } else {
-                      setJudgeUseCloud(true);
-                    }
-                  }}
-                  className="px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-50 text-xs flex-1 disabled:opacity-50"
-                >
-                  <option value="">🌐 Local</option>
-                  {getLocalModels().map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
+                  {/* Header - Always visible */}
+                  <button
+                    onClick={() => {
+                      const newSet = new Set(expandedConfigBlocks);
+                      newSet.has(3) ? newSet.delete(3) : newSet.add(3);
+                      setExpandedConfigBlocks(newSet);
+                    }}
+                    className="w-full px-4 py-2 flex items-center gap-2 hover:opacity-80 transition-opacity"
+                    style={{ color: JUDGE_COLOR }}
+                  >
+                    <span className="text-sm font-bold">{isExpanded ? "▼" : "▶"}</span>
+                    <div className="text-left">
+                      <div className="text-sm font-semibold">Judge</div>
+                      {!isExpanded && selectedModel && (
+                        <div className="text-xs opacity-75">{selectedModel.name} {judgeUseCloud ? "☁️" : "🌐"}</div>
+                      )}
+                    </div>
+                  </button>
+
+                  {/* Expanded Content */}
+                  {isExpanded && (
+                    <div className="px-4 py-3 space-y-2 border-t border-opacity-20" style={{ borderColor: JUDGE_COLOR }}>
+                      {/* Model Selection (No Role for Judge) */}
+                      <div className="flex gap-1">
+                        {/* Cloud Model */}
+                        <select
+                          value={judgeUseCloud && judgeSlot.model ? judgeSlot.model : ""}
+                          onChange={(e) => {
+                            const selectedModel = getCloudModels().find(m => m.id === e.target.value);
+                            if (selectedModel) {
+                              setJudgeSlot({
+                                provider: selectedModel.providerId,
+                                model: selectedModel.id,
+                              });
+                              setJudgeUseCloud(true);
+                            } else {
+                              setJudgeUseCloud(false);
+                            }
+                          }}
+                          className="flex-1 px-2 py-1 rounded text-xs border"
+                          style={{
+                            backgroundColor: JUDGE_COLOR + "25",
+                            borderColor: JUDGE_COLOR,
+                            color: JUDGE_COLOR,
+                          }}
+                        >
+                          <option value="">☁️ Cloud</option>
+                          {getCloudModels().map((m) => (
+                            <option key={m.id} value={m.id}>
+                              {m.name}
+                            </option>
+                          ))}
+                        </select>
+
+                        {/* Local Model */}
+                        <select
+                          value={!judgeUseCloud && judgeSlot.model ? judgeSlot.model : ""}
+                          onChange={(e) => {
+                            const selectedModel = getLocalModels().find(m => m.id === e.target.value);
+                            if (selectedModel) {
+                              setJudgeSlot({
+                                provider: selectedModel.providerId,
+                                model: selectedModel.id,
+                              });
+                              setJudgeUseCloud(false);
+                            } else {
+                              setJudgeUseCloud(true);
+                            }
+                          }}
+                          className="flex-1 px-2 py-1 rounded text-xs border"
+                          style={{
+                            backgroundColor: JUDGE_COLOR + "25",
+                            borderColor: JUDGE_COLOR,
+                            color: JUDGE_COLOR,
+                          }}
+                        >
+                          <option value="">🌐 Local</option>
+                          {getLocalModels().map((m) => (
+                            <option key={m.id} value={m.id}>
+                              {m.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         )}
 
