@@ -138,6 +138,14 @@ STYLE DEFAULTS (unless user specifies otherwise):
 - Shadows: shadow-lg with colored glow on hover
 - Fonts: system-ui stack, proper weights (400/500/600/700)
 
+NAVIGATION & LINKS:
+- IMPORTANT: All navigation links must use JavaScript onclick handlers, NOT href attributes
+- Do NOT use <a href="..."> for page navigation
+- DO use <a href="#" onclick="functionName(); return false;"> with JavaScript handlers
+- This creates a single-page app that works within the preview iframe
+- If user wants multiple sections/pages, hide/show them with JavaScript, not navigation
+- Example: <button onclick="showSection('about')">About</button>
+
 WHEN CREATING/MODIFYING PROJECT FILES (in project mode):
 Output EVERY file using the FILE: format. Do NOT use plain code blocks.
 
