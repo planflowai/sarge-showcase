@@ -137,15 +137,15 @@ export function useStreamingUpdates({
         }
 
         if (modifiedCode && modifiedCode !== artifactCode) {
-          const summary = getDiffSummary(artifactCode, modifiedCode);
-          pendingEditRef.current = { original: artifactCode, modified: modifiedCode, summary };
-
           if (autoApply) {
             // Auto-apply is ON: apply changes directly without showing diff
             console.log('[useStreamingUpdates] Auto-apply enabled, applying changes directly');
+            pendingEditRef.current = null;  // Clear pending edit so banner doesn't show
             onStreamingUpdate?.(modifiedCode, false);
           } else {
             // Auto-apply is OFF: show diff for user approval
+            const summary = getDiffSummary(artifactCode, modifiedCode);
+            pendingEditRef.current = { original: artifactCode, modified: modifiedCode, summary };
             console.log('[useStreamingUpdates] Diff computed, awaiting approval');
             onViewDiff?.('[Pending Edits]', artifactCode, modifiedCode);
           }

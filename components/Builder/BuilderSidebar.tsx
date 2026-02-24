@@ -439,12 +439,36 @@ export default function BuilderSidebar({ selectedModel, selectedProvider, onMode
             </select>
           </div>
 
-          {/* Model Dropdown */}
-          {selectedProvider === "ollama" ? (
-            ollamaLoading ? (
-              <div className="text-[10px] text-zinc-500">Loading...</div>
-            ) : ollamaError ? (
-              <div className="text-[10px] text-red-400">{ollamaError}</div>
+          {/* Model Dropdown - fixed height to prevent sidebar jiggling */}
+          <div className="h-[28px] flex items-center">
+            {selectedProvider === "ollama" ? (
+              ollamaLoading ? (
+                <div className="text-[10px] text-zinc-500">Loading...</div>
+              ) : ollamaError ? (
+                <div className="text-[10px] text-red-400 line-clamp-1">{ollamaError}</div>
+              ) : currentProviderModels.length === 0 ? (
+                <div className="text-[10px] text-zinc-500">
+                  No models. <Link href="/settings" className="text-indigo-500 hover:underline">Settings</Link>
+                </div>
+              ) : (
+                <select
+                  value={selectedModel || ""}
+                  onChange={(e) => onModelSelect(e.target.value, selectedProvider)}
+                  className="w-full rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-1.5 py-1 text-[10px] text-zinc-700 dark:text-zinc-300 outline-none focus:border-indigo-500"
+                  title={selectedModel || "Select a model"}
+                >
+                  <option value="" disabled>Model...</option>
+                  {groupOllamaModels(currentProviderModels.map(m => m.id)).map((group) => (
+                    <optgroup key={group.label} label={group.label}>
+                      {group.models.map((model) => (
+                        <option key={model.id} value={model.id} title={model.id}>
+                          {getDisplayName(model.id, model.name)}{model.hint ? ` · ${model.hint}` : ''}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+              )
             ) : currentProviderModels.length === 0 ? (
               <div className="text-[10px] text-zinc-500">
                 No models. <Link href="/settings" className="text-indigo-500 hover:underline">Settings</Link>
@@ -457,36 +481,14 @@ export default function BuilderSidebar({ selectedModel, selectedProvider, onMode
                 title={selectedModel || "Select a model"}
               >
                 <option value="" disabled>Model...</option>
-                {groupOllamaModels(currentProviderModels.map(m => m.id)).map((group) => (
-                  <optgroup key={group.label} label={group.label}>
-                    {group.models.map((model) => (
-                      <option key={model.id} value={model.id} title={model.id}>
-                        {getDisplayName(model.id, model.name)}{model.hint ? ` · ${model.hint}` : ''}
-                      </option>
-                    ))}
-                  </optgroup>
+                {currentProviderModels.map((model) => (
+                  <option key={model.id} value={model.id} title={model.id}>
+                    {getDisplayName(model.id, model.name)}
+                  </option>
                 ))}
               </select>
-            )
-          ) : currentProviderModels.length === 0 ? (
-            <div className="text-[10px] text-zinc-500">
-              No models. <Link href="/settings" className="text-indigo-500 hover:underline">Settings</Link>
-            </div>
-          ) : (
-            <select
-              value={selectedModel || ""}
-              onChange={(e) => onModelSelect(e.target.value, selectedProvider)}
-              className="w-full rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-1.5 py-1 text-[10px] text-zinc-700 dark:text-zinc-300 outline-none focus:border-indigo-500"
-              title={selectedModel || "Select a model"}
-            >
-              <option value="" disabled>Model...</option>
-              {currentProviderModels.map((model) => (
-                <option key={model.id} value={model.id} title={model.id}>
-                  {getDisplayName(model.id, model.name)}
-                </option>
-              ))}
-            </select>
-          )}
+            )}
+          </div>
         </div>
 
       {/* File Explorer */}
