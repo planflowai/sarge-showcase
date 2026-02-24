@@ -7,6 +7,7 @@ import { Copy, Check, Zap, Clock } from "lucide-react";
 import type { BuilderMessage } from "@/lib/stores/builderChatStore";
 import ArtifactCard from "@/components/Builder/ArtifactCard";
 import StreamingMessageRenderer from "@/components/Builder/StreamingMessageRenderer";
+import EditProgressPanel from "@/components/Builder/EditProgressPanel";
 import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/utils";
 import { providers } from "@/lib/providers";
@@ -14,6 +15,7 @@ import { getOllamaFriendlyName } from "@/lib/ollamaModelGroups";
 import { Button } from "@/components/ui/button";
 import { parseFileEditProposals, type FileEditProposal } from "@/lib/contextInjector";
 import { extractSummaryFromResponse } from "@/lib/builderLogger";
+import { hasEditBlocks } from "@/lib/editBlockParser";
 
 interface BuilderMessageBubbleProps {
   message: BuilderMessage;
@@ -317,6 +319,11 @@ export default function BuilderMessageBubble({
                   onOpenInEditor?.(content);
                 }
               }}
+            />
+          ) : hasEditBlocks(message.content) ? (
+            <EditProgressPanel
+              content={message.content}
+              isStreaming={message.isStreaming || false}
             />
           ) : (
             <div className="prose prose-sm prose-invert max-w-none">

@@ -96,8 +96,6 @@ export function useStreamingUpdates({
     const streamingMessage = messages.find(m => m.isStreaming && m.role === 'assistant');
 
     if (streamingMessage && streamingMessage.content) {
-      const code = extractCodeFromMarkdown(streamingMessage.content);
-
       // Update progress steps based on streaming content
       if (streamingMessage.content.length > 0 && progressIsVisible) {
         startStep("analyze", "Processing your request...");
@@ -106,13 +104,34 @@ export function useStreamingUpdates({
         startStep("generate", `${streamingMessage.content.length} chars generated...`);
       }
 
-      if (code && code !== lastStreamingCodeRef.current) {
-        lastStreamingCodeRef.current = code;
-        onStreamingUpdate?.(code, true);
+      // Progressive edit block application: if we detect EDIT pattern and have existing code
+      if (artifactCode && /EDIT\s+lines?\s+\d+/i.test(streamingMessage.content)) {
+        // Try to parse complete EDIT blocks (regex requires closing ```)
+        const parsed = parseEditBlocks(streamingMessage.content);
+        if (parsed.hasEditBlocks && parsed.editBlocks.length > 0) {
+          const modifiedCode = applyEditBlocks(artifactCode, parsed.editBlocks);
+          if (modifiedCode !== lastStreamingCodeRef.current) {
+            lastStreamingCodeRef.current = modifiedCode;
+            onStreamingUpdate?.(modifiedCode, true);
 
-        // Update progress - building preview
-        if (progressIsVisible) {
-          startStep("preview", "Rendering live preview...");
+            // Update progress - building preview
+            if (progressIsVisible) {
+              startStep("preview", "Rendering live preview...");
+            }
+          }
+        }
+        // Incomplete blocks are silently skipped (will be picked up when complete)
+      } else {
+        // Fallback: Generic code extraction for generate mode
+        const code = extractCodeFromMarkdown(streamingMessage.content);
+        if (code && code !== lastStreamingCodeRef.current) {
+          lastStreamingCodeRef.current = code;
+          onStreamingUpdate?.(code, true);
+
+          // Update progress - building preview
+          if (progressIsVisible) {
+            startStep("preview", "Rendering live preview...");
+          }
         }
       }
     } else if (!sending && lastStreamingCodeRef.current) {
