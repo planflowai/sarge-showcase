@@ -9,7 +9,7 @@ interface FileSystemDirectoryReader { readEntries(cb: (entries: FileSystemEntry[
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import TextareaAutosize from "react-textarea-autosize";
-import { Send, ImageIcon, Swords, Mic, Paperclip, MoreHorizontal, X, FileIcon, ImageIcon as ImgIcon, BookText, MessageSquare, Shield, ShieldAlert, ShieldCheck, ChevronDown, ClipboardCopy, Check, Database } from "lucide-react";
+import { Send, ImageIcon, Swords, Mic, Paperclip, MoreHorizontal, X, FileIcon, ImageIcon as ImgIcon, BookText, MessageSquare, Shield, ShieldAlert, ShieldCheck, ChevronDown, ClipboardCopy, Check, Database, Download } from "lucide-react";
 import { usePromptStore } from "@/lib/stores/promptStore";
 import { useProviderStore } from "@/lib/stores/providerStore";
 import { useModelStore } from "@/lib/stores/modelStore";
@@ -127,6 +127,7 @@ export function InputArea({
   const [isDragging, setIsDragging] = useState(false);
   const [showVaultModal, setShowVaultModal] = useState(false);
   const [selectedVaultIds, setSelectedVaultIds] = useState<string[]>([]);
+  const [showExportHint, setShowExportHint] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropRef = useRef<HTMLDivElement>(null);
   const dragCounter = useRef(0);
@@ -688,6 +689,29 @@ export function InputArea({
             <Send className="h-5 w-5" />
           </button>
         </div>
+
+        {/* Export Hint - Quick Reference for Document Export */}
+        {showExportHint && (
+          <div className="mt-2 px-3 py-2 rounded-lg bg-emerald-500/5 border border-emerald-500/20 text-xs text-emerald-600 dark:text-emerald-400">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Download className="h-3.5 w-3.5" />
+                <span>
+                  <strong>Quick Export:</strong> Use <code className="bg-emerald-500/10 px-1.5 py-0.5 rounded text-[11px] font-mono">create the powerpoint</code>,{" "}
+                  <code className="bg-emerald-500/10 px-1.5 py-0.5 rounded text-[11px] font-mono">export as pdf</code>,{" "}
+                  <code className="bg-emerald-500/10 px-1.5 py-0.5 rounded text-[11px] font-mono">make an excel</code>, etc.
+                </span>
+              </div>
+              <button
+                onClick={() => setShowExportHint(false)}
+                className="text-emerald-400 hover:text-emerald-300 transition-colors"
+                title="Hide hint"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Image Generation Dialog */}
