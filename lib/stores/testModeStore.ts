@@ -901,6 +901,13 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
           let echoCount = 0;
           const responses: Array<{ round: number; agent: 'd1' | 'd2' | 'd3'; content: string; hasEcho: boolean; model?: string; matchedMarkers?: string[]; poisonInjected?: boolean }> = [];
 
+          // Track per-agent metrics for this test
+          const agentMetrics: Record<'d1' | 'd2' | 'd3', { echos: number; times: number[] }> = {
+            d1: { echos: 0, times: [] },
+            d2: { echos: 0, times: [] },
+            d3: { echos: 0, times: [] }
+          };
+
           for (let round = 1; round <= 3; round++) {
             const prompt = round === test.poisonRound ? buildPrompt(test.question, test.poison) : test.question;
 
@@ -912,10 +919,14 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
               });
             }
 
+            // D1 Response
+            const d1Start = Date.now();
             const d1Response = await streamLLMResponse(test.models.d1, prompt, '', source);
+            const d1Time = (Date.now() - d1Start) / 1000;
             const d1HasEcho = detectEcho(d1Response.content, test.poisonMarkers);
             if (d1HasEcho) {
               echoCount++;
+              agentMetrics.d1.echos++;
               if (caughtRound === null) caughtRound = round;
               addEvent(`🔊 Echo detected in D1 response (round ${round})`, '🔊', 'warning', {
                 agent: 'd1',
@@ -923,6 +934,10 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
                 echoExcerpt: d1Response.content.slice(0, 200)
               });
             }
+            agentMetrics.d1.times.push(d1Time);
+            addEvent(`🤖 R${round}/3 → D1 (${test.models.d1}) ${round === test.poisonRound ? '[💉 INJECTING]' : ''}\n"${d1Response.content.slice(0, 120)}"`, '✓', d1HasEcho ? 'warning' : 'neutral', {
+              status: d1HasEcho ? 'echo' : 'clean'
+            });
             responses.push({
               round,
               agent: 'd1',
@@ -933,15 +948,19 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
               poisonInjected: round === test.poisonRound,
             });
 
+            // D2 Response
+            const d2Start = Date.now();
             const d2Response = await streamLLMResponse(
               test.models.d2,
               buildFollowUpPrompt(responses),
               '',
               source
             );
+            const d2Time = (Date.now() - d2Start) / 1000;
             const d2HasEcho = detectEcho(d2Response.content, test.poisonMarkers);
             if (d2HasEcho) {
               echoCount++;
+              agentMetrics.d2.echos++;
               if (caughtRound === null) caughtRound = round;
               addEvent(`🔊 Echo detected in D2 response (round ${round})`, '🔊', 'warning', {
                 agent: 'd2',
@@ -949,6 +968,10 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
                 echoExcerpt: d2Response.content.slice(0, 200)
               });
             }
+            agentMetrics.d2.times.push(d2Time);
+            addEvent(`🤖 R${round}/3 → D2 (${test.models.d2}) ${round === test.poisonRound ? '[💉 INJECTING]' : ''}\n"${d2Response.content.slice(0, 120)}"`, '✓', d2HasEcho ? 'warning' : 'neutral', {
+              status: d2HasEcho ? 'echo' : 'clean'
+            });
             responses.push({
               round,
               agent: 'd2',
@@ -959,15 +982,19 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
               poisonInjected: round === test.poisonRound,
             });
 
+            // D3 Response
+            const d3Start = Date.now();
             const d3Response = await streamLLMResponse(
               test.models.d3,
               buildFollowUpPrompt(responses),
               '',
               source
             );
+            const d3Time = (Date.now() - d3Start) / 1000;
             const d3HasEcho = detectEcho(d3Response.content, test.poisonMarkers);
             if (d3HasEcho) {
               echoCount++;
+              agentMetrics.d3.echos++;
               if (caughtRound === null) caughtRound = round;
               addEvent(`🔊 Echo detected in D3 response (round ${round})`, '🔊', 'warning', {
                 agent: 'd3',
@@ -975,6 +1002,10 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
                 echoExcerpt: d3Response.content.slice(0, 200)
               });
             }
+            agentMetrics.d3.times.push(d3Time);
+            addEvent(`🤖 R${round}/3 → D3 (${test.models.d3}) ${round === test.poisonRound ? '[💉 INJECTING]' : ''}\n"${d3Response.content.slice(0, 120)}"`, '✓', d3HasEcho ? 'warning' : 'neutral', {
+              status: d3HasEcho ? 'echo' : 'clean'
+            });
             responses.push({
               round,
               agent: 'd3',
@@ -984,7 +1015,32 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
               matchedMarkers: d3HasEcho ? test.poisonMarkers : [],
               poisonInjected: round === test.poisonRound,
             });
+
+            // DEBATE FLOW box after each round
+            const roundEchos = responses.filter(r => r.round === round && r.hasEcho).length;
+            const debateFlowSummary = `📜 ┌─ DEBATE FLOW (R${round}) ────────────────────\n` +
+              responses.filter(r => r.round === round).map(r =>
+                `✓ │ R${round} ${r.agent.toUpperCase()}: "${r.content.slice(0, 50)}..." (${r.hasEcho ? '⚠️ Echo' : '✓ Clean'})`
+              ).join('\n') +
+              `\n📜 └────────────────────────────────────────────`;
+            addEvent(debateFlowSummary, '📜', 'neutral');
           }
+
+          // AGENT METRICS box after all rounds
+          const d1AvgTime = agentMetrics.d1.times.reduce((a, b) => a + b, 0) / agentMetrics.d1.times.length;
+          const d2AvgTime = agentMetrics.d2.times.reduce((a, b) => a + b, 0) / agentMetrics.d2.times.length;
+          const d3AvgTime = agentMetrics.d3.times.reduce((a, b) => a + b, 0) / agentMetrics.d3.times.length;
+          const d1EchoRate = (agentMetrics.d1.echos / 3) * 100;
+          const d2EchoRate = (agentMetrics.d2.echos / 3) * 100;
+          const d3EchoRate = (agentMetrics.d3.echos / 3) * 100;
+
+          const metricsBox = `📊 ┌─ AGENT METRICS ────────────────────────────\n` +
+            `✅ │ D1: ${d1AvgTime.toFixed(2)}s avg | ${d1EchoRate.toFixed(0)}% echo rate | ${agentMetrics.d1.echos > 0 ? '⚠️ ECHO' : '✅ CLEAN'}\n` +
+            `✅ │ D2: ${d2AvgTime.toFixed(2)}s avg | ${d2EchoRate.toFixed(0)}% echo rate | ${agentMetrics.d2.echos > 0 ? '⚠️ ECHO' : '✅ CLEAN'}\n` +
+            `✅ │ D3: ${d3AvgTime.toFixed(2)}s avg | ${d3EchoRate.toFixed(0)}% echo rate | ${agentMetrics.d3.echos > 0 ? '⚠️ ECHO' : '✅ CLEAN'}\n` +
+            `📊 │ TOTAL: ${echoCount} echoes | Verdict: ${caughtRound !== null ? 'CAUGHT' : 'MISSED'}\n` +
+            `📊 └────────────────────────────────────────────`;
+          addEvent(metricsBox, '📊', 'neutral');
 
           const testResult: any = {
             testIndex: i,
@@ -1064,16 +1120,37 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
           let echoCount = 0;
           const responses: Array<{ round: number; agent: 'd1' | 'd2' | 'd3'; content: string; hasEcho: boolean; model?: string; matchedMarkers?: string[]; poisonInjected?: boolean }> = [];
 
+          // Track per-agent metrics for this test
+          const agentMetrics: Record<'d1' | 'd2' | 'd3', { echos: number; times: number[] }> = {
+            d1: { echos: 0, times: [] },
+            d2: { echos: 0, times: [] },
+            d3: { echos: 0, times: [] }
+          };
+          let judgeTime = 0;
+
           for (let round = 1; round <= 3; round++) {
             const prompt = round === test.poisonRound ? buildPrompt(test.question, test.poison) : test.question;
 
+            // D1 Response
+            const d1Start = Date.now();
             const d1SystemPrompt = selectPrompt(promptPools?.d1, debateLogic?.d1Prompt || '');
             const d1Response = await streamLLMResponse(test.models.d1, prompt, d1SystemPrompt, source);
+            const d1Time = (Date.now() - d1Start) / 1000;
             const d1HasEcho = detectEcho(d1Response.content, test.poisonMarkers);
             if (d1HasEcho) {
               echoCount++;
+              agentMetrics.d1.echos++;
               if (caughtRound === null) caughtRound = round;
+              addEvent(`🔊 Echo detected in D1 response (round ${round})`, '🔊', 'warning', {
+                agent: 'd1',
+                matchedMarkers: test.poisonMarkers,
+                echoExcerpt: d1Response.content.slice(0, 200)
+              });
             }
+            agentMetrics.d1.times.push(d1Time);
+            addEvent(`🤖 R${round}/3 → D1 (${test.models.d1})\n"${d1Response.content.slice(0, 120)}"`, '✓', d1HasEcho ? 'warning' : 'neutral', {
+              status: d1HasEcho ? 'echo' : 'clean'
+            });
             responses.push({
               round,
               agent: 'd1',
@@ -1084,6 +1161,8 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
               poisonInjected: round === test.poisonRound,
             });
 
+            // D2 Response
+            const d2Start = Date.now();
             const d2SystemPrompt = selectPrompt(promptPools?.d2, debateLogic?.d2Prompt || '');
             const d2Response = await streamLLMResponse(
               test.models.d2,
@@ -1091,11 +1170,22 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
               d2SystemPrompt,
               source
             );
+            const d2Time = (Date.now() - d2Start) / 1000;
             const d2HasEcho = detectEcho(d2Response.content, test.poisonMarkers);
             if (d2HasEcho) {
               echoCount++;
+              agentMetrics.d2.echos++;
               if (caughtRound === null) caughtRound = round;
+              addEvent(`🔊 Echo detected in D2 response (round ${round})`, '🔊', 'warning', {
+                agent: 'd2',
+                matchedMarkers: test.poisonMarkers,
+                echoExcerpt: d2Response.content.slice(0, 200)
+              });
             }
+            agentMetrics.d2.times.push(d2Time);
+            addEvent(`🤖 R${round}/3 → D2 (${test.models.d2})\n"${d2Response.content.slice(0, 120)}"`, '✓', d2HasEcho ? 'warning' : 'neutral', {
+              status: d2HasEcho ? 'echo' : 'clean'
+            });
             responses.push({
               round,
               agent: 'd2',
@@ -1106,6 +1196,8 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
               poisonInjected: round === test.poisonRound,
             });
 
+            // D3 Response
+            const d3Start = Date.now();
             const d3SystemPrompt = selectPrompt(promptPools?.d3, debateLogic?.d3Prompt || '');
             const d3Response = await streamLLMResponse(
               test.models.d3,
@@ -1113,11 +1205,22 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
               d3SystemPrompt,
               source
             );
+            const d3Time = (Date.now() - d3Start) / 1000;
             const d3HasEcho = detectEcho(d3Response.content, test.poisonMarkers);
             if (d3HasEcho) {
               echoCount++;
+              agentMetrics.d3.echos++;
               if (caughtRound === null) caughtRound = round;
+              addEvent(`🔊 Echo detected in D3 response (round ${round})`, '🔊', 'warning', {
+                agent: 'd3',
+                matchedMarkers: test.poisonMarkers,
+                echoExcerpt: d3Response.content.slice(0, 200)
+              });
             }
+            agentMetrics.d3.times.push(d3Time);
+            addEvent(`🤖 R${round}/3 → D3 (${test.models.d3})\n"${d3Response.content.slice(0, 120)}"`, '✓', d3HasEcho ? 'warning' : 'neutral', {
+              status: d3HasEcho ? 'echo' : 'clean'
+            });
             responses.push({
               round,
               agent: 'd3',
@@ -1127,8 +1230,19 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
               matchedMarkers: d3HasEcho ? test.poisonMarkers : [],
               poisonInjected: round === test.poisonRound,
             });
+
+            // DEBATE FLOW box after each round
+            const roundEchos = responses.filter(r => r.round === round && r.hasEcho).length;
+            const debateFlowSummary = `📜 ┌─ DEBATE FLOW (R${round}) ────────────────────\n` +
+              responses.filter(r => r.round === round).map(r =>
+                `✓ │ R${round} ${r.agent.toUpperCase()}: "${r.content.slice(0, 50)}..." (${r.hasEcho ? '⚠️ Echo' : '✓ Clean'})`
+              ).join('\n') +
+              `\n📜 └────────────────────────────────────────────`;
+            addEvent(debateFlowSummary, '📜', 'neutral');
           }
 
+          // Judge Response
+          const judgeStart = Date.now();
           const judgeSystemPrompt = selectPrompt(promptPools?.judge, debateLogic?.judgePrompt || '');
           const judgeResponse = await streamLLMResponse(
             test.models.judge,
@@ -1139,8 +1253,27 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
             judgeSystemPrompt,
             source
           );
+          judgeTime = (Date.now() - judgeStart) / 1000;
+          addEvent(`🤖 Judge (${test.models.judge})\n"${judgeResponse.content.slice(0, 120)}"`, '⚖️', 'neutral');
 
           const finalVerdict = parseVerdict(judgeResponse.content);
+
+          // AGENT METRICS box after all rounds + judge
+          const d1AvgTime = agentMetrics.d1.times.reduce((a, b) => a + b, 0) / agentMetrics.d1.times.length;
+          const d2AvgTime = agentMetrics.d2.times.reduce((a, b) => a + b, 0) / agentMetrics.d2.times.length;
+          const d3AvgTime = agentMetrics.d3.times.reduce((a, b) => a + b, 0) / agentMetrics.d3.times.length;
+          const d1EchoRate = (agentMetrics.d1.echos / 3) * 100;
+          const d2EchoRate = (agentMetrics.d2.echos / 3) * 100;
+          const d3EchoRate = (agentMetrics.d3.echos / 3) * 100;
+
+          const metricsBox = `📊 ┌─ AGENT METRICS ────────────────────────────\n` +
+            `✅ │ D1: ${d1AvgTime.toFixed(2)}s avg | ${d1EchoRate.toFixed(0)}% echo rate | ${agentMetrics.d1.echos > 0 ? '⚠️ ECHO' : '✅ CLEAN'}\n` +
+            `✅ │ D2: ${d2AvgTime.toFixed(2)}s avg | ${d2EchoRate.toFixed(0)}% echo rate | ${agentMetrics.d2.echos > 0 ? '⚠️ ECHO' : '✅ CLEAN'}\n` +
+            `✅ │ D3: ${d3AvgTime.toFixed(2)}s avg | ${d3EchoRate.toFixed(0)}% echo rate | ${agentMetrics.d3.echos > 0 ? '⚠️ ECHO' : '✅ CLEAN'}\n` +
+            `⚖️  │ Judge: ${judgeTime.toFixed(2)}s | Verdict: ${finalVerdict}\n` +
+            `📊 │ TOTAL: ${echoCount} echoes across debate\n` +
+            `📊 └────────────────────────────────────────────`;
+          addEvent(metricsBox, '📊', 'neutral');
 
           const testResult: any = {
             testIndex: i,
