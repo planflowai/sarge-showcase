@@ -162,6 +162,26 @@ export function DebateView() {
     hydrate();
   }, [hydrate]);
 
+  // Fetch local models on mount so they're always available
+  useEffect(() => {
+    if (ollamaModels.length === 0 && !ollamaError) {
+      fetchOllamaModels()
+        .then(models => setOllamaModels(models))
+        .catch(() => {
+          setOllamaModels([]);
+          setOllamaError("Ollama unavailable");
+        });
+    }
+    if (lmstudioModels.length === 0 && !lmstudioError) {
+      fetchLMStudioModels()
+        .then(models => setLmstudioModels(models))
+        .catch(() => {
+          setLmstudioModels([]);
+          setLmstudioError("LM Studio unavailable");
+        });
+    }
+  }, []);
+
   // Fetch local models when any agent or judge switches to Local mode
   useEffect(() => {
     const needsLocal = agentUseCloud.some(v => !v) || !judgeUseCloud;
@@ -574,12 +594,12 @@ export function DebateView() {
   }, [finalJudgeSummary, multiChatEnabled]);
 
   return (
-    <div className="flex flex-col h-full bg-zinc-950 text-zinc-50">
+    <div className="flex flex-col h-full bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-50">
       {/* Header / Control Bar */}
-      <div className="border-b border-zinc-800 bg-zinc-900/50 px-6 py-4 space-y-4 max-h-[50vh] overflow-auto">
+      <div className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 px-6 py-4 space-y-4 max-h-[50vh] overflow-auto">
         {/* Agent & Judge Config Blocks - Horizontal Colored Layout */}
         {!isRunning && (
-          <div className="flex gap-2 pb-4 border-b border-zinc-800">
+          <div className="flex gap-2 pb-4 border-b border-zinc-200 dark:border-zinc-800">
             {/* Agent Blocks */}
             {agentSlots.map((slot, idx) => {
               const isExpanded = expandedConfigBlocks.has(idx);
@@ -627,7 +647,7 @@ export function DebateView() {
                         <select
                           value={slot.role || ""}
                           onChange={(e) => handleAgentRoleChange(idx, e.target.value)}
-                          className="w-full px-2 py-1 rounded text-xs border bg-zinc-800 border-zinc-700 text-zinc-50"
+                          className="w-full px-2 py-1 rounded text-xs border bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50"
                         >
                           <option value="">Select role</option>
                           {agentRoles.map((role) => (
@@ -657,7 +677,7 @@ export function DebateView() {
                             setAgentSlots(newSlots);
                             setAgentUseCloud(newUseCloud);
                           }}
-                          className="flex-1 px-2 py-1 rounded text-xs border bg-zinc-800 border-zinc-700 text-zinc-50"
+                          className="flex-1 px-2 py-1 rounded text-xs border bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50"
                         >
                           <option value="">☁️ Cloud</option>
                           {cloudModels.map((m) => (
@@ -684,7 +704,7 @@ export function DebateView() {
                             setAgentSlots(newSlots);
                             setAgentUseCloud(newUseCloud);
                           }}
-                          className="flex-1 px-2 py-1 rounded text-xs border bg-zinc-800 border-zinc-700 text-zinc-50"
+                          className="flex-1 px-2 py-1 rounded text-xs border bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50"
                         >
                           <option value="">🌐 Local</option>
                           {localModels.map((m) => (
@@ -749,7 +769,7 @@ export function DebateView() {
                               setJudgeUseCloud(false);
                             }
                           }}
-                          className="flex-1 px-2 py-1 rounded text-xs border bg-zinc-800 border-zinc-700 text-zinc-50"
+                          className="flex-1 px-2 py-1 rounded text-xs border bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50"
                         >
                           <option value="">☁️ Cloud</option>
                           {getCloudModels().map((m) => (
@@ -774,7 +794,7 @@ export function DebateView() {
                               setJudgeUseCloud(true);
                             }
                           }}
-                          className="flex-1 px-2 py-1 rounded text-xs border bg-zinc-800 border-zinc-700 text-zinc-50"
+                          className="flex-1 px-2 py-1 rounded text-xs border bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50"
                         >
                           <option value="">🌐 Local</option>
                           {getLocalModels().map((m) => (
@@ -794,20 +814,20 @@ export function DebateView() {
 
         {/* Topic, Rounds, and Debate Selector - BELOW Agents & Models */}
         {!isRunning && (
-          <div className="space-y-1.5 py-3 border-b border-zinc-800">
+          <div className="space-y-1.5 py-3 border-b border-zinc-200 dark:border-zinc-800">
             <div className="flex gap-2 items-center text-xs">
               <Input
                 value={topicInput}
                 onChange={(e) => setTopicInput(e.target.value)}
                 placeholder="Enter debate topic..."
                 disabled={isRunning}
-                className="flex-1 h-8 px-2 bg-zinc-800 border border-zinc-700 text-zinc-50 placeholder:text-zinc-500 text-xs"
+                className="flex-1 h-8 px-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50 placeholder:text-zinc-500 dark:placeholder:text-zinc-500 text-xs"
               />
               <select
                 value={totalRounds}
                 onChange={(e) => setTotalRounds(Number(e.target.value))}
                 disabled={isRunning}
-                className="px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-50 text-xs w-20"
+                className="px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50 text-xs w-20"
               >
                 {[1, 2, 3, 4, 5].map((n) => (
                   <option key={n} value={n}>
@@ -831,7 +851,7 @@ export function DebateView() {
                       setJudgeSlot(debate.judgeSlot);
                     }
                   }}
-                  className="px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-50 text-xs w-32"
+                  className="px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50 text-xs w-32"
                   defaultValue=""
                 >
                   <option value="">Load Debate</option>
@@ -847,7 +867,7 @@ export function DebateView() {
         )}
 
         {/* Controls */}
-        <div className="flex gap-2 flex-wrap pt-3 border-t border-zinc-800">
+        <div className="flex gap-2 flex-wrap pt-3 border-t border-zinc-200 dark:border-zinc-800">
           {!isRunning ? (
             <Button
               onClick={handleStartDebate}
@@ -922,7 +942,7 @@ export function DebateView() {
       <div className="flex-1 overflow-auto">
         {!debate ? (
           <div className="h-full flex items-center justify-center">
-            <div className="text-center text-zinc-400">
+            <div className="text-center text-zinc-600 dark:text-zinc-400">
               <p className="text-lg mb-2">Configure agents, judge, and topic above</p>
               <p className="text-sm">Then click Start Debate to begin</p>
             </div>
@@ -940,7 +960,7 @@ export function DebateView() {
               const isRoundExpanded = expandedRounds.has(round.roundNumber);
 
               return (
-                <div key={round.roundNumber} className="border border-zinc-700 rounded-lg bg-zinc-900/30 overflow-hidden">
+                <div key={round.roundNumber} className="border border-zinc-300 dark:border-zinc-700 rounded-lg bg-zinc-100 dark:bg-zinc-900/30 overflow-hidden">
                   {/* Round Header */}
                   <button
                     onClick={() => {
@@ -954,15 +974,15 @@ export function DebateView() {
                       "w-full px-6 py-3 flex items-center justify-between transition-colors",
                       isCurrentRound
                         ? "bg-amber-900/40 hover:bg-amber-800/40"
-                        : "bg-zinc-800 hover:bg-zinc-700"
+                        : "bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700"
                     )}
                   >
-                    <h3 className="text-lg font-semibold text-zinc-100">
+                    <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
                       Round {round.roundNumber}
-                      {isCurrentRound && <span className="ml-2 text-sm text-amber-400">(Active)</span>}
-                      {round.judgeStatus === "complete" && <span className="ml-2 text-sm text-emerald-400">✓</span>}
+                      {isCurrentRound && <span className="ml-2 text-sm text-amber-600 dark:text-amber-400">(Active)</span>}
+                      {round.judgeStatus === "complete" && <span className="ml-2 text-sm text-emerald-600 dark:text-emerald-400">✓</span>}
                     </h3>
-                    <span className="text-zinc-400">{isRoundExpanded ? '▼' : '▶'}</span>
+                    <span className="text-zinc-600 dark:text-zinc-400">{isRoundExpanded ? '▼' : '▶'}</span>
                   </button>
 
                   {/* Round Content */}
@@ -972,7 +992,7 @@ export function DebateView() {
                       <div className="space-y-3">
                         {round.agents.map((agent, idx) =>
                           agentSlots[idx]?.provider ? (
-                            <div key={`round-${round.roundNumber}-agent-${idx}`} className="border border-zinc-600 rounded-lg bg-zinc-800/20">
+                            <div key={`round-${round.roundNumber}-agent-${idx}`} className="border border-zinc-300 dark:border-zinc-600 rounded-lg bg-zinc-100 dark:bg-zinc-800/20">
                               {/* Agent Header (Collapsible) */}
                               <button
                                 onClick={() => {
@@ -983,12 +1003,12 @@ export function DebateView() {
                                     : next.add(agentKey);
                                   setExpandedAgents(next);
                                 }}
-                                className="w-full px-4 py-2 flex items-center justify-between bg-zinc-700 hover:bg-zinc-600 transition-colors"
+                                className="w-full px-4 py-2 flex items-center justify-between bg-zinc-300 dark:bg-zinc-700 hover:bg-zinc-400 dark:hover:bg-zinc-600 transition-colors"
                               >
-                                <span className="font-semibold text-zinc-100">
+                                <span className="font-semibold text-zinc-900 dark:text-zinc-100">
                                   Agent {idx + 1} {["Researcher", "Engineer", "Analyst"][idx] || ""}
                                 </span>
-                                <span className="text-zinc-400">
+                                <span className="text-zinc-600 dark:text-zinc-400">
                                   {expandedAgents.has(`agent-${round.roundNumber}-${idx}`) ? '▼' : '▶'}
                                 </span>
                               </button>
