@@ -12,62 +12,25 @@
 export type ContentType = 'html-document' | 'react-jsx' | 'html-snippet' | 'css-only' | 'js-only' | 'text';
 
 /**
- * Script to inject into preview to prevent ALL navigation.
- * - Intercepts all anchor clicks
- * - Blocks form submissions
- * - Prevents window.location changes
- * - Highlights clicked links briefly instead of navigating
+ * Script to inject into preview to prevent navigation.
+ * - Intercepts all anchor clicks and prevents navigation
+ * - Allows onclick handlers to still execute (fires before preventDefault)
+ * - Allows href="#" anchor scrolling
+ * - Prevents navigation to external/absolute URLs
  */
 const NAVIGATION_BLOCKER_SCRIPT = `
 <script>
-(function() {
-  // Block all anchor clicks
-  document.addEventListener('click', function(e) {
-    var target = e.target;
-    while (target && target.tagName !== 'A') {
-      target = target.parentElement;
-    }
-    if (target && target.tagName === 'A') {
+document.addEventListener('click', function(e) {
+  var link = e.target.closest('a');
+  if (link) {
+    var href = link.getAttribute('href');
+    // Block navigation if href exists and is not "#" or javascript:
+    if (href && href !== '#' && !href.startsWith('javascript:')) {
       e.preventDefault();
       e.stopPropagation();
-      // Visual feedback - brief highlight
-      var originalBg = target.style.backgroundColor;
-      var originalOutline = target.style.outline;
-      target.style.backgroundColor = 'rgba(99, 102, 241, 0.2)';
-      target.style.outline = '2px solid rgba(99, 102, 241, 0.5)';
-      setTimeout(function() {
-        target.style.backgroundColor = originalBg;
-        target.style.outline = originalOutline;
-      }, 300);
-      console.log('[Preview] Navigation blocked:', target.href);
-      return false;
     }
-  }, true);
-
-  // Block form submissions
-  document.addEventListener('submit', function(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    console.log('[Preview] Form submission blocked');
-    return false;
-  }, true);
-
-  // Block window.open
-  window.open = function() {
-    console.log('[Preview] window.open blocked');
-    return null;
-  };
-
-  // Block location changes - wrap in try-catch for security
-  try {
-    Object.defineProperty(window, 'location', {
-      configurable: false,
-      enumerable: true,
-      get: function() { return document.location; },
-      set: function(v) { console.log('[Preview] location change blocked:', v); }
-    });
-  } catch(e) {}
-})();
+  }
+}, true);
 </script>
 `;
 
@@ -170,17 +133,26 @@ export function buildPreviewContent(code: string, airGapMode = false): string {
 }
 
 /**
- * Inject navigation blocker script into an existing HTML document
+ * Inject navigation blocker and base tag into an existing HTML document
+ * Injects <base target="_blank"> and click interceptor right after <head> opening tag
  */
 function injectNavigationBlocker(code: string): string {
-  // Try to inject before </body> or </html>, or at the end
-  if (/<\/body>/i.test(code)) {
-    return code.replace(/<\/body>/i, NAVIGATION_BLOCKER_SCRIPT + '</body>');
-  } else if (/<\/html>/i.test(code)) {
-    return code.replace(/<\/html>/i, NAVIGATION_BLOCKER_SCRIPT + '</html>');
+  const headInjection = `<base target="_blank">
+${NAVIGATION_BLOCKER_SCRIPT}`;
+
+  // Try to inject right after opening <head> tag
+  if (/<head[^>]*>/i.test(code)) {
+    return code.replace(/<head[^>]*>/i, function(match) {
+      return match + '\n' + headInjection;
+    });
+  } else if (/<html[^>]*>/i.test(code)) {
+    // No <head> tag, inject right after <html>
+    return code.replace(/<html[^>]*>/i, function(match) {
+      return match + '\n<head>' + headInjection + '</head>';
+    });
   } else {
-    // Append at the end
-    return code + NAVIGATION_BLOCKER_SCRIPT;
+    // No HTML tag, inject at the very beginning
+    return headInjection + '\n' + code;
   }
 }
 
@@ -203,6 +175,8 @@ function wrapReactJSX(code: string, airGapMode = false): string {
     return `<!DOCTYPE html>
 <html>
 <head>
+  <base target="_blank">
+  ${NAVIGATION_BLOCKER_SCRIPT}
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="/vendor/react.production.min.js"></script>
@@ -218,7 +192,6 @@ function wrapReactJSX(code: string, airGapMode = false): string {
     ⚠️ <strong>Air-gap mode:</strong> React JSX preview requires Babel (cdn.unpkg.com) for transpilation, which is unavailable offline. JSX rendering is disabled. The code is correct — connect to the internet to preview it.
   </div>
   <div id="root"></div>
-  ${NAVIGATION_BLOCKER_SCRIPT}
 </body>
 </html>`;
   }
@@ -226,6 +199,8 @@ function wrapReactJSX(code: string, airGapMode = false): string {
   return `<!DOCTYPE html>
 <html>
 <head>
+  <base target="_blank">
+  ${NAVIGATION_BLOCKER_SCRIPT}
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
@@ -271,7 +246,6 @@ function wrapReactJSX(code: string, airGapMode = false): string {
       document.getElementById('root').innerHTML = '<pre style="color: red; padding: 20px;">' + err.message + '</pre>';
     }
   </script>
-  ${NAVIGATION_BLOCKER_SCRIPT}
 </body>
 </html>`;
 }
@@ -287,6 +261,8 @@ function wrapHTMLSnippet(code: string, airGapMode = false): string {
   return `<!DOCTYPE html>
 <html>
 <head>
+  <base target="_blank">
+  ${NAVIGATION_BLOCKER_SCRIPT}
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   ${tailwindScript}
@@ -297,7 +273,6 @@ function wrapHTMLSnippet(code: string, airGapMode = false): string {
 </head>
 <body>
   ${code}
-  ${NAVIGATION_BLOCKER_SCRIPT}
 </body>
 </html>`;
 }
@@ -309,6 +284,8 @@ function wrapCSSOnly(code: string): string {
   return `<!DOCTYPE html>
 <html>
 <head>
+  <base target="_blank">
+  ${NAVIGATION_BLOCKER_SCRIPT}
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
@@ -328,7 +305,6 @@ function wrapCSSOnly(code: string): string {
       <input type="text" placeholder="Sample Input" />
     </div>
   </div>
-  ${NAVIGATION_BLOCKER_SCRIPT}
 </body>
 </html>`;
 }
@@ -340,6 +316,8 @@ function wrapJSOnly(code: string): string {
   return `<!DOCTYPE html>
 <html>
 <head>
+  <base target="_blank">
+  ${NAVIGATION_BLOCKER_SCRIPT}
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
@@ -367,7 +345,6 @@ function wrapJSOnly(code: string): string {
       output.style.color = '#f87171';
     }
   </script>
-  ${NAVIGATION_BLOCKER_SCRIPT}
 </body>
 </html>`;
 }
