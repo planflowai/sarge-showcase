@@ -247,6 +247,7 @@ export default function BuilderChat({
     projectPath,
     projectName,
     selectedModel,
+    autoApply,
     onStreamingUpdate: handleStreamingUpdate,
     onViewDiff: handleViewDiff,
     startStep,

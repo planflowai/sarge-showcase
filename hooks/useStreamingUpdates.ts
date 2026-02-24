@@ -40,6 +40,7 @@ interface UseStreamingUpdatesProps {
   projectPath?: string | null;
   projectName?: string | null;
   selectedModel?: string | null;
+  autoApply?: boolean;
   onStreamingUpdate?: (code: string, isStreaming: boolean) => void;
   onViewDiff?: (filePath: string, originalContent: string, proposedContent: string) => void;
   startStep: (step: string, label: string) => void;
@@ -72,6 +73,7 @@ export function useStreamingUpdates({
   projectPath,
   projectName,
   selectedModel,
+  autoApply,
   onStreamingUpdate,
   onViewDiff,
   startStep,
@@ -137,8 +139,16 @@ export function useStreamingUpdates({
         if (modifiedCode && modifiedCode !== artifactCode) {
           const summary = getDiffSummary(artifactCode, modifiedCode);
           pendingEditRef.current = { original: artifactCode, modified: modifiedCode, summary };
-          console.log('[useStreamingUpdates] Diff computed, awaiting approval');
-          onViewDiff?.('[Pending Edits]', artifactCode, modifiedCode);
+
+          if (autoApply) {
+            // Auto-apply is ON: apply changes directly without showing diff
+            console.log('[useStreamingUpdates] Auto-apply enabled, applying changes directly');
+            onStreamingUpdate?.(modifiedCode, false);
+          } else {
+            // Auto-apply is OFF: show diff for user approval
+            console.log('[useStreamingUpdates] Diff computed, awaiting approval');
+            onViewDiff?.('[Pending Edits]', artifactCode, modifiedCode);
+          }
         } else {
           // No changes detected — apply directly
           if (lastStreamingCodeRef.current) {
