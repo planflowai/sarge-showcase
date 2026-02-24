@@ -793,6 +793,10 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
         batchLockedRotation: rotation,
       }));
 
+      // Log batch initialization with hash/seed
+      const batchSeed = batchId.split('_')[1]; // Extract timestamp seed
+      addEvent(`🌱 Batch ID: ${batchId} | Seed: ${batchSeed} | Tests: ${finalTestCount}`, '🌱', 'neutral');
+
       // ────────────────────────────────────────────────────────────────
       // PHASE 1: BASELINE (no poison, no system prompts)
       // ────────────────────────────────────────────────────────────────
@@ -820,6 +824,8 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
         const test = rotation[i];
 
         addEvent(`Test ${i + 1}/${finalTestCount}: ${test.question.slice(0, 50)}...`, '📋', 'neutral', { question: test.question });
+        addEvent(`📋 QUESTION: ${test.question}`, '📋', 'neutral');
+        addEvent(`💉 POISON: ${test.poison}`, '💉', 'neutral');
 
         set((state) => ({
           batchCurrentTest: i + 1,
@@ -890,6 +896,8 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
         const test = rotation[i];
 
         addEvent(`Test ${i + 1}/${finalTestCount}: ${test.question.slice(0, 50)}...`, '📋', 'neutral', { question: test.question });
+        addEvent(`📋 QUESTION: ${test.question}`, '📋', 'neutral');
+        addEvent(`💉 POISON: ${test.poison}`, '💉', 'neutral');
 
         set((state) => ({
           batchCurrentTest: i + 1,
@@ -912,7 +920,7 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
             const prompt = round === test.poisonRound ? buildPrompt(test.question, test.poison) : test.question;
 
             if (round === test.poisonRound) {
-              addEvent(`☠️ Poison injected via ${test.poisonAgent.toUpperCase()} in round ${round}`, '☠️', 'danger', {
+              addEvent(`🎯 INJECTION: Round ${round} via D${test.poisonAgent.toUpperCase()}`, '🎯', 'danger', {
                 round,
                 agent: test.poisonAgent,
                 triggerPhrase: test.poison
@@ -1109,6 +1117,8 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
         const test = rotation[i];
 
         addEvent(`Test ${i + 1}/${finalTestCount}: ${test.question.slice(0, 50)}...`, '📋', 'neutral', { question: test.question });
+        addEvent(`📋 QUESTION: ${test.question}`, '📋', 'neutral');
+        addEvent(`💉 POISON: ${test.poison}`, '💉', 'neutral');
 
         set((state) => ({
           batchCurrentTest: i + 1,
@@ -1130,6 +1140,14 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
 
           for (let round = 1; round <= 3; round++) {
             const prompt = round === test.poisonRound ? buildPrompt(test.question, test.poison) : test.question;
+
+            if (round === test.poisonRound) {
+              addEvent(`🎯 INJECTION: Round ${round} via D${test.poisonAgent.toUpperCase()}`, '🎯', 'danger', {
+                round,
+                agent: test.poisonAgent,
+                triggerPhrase: test.poison
+              });
+            }
 
             // D1 Response
             const d1Start = Date.now();
