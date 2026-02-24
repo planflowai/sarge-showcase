@@ -693,10 +693,10 @@ export function InputArea({
         {/* Export Hint - Quick Reference for Document Export */}
         {showExportHint && (
           <div className="mt-2 px-3 py-2 rounded-lg bg-emerald-500/5 border border-emerald-500/20 text-xs text-emerald-600 dark:text-emerald-400">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <Download className="h-3.5 w-3.5" />
-                <span>
+            <div className="flex items-center justify-center gap-2 relative">
+              <div className="flex items-center gap-2 justify-center">
+                <Download className="h-3.5 w-3.5 flex-shrink-0" />
+                <span className="text-center">
                   <strong>Quick Export:</strong> Use <code className="bg-emerald-500/10 px-1.5 py-0.5 rounded text-[11px] font-mono">create the powerpoint</code>,{" "}
                   <code className="bg-emerald-500/10 px-1.5 py-0.5 rounded text-[11px] font-mono">export as pdf</code>,{" "}
                   <code className="bg-emerald-500/10 px-1.5 py-0.5 rounded text-[11px] font-mono">make an excel</code>, etc.
@@ -704,7 +704,7 @@ export function InputArea({
               </div>
               <button
                 onClick={() => setShowExportHint(false)}
-                className="text-emerald-400 hover:text-emerald-300 transition-colors"
+                className="absolute right-0 text-emerald-400 hover:text-emerald-300 transition-colors flex-shrink-0"
                 title="Hide hint"
               >
                 <X className="h-3.5 w-3.5" />
