@@ -226,7 +226,10 @@ export function MessageBubble({
           </div>
           {/* Timestamp */}
           <div className="px-4 pb-2 text-[10px] text-red-400/60">
-            {formatDate(message.timestamp)}
+            {message.timestamp && message.timestamp instanceof Date
+              ? formatDate(message.timestamp)
+              : message.timestamp ? new Date(message.timestamp).toLocaleString()
+              : ""}
           </div>
         </div>
       ) : (
@@ -290,7 +293,10 @@ export function MessageBubble({
               isUser ? "text-indigo-200" : "text-zinc-500"
             )}
           >
-            {formatDate(message.timestamp)}
+            {message.timestamp && message.timestamp instanceof Date
+              ? formatDate(message.timestamp)
+              : message.timestamp ? new Date(message.timestamp).toLocaleString()
+              : ""}
           </div>
         </div>
       )}
