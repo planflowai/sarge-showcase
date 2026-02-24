@@ -1081,9 +1081,19 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
             // DEBATE FLOW box after each round
             const roundEchos = responses.filter(r => r.round === round && r.hasEcho).length;
             const debateFlowSummary = `📜 ┌─ DEBATE FLOW (R${round}) ────────────────────\n` +
-              responses.filter(r => r.round === round).map(r =>
-                `✓ │ R${round} ${r.agent.toUpperCase()}: "${r.content.slice(0, 50)}..." (${r.hasEcho ? '⚠️ Echo' : '✓ Clean'})`
-              ).join('\n') +
+              responses.filter(r => r.round === round).map(r => {
+                const modelName = (r.model || 'unknown').split(':')[0]; // Abbreviate: mistral:7b → mistral
+                let cleanContent = r.content;
+                // Try to strip JSON metadata if present
+                if (cleanContent.includes('{"')) {
+                  try {
+                    const jsonMatch = cleanContent.match(/\{"[^}]*response[^}]*":\s*"([^"]+)"/);
+                    if (jsonMatch) cleanContent = jsonMatch[1];
+                  } catch (e) { /* keep original */ }
+                }
+                const snippet = cleanContent.slice(0, 60).replace(/\n/g, ' ').trim();
+                return `✓ │ R${round} D${r.agent.slice(1)} (${modelName}): "${snippet}..." (${r.hasEcho ? '⚠️ Echo' : '✓ Clean'})`;
+              }).join('\n') +
               `\n📜 └────────────────────────────────────────────`;
             addEvent(debateFlowSummary, '📜', 'neutral');
           }
@@ -1318,9 +1328,19 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
             // DEBATE FLOW box after each round
             const roundEchos = responses.filter(r => r.round === round && r.hasEcho).length;
             const debateFlowSummary = `📜 ┌─ DEBATE FLOW (R${round}) ────────────────────\n` +
-              responses.filter(r => r.round === round).map(r =>
-                `✓ │ R${round} ${r.agent.toUpperCase()}: "${r.content.slice(0, 50)}..." (${r.hasEcho ? '⚠️ Echo' : '✓ Clean'})`
-              ).join('\n') +
+              responses.filter(r => r.round === round).map(r => {
+                const modelName = (r.model || 'unknown').split(':')[0]; // Abbreviate: mistral:7b → mistral
+                let cleanContent = r.content;
+                // Try to strip JSON metadata if present
+                if (cleanContent.includes('{"')) {
+                  try {
+                    const jsonMatch = cleanContent.match(/\{"[^}]*response[^}]*":\s*"([^"]+)"/);
+                    if (jsonMatch) cleanContent = jsonMatch[1];
+                  } catch (e) { /* keep original */ }
+                }
+                const snippet = cleanContent.slice(0, 60).replace(/\n/g, ' ').trim();
+                return `✓ │ R${round} D${r.agent.slice(1)} (${modelName}): "${snippet}..." (${r.hasEcho ? '⚠️ Echo' : '✓ Clean'})`;
+              }).join('\n') +
               `\n📜 └────────────────────────────────────────────`;
             addEvent(debateFlowSummary, '📜', 'neutral');
           }
