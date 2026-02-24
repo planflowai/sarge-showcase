@@ -579,7 +579,7 @@ export function DebateView() {
       <div className="border-b border-zinc-800 bg-zinc-900/50 px-6 py-4 space-y-4 max-h-[50vh] overflow-auto">
         {/* Agent & Judge Config Blocks - Horizontal Colored Layout */}
         {!isRunning && (
-          <div className="flex gap-3 pb-4 border-b border-zinc-800 overflow-x-auto">
+          <div className="flex gap-2 pb-4 border-b border-zinc-800">
             {/* Agent Blocks */}
             {agentSlots.map((slot, idx) => {
               const isExpanded = expandedConfigBlocks.has(idx);
@@ -593,7 +593,7 @@ export function DebateView() {
               return (
                 <div
                   key={idx}
-                  className="rounded-lg border border-opacity-30 overflow-hidden flex-shrink-0 transition-all duration-200"
+                  className="rounded-lg border border-opacity-30 overflow-hidden flex-1 transition-all duration-200"
                   style={{ borderColor: agentColor, backgroundColor: agentColor + "15" }}
                 >
                   {/* Header - Always visible */}
@@ -627,12 +627,7 @@ export function DebateView() {
                         <select
                           value={slot.role || ""}
                           onChange={(e) => handleAgentRoleChange(idx, e.target.value)}
-                          className="w-full px-2 py-1 rounded text-xs border"
-                          style={{
-                            backgroundColor: agentColor + "25",
-                            borderColor: agentColor,
-                            color: agentColor,
-                          }}
+                          className="w-full px-2 py-1 rounded text-xs border bg-zinc-800 border-zinc-700 text-zinc-50"
                         >
                           <option value="">Select role</option>
                           {agentRoles.map((role) => (
@@ -662,12 +657,7 @@ export function DebateView() {
                             setAgentSlots(newSlots);
                             setAgentUseCloud(newUseCloud);
                           }}
-                          className="flex-1 px-2 py-1 rounded text-xs border"
-                          style={{
-                            backgroundColor: agentColor + "25",
-                            borderColor: agentColor,
-                            color: agentColor,
-                          }}
+                          className="flex-1 px-2 py-1 rounded text-xs border bg-zinc-800 border-zinc-700 text-zinc-50"
                         >
                           <option value="">☁️ Cloud</option>
                           {cloudModels.map((m) => (
@@ -694,12 +684,7 @@ export function DebateView() {
                             setAgentSlots(newSlots);
                             setAgentUseCloud(newUseCloud);
                           }}
-                          className="flex-1 px-2 py-1 rounded text-xs border"
-                          style={{
-                            backgroundColor: agentColor + "25",
-                            borderColor: agentColor,
-                            color: agentColor,
-                          }}
+                          className="flex-1 px-2 py-1 rounded text-xs border bg-zinc-800 border-zinc-700 text-zinc-50"
                         >
                           <option value="">🌐 Local</option>
                           {localModels.map((m) => (
@@ -722,7 +707,7 @@ export function DebateView() {
 
               return (
                 <div
-                  className="rounded-lg border border-opacity-30 overflow-hidden flex-shrink-0 transition-all duration-200"
+                  className="rounded-lg border border-opacity-30 overflow-hidden flex-1 transition-all duration-200"
                   style={{ borderColor: JUDGE_COLOR, backgroundColor: JUDGE_COLOR + "15" }}
                 >
                   {/* Header - Always visible */}
@@ -764,12 +749,7 @@ export function DebateView() {
                               setJudgeUseCloud(false);
                             }
                           }}
-                          className="flex-1 px-2 py-1 rounded text-xs border"
-                          style={{
-                            backgroundColor: JUDGE_COLOR + "25",
-                            borderColor: JUDGE_COLOR,
-                            color: JUDGE_COLOR,
-                          }}
+                          className="flex-1 px-2 py-1 rounded text-xs border bg-zinc-800 border-zinc-700 text-zinc-50"
                         >
                           <option value="">☁️ Cloud</option>
                           {getCloudModels().map((m) => (
@@ -794,12 +774,7 @@ export function DebateView() {
                               setJudgeUseCloud(true);
                             }
                           }}
-                          className="flex-1 px-2 py-1 rounded text-xs border"
-                          style={{
-                            backgroundColor: JUDGE_COLOR + "25",
-                            borderColor: JUDGE_COLOR,
-                            color: JUDGE_COLOR,
-                          }}
+                          className="flex-1 px-2 py-1 rounded text-xs border bg-zinc-800 border-zinc-700 text-zinc-50"
                         >
                           <option value="">🌐 Local</option>
                           {getLocalModels().map((m) => (
