@@ -67,6 +67,19 @@ export const useModelStore = create<ModelState>((set, get) => ({
   builderFlags: {},
 
   hydrate: () => {
+    // Auto-tag all cloud models as builders on first hydrate
+    const state = get();
+    if (Object.keys(state.builderFlags).length === 0) {
+      const newFlags: Record<string, boolean> = {};
+      // Tag all non-ollama models as builders (cloud providers)
+      state.models.forEach(m => {
+        if (m.provider !== 'ollama') {
+          newFlags[m.id] = true;
+        }
+      });
+      set({ builderFlags: newFlags });
+    }
+
     // Start async scan but don't block on it
     set({ hydrated: true });
 
