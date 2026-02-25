@@ -35,6 +35,9 @@ export const SIDEBAR_HIDDEN_ROUTES: string[] = [
   "/research",
   "/apps",
   "/apps/resume-tailor",
+  "/test",
+  "/batch",
+  "/journal",
 ];
 
 // ── Network / Air-gap detection ────────────────────────────────────────────

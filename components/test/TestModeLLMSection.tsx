@@ -6,7 +6,7 @@ import { useUIStore } from "@/lib/stores/uiStore";
 import { useTestModeStore } from "@/lib/stores/testModeStore";
 import { useModelRegistryStore, type SargePool } from "@/lib/stores/modelRegistryStore";
 import { providers } from "@/lib/providers";
-import { fetchOllamaModels } from "@/lib/providers/localModels";
+import { fetchOllamaModels, fetchLMStudioModels } from "@/lib/providers/localModels";
 import { Button } from "@/components/ui/button";
 import type { Provider } from "@/lib/types";
 
@@ -17,6 +17,7 @@ export function TestModeLLMSection() {
   const collapsed = useUIStore((s) => s.testModeLLMSectionCollapsed);
   const setCollapsed = useUIStore((s) => s.setTestModeLLMSectionCollapsed);
   const isRunning = useTestModeStore((s) => s.isRunning);
+  const testAgentMode = useTestModeStore((s) => s.testAgentMode);
 
   const slots = useTestModeStore((s) => s.slots);
   const updateSlot = useTestModeStore((s) => s.updateSlot);
@@ -30,7 +31,8 @@ export function TestModeLLMSection() {
   } = useModelRegistryStore();
 
   const [ollamaModels, setOllamaModels] = useState<any[]>([]);
-  const [useRegistry, setUseRegistry] = useState(true);  // Toggle for registry filtering
+  const [lmstudioModels, setLmstudioModels] = useState<any[]>([]);
+  const [useRegistry, setUseRegistry] = useState(false);  // Off by default — shows all models. Turn on to filter by pool assignment.
 
   // Hydrate stores on mount
   useEffect(() => {
@@ -42,7 +44,6 @@ export function TestModeLLMSection() {
     fetchOllamaModels()
       .then(models => {
         setOllamaModels(models);
-        // Auto-register models in registry
         if (models.length > 0) {
           registerModels(models.map(m => ({
             id: m.id,
@@ -61,12 +62,40 @@ export function TestModeLLMSection() {
       });
   }, [registerModels]);
 
+  // Fetch LM Studio models and register them
+  useEffect(() => {
+    fetchLMStudioModels()
+      .then(models => {
+        setLmstudioModels(models);
+        if (models.length > 0) {
+          registerModels(models.map(m => ({
+            id: m.id,
+            name: m.name,
+            provider: 'lmstudio',
+            category: 'code',
+            enabled: true,
+            strength: 'medium',
+            pools: [],
+          })));
+        }
+      })
+      .catch(err => {
+        console.warn('LM Studio offline or unavailable:', err);
+        setLmstudioModels([]);
+      });
+  }, [registerModels]);
+
   const handleProviderChange = (index: number, providerId: string) => {
     const prov = providers.find(p => p.id === providerId);
     const isLocal = prov?.type === "local";
-    const defaultModel = isLocal
-      ? (ollamaModels[0]?.id ?? "")
-      : (prov?.models[0]?.id ?? "");
+    let defaultModel = "";
+    if (isLocal) {
+      defaultModel = providerId === 'lmstudio'
+        ? (lmstudioModels[0]?.id ?? "")
+        : (ollamaModels[0]?.id ?? "");
+    } else {
+      defaultModel = prov?.models[0]?.id ?? "";
+    }
 
     updateSlot(index, {
       provider: providerId as Provider,
@@ -118,23 +147,50 @@ export function TestModeLLMSection() {
         </div>
       </div>
 
-      {/* Compact 4-column grid */}
-      <div className="grid grid-cols-4 gap-1.5">
+      {/* Compact grid - show D1/D2 always, D3 for 3/3j, Judge for 2j/3j */}
+      <div className={`grid gap-1.5 ${
+        testAgentMode === '2j' ? 'grid-cols-3' :
+        testAgentMode === '3j' ? 'grid-cols-4' :
+        testAgentMode === '3' ? 'grid-cols-3' :
+        'grid-cols-2'
+      }`}>
         {slots.map((slot, idx) => {
+          // Skip slots not needed for current agent mode
+          if (idx === 2 && !['3', '3j'].includes(testAgentMode)) return null; // Skip D3 unless 3 or 3j
+          if (idx === 3 && !['2j', '3j'].includes(testAgentMode)) return null; // Skip Judge unless 2j or 3j
+
           const isJudge = idx === 3;
           const pool = SLOT_POOLS[idx];
           const prov = providers.find(p => p.id === slot.provider);
           const isLocal = prov?.type === "local";
 
-          // Get models - filter by registry pool if enabled and using Ollama
-          let availableModels = isLocal ? ollamaModels : (prov?.models ?? []);
+          // Get models - for local providers, show Ollama + registered local models
+          let availableModels: any[] = [];
           const registryModelsForPool = getModelsForPool(pool);
           const hasRegistryData = Object.keys(registry).length > 0;
 
-          // Filter Ollama models by registry pool assignment
-          if (isLocal && useRegistry && hasRegistryData) {
+          if (isLocal) {
+            // Show models for the specific local provider selected
+            const isLMStudio = slot.provider === 'lmstudio';
+            const baseModels = isLMStudio ? [...lmstudioModels] : [...ollamaModels];
+            const providerKey = isLMStudio ? 'lmstudio' : 'ollama';
+            const localModelsFromRegistry = Object.values(registry).filter(m => m.provider === providerKey);
+            // Add any registered local models not already in base list
+            for (const m of localModelsFromRegistry) {
+              if (!baseModels.find(om => om.id === m.id)) {
+                baseModels.push({ id: m.id, name: m.name ?? m.id });
+              }
+            }
+            availableModels = baseModels;
+          } else {
+            // Show cloud provider models
+            availableModels = prov?.models ?? [];
+          }
+
+          // Filter by registry pool if enabled (only for cloud providers)
+          if (!isLocal && useRegistry && hasRegistryData) {
             const poolModelIds = new Set(registryModelsForPool.map(m => m.id));
-            availableModels = ollamaModels.filter(m => poolModelIds.has(m.id));
+            availableModels = availableModels.filter(m => poolModelIds.has(m.id));
           }
 
           // Check if current model is excluded from this pool

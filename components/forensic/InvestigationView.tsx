@@ -176,7 +176,7 @@ function EntryDetail({ entry, session }: { entry: ForensicLogEntry; session?: { 
         <InfoBox label="WHAT" value={entry.event} />
         <InfoBox label="WHO" value={entry.modelState ? `${entry.modelState.agentRole.toUpperCase()} (${entry.modelState.modelId})` : "System"} />
         <InfoBox label="WHERE" value={`Sequence #${entry.sequenceNumber} in session ${entry.sessionId.slice(0, 12)}...`} />
-        {entry.alertHistory.length > 0 && <InfoBox label="WHY (Alerts)" value={entry.alertHistory.join(", ")} />}
+        {entry.alertHistory?.length > 0 && <InfoBox label="WHY (Alerts)" value={entry.alertHistory?.join(", ")} />}
         {entry.modelState && <InfoBox label="HOW" value={`${entry.modelState.tokens} tokens in ${entry.modelState.responseTimeMs}ms`} />}
       </div>
 
@@ -218,14 +218,14 @@ function EntryDetail({ entry, session }: { entry: ForensicLogEntry; session?: { 
               <div><span className="text-zinc-500">Model:</span> <span className="font-mono text-zinc-800 dark:text-zinc-200">{entry.aiDecision.modelVersion}</span></div>
             </div>
             <div><span className="text-zinc-500">Explanation:</span> <span className="text-zinc-800 dark:text-zinc-200">{entry.aiDecision.explanation}</span></div>
-            {entry.aiDecision.factors.length > 0 && (
+            {entry.aiDecision?.factors?.length > 0 && (
               <div className="flex flex-wrap gap-1">
-                {entry.aiDecision.factors.map((f, i) => (
+                {entry.aiDecision?.factors?.map((f, i) => (
                   <span key={i} className="rounded bg-cyan-100 dark:bg-cyan-900/30 px-1.5 py-0.5 text-[10px] text-cyan-700 dark:text-cyan-300 font-mono">{f}</span>
                 ))}
               </div>
             )}
-            {Object.keys(entry.aiDecision.thresholds).length > 0 && (
+            {entry.aiDecision?.thresholds && Object.keys(entry.aiDecision.thresholds).length > 0 && (
               <div className="font-mono text-[10px] text-zinc-500">
                 Thresholds: {Object.entries(entry.aiDecision.thresholds).map(([k, v]) => `${k}=${v}`).join(', ')}
               </div>
@@ -235,12 +235,12 @@ function EntryDetail({ entry, session }: { entry: ForensicLogEntry; session?: { 
       )}
 
       {/* Actors */}
-      {entry.actors && (entry.actors.humanUsers.length > 0 || entry.actors.overrideOccurred) && (
+      {entry.actors && (entry.actors.humanUsers?.length > 0 || entry.actors.overrideOccurred) && (
         <Section title="Actors">
           <div className="rounded-md border border-zinc-200 dark:border-zinc-700 p-3 text-xs space-y-1">
             <div><span className="text-zinc-500">AI System:</span> <span className="text-zinc-800 dark:text-zinc-200">{entry.actors.aiSystem}</span></div>
-            {entry.actors.humanUsers.length > 0 && (
-              <div><span className="text-zinc-500">Human Users:</span> <span className="text-zinc-800 dark:text-zinc-200">{entry.actors.humanUsers.join(', ')}</span></div>
+            {entry.actors.humanUsers?.length > 0 && (
+              <div><span className="text-zinc-500">Human Users:</span> <span className="text-zinc-800 dark:text-zinc-200">{entry.actors.humanUsers?.join(', ')}</span></div>
             )}
             {entry.actors.overrideOccurred && (
               <div className="text-amber-600 dark:text-amber-400 font-medium">Override: {entry.actors.overrideReason}</div>
@@ -250,14 +250,14 @@ function EntryDetail({ entry, session }: { entry: ForensicLogEntry; session?: { 
       )}
 
       {/* Data Lineage */}
-      {entry.dataLineage && entry.dataLineage.sources.length > 1 && (
+      {entry.dataLineage && entry.dataLineage?.sources?.length > 1 && (
         <Section title="Data Lineage">
           <div className="rounded-md border border-zinc-200 dark:border-zinc-700 p-3 text-xs space-y-1">
-            <div><span className="text-zinc-500">Sources:</span> <span className="text-zinc-800 dark:text-zinc-200">{entry.dataLineage.sources.join(' → ')}</span></div>
-            {entry.dataLineage.transformations.length > 0 && (
-              <div><span className="text-zinc-500">Transformations:</span> <span className="font-mono text-zinc-800 dark:text-zinc-200">{entry.dataLineage.transformations.join(', ')}</span></div>
+            <div><span className="text-zinc-500">Sources:</span> <span className="text-zinc-800 dark:text-zinc-200">{entry.dataLineage?.sources?.join(' → ')}</span></div>
+            {entry.dataLineage?.transformations?.length > 0 && (
+              <div><span className="text-zinc-500">Transformations:</span> <span className="font-mono text-zinc-800 dark:text-zinc-200">{entry.dataLineage?.transformations?.join(', ')}</span></div>
             )}
-            <div><span className="text-zinc-500">Validation:</span> <span className="font-mono text-zinc-800 dark:text-zinc-200">{entry.dataLineage.validationChecks.join(', ')}</span></div>
+            <div><span className="text-zinc-500">Validation:</span> <span className="font-mono text-zinc-800 dark:text-zinc-200">{entry.dataLineage?.validationChecks?.join(', ')}</span></div>
           </div>
         </Section>
       )}
@@ -267,7 +267,7 @@ function EntryDetail({ entry, session }: { entry: ForensicLogEntry; session?: { 
         <Section title="Compliance">
           <div className="rounded-md border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/10 p-3 text-xs space-y-1">
             <div className="flex flex-wrap gap-1">
-              {entry.compliance.regulations.map((r, i) => (
+              {entry.compliance?.regulations?.map((r, i) => (
                 <span key={i} className="rounded bg-emerald-100 dark:bg-emerald-900/30 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-300">{r}</span>
               ))}
             </div>
@@ -291,10 +291,10 @@ function EntryDetail({ entry, session }: { entry: ForensicLogEntry; session?: { 
       )}
 
       {/* Acknowledgments */}
-      {entry.acknowledgments.length > 0 && (
+      {entry.acknowledgments?.length > 0 && (
         <Section title="Acknowledgments">
           <div className="flex flex-wrap gap-1">
-            {entry.acknowledgments.map((a, i) => (
+            {entry.acknowledgments?.map((a, i) => (
               <span key={i} className="rounded bg-indigo-100 dark:bg-indigo-900/30 px-2 py-0.5 text-[10px] font-medium text-indigo-700 dark:text-indigo-300">{a}</span>
             ))}
           </div>
@@ -302,10 +302,10 @@ function EntryDetail({ entry, session }: { entry: ForensicLogEntry; session?: { 
       )}
 
       {/* Related events */}
-      {entry.relatedEvents.length > 0 && (
+      {entry.relatedEvents?.length > 0 && (
         <Section title="Related Events">
           <div className="flex flex-wrap gap-1">
-            {entry.relatedEvents.map((r, i) => (
+            {entry.relatedEvents?.map((r, i) => (
               <span key={i} className="rounded bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 text-[10px] font-mono text-zinc-600 dark:text-zinc-400">{r}</span>
             ))}
           </div>

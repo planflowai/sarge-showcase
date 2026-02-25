@@ -18,10 +18,10 @@ import { cn } from "@/lib/utils";
 
 const TABS: { id: AIAnalysisSubTab; label: string; icon: typeof MessageSquare; color: string }[] = [
   { id: "chat", label: "AI Chat", icon: MessageSquare, color: "#3b82f6" },
-  { id: "debate", label: "AI Debate", icon: Swords, color: "#f97316" },
-  { id: "test", label: "AI Test", icon: FlaskConical, color: "#ef4444" },
-  { id: "forensic", label: "AI Forensic", icon: Shield, color: "#f43f5e" },
-  { id: "review", label: "AI Review", icon: FileSearch, color: "#6366f1" },
+  // { id: "debate", label: "AI Debate", icon: Swords, color: "#f97316" },
+  // { id: "test", label: "AI Test", icon: FlaskConical, color: "#ef4444" },
+  // { id: "forensic", label: "AI Forensic", icon: Shield, color: "#f43f5e" },
+  // { id: "review", label: "AI Review", icon: FileSearch, color: "#6366f1" },
 ];
 
 export default function AIAnalysisPage() {

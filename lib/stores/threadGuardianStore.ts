@@ -168,7 +168,7 @@ type ThreadGuardianStore = ThreadGuardianState & ThreadGuardianActions;
 // ============================================================================
 
 const getInitialState = (): ThreadGuardianState => ({
-  enabled: false,
+  enabled: true,
   scope: { ...DEFAULT_GUARDIAN_SCOPE },
   tier1Config: { ...DEFAULT_TIER1_CONFIG },
   tier2Config: { ...DEFAULT_TIER2_CONFIG },

@@ -2,18 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  const { model, prompt, systemPrompt, source } = body;
+  const { model, prompt, systemPrompt, source, provider } = body;
 
   console.log('[API/test/stream] Received request:', {
     model,
     source,
+    provider,
     hasSystemPrompt: !!systemPrompt,
-    sourceType: typeof source,
-    sourceExact: source === 'local' ? 'YES local' : `NO: "${source}"`,
-    willRouteToOllama: source === 'local'
   });
 
   const ollamaUrl = process.env.OLLAMA_URL || 'http://localhost:11434';
+  const lmstudioUrl = process.env.NEXT_PUBLIC_LM_STUDIO_URL || 'http://127.0.0.1:1240/v1';
+  const lmstudioApiKey = process.env.LMStudio_API_KEY || process.env.LM_STUDIO_API_KEY || '';
 
   // Build messages
   const messages = [];
@@ -22,28 +22,65 @@ export async function POST(request: NextRequest) {
   }
   messages.push({ role: 'user', content: prompt });
 
+  // LM Studio streaming (OpenAI-compatible)
+  if (source === 'local' && provider === 'lmstudio') {
+    console.log('[API/test/stream] Routing to LM Studio:', { model, lmstudioUrl });
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (lmstudioApiKey) headers['Authorization'] = `Bearer ${lmstudioApiKey}`;
+
+      const res = await fetch(`${lmstudioUrl}/chat/completions`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ model, messages, max_tokens: 1024, stream: true }),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '');
+        return NextResponse.json({ error: `LM Studio error (${res.status}): ${errText || res.statusText}. Make sure LM Studio is running and a model is loaded.` }, { status: 500 });
+      }
+
+      if (!res.body) {
+        return NextResponse.json({ error: 'No response body from LM Studio' }, { status: 500 });
+      }
+
+      // Transform OpenAI SSE → simple NDJSON
+      const transform = new TransformStream({
+        transform(chunk, controller) {
+          const text = new TextDecoder().decode(chunk);
+          for (const line of text.split('\n')) {
+            if (!line.startsWith('data: ') || line.includes('[DONE]')) continue;
+            try {
+              const data = JSON.parse(line.slice(6));
+              const content = data.choices?.[0]?.delta?.content;
+              if (content) {
+                controller.enqueue(new TextEncoder().encode(
+                  JSON.stringify({ message: { content } }) + '\n'
+                ));
+              }
+            } catch {}
+          }
+        }
+      });
+
+      return new Response(res.body.pipeThrough(transform), {
+        headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' },
+      });
+    } catch (fetchError: any) {
+      return NextResponse.json({
+        error: `Cannot connect to LM Studio at ${lmstudioUrl}. Make sure LM Studio is running. Error: ${fetchError.message}`
+      }, { status: 500 });
+    }
+  }
+
   // Ollama streaming
   if (source === 'local') {
-    const ollamaPayload = {
-      model,
-      messages,
-      stream: true,
-    };
-    console.log('[API/test/stream] Routing to Ollama:', {
-      model,
-      ollamaUrl,
-      endpoint: `${ollamaUrl}/api/chat`,
-      payload: JSON.stringify(ollamaPayload)
-    });
+    console.log('[API/test/stream] Routing to Ollama:', { model, ollamaUrl });
     try {
       const res = await fetch(`${ollamaUrl}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model,
-          messages,
-          stream: true,
-        }),
+        body: JSON.stringify({ model, messages, stream: true }),
       });
 
       if (!res.ok) {
@@ -82,7 +119,7 @@ export async function POST(request: NextRequest) {
       }
       return await streamAnthropic(model, prompt, systemPrompt);
     }
-    if (model.includes('gpt')) {
+    if (model.includes('gpt') || model.startsWith('o3') || model.startsWith('o4')) {
       if (!process.env.OPENAI_API_KEY) {
         return NextResponse.json({ error: 'OpenAI API key not configured. Please add OPENAI_API_KEY to your .env file.' }, { status: 500 });
       }
@@ -162,13 +199,18 @@ async function streamAnthropic(model: string, prompt: string, systemPrompt?: str
 // ── OpenAI (GPT) — native SSE streaming ─────────────────────────────────
 async function streamOpenAI(model: string, messages: { role: string; content: string }[]) {
   const apiKey = process.env.OPENAI_API_KEY || '';
+  // Reasoning models (o3, o4-*) require max_completion_tokens instead of max_tokens
+  const isReasoning = model.startsWith('o3') || model.startsWith('o4');
+  const tokenParam = isReasoning
+    ? { max_completion_tokens: 1024 }
+    : { max_tokens: 1024 };
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey}`,
     },
-    body: JSON.stringify({ model, messages, max_tokens: 1024, stream: true }),
+    body: JSON.stringify({ model, messages, ...tokenParam, stream: true }),
   });
 
   if (!res.ok || !res.body) {

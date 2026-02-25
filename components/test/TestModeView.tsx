@@ -318,6 +318,7 @@ export function TestModeView() {
             <>
               <button
                 onClick={handleRunTest}
+                disabled={!question.trim() || !poison.trim()}
                 className="px-4 py-1.5 bg-emerald-500 dark:bg-emerald-600 hover:bg-emerald-400 dark:hover:bg-emerald-500 rounded-md text-xs font-bold text-white disabled:opacity-50"
               >
                 RUN TEST

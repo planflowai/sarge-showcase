@@ -140,32 +140,16 @@ export function Header() {
     }
 
     const isOnSubPage = pathname !== '/';
-    if (isOnSubPage && mode !== 'dashboard' && mode !== 'library' && mode !== 'review' && mode !== 'ai-analysis' && mode !== 'journal' && mode !== 'optimize' && mode !== 'live-checker' && mode !== 'real-world' && mode !== 'diagnostics' && mode !== 'builder' && mode !== 'research' && mode !== 'apps' && mode !== 'demo') {
+    if (isOnSubPage && mode !== 'dashboard' && mode !== 'library' && mode !== 'review' && mode !== 'ai-analysis' && mode !== 'journal' && mode !== 'optimize' && mode !== 'live-checker' && mode !== 'real-world' && mode !== 'diagnostics' && mode !== 'builder' && mode !== 'research' && mode !== 'apps' && mode !== 'demo' && mode !== 'test' && mode !== 'batch') {
       router.push('/');
     }
 
     switch (mode) {
       case 'batch':
-        if (showingTestMode && testModeHidden) {
-          useTestModeStore.getState().showTestMode();
-        } else {
-          openBatchMode();
-        }
+        router.push('/batch');
         break;
       case 'test':
-        if (isOnSubPage) {
-          setTimeout(() => {
-            if (showingTestMode && testModeHidden) {
-              useTestModeStore.getState().showTestMode();
-            } else {
-              openTestMode();
-            }
-          }, 100);
-        } else if (showingTestMode && testModeHidden) {
-          useTestModeStore.getState().showTestMode();
-        } else {
-          openTestMode();
-        }
+        router.push('/test');
         break;
       case 'review':
         router.push('/review');

@@ -71,7 +71,7 @@ export function ReplayView() {
       if (e.category === "response") acc.responses++;
       if (e.modelState) acc.totalTokens += e.modelState.tokens;
       if (e.systemState?.echoCountSoFar !== undefined) acc.echoCount = e.systemState?.echoCountSoFar;
-      acc.alerts = e.alertHistory.length > 0 ? [...e.alertHistory] : acc.alerts;
+      acc.alerts = e.alertHistory?.length > 0 ? [...(e.alertHistory ?? [])] : acc.alerts;
     }
     return acc;
   }, [sessionEntries, replayIndex]);
@@ -266,7 +266,7 @@ function ReplayEntry({ entry }: { entry: ForensicLogEntry }) {
         <div>
           <div className="text-[10px] font-bold uppercase text-zinc-500 mb-1">Input</div>
           <pre className="rounded bg-white/50 dark:bg-zinc-800/50 p-3 text-xs font-mono whitespace-pre-wrap max-h-40 overflow-y-auto text-zinc-700 dark:text-zinc-300">
-            {entry.input.slice(0, 2000)}
+            {entry.input?.slice(0, 2000)}
           </pre>
         </div>
       )}
@@ -276,7 +276,7 @@ function ReplayEntry({ entry }: { entry: ForensicLogEntry }) {
         <div>
           <div className="text-[10px] font-bold uppercase text-zinc-500 mb-1">Output</div>
           <pre className="rounded bg-white/50 dark:bg-zinc-800/50 p-3 text-xs font-mono whitespace-pre-wrap max-h-40 overflow-y-auto text-zinc-700 dark:text-zinc-300">
-            {entry.output.slice(0, 2000)}
+            {entry.output?.slice(0, 2000)}
           </pre>
         </div>
       )}

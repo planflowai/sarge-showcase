@@ -144,7 +144,7 @@ function LogEntryCard({ entry, isExpanded, onToggle, onDiagnose }: { entry: Fore
             <div>
               <div className="text-[10px] font-bold uppercase text-zinc-500 mb-1">Input</div>
               <pre className="rounded bg-zinc-100 dark:bg-zinc-800 p-2 text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap max-h-32 overflow-y-auto font-mono text-[11px]">
-                {entry.input.slice(0, 2000)}{entry.input.length > 2000 ? "..." : ""}
+                {entry.input?.slice(0, 2000)}{entry.input?.length > 2000 ? "..." : ""}
               </pre>
             </div>
           )}
@@ -154,17 +154,17 @@ function LogEntryCard({ entry, isExpanded, onToggle, onDiagnose }: { entry: Fore
             <div>
               <div className="text-[10px] font-bold uppercase text-zinc-500 mb-1">Output</div>
               <pre className="rounded bg-zinc-100 dark:bg-zinc-800 p-2 text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap max-h-32 overflow-y-auto font-mono text-[11px]">
-                {entry.output.slice(0, 2000)}{entry.output.length > 2000 ? "..." : ""}
+                {entry.output?.slice(0, 2000)}{entry.output?.length > 2000 ? "..." : ""}
               </pre>
             </div>
           )}
 
           {/* Alert history */}
-          {entry.alertHistory.length > 0 && (
+          {entry.alertHistory?.length > 0 && (
             <div>
               <div className="text-[10px] font-bold uppercase text-zinc-500 mb-1">Alert History</div>
               <div className="flex flex-wrap gap-1">
-                {entry.alertHistory.map((a, i) => (
+                {entry.alertHistory?.map((a, i) => (
                   <span key={i} className="px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-[10px]">
                     {a}
                   </span>
@@ -189,14 +189,14 @@ function LogEntryCard({ entry, isExpanded, onToggle, onDiagnose }: { entry: Fore
 
           {/* System state */}
           <div className="flex gap-4">
-            {entry.systemState.roundNumber !== undefined && (
-              <span className="text-zinc-500">Round: <span className="text-zinc-800 dark:text-zinc-200">{entry.systemState.roundNumber}</span></span>
+            {entry.systemState?.roundNumber !== undefined && (
+              <span className="text-zinc-500">Round: <span className="text-zinc-800 dark:text-zinc-200">{entry.systemState?.roundNumber}</span></span>
             )}
-            {entry.systemState.echoCountSoFar !== undefined && (
-              <span className="text-zinc-500">Lies Repeated: <span className="text-zinc-800 dark:text-zinc-200">{entry.systemState.echoCountSoFar}</span></span>
+            {entry.systemState?.echoCountSoFar !== undefined && (
+              <span className="text-zinc-500">Lies Repeated: <span className="text-zinc-800 dark:text-zinc-200">{entry.systemState?.echoCountSoFar}</span></span>
             )}
-            {entry.systemState.tokenCount !== undefined && (
-              <span className="text-zinc-500">Total tokens: <span className="text-zinc-800 dark:text-zinc-200">{entry.systemState.tokenCount}</span></span>
+            {entry.systemState?.tokenCount !== undefined && (
+              <span className="text-zinc-500">Total tokens: <span className="text-zinc-800 dark:text-zinc-200">{entry.systemState?.tokenCount}</span></span>
             )}
           </div>
 
@@ -206,9 +206,9 @@ function LogEntryCard({ entry, isExpanded, onToggle, onDiagnose }: { entry: Fore
               <div className="text-[10px] font-bold uppercase text-cyan-600 dark:text-cyan-400">AI Decision</div>
               <div className="text-zinc-700 dark:text-zinc-300">{entry.aiDecision.action} — <span className="font-bold">{(entry.aiDecision.confidence * 100).toFixed(0)}% confidence</span></div>
               <div className="text-zinc-500">{entry.aiDecision.explanation}</div>
-              {entry.aiDecision.factors.length > 0 && (
+              {entry.aiDecision?.factors?.length > 0 && (
                 <div className="flex flex-wrap gap-1">
-                  {entry.aiDecision.factors.map((f, i) => (
+                  {entry.aiDecision?.factors?.map((f, i) => (
                     <span key={i} className="rounded bg-cyan-100 dark:bg-cyan-900/20 px-1 py-0.5 text-[9px] font-mono text-cyan-700 dark:text-cyan-300">{f}</span>
                   ))}
                 </div>
@@ -238,10 +238,10 @@ function LogEntryCard({ entry, isExpanded, onToggle, onDiagnose }: { entry: Fore
           )}
 
           {/* Related events */}
-          {entry.relatedEvents.length > 0 && (
+          {entry.relatedEvents?.length > 0 && (
             <div className="flex items-center gap-1 text-zinc-500">
               <Link2 className="h-3 w-3" />
-              <span>Related: {entry.relatedEvents.join(", ")}</span>
+              <span>Related: {entry.relatedEvents?.join(", ")}</span>
             </div>
           )}
 

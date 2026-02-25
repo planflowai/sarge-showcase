@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
 import { TestModeView } from "@/components/test/TestModeView";
 import { useTestModeStore } from "@/lib/stores/testModeStore";
+import { useEffect } from "react";
 
-export default function TestPage() {
+export default function BatchPage() {
   useEffect(() => {
-    // Ensure we're NOT in batch mode for the test page
-    useTestModeStore.setState({ batchModeActive: false });
+    useTestModeStore.setState({ batchModeActive: true });
   }, []);
 
   return (
