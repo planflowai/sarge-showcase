@@ -1,6 +1,7 @@
 "use client";
 
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import { queueResponse, runInterventionCheck } from "@/lib/juryGuardian/engine";
 import { useJuryGuardianStore } from "@/lib/stores/juryGuardianStore";
 
@@ -56,7 +57,7 @@ interface ParallelChatState {
   clearAll: () => void;
 }
 
-export const useParallelChatStore = create<ParallelChatState>((set, get) => ({
+export const useParallelChatStore = create<ParallelChatState>()(persist((set, get) => ({
   threads: [],
   columns: [],
   activeThreadId: null,
@@ -501,4 +502,9 @@ export const useParallelChatStore = create<ParallelChatState>((set, get) => ({
       savedSessions: [],
     });
   },
+}), {
+  name: "sarge-parallel-chat",
+  partialize: (state) => ({
+    savedSessions: state.savedSessions,
+  }),
 }));

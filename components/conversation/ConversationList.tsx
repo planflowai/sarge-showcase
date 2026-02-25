@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/accordion";
 
 const GROUP_ORDER = ["Today", "Yesterday", "This Week", "Last Month", "Older"];
-const STORAGE_PREFIX = "ai-workbench-messages-";
+const STORAGE_PREFIX = "messages_";
 
 function getProviderDisplayName(provider?: string): string {
   if (!provider) return "Assistant";
