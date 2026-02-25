@@ -185,7 +185,7 @@ export function LiveConsolePanel({ events, isRunning, theme, passLogs = [], batc
     <div className={`flex flex-col border-t ${theme.border} min-h-[400px] flex-1`}>
       {/* Header with controls */}
       <div className={`shrink-0 px-4 py-2 ${theme.bgSecondary} border-b ${theme.border}`}>
-        <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="relative flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2">
             <span className={`text-sm font-bold ${theme.text}`}>📋 Forensic Live Feed</span>
             {isRunning && (
@@ -196,24 +196,24 @@ export function LiveConsolePanel({ events, isRunning, theme, passLogs = [], batc
             )}
           </div>
 
-          {/* Live stats badges - wider with clear text */}
-          <div className="flex items-center gap-3 text-xs font-semibold">
+          {/* Live stats badges - centered */}
+          <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-3 text-xs font-semibold">
             {liveStats.runTime && (
               <span className="px-2.5 py-1 rounded-md bg-cyan-100 dark:bg-cyan-900/40 text-cyan-700 dark:text-cyan-300 border border-cyan-300 dark:border-cyan-700">
                 ⏱ {liveStats.runTime}
               </span>
             )}
             <span className="px-2.5 py-1 rounded-md bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-200 border border-gray-300 dark:border-zinc-600">
-              {liveStats.totalEvents} events
+              {liveStats.totalEvents} Events
             </span>
             <span className="px-2.5 py-1 rounded-md bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
-              {liveStats.echoes} echoes
+              {liveStats.echoes} Echoes
             </span>
             <span className="px-2.5 py-1 rounded-md bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 border border-red-300 dark:border-red-700">
-              {liveStats.kills} kills
+              {liveStats.kills} Kills
             </span>
             <span className="px-2.5 py-1 rounded-md bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-700">
-              {liveStats.judgeCalls} judge
+              {liveStats.judgeCalls} Judge
             </span>
           </div>
 

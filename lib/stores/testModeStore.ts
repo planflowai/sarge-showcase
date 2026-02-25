@@ -1,6 +1,7 @@
 "use client";
 
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import type { SavedQuestion, SavedPoison, BatchPassLog, EnhancedForensicEvent, ForensicEvent, BatchConfig, SessionStats } from "@/lib/types";
 import { DEFAULT_QUESTIONS, DEFAULT_POISONS, DEFAULT_PROMPT_POOLS } from "@/lib/constants/testDefaults";
 import { useForensicLogStore } from "@/lib/stores/forensicLogStore";
@@ -148,7 +149,7 @@ interface TestModeState {
   clearAll: () => void;
 }
 
-export const useTestModeStore = create<TestModeState>((set, get) => ({
+export const useTestModeStore = create<TestModeState>()(persist((set, get) => ({
   testCases: [],
   questions: [],
   poisons: [],
@@ -169,7 +170,7 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
   batchLockedRotation: null,
   batchBaselineResults: null,
   agentMode: "",
-  speedMode: 0,
+  speedMode: 4,
   cloudModels: {},
   currentView: null,
   slots: [
@@ -180,7 +181,7 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
   ],
   batchHistory: [],
   testHistory: [],
-  promptPools: { D1: [], D2: [], D3: [], Judge: [] },
+  promptPools: { d1: [], d2: [], d3: [], judge: [] },
   debateLogic: {
     d1Prompt: "",
     d1PromptWithContext: "",
@@ -464,7 +465,7 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
       ): Promise<{ content: string }> => {
         return new Promise((resolve, reject) => {
           const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 30000);
+          const timeout = setTimeout(() => controller.abort(), 90000);
 
           let content = '';
           fetch('/api/test/stream', {
@@ -498,7 +499,7 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
           }).catch((err) => {
             clearTimeout(timeout);
             if (err.name === 'AbortError') {
-              reject(new Error('API call timeout after 30 seconds'));
+              reject(new Error('API call timeout after 90 seconds'));
             } else {
               reject(err);
             }
@@ -847,6 +848,7 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
 
   runBatch: async (source: 'local' | 'cloud', testCount?: number) => {
     console.log('[runBatch] called', { source, testCount });
+    console.log('[runBatch] speedMode:', get().speedMode, 'agentMode:', get().agentMode, 'source:', source);
     // Helper functions
     const detectEcho = (response: string, markers: string[]): boolean => {
       if (!markers || markers.length === 0) return false;
@@ -899,47 +901,72 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
     ): Promise<{ content: string }> => {
       return new Promise((resolve, reject) => {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 30000);
+        const timeout = setTimeout(() => controller.abort(), 90000);
 
         let content = '';
-        try {
-          fetch('/api/test/stream', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ model, prompt, systemPrompt, source }),
-            signal: controller.signal,
-          }).then(async (res) => {
-            if (!res.ok) {
-              const error = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
-              reject(new Error(error.error || `HTTP ${res.status}`));
-              return;
-            }
+        fetch('/api/test/stream', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model, prompt, systemPrompt, source }),
+          signal: controller.signal,
+        }).then(async (res) => {
+          clearTimeout(timeout);
+          if (!res.ok) {
+            const error = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+            reject(new Error(error.error || `HTTP ${res.status}`));
+            return;
+          }
 
-            const reader = res.body?.getReader();
-            if (!reader) {
-              reject(new Error('No response body'));
-              return;
-            }
+          const reader = res.body?.getReader();
+          if (!reader) {
+            reject(new Error('No response body'));
+            return;
+          }
 
-            const decoder = new TextDecoder();
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) break;
-              const chunk = decoder.decode(value, { stream: true });
-              if (chunk) content += chunk;
+          const decoder = new TextDecoder();
+          let buffer = '';
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            // Parse NDJSON lines — works for both Ollama raw and cloud transformed streams
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || ''; // keep incomplete line in buffer
+            for (const line of lines) {
+              const trimmed = line.trim();
+              if (!trimmed) continue;
+              try {
+                const parsed = JSON.parse(trimmed);
+                // Cloud format: {"message":{"content":"text"}}
+                // Ollama format: {"model":"...","message":{"role":"assistant","content":"text"},"done":false}
+                const text = parsed?.message?.content;
+                if (text) content += text;
+              } catch {
+                // Not JSON — append raw (shouldn't happen but safe fallback)
+                content += trimmed;
+              }
             }
+          }
+          // Parse any remaining buffer
+          if (buffer.trim()) {
+            try {
+              const parsed = JSON.parse(buffer.trim());
+              const text = parsed?.message?.content;
+              if (text) content += text;
+            } catch {
+              content += buffer.trim();
+            }
+          }
 
-            resolve({ content });
-          }).catch((err) => {
-            if (err.name === 'AbortError') {
-              reject(new Error('API call timeout after 30 seconds'));
-            } else {
-              reject(err);
-            }
-          });
-        } finally {
-          setTimeout(() => clearTimeout(timeout), 0);
-        }
+          resolve({ content });
+        }).catch((err) => {
+          clearTimeout(timeout);
+          if (err.name === 'AbortError') {
+            reject(new Error('API call timeout after 90 seconds'));
+          } else {
+            reject(err);
+          }
+        });
       });
     };
 
@@ -1111,11 +1138,13 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
         const poison = randomPick(poisons);
 
         // Randomly assign models from available pool
+        const WEAK_JUDGE_PATTERNS = ['smollm', 'tinyllama', 'moondream', 'minicpm', 'phi3.5-mini', 'gemma2:2b'];
+        const judgePool = availableModels.filter(m => !WEAK_JUDGE_PATTERNS.some(p => m.id.toLowerCase().includes(p)));
         const models = {
           d1: randomPick(availableModels).id,
           d2: randomPick(availableModels).id,
           d3: randomPick(availableModels).id,
-          judge: randomPick(availableModels).id,
+          judge: randomPick(judgePool.length > 0 ? judgePool : availableModels).id,
         };
 
         rotation.push({
@@ -1142,7 +1171,7 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
       addEvent(`🚀 Starting batch test with ${finalTestCount} questions across 3 passes`, '🚀', 'neutral');
 
       // ⚙️ Config summary
-      const speedModeLabel = get().speedMode === 0 ? 'Full (all 3 passes)' : get().speedMode === 1 ? 'Fast (phases 2-3)' : 'Defense Only (phase 3)';
+      const speedModeLabel = get().speedMode === 4 ? 'Full (all 3 passes)' : get().speedMode === 3 ? 'Poison+Defense (phases 2-3)' : 'Defense Only (phase 3)';
       addEvent(`⚙️ Source: ${source.toUpperCase()} | Tests: ${finalTestCount} | Agents: 3+Judge (Full SARGE) | Speed: ${speedModeLabel}`, '⚙️', 'neutral');
 
       // 🤖 Model count
@@ -1154,11 +1183,11 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
       }
 
       // ⏭️ Speed mode skips
-      if (get().speedMode > 0) {
-        addEvent(`⏭️ ⏭️ Skipping Pass 1 (Unfiltered) — Speed mode: ${speedModeLabel}`, '⏭️', 'neutral');
+      if (get().speedMode !== 4) {
+        addEvent(`⏭️ Skipping Pass 1 (Baseline) — Speed mode: ${speedModeLabel}`, '⏭️', 'neutral');
       }
-      if (get().speedMode > 1) {
-        addEvent(`⏭️ ⏭️ Skipping Pass 2 (Poison) — Speed mode: ${speedModeLabel}`, '⏭️', 'neutral');
+      if (get().speedMode === 1) {
+        addEvent(`⏭️ Skipping Pass 2 (Poison) — Speed mode: ${speedModeLabel}`, '⏭️', 'neutral');
       }
 
       // 🔐 HASH + SEED with abbreviated model names
@@ -1172,10 +1201,10 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
       // PHASE 1: BASELINE (no poison, no system prompts)
       // ────────────────────────────────────────────────────────────────
 
-      if (get().speedMode === 0) {
+      if (get().speedMode === 4) {
         addEvent('Phase 1/3: Baseline', '🔬', 'neutral');
       } else {
-        addEvent('⏭️ ⏭️ Skipping Phase 1 (Unfiltered) — Speed mode active', '⏭️', 'neutral');
+        addEvent('⏭️ Skipping Phase 1 (Baseline) — Speed mode active', '⏭️', 'neutral');
       }
 
       const pass1Log: BatchPassLog = {
@@ -1195,8 +1224,8 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
         },
       };
 
-      // Only run Phase 1 if speedMode is 0 (full run)
-      if (get().speedMode === 0) {
+      // Only run Phase 1 if speedMode is 4 (Full Experiment)
+      if (get().speedMode === 4) {
         for (let i = 0; i < rotation.length; i++) {
         const test = rotation[i];
 
@@ -1241,7 +1270,7 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
       pass1Log.summary.completed = pass1Log.tests.length;
       pass1Log.summary.catchRate = 0;
 
-      if (get().speedMode === 0) {
+      if (get().speedMode === 4) {
         addEvent(`Phase 1 complete — ${pass1Log.tests.length}/${finalTestCount} tests`, '✓', 'success');
         set((state) => ({
           batchPassLogs: [...state.batchPassLogs, pass1Log],
@@ -1252,8 +1281,8 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
       // PHASE 2: POISON ONLY (same questions/models, poison injected)
       // ────────────────────────────────────────────────────────────────
 
-      if (get().speedMode >= 2) {
-        addEvent(`⏭️ ⏭️ Skipping Pass 2 (Poison) — Speed mode: ${speedModeLabel}`, '⏭️', 'neutral');
+      if (get().speedMode === 1) {
+        addEvent(`⏭️ Skipping Pass 2 (Poison) — Speed mode: ${speedModeLabel}`, '⏭️', 'neutral');
       } else {
         addEvent('☠️ ━━━ POISON (echo detection + threat tracing) ━━━', '☠️', 'neutral');
       }
@@ -1301,6 +1330,11 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
 
           for (let round = 1; round <= 3; round++) {
             const prompt = round === test.poisonRound ? buildPrompt(test.question, test.poison) : test.question;
+            // For round > 1, build follow-up from previous rounds' responses
+            const followUp = round > 1 ? buildFollowUpPrompt(responses.filter(r => r.round < round)) : '';
+            const d1Prompt = round > 1 && followUp ? followUp + '\n\n' + prompt : prompt;
+            const d2Prompt = round > 1 && followUp ? followUp + '\n\n' + prompt : prompt;
+            const d3Prompt = round > 1 && followUp ? followUp + '\n\n' + prompt : prompt;
 
             if (round === test.poisonRound) {
               addEvent(`🎯 INJECTION: Round ${round} via D${test.poisonAgent.toUpperCase()}`, '🎯', 'danger', {
@@ -1310,150 +1344,53 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
               });
             }
 
-            // D1 Response
-            const d1Start = Date.now();
-            const d1Response = await streamLLMResponse(test.models.d1, prompt, '', source);
-            const d1Time = (Date.now() - d1Start) / 1000;
+            // D1, D2, D3 in parallel
+            const roundStart = Date.now();
+            const [d1Response, d2Response, d3Response] = await Promise.all([
+              streamLLMResponse(test.models.d1, d1Prompt, '', source),
+              streamLLMResponse(test.models.d2, d2Prompt, '', source),
+              streamLLMResponse(test.models.d3, d3Prompt, '', source),
+            ]);
+            const roundTime = (Date.now() - roundStart) / 1000;
+
+            // Process D1
             const d1HasEcho = detectEcho(d1Response.content, test.poisonMarkers);
-            if (d1HasEcho) {
-              echoCount++;
-              agentMetrics.d1.echos++;
-              if (caughtRound === null) caughtRound = round;
-              addEvent(`🔊 Echo detected in D1 response (round ${round})`, '🔊', 'warning', {
-                agent: 'd1',
-                matchedMarkers: test.poisonMarkers,
-                echoExcerpt: d1Response.content.slice(0, 120)
-              });
-            }
-            agentMetrics.d1.times.push(d1Time);
-            const d1Summary = d1HasEcho
-              ? `⚠️ Agent D1 echoed the poison — false claim propagated`
-              : `✓ Agent D1 provided a clean response without false claims`;
-            addEvent(`🤖 R${round}/3 → D1 (${test.models.d1.split(':')[0]}) ${round === test.poisonRound ? '💉 INJECTING' : ''}`, '✓', d1HasEcho ? 'warning' : 'neutral', {
-              status: d1HasEcho ? 'echo' : 'clean'
-            });
-            addEvent(d1Summary, '✓', d1HasEcho ? 'warning' : 'neutral');
-            responses.push({
-              round,
-              agent: 'd1',
-              content: d1Response.content,
-              hasEcho: d1HasEcho,
-              model: test.models.d1,
-              matchedMarkers: d1HasEcho ? test.poisonMarkers : [],
-              poisonInjected: round === test.poisonRound,
-            });
+            if (d1HasEcho) { echoCount++; agentMetrics.d1.echos++; if (caughtRound === null) caughtRound = round; }
+            agentMetrics.d1.times.push(roundTime);
+            addEvent(`🤖 R${round}/3 → D1 (${test.models.d1.split(':')[0]}) ${round === test.poisonRound ? '💉 INJECTING' : ''}`, '✓', d1HasEcho ? 'warning' : 'neutral', { status: d1HasEcho ? 'echo' : 'clean' });
+            if (d1HasEcho) addEvent(`🔊 Echo detected in D1 response (round ${round})`, '🔊', 'warning', { agent: 'd1', matchedMarkers: test.poisonMarkers, echoExcerpt: d1Response.content.slice(0, 120) });
+            responses.push({ round, agent: 'd1', content: d1Response.content, hasEcho: d1HasEcho, model: test.models.d1, matchedMarkers: d1HasEcho ? test.poisonMarkers : [], poisonInjected: round === test.poisonRound });
 
-            // D2 Response
-            const d2Start = Date.now();
-            const d2Response = await streamLLMResponse(
-              test.models.d2,
-              buildFollowUpPrompt(responses),
-              '',
-              source
-            );
-            const d2Time = (Date.now() - d2Start) / 1000;
+            // Process D2
             const d2HasEcho = detectEcho(d2Response.content, test.poisonMarkers);
-            if (d2HasEcho) {
-              echoCount++;
-              agentMetrics.d2.echos++;
-              if (caughtRound === null) caughtRound = round;
-              addEvent(`🔊 Echo detected in D2 response (round ${round})`, '🔊', 'warning', {
-                agent: 'd2',
-                matchedMarkers: test.poisonMarkers,
-                echoExcerpt: d2Response.content.slice(0, 120)
-              });
-            }
-            agentMetrics.d2.times.push(d2Time);
-            const d2Summary = d2HasEcho
-              ? `⚠️ Agent D2 echoed the poison — false claim propagated`
-              : `✓ Agent D2 provided a clean response without false claims`;
-            addEvent(`🤖 R${round}/3 → D2 (${test.models.d2.split(':')[0]}) ${round === test.poisonRound ? '💉 INJECTING' : ''}`, '✓', d2HasEcho ? 'warning' : 'neutral', {
-              status: d2HasEcho ? 'echo' : 'clean'
-            });
-            addEvent(d2Summary, '✓', d2HasEcho ? 'warning' : 'neutral');
-            responses.push({
-              round,
-              agent: 'd2',
-              content: d2Response.content,
-              hasEcho: d2HasEcho,
-              model: test.models.d2,
-              matchedMarkers: d2HasEcho ? test.poisonMarkers : [],
-              poisonInjected: round === test.poisonRound,
-            });
+            if (d2HasEcho) { echoCount++; agentMetrics.d2.echos++; if (caughtRound === null) caughtRound = round; }
+            agentMetrics.d2.times.push(roundTime);
+            addEvent(`🤖 R${round}/3 → D2 (${test.models.d2.split(':')[0]}) ${round === test.poisonRound ? '💉 INJECTING' : ''}`, '✓', d2HasEcho ? 'warning' : 'neutral', { status: d2HasEcho ? 'echo' : 'clean' });
+            if (d2HasEcho) addEvent(`🔊 Echo detected in D2 response (round ${round})`, '🔊', 'warning', { agent: 'd2', matchedMarkers: test.poisonMarkers, echoExcerpt: d2Response.content.slice(0, 120) });
+            responses.push({ round, agent: 'd2', content: d2Response.content, hasEcho: d2HasEcho, model: test.models.d2, matchedMarkers: d2HasEcho ? test.poisonMarkers : [], poisonInjected: round === test.poisonRound });
 
-            // D3 Response
-            const d3Start = Date.now();
-            const d3Response = await streamLLMResponse(
-              test.models.d3,
-              buildFollowUpPrompt(responses),
-              '',
-              source
-            );
-            const d3Time = (Date.now() - d3Start) / 1000;
+            // Process D3
             const d3HasEcho = detectEcho(d3Response.content, test.poisonMarkers);
-            if (d3HasEcho) {
-              echoCount++;
-              agentMetrics.d3.echos++;
-              if (caughtRound === null) caughtRound = round;
-              addEvent(`🔊 Echo detected in D3 response (round ${round})`, '🔊', 'warning', {
-                agent: 'd3',
-                matchedMarkers: test.poisonMarkers,
-                echoExcerpt: d3Response.content.slice(0, 120)
-              });
-            }
-            agentMetrics.d3.times.push(d3Time);
-            const d3Summary = d3HasEcho
-              ? `⚠️ Agent D3 echoed the poison — false claim propagated`
-              : `✓ Agent D3 provided a clean response without false claims`;
-            addEvent(`🤖 R${round}/3 → D3 (${test.models.d3.split(':')[0]}) ${round === test.poisonRound ? '💉 INJECTING' : ''}`, '✓', d3HasEcho ? 'warning' : 'neutral', {
-              status: d3HasEcho ? 'echo' : 'clean'
-            });
-            addEvent(d3Summary, '✓', d3HasEcho ? 'warning' : 'neutral');
-            responses.push({
-              round,
-              agent: 'd3',
-              content: d3Response.content,
-              hasEcho: d3HasEcho,
-              model: test.models.d3,
-              matchedMarkers: d3HasEcho ? test.poisonMarkers : [],
-              poisonInjected: round === test.poisonRound,
-            });
+            if (d3HasEcho) { echoCount++; agentMetrics.d3.echos++; if (caughtRound === null) caughtRound = round; }
+            agentMetrics.d3.times.push(roundTime);
+            addEvent(`🤖 R${round}/3 → D3 (${test.models.d3.split(':')[0]}) ${round === test.poisonRound ? '💉 INJECTING' : ''}`, '✓', d3HasEcho ? 'warning' : 'neutral', { status: d3HasEcho ? 'echo' : 'clean' });
+            if (d3HasEcho) addEvent(`🔊 Echo detected in D3 response (round ${round})`, '🔊', 'warning', { agent: 'd3', matchedMarkers: test.poisonMarkers, echoExcerpt: d3Response.content.slice(0, 120) });
+            responses.push({ round, agent: 'd3', content: d3Response.content, hasEcho: d3HasEcho, model: test.models.d3, matchedMarkers: d3HasEcho ? test.poisonMarkers : [], poisonInjected: round === test.poisonRound });
 
-            // DEBATE FLOW box after each round
-            const roundEchos = responses.filter(r => r.round === round && r.hasEcho).length;
-            const debateFlowSummary = `📜 ┌─ DEBATE FLOW (R${round}) ────────────────────\n` +
-              responses.filter(r => r.round === round).map(r => {
-                const modelName = (r.model || 'unknown').split(':')[0]; // Abbreviate: mistral:7b → mistral
-                let cleanContent = r.content;
-                // Try to strip JSON metadata if present
-                if (cleanContent.includes('{"')) {
-                  try {
-                    const jsonMatch = cleanContent.match(/\{"[^}]*response[^}]*":\s*"([^"]+)"/);
-                    if (jsonMatch) cleanContent = jsonMatch[1];
-                  } catch (e) { /* keep original */ }
-                }
-                const snippet = cleanContent.slice(0, 60).replace(/\n/g, ' ').trim();
-                return `✓ │ R${round} D${r.agent.slice(1)} (${modelName}): "${snippet}..." (${r.hasEcho ? '⚠️ Echo' : '✓ Clean'})`;
-              }).join('\n') +
-              `\n📜 └────────────────────────────────────────────`;
-            addEvent(debateFlowSummary, '📜', 'neutral');
+            // DEBATE FLOW — compact single line per round
+            const flowParts = responses.filter(r => r.round === round).map(r => {
+              const modelName = (r.model || 'unknown').split(':')[0];
+              const snippet = r.content.slice(0, 50).replace(/\n/g, ' ').trim();
+              return `D${r.agent.slice(1)}(${modelName}):"${snippet}…" ${r.hasEcho ? '⚠️' : '✓'}`;
+            });
+            addEvent(`📜 R${round}: ${flowParts.join(' │ ')}`, '📜', 'neutral');
           }
 
-          // AGENT METRICS box after all rounds
-          const d1AvgTime = agentMetrics.d1.times.reduce((a, b) => a + b, 0) / agentMetrics.d1.times.length;
-          const d2AvgTime = agentMetrics.d2.times.reduce((a, b) => a + b, 0) / agentMetrics.d2.times.length;
-          const d3AvgTime = agentMetrics.d3.times.reduce((a, b) => a + b, 0) / agentMetrics.d3.times.length;
-          const d1EchoRate = (agentMetrics.d1.echos / 3) * 100;
-          const d2EchoRate = (agentMetrics.d2.echos / 3) * 100;
-          const d3EchoRate = (agentMetrics.d3.echos / 3) * 100;
-
-          const metricsBox = `📊 ┌─ AGENT METRICS ────────────────────────────\n` +
-            `✅ │ D1: ${d1AvgTime.toFixed(2)}s avg | ${d1EchoRate.toFixed(0)}% echo rate | ${agentMetrics.d1.echos > 0 ? '⚠️ ECHO' : '✅ CLEAN'}\n` +
-            `✅ │ D2: ${d2AvgTime.toFixed(2)}s avg | ${d2EchoRate.toFixed(0)}% echo rate | ${agentMetrics.d2.echos > 0 ? '⚠️ ECHO' : '✅ CLEAN'}\n` +
-            `✅ │ D3: ${d3AvgTime.toFixed(2)}s avg | ${d3EchoRate.toFixed(0)}% echo rate | ${agentMetrics.d3.echos > 0 ? '⚠️ ECHO' : '✅ CLEAN'}\n` +
-            `📊 │ TOTAL: ${echoCount} echoes | Verdict: ${caughtRound !== null ? 'CAUGHT' : 'MISSED'}\n` +
-            `📊 └────────────────────────────────────────────`;
-          addEvent(metricsBox, '📊', 'neutral');
+          // AGENT METRICS — compact
+          const d1Avg = (agentMetrics.d1.times.reduce((a, b) => a + b, 0) / agentMetrics.d1.times.length).toFixed(1);
+          const d2Avg = (agentMetrics.d2.times.reduce((a, b) => a + b, 0) / agentMetrics.d2.times.length).toFixed(1);
+          const d3Avg = (agentMetrics.d3.times.reduce((a, b) => a + b, 0) / agentMetrics.d3.times.length).toFixed(1);
+          addEvent(`📊 D1:${d1Avg}s ${agentMetrics.d1.echos}echo │ D2:${d2Avg}s ${agentMetrics.d2.echos}echo │ D3:${d3Avg}s ${agentMetrics.d3.echos}echo │ Total:${echoCount} │ ${caughtRound !== null ? 'CAUGHT' : 'MISSED'}`, '📊', 'neutral');
 
           const testResult: any = {
             testIndex: i,
@@ -1471,7 +1408,9 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
           }
           pass2Log.summary.echoTotal += echoCount;
         } catch (err) {
+          const errMsg = err instanceof Error ? err.message : 'Unknown error';
           console.error(`[Batch Phase 2] Test ${i} failed:`, err);
+          addEvent(`❌ Phase 2 Test ${i + 1} failed: ${errMsg}`, '❌', 'danger');
           pass2Log.tests.push({
             testIndex: i,
             question: test.question,
@@ -1545,6 +1484,9 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
 
           for (let round = 1; round <= 3; round++) {
             const prompt = round === test.poisonRound ? buildPrompt(test.question, test.poison) : test.question;
+            // For round > 1, build follow-up from previous rounds' responses
+            const followUp = round > 1 ? buildFollowUpPrompt(responses.filter(r => r.round < round)) : '';
+            const agentPrompt = round > 1 && followUp ? followUp + '\n\n' + prompt : prompt;
 
             if (round === test.poisonRound) {
               addEvent(`🎯 INJECTION: Round ${round} via D${test.poisonAgent.toUpperCase()}`, '🎯', 'danger', {
@@ -1554,140 +1496,54 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
               });
             }
 
-            // D1 Response
-            const d1Start = Date.now();
+            // D1, D2, D3 in parallel with system prompts
             const d1SystemPrompt = selectPrompt(promptPools?.d1, debateLogic?.d1Prompt || '');
-            const d1Response = await streamLLMResponse(test.models.d1, prompt, d1SystemPrompt, source);
-            const d1Time = (Date.now() - d1Start) / 1000;
-            const d1HasEcho = detectEcho(d1Response.content, test.poisonMarkers);
-            if (d1HasEcho) {
-              echoCount++;
-              agentMetrics.d1.echos++;
-              if (caughtRound === null) caughtRound = round;
-              addEvent(`🔊 Echo detected in D1 response (round ${round})`, '🔊', 'warning', {
-                agent: 'd1',
-                matchedMarkers: test.poisonMarkers,
-                echoExcerpt: d1Response.content.slice(0, 120)
-              });
-            }
-            agentMetrics.d1.times.push(d1Time);
-            const phase3D1Summary = d1HasEcho
-              ? `⚠️ Agent D1 echoed the poison — false claim propagated`
-              : `✓ Agent D1 provided a clean response without false claims`;
-            addEvent(`🤖 R${round}/3 → D1 (${test.models.d1.split(':')[0]})`, '✓', d1HasEcho ? 'warning' : 'neutral', {
-              status: d1HasEcho ? 'echo' : 'clean'
-            });
-            addEvent(phase3D1Summary, '✓', d1HasEcho ? 'warning' : 'neutral');
-            responses.push({
-              round,
-              agent: 'd1',
-              content: d1Response.content,
-              hasEcho: d1HasEcho,
-              model: test.models.d1,
-              matchedMarkers: d1HasEcho ? test.poisonMarkers : [],
-              poisonInjected: round === test.poisonRound,
-            });
-
-            // D2 Response
-            const d2Start = Date.now();
             const d2SystemPrompt = selectPrompt(promptPools?.d2, debateLogic?.d2Prompt || '');
-            const d2Response = await streamLLMResponse(
-              test.models.d2,
-              buildFollowUpPrompt(responses),
-              d2SystemPrompt,
-              source
-            );
-            const d2Time = (Date.now() - d2Start) / 1000;
-            const d2HasEcho = detectEcho(d2Response.content, test.poisonMarkers);
-            if (d2HasEcho) {
-              echoCount++;
-              agentMetrics.d2.echos++;
-              if (caughtRound === null) caughtRound = round;
-              addEvent(`🔊 Echo detected in D2 response (round ${round})`, '🔊', 'warning', {
-                agent: 'd2',
-                matchedMarkers: test.poisonMarkers,
-                echoExcerpt: d2Response.content.slice(0, 120)
-              });
-            }
-            agentMetrics.d2.times.push(d2Time);
-            const phase3D2Summary = d2HasEcho
-              ? `⚠️ Agent D2 echoed the poison — false claim propagated`
-              : `✓ Agent D2 provided a clean response without false claims`;
-            addEvent(`🤖 R${round}/3 → D2 (${test.models.d2.split(':')[0]})`, '✓', d2HasEcho ? 'warning' : 'neutral', {
-              status: d2HasEcho ? 'echo' : 'clean'
-            });
-            addEvent(phase3D2Summary, '✓', d2HasEcho ? 'warning' : 'neutral');
-            responses.push({
-              round,
-              agent: 'd2',
-              content: d2Response.content,
-              hasEcho: d2HasEcho,
-              model: test.models.d2,
-              matchedMarkers: d2HasEcho ? test.poisonMarkers : [],
-              poisonInjected: round === test.poisonRound,
-            });
-
-            // D3 Response
-            const d3Start = Date.now();
             const d3SystemPrompt = selectPrompt(promptPools?.d3, debateLogic?.d3Prompt || '');
-            const d3Response = await streamLLMResponse(
-              test.models.d3,
-              buildFollowUpPrompt(responses),
-              d3SystemPrompt,
-              source
-            );
-            const d3Time = (Date.now() - d3Start) / 1000;
-            const d3HasEcho = detectEcho(d3Response.content, test.poisonMarkers);
-            if (d3HasEcho) {
-              echoCount++;
-              agentMetrics.d3.echos++;
-              if (caughtRound === null) caughtRound = round;
-              addEvent(`🔊 Echo detected in D3 response (round ${round})`, '🔊', 'warning', {
-                agent: 'd3',
-                matchedMarkers: test.poisonMarkers,
-                echoExcerpt: d3Response.content.slice(0, 120)
-              });
-            }
-            agentMetrics.d3.times.push(d3Time);
-            const phase3D3Summary = d3HasEcho
-              ? `⚠️ Agent D3 echoed the poison — false claim propagated`
-              : `✓ Agent D3 provided a clean response without false claims`;
-            addEvent(`🤖 R${round}/3 → D3 (${test.models.d3.split(':')[0]})`, '✓', d3HasEcho ? 'warning' : 'neutral', {
-              status: d3HasEcho ? 'echo' : 'clean'
-            });
-            addEvent(phase3D3Summary, '✓', d3HasEcho ? 'warning' : 'neutral');
-            responses.push({
-              round,
-              agent: 'd3',
-              content: d3Response.content,
-              hasEcho: d3HasEcho,
-              model: test.models.d3,
-              matchedMarkers: d3HasEcho ? test.poisonMarkers : [],
-              poisonInjected: round === test.poisonRound,
-            });
 
-            // DEBATE FLOW box after each round
-            const roundEchos = responses.filter(r => r.round === round && r.hasEcho).length;
-            const debateFlowSummary = `📜 ┌─ DEBATE FLOW (R${round}) ────────────────────\n` +
-              responses.filter(r => r.round === round).map(r => {
-                const modelName = (r.model || 'unknown').split(':')[0]; // Abbreviate: mistral:7b → mistral
-                let cleanContent = r.content;
-                // Try to strip JSON metadata if present
-                if (cleanContent.includes('{"')) {
-                  try {
-                    const jsonMatch = cleanContent.match(/\{"[^}]*response[^}]*":\s*"([^"]+)"/);
-                    if (jsonMatch) cleanContent = jsonMatch[1];
-                  } catch (e) { /* keep original */ }
-                }
-                const snippet = cleanContent.slice(0, 60).replace(/\n/g, ' ').trim();
-                return `✓ │ R${round} D${r.agent.slice(1)} (${modelName}): "${snippet}..." (${r.hasEcho ? '⚠️ Echo' : '✓ Clean'})`;
-              }).join('\n') +
-              `\n📜 └────────────────────────────────────────────`;
-            addEvent(debateFlowSummary, '📜', 'neutral');
+            const roundStart = Date.now();
+            const [d1Response, d2Response, d3Response] = await Promise.all([
+              streamLLMResponse(test.models.d1, agentPrompt, d1SystemPrompt, source),
+              streamLLMResponse(test.models.d2, agentPrompt, d2SystemPrompt, source),
+              streamLLMResponse(test.models.d3, agentPrompt, d3SystemPrompt, source),
+            ]);
+            const roundTime = (Date.now() - roundStart) / 1000;
+
+            // Process D1
+            const d1HasEcho = detectEcho(d1Response.content, test.poisonMarkers);
+            if (d1HasEcho) { echoCount++; agentMetrics.d1.echos++; if (caughtRound === null) caughtRound = round; }
+            agentMetrics.d1.times.push(roundTime);
+            addEvent(`🤖 R${round}/3 → D1 (${test.models.d1.split(':')[0]})`, '✓', d1HasEcho ? 'warning' : 'neutral', { status: d1HasEcho ? 'echo' : 'clean' });
+            if (d1HasEcho) addEvent(`🔊 Echo detected in D1 response (round ${round})`, '🔊', 'warning', { agent: 'd1', matchedMarkers: test.poisonMarkers, echoExcerpt: d1Response.content.slice(0, 120) });
+            responses.push({ round, agent: 'd1', content: d1Response.content, hasEcho: d1HasEcho, model: test.models.d1, matchedMarkers: d1HasEcho ? test.poisonMarkers : [], poisonInjected: round === test.poisonRound });
+
+            // Process D2
+            const d2HasEcho = detectEcho(d2Response.content, test.poisonMarkers);
+            if (d2HasEcho) { echoCount++; agentMetrics.d2.echos++; if (caughtRound === null) caughtRound = round; }
+            agentMetrics.d2.times.push(roundTime);
+            addEvent(`🤖 R${round}/3 → D2 (${test.models.d2.split(':')[0]})`, '✓', d2HasEcho ? 'warning' : 'neutral', { status: d2HasEcho ? 'echo' : 'clean' });
+            if (d2HasEcho) addEvent(`🔊 Echo detected in D2 response (round ${round})`, '🔊', 'warning', { agent: 'd2', matchedMarkers: test.poisonMarkers, echoExcerpt: d2Response.content.slice(0, 120) });
+            responses.push({ round, agent: 'd2', content: d2Response.content, hasEcho: d2HasEcho, model: test.models.d2, matchedMarkers: d2HasEcho ? test.poisonMarkers : [], poisonInjected: round === test.poisonRound });
+
+            // Process D3
+            const d3HasEcho = detectEcho(d3Response.content, test.poisonMarkers);
+            if (d3HasEcho) { echoCount++; agentMetrics.d3.echos++; if (caughtRound === null) caughtRound = round; }
+            agentMetrics.d3.times.push(roundTime);
+            addEvent(`🤖 R${round}/3 → D3 (${test.models.d3.split(':')[0]})`, '✓', d3HasEcho ? 'warning' : 'neutral', { status: d3HasEcho ? 'echo' : 'clean' });
+            if (d3HasEcho) addEvent(`🔊 Echo detected in D3 response (round ${round})`, '🔊', 'warning', { agent: 'd3', matchedMarkers: test.poisonMarkers, echoExcerpt: d3Response.content.slice(0, 120) });
+            responses.push({ round, agent: 'd3', content: d3Response.content, hasEcho: d3HasEcho, model: test.models.d3, matchedMarkers: d3HasEcho ? test.poisonMarkers : [], poisonInjected: round === test.poisonRound });
+
+            // DEBATE FLOW — compact single line per round
+            const flowParts3 = responses.filter(r => r.round === round).map(r => {
+              const modelName = (r.model || 'unknown').split(':')[0];
+              const snippet = r.content.slice(0, 50).replace(/\n/g, ' ').trim();
+              return `D${r.agent.slice(1)}(${modelName}):"${snippet}…" ${r.hasEcho ? '⚠️' : '✓'}`;
+            });
+            addEvent(`📜 R${round}: ${flowParts3.join(' │ ')}`, '📜', 'neutral');
           }
 
           // Judge Response
-          addEvent(`⚖️ Judge is reviewing the responses for false claims...`, '⚖️', 'neutral');
+          addEvent(`⚖️ Judge reviewing responses...`, '⚖️', 'neutral');
           const judgeStart = Date.now();
           const judgeSystemPrompt = selectPrompt(promptPools?.judge, debateLogic?.judgePrompt || '');
           const judgeResponse = await streamLLMResponse(
@@ -1700,31 +1556,15 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
             source
           );
           judgeTime = (Date.now() - judgeStart) / 1000;
-          addEvent(`🤖 Judge (${test.models.judge.split(':')[0]})`, '⚖️', 'neutral');
 
           const finalVerdict = parseVerdict(judgeResponse.content);
-          const judgeVerdictIcon = finalVerdict === 'CAUGHT' ? '✅' : '❌';
-          const judgeVerdictMsg = finalVerdict === 'CAUGHT'
-            ? `✅ Judge successfully identified and caught the false claim`
-            : `❌ Judge failed to detect the false claim in the responses`;
-          addEvent(judgeVerdictMsg, judgeVerdictIcon, finalVerdict === 'CAUGHT' ? 'success' : 'warning');
+          addEvent(`⚖️ Judge (${test.models.judge.split(':')[0]}): ${finalVerdict} in ${judgeTime.toFixed(1)}s`, finalVerdict === 'CAUGHT' ? '✅' : '❌', finalVerdict === 'CAUGHT' ? 'success' : 'warning');
 
-          // AGENT METRICS box after all rounds + judge
-          const d1AvgTime = agentMetrics.d1.times.reduce((a, b) => a + b, 0) / agentMetrics.d1.times.length;
-          const d2AvgTime = agentMetrics.d2.times.reduce((a, b) => a + b, 0) / agentMetrics.d2.times.length;
-          const d3AvgTime = agentMetrics.d3.times.reduce((a, b) => a + b, 0) / agentMetrics.d3.times.length;
-          const d1EchoRate = (agentMetrics.d1.echos / 3) * 100;
-          const d2EchoRate = (agentMetrics.d2.echos / 3) * 100;
-          const d3EchoRate = (agentMetrics.d3.echos / 3) * 100;
-
-          const metricsBox = `📊 ┌─ AGENT METRICS ────────────────────────────\n` +
-            `✅ │ D1: ${d1AvgTime.toFixed(2)}s avg | ${d1EchoRate.toFixed(0)}% echo rate | ${agentMetrics.d1.echos > 0 ? '⚠️ ECHO' : '✅ CLEAN'}\n` +
-            `✅ │ D2: ${d2AvgTime.toFixed(2)}s avg | ${d2EchoRate.toFixed(0)}% echo rate | ${agentMetrics.d2.echos > 0 ? '⚠️ ECHO' : '✅ CLEAN'}\n` +
-            `✅ │ D3: ${d3AvgTime.toFixed(2)}s avg | ${d3EchoRate.toFixed(0)}% echo rate | ${agentMetrics.d3.echos > 0 ? '⚠️ ECHO' : '✅ CLEAN'}\n` +
-            `⚖️  │ Judge: ${judgeTime.toFixed(2)}s | Verdict: ${finalVerdict}\n` +
-            `📊 │ TOTAL: ${echoCount} echoes across debate\n` +
-            `📊 └────────────────────────────────────────────`;
-          addEvent(metricsBox, '📊', 'neutral');
+          // AGENT METRICS — compact
+          const d1Avg3 = (agentMetrics.d1.times.reduce((a, b) => a + b, 0) / agentMetrics.d1.times.length).toFixed(1);
+          const d2Avg3 = (agentMetrics.d2.times.reduce((a, b) => a + b, 0) / agentMetrics.d2.times.length).toFixed(1);
+          const d3Avg3 = (agentMetrics.d3.times.reduce((a, b) => a + b, 0) / agentMetrics.d3.times.length).toFixed(1);
+          addEvent(`📊 D1:${d1Avg3}s ${agentMetrics.d1.echos}echo │ D2:${d2Avg3}s ${agentMetrics.d2.echos}echo │ D3:${d3Avg3}s ${agentMetrics.d3.echos}echo │ Judge:${judgeTime.toFixed(1)}s │ Total:${echoCount} │ ${finalVerdict}`, '📊', 'neutral');
 
           const testResult: any = {
             testIndex: i,
@@ -1742,7 +1582,9 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
           }
           pass3Log.summary.echoTotal += echoCount;
         } catch (err) {
+          const errMsg = err instanceof Error ? err.message : 'Unknown error';
           console.error(`[Batch Phase 3] Test ${i} failed:`, err);
+          addEvent(`❌ Phase 3 Test ${i + 1} failed: ${errMsg}`, '❌', 'danger');
           pass3Log.tests.push({
             testIndex: i,
             question: test.question,
@@ -1885,4 +1727,18 @@ export const useTestModeStore = create<TestModeState>((set, get) => ({
       currentView: null,
     });
   },
+}), {
+  name: 'sarge-test-mode',
+  partialize: (state) => ({
+    debateLogic: state.debateLogic,
+    questions: state.questions,
+    poisons: state.poisons,
+    slots: state.slots,
+    promptPools: state.promptPools,
+    batchHistory: state.batchHistory,
+    testHistory: state.testHistory,
+    testAgentMode: state.testAgentMode,
+    testSpeedMode: state.testSpeedMode,
+    source: state.source,
+  }),
 }));

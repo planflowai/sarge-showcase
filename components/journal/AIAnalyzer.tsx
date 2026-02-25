@@ -67,10 +67,10 @@ export function AIAnalyzer() {
           batchLogs: last5Batches,
           prompts: promptsSnapshot,
           debateLogic: {
-            d1Prompt: "",
-            d2Prompt: "",
-            d3Prompt: "",
-            judgePrompt: "",
+            d1Prompt: debateLogic?.d1Prompt || "",
+            d2Prompt: debateLogic?.d2Prompt || "",
+            d3Prompt: debateLogic?.d3Prompt || "",
+            judgePrompt: debateLogic?.judgePrompt || "",
           },
         }),
       });
