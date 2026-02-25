@@ -93,6 +93,7 @@ export function ParallelChatView() {
   const dragCounter = useRef(0);
   const [showSessionPanel, setShowSessionPanel] = useState(false);
   const [copiedAll, setCopiedAll] = useState(false);
+  const [copiedLast, setCopiedLast] = useState(false);
   const [savedConfirm, setSavedConfirm] = useState(false);
 
   // ─── Session helpers ─────────────────────────────────────────────────
@@ -109,6 +110,20 @@ export function ParallelChatView() {
     saveCurrentSession();
     setSavedConfirm(true);
     setTimeout(() => setSavedConfirm(false), 2000);
+  };
+
+  const handleCopyLastAnswers = () => {
+    const visibleCols = columns.slice(0, activeColumnCount);
+    const divider = '\n' + '─'.repeat(60) + '\n\n';
+    const text = visibleCols.map(col => {
+      const header = `=== ${col.model} (${col.provider}) ===`;
+      const lastAssistant = [...col.messages].reverse().find(m => m.role === 'assistant');
+      if (!lastAssistant) return `${header}\n(no answer yet)`;
+      return `${header}\n\n${lastAssistant.content}`;
+    }).join(divider);
+    navigator.clipboard.writeText(text);
+    setCopiedLast(true);
+    setTimeout(() => setCopiedLast(false), 2000);
   };
 
   const handleCopyAll = () => {
@@ -416,6 +431,18 @@ export function ParallelChatView() {
           >
             {copiedAll ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
             {copiedAll ? 'Copied!' : 'Copy All'}
+          </Button>
+
+          {/* Copy Last Answers */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleCopyLastAnswers}
+            className="h-7 px-2 gap-1 text-xs text-zinc-500 dark:text-zinc-400 hover:text-amber-500 dark:hover:text-amber-400 hover:bg-amber-500/10"
+            title="Copy last answer from each column to clipboard"
+          >
+            {copiedLast ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+            {copiedLast ? 'Copied!' : 'Copy Answers'}
           </Button>
 
           {/* Save Session */}

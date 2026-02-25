@@ -228,9 +228,10 @@ export const useTestModeStore = create<TestModeState>()(persist((set, get) => ({
 
   hydrate: () => {
     set((state) => {
-      // Seed library from defaults if empty
-      const seedQuestions = state.questions.length === 0 ? DEFAULT_QUESTIONS : state.questions;
-      const seedPoisons = state.poisons.length === 0 ? DEFAULT_POISONS : state.poisons;
+      // Seed library from defaults if empty, or upgrade old defaults to new authoritative poisons
+      const hasOldDefaults = state.poisons.some((p) => p.id === 'p1' && p.content.includes('1920'));
+      const seedQuestions = state.questions.length === 0 || hasOldDefaults ? DEFAULT_QUESTIONS : state.questions;
+      const seedPoisons = state.poisons.length === 0 || hasOldDefaults ? DEFAULT_POISONS : state.poisons;
       const seedDebateLogic = !state.debateLogic.d1Prompt ? {
         ...state.debateLogic,
         d1Prompt: DEFAULT_PROMPT_POOLS.d1,
@@ -389,10 +390,14 @@ export const useTestModeStore = create<TestModeState>()(persist((set, get) => ({
     const state = get();
     if (state.questions.length > 0 && state.poisons.length > 0) {
       const randomQuestion = state.questions[Math.floor(Math.random() * state.questions.length)];
-      const randomPoison = state.poisons[Math.floor(Math.random() * state.poisons.length)];
+      // Use the question's matched poison if it exists, otherwise random
+      const matchedPoison = randomQuestion.poisonId
+        ? state.poisons.find((p) => p.id === randomQuestion.poisonId)
+        : null;
+      const poison = matchedPoison || state.poisons[Math.floor(Math.random() * state.poisons.length)];
       set({
         question: randomQuestion.question,
-        poison: randomPoison.content,
+        poison: poison.content,
       });
     }
   },
@@ -1161,7 +1166,11 @@ export const useTestModeStore = create<TestModeState>()(persist((set, get) => ({
       const rotation: any[] = [];
       for (let i = 0; i < finalTestCount; i++) {
         const question = randomPick(questions);
-        const poison = randomPick(poisons);
+        // Use the question's matched poison if it exists, otherwise random
+        const matchedPoison = question.poisonId
+          ? poisons.find((p: any) => p.id === question.poisonId)
+          : null;
+        const poison = matchedPoison || randomPick(poisons);
 
         // Randomly assign models from available pool
         const WEAK_JUDGE_PATTERNS = ['smollm', 'tinyllama', 'moondream', 'minicpm', 'phi3.5-mini', 'gemma2:2b'];
@@ -1412,6 +1421,7 @@ export const useTestModeStore = create<TestModeState>()(persist((set, get) => ({
                 killedAgents.add(agent);
                 killCount++;
                 addEvent(`🛑 KILL TRIGGERED — ${agent.toUpperCase()} (${model.split(':')[0]}) echoed poison in round ${round}`, '🛑', 'danger');
+                addEvent(`🛑 INFECTED RESPONSE: "${response.content.slice(0, 400)}"`, '🛑', 'danger');
                 addEvent(`🧹 Context stripped — ${agent.toUpperCase()} infected response removed from chain`, '🧹', 'warning');
               }
 
@@ -1420,6 +1430,7 @@ export const useTestModeStore = create<TestModeState>()(persist((set, get) => ({
                 if (!hasEcho) {
                   recoveredTotal++;
                   addEvent(`✅ RECOVERY CONFIRMED — ${agent.toUpperCase()} corrected in round ${round}`, '✅', 'success');
+                  addEvent(`✅ RECOVERED RESPONSE: "${response.content.slice(0, 400)}"`, '✅', 'success');
                 } else {
                   failedRecovery++;
                   addEvent(`❌ RECOVERY FAILED — ${agent.toUpperCase()} still propagating poison in round ${round}`, '❌', 'danger');
@@ -1612,6 +1623,7 @@ export const useTestModeStore = create<TestModeState>()(persist((set, get) => ({
                 killedAgents3.add(agent);
                 killCount3++;
                 addEvent(`🛑 KILL TRIGGERED — ${agent.toUpperCase()} (${model.split(':')[0]}) echoed poison in round ${round}`, '🛑', 'danger');
+                addEvent(`🛑 INFECTED RESPONSE: "${response.content.slice(0, 400)}"`, '🛑', 'danger');
                 addEvent(`🧹 Context stripped — ${agent.toUpperCase()} infected response removed from chain`, '🧹', 'warning');
               }
 
@@ -1620,6 +1632,7 @@ export const useTestModeStore = create<TestModeState>()(persist((set, get) => ({
                 if (!hasEcho) {
                   recoveredTotal3++;
                   addEvent(`✅ RECOVERY CONFIRMED — ${agent.toUpperCase()} corrected in round ${round}`, '✅', 'success');
+                  addEvent(`✅ RECOVERED RESPONSE: "${response.content.slice(0, 400)}"`, '✅', 'success');
                 } else {
                   failedRecovery3++;
                   addEvent(`❌ RECOVERY FAILED — ${agent.toUpperCase()} still propagating poison in round ${round}`, '❌', 'danger');
