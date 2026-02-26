@@ -4,8 +4,8 @@
 const FOOTER_TAGLINE = "S.A.R.G.E. Platform Architecture · Built in 7 Weeks · One Person · Zero Prior Coding Experience";
 const OLLAMA_URL = process.env.NEXT_PUBLIC_OLLAMA_URL || "http://localhost:11434";
 /** Update these when adding new API routes or stores */
-const API_ROUTES_COUNT = 28;
-const STORES_COUNT = "20+";
+const API_ROUTES_COUNT = 42;
+const STORES_COUNT = 43;
 
 // ─── Module data (source of truth for Modules stat) ────────────────────────
 const MODULES_DATA: Array<{
@@ -25,8 +25,10 @@ const MODULES_DATA: Array<{
   { id: "library",    icon: "📚", name: "Prompt Library",  desc: "Test library, poison pills, tier organization",                               color: "teal",    tags: ["Tiers", "Search"], route: "/library" },
   { id: "diagnostics",icon: "🔧", name: "Diagnostics",     desc: "Self-healing: scan, analyze, fix, rollback with AI",                          color: "yellow",  tags: ["Scanner", "AI Fix", "Rollback"], route: "/diagnostics" },
   { id: "ai-analysis",icon: "🧠", name: "AI Analysis",     desc: "Multi-tool analysis: chat, debate, test, batch",                              color: "indigo",  tags: ["6 Sub-tabs"], route: "/ai-analysis" },
-  { id: "settings",   icon: "⚙️", name: "Settings",        desc: "Providers, models, roles, vault, security PIN",                               color: "gray",    tags: ["Registry", "RollCall", "PIN"], route: "/settings" },
-  { id: "vault",      icon: "🗄️", name: "Vault",           desc: "Knowledge base, file management, 50MB storage",                              color: "teal",    tags: ["Upload", "Preview", "Attach"], route: "/settings" },
+  { id: "settings",   icon: "⚙️", name: "Settings",        desc: "Providers, models, roles, vault, Build Docs, security PIN",                   color: "gray",    tags: ["Registry", "RollCall", "Docs", "PIN"], route: "/settings" },
+  { id: "apps",       icon: "📱", name: "Apps Hub",         desc: "App marketplace: Resume Tailor, more coming soon",                            color: "blue",    tags: ["Resume", "Pipeline", "Export"], route: "/apps" },
+  { id: "multi-chat", icon: "👥", name: "Multi-Chat",       desc: "Parallel model panels, send to all, compare, Jury Duty",                     color: "indigo",  tags: ["Parallel", "Compare", "Jury"], route: "/" },
+  { id: "resume",     icon: "📄", name: "Resume Tailor",    desc: "AI-powered resume + cover letter tailoring, PDF/DOCX export",                 color: "emerald", tags: ["5-Stage", "PDF", "DOCX"], route: "/apps/resume-tailor" },
 ];
 
 import { useState, useEffect } from "react";
@@ -58,6 +60,7 @@ export default function DashboardPage() {
     supabase: null as boolean | null,
     ollama: null as boolean | null,
     ollamaModels: [] as string[],
+    lmstudio: null as boolean | null,
     apiKeys: {} as Record<string, boolean>,
   });
 
@@ -76,6 +79,10 @@ export default function DashboardPage() {
       .then((r) => r.json())
       .then((d) => setStatus((s) => ({ ...s, ollama: true, ollamaModels: (d?.models || []).map((m: any) => m.name) })))
       .catch(() => setStatus((s) => ({ ...s, ollama: false })));
+
+    fetch('/api/lmstudio/models')
+      .then((r) => r.ok ? setStatus((s) => ({ ...s, lmstudio: true })) : setStatus((s) => ({ ...s, lmstudio: false })))
+      .catch(() => setStatus((s) => ({ ...s, lmstudio: false })));
 
     (async () => {
       const keys: Record<string, boolean> = {};
@@ -153,7 +160,7 @@ export default function DashboardPage() {
 
           {/* Presentation Layer */}
           <Section title="Presentation Layer" subtitle="User Interface" color="#7c3aed" />
-          <div className="grid grid-cols-4 gap-3 mb-4">
+          <div className="grid grid-cols-5 gap-3 mb-4">
             {MODULES_DATA.map((m) => (
               <Module
                 key={m.id}
@@ -169,22 +176,25 @@ export default function DashboardPage() {
 
           {/* Provider Layer */}
           <Section title="Provider Layer" subtitle="AI Models" color="#f59e0b" />
-          <div className="grid grid-cols-6 gap-3 mb-4">
+          <div className="grid grid-cols-7 gap-3 mb-4">
             <Provider icon="🧠" name="Claude" color="#f97316" models="Opus 4 · Sonnet 4.5 · Haiku" active={status.apiKeys["anthropic"]} />
             <Provider icon="✨" name="GPT" color="#22c55e" models="GPT-4o · GPT-4o Mini · Turbo" active={status.apiKeys["openai"]} />
             <Provider icon="💎" name="Gemini" color="#3b82f6" models="2.0 Flash · 2.5 Pro · Flash" active={status.apiKeys["google"]} />
             <Provider icon="⚡" name="Grok" color="#ef4444" models="Grok 3 · 3 Fast · Reasoning" active={status.apiKeys["xai"]} />
             <Provider icon="🔮" name="DeepSeek" color="#8b5cf6" models="V3 Chat · V3 Reasoner" active={status.apiKeys["deepseek"]} />
             <Provider icon="🦙" name="Ollama" color="#6b7280" models={`${status.ollamaModels.length} local models`} active={status.ollama ?? false} />
+            <Provider icon="🖥️" name="LM Studio" color="#14b8a6" models="Local API · OpenAI-compat" active={status.lmstudio ?? false} />
           </div>
 
           {/* Security Layer */}
           <Section title="Security & Infrastructure" color="#f43f5e" />
-          <div className="grid grid-cols-5 gap-3 mb-3">
+          <div className="grid grid-cols-7 gap-3 mb-3">
             <Module icon="🛡️" name="Air Gap Mode" desc="Block all cloud APIs. Ollama-only operation. Full network isolation." color="red" tags={["airGapStore", "Toggle"]} />
             <Module icon="🔐" name="Path Security" desc="Builder sandboxed to project dir. No traversal. Command blocking." color="rose" tags={["pathValidator", "Forensic"]} />
             <Module icon="🔑" name="Session Security" desc="PIN lock with SHA-256. Auto-lock timeout. Encrypted storage." color="amber" tags={["pinStore", "SHA-256"]} />
             <Module icon="☁️" name="Supabase Sync" desc="Durable backend. Forensic sync. Conversation backup. Air-gap aware." color="emerald" tags={["RLS", "Realtime"]} />
+            <Module icon="🗄️" name="Vault" desc="Knowledge base, file management, 50MB storage." color="teal" tags={["Upload", "Preview", "Attach"]} onClick={() => handleClick("vault", "/settings")} />
+            <Module icon="⚖️" name="Jury Duty" desc="Multi-chat quality control. Cross-model verification. Builder consistency." color="indigo" tags={["Multi-Chat", "Builder", "QA"]} />
             <GuardianCard enabled={guardianEnabled} stats={guardianStats ? {
               activeConversations: 1,
               totalFacts: guardianStats.factCount,
@@ -258,13 +268,13 @@ function Module({ icon, name, desc, color, tags, onClick }: {
   return (
     <button
       onClick={onClick}
-      className="text-left p-3.5 rounded-lg bg-card border border-border backdrop-blur-sm transition-all hover:border-primary/40 hover:-translate-y-0.5 hover:shadow-lg relative overflow-hidden"
+      className="text-center p-3.5 rounded-lg bg-card border border-border backdrop-blur-sm transition-all hover:border-primary/40 hover:-translate-y-0.5 hover:shadow-lg relative overflow-hidden"
     >
       <div className="absolute top-0 left-0 right-0 h-[3px] rounded-t-lg" style={{ background: c.border }} />
       <span className="text-2xl block mb-1.5 text-center">{icon}</span>
       <div className="text-sm font-black tracking-[1px] mb-1 text-center" style={{ color: c.name }}>{name}</div>
       <div className="text-[11px] text-muted-foreground leading-tight mb-2 line-clamp-2 font-bold">{desc}</div>
-      <div className="flex flex-wrap gap-1">
+      <div className="flex flex-wrap gap-1 justify-center">
         {tags.map((t) => (
           <span key={t} className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-black">{t}</span>
         ))}
@@ -297,10 +307,10 @@ function GuardianCard({ enabled, stats, onClick }: {
   return (
     <button
       onClick={onClick}
-      className="text-left p-3.5 rounded-lg bg-card border border-border backdrop-blur-sm transition-all hover:border-primary/40 hover:-translate-y-0.5 hover:shadow-lg relative overflow-hidden"
+      className="text-center p-3.5 rounded-lg bg-card border border-border backdrop-blur-sm transition-all hover:border-primary/40 hover:-translate-y-0.5 hover:shadow-lg relative overflow-hidden"
     >
       <div className="absolute top-0 left-0 right-0 h-[3px] rounded-t-lg" style={{ background: c.border }} />
-      <div className="flex items-center justify-between mb-1.5">
+      <div className="flex items-center justify-center gap-2 mb-1.5">
         <span className="text-2xl">🛡️</span>
         {enabled && (
           <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold">
@@ -315,7 +325,7 @@ function GuardianCard({ enabled, stats, onClick }: {
           ? `${stats.activeConversations} thread${stats.activeConversations !== 1 ? "s" : ""} · ${stats.totalFacts} facts · ${stats.totalContradictions + stats.totalHallucinations} flags`
           : "Background conversation maintenance. Disabled."}
       </div>
-      <div className="flex flex-wrap gap-1">
+      <div className="flex flex-wrap gap-1 justify-center">
         <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-black">3-Tier</span>
         <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-black">Phi/Opus</span>
         <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-black">SavePts</span>
