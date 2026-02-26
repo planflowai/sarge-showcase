@@ -1,5 +1,9 @@
 import type { NextConfig } from "next";
 import path from "path";
+import dotenv from "dotenv";
+
+// Load centralized env vars from monorepo root .env.local
+dotenv.config({ path: path.resolve(__dirname, "../../.env.local") });
 
 const emptyStub = path.resolve(__dirname, "lib/stubs/empty.ts");
 

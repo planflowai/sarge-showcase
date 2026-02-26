@@ -8,25 +8,31 @@ dotenv.config({ path: path.resolve(__dirname, "../../.env.local") });
 const emptyStub = path.resolve(__dirname, "lib/stubs/empty.ts");
 
 const nextConfig: NextConfig = {
-  transpilePackages: ["@sarge/core", "@sarge/chat"],
+  transpilePackages: ["@sarge/core", "@sarge/apps"],
+  async rewrites() {
+    return [
+      {
+        source: "/api/:path*",
+        destination: "http://localhost:5000/api/:path*",
+      },
+    ];
+  },
   webpack: (config, { isServer }) => {
-    // Stub out packages that chat-standalone doesn't need.
-    // Applied to BOTH client and server builds to prevent transitive resolution.
+    // Stub out packages that apps-standalone doesn't need.
     config.resolve.alias = {
       ...config.resolve.alias,
       "@sarge/builder": emptyStub,
       "@sarge/builder/stores/builderChatStore": emptyStub,
+      "@sarge/chat": emptyStub,
       "@sarge/diagnostics": emptyStub,
     };
     if (!isServer) {
-      // Prevent Node.js modules from being bundled client-side
       config.resolve.fallback = {
         ...config.resolve.fallback,
         fs: false,
         path: false,
         crypto: false,
       };
-      // Handle node: protocol URIs (e.g., pptxgenjs imports node:fs)
       config.plugins.push(
         new (require("webpack")).NormalModuleReplacementPlugin(
           /^node:/,
