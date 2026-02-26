@@ -6,7 +6,7 @@
 
 import * as fs from "fs";
 import * as path from "path";
-import type { Finding, ScanDepth } from "@/lib/stores/diagnosticsStore";
+import type { Finding, ScanDepth } from "../stores/diagnosticsStore";
 
 // File extensions to scan by depth
 const FILE_EXTENSIONS: Record<ScanDepth, string[]> = {

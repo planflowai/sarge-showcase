@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useResumeTailorStore } from '@/lib/stores/resumeTailorStore';
-import { useProviderStore } from '@/lib/stores/providerStore';
+import { useResumeTailorStore } from '../resumeTailorStore';
+import { useProviderStore } from '@sarge/core';
 import { StageIndicator } from './StageIndicator';
 import { StageInput } from './stages/StageInput';
 import { StageAnalysis } from './stages/StageAnalysis';

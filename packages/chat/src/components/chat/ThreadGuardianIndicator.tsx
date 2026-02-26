@@ -7,7 +7,7 @@ import { useAirGapStore, isCloudProvider } from "@sarge/core";
 import { isGuardianRunning, getGuardianStatus } from "@sarge/core";
 import { getActiveWarnings } from "@sarge/core";
 import { cn } from "@sarge/core";
-import GuardianMonitorPanel from "./GuardianMonitorPanel";
+import { GuardianMonitorPanel } from "@sarge/core";
 
 interface ThreadGuardianIndicatorProps {
   conversationId: string;

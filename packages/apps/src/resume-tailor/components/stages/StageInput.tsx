@@ -1,8 +1,8 @@
 'use client';
 
-import { useResumeTailorStore } from '@/lib/stores/resumeTailorStore';
-import { useProviderStore } from '@/lib/stores/providerStore';
-import { providers } from '@/lib/providers';
+import { useResumeTailorStore } from '../../resumeTailorStore';
+import { useProviderStore } from '@sarge/core';
+import { providers } from '@sarge/core';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';

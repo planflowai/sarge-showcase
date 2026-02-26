@@ -16,8 +16,18 @@ export * from './stores/fallbackStore';
 export * from './stores/airGapStore';
 export * from './stores/uiStore';
 export * from './stores/promptStore';
-// promptLibraryStore has a 'Prompt' type that conflicts with promptStore
-export { usePromptLibraryStore } from './stores/promptLibraryStore';
+// promptLibraryStore has a 'Prompt' type that conflicts with promptStore — export selectively
+export {
+  usePromptLibraryStore,
+  PROMPT_CATEGORIES,
+  PREBUILT_PROMPTS,
+  getComplexityColor,
+  getOutputTypeLabel,
+  type PromptCategory,
+  type Prompt as LibraryPrompt,
+  type Complexity,
+  type OutputType,
+} from './stores/promptLibraryStore';
 export * from './stores/truthAnchorStore';
 export * from './stores/pinStore';
 export * from './stores/feedbackStore';
@@ -40,9 +50,17 @@ export * from './lib/ollamaModelGroups';
 
 // ─── Utilities ───────────────────────────────────────────
 export * from './lib/utils/storageManager';
+export { createDebouncedStorage } from './lib/utils/debouncedStorage';
+export { computeForensicHash, verifyChain } from './lib/utils/forensicHash';
+export * from './lib/utils/plainEnglish';
 
 // ─── Providers ───────────────────────────────────────────
 export * from './lib/providers';
+export { fetchOllamaModels, fetchLMStudioModels, type LocalModel } from './lib/providers/localModels';
+export { groupOllamaModels } from './lib/ollamaModelGroups';
+
+// ─── Supabase ───────────────────────────────────────────
+export { processQueuedItem, fetchSupabaseBuilderLog } from './lib/supabase/syncQueue';
 
 // ─── Fallback ────────────────────────────────────────────
 export * from './lib/fallback/circuitBreaker';
@@ -105,6 +123,10 @@ export {
   runTier3 as threadRunTier3,
   runTierManually,
   isGuardianRunning,
+  startGuardian,
+  stopGuardian,
+  getGuardianStatus,
+  countTokens,
 } from './guardians/threadGuardian/engine';
 export * from './guardians/threadGuardian/contextBuilder';
 
@@ -114,6 +136,10 @@ export {
   vaultNow,
   getJuryStatus,
   isJuryActive,
+  startJury,
+  stopJury,
+  runInterventionCheck,
+  queueResponse,
 } from './guardians/juryGuardian/engine';
 
 // ─── Guardians — Components ─────────────────────────────

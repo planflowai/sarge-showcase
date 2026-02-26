@@ -12,7 +12,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { createDebouncedStorage } from "@sarge/core";
-import { useUIStore } from './uiStore';
+import { useUIStore } from '@sarge/core';
 
 // Types for shared context
 export interface BuildAction {

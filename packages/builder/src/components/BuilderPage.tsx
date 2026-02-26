@@ -15,7 +15,7 @@ import { flattenFileTree } from "@sarge/core";
 import { applyEditBlocks, type EditBlock, getDiffSummary } from "../lib/editBlockParser";
 import { useWorkspaceStore, launchWorkspace, recallWorkspace } from "../stores/workspaceStore";
 import { Rocket, LayoutGrid, X } from "lucide-react";
-import ThreadGuardianIndicator from "@sarge/chat";
+import { ThreadGuardianIndicator } from "@sarge/chat";
 
 // Clear old builder chat messages on load (one-time cleanup)
 if (typeof window !== 'undefined') {

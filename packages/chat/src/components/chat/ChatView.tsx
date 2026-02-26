@@ -156,7 +156,7 @@ export function ChatView({ conversationId }: ChatViewProps) {
       for (const p of providers) {
         const allModels = getEffectiveModels(p.id);
         if (allModels.some((m) => m.id === modelId)) {
-          entries.push({ modelId, nickname, provider: p.id as import("@/lib/types").Provider });
+          entries.push({ modelId, nickname, provider: p.id as import("@sarge/core").Provider });
           found = true;
           break;
         }
@@ -164,7 +164,7 @@ export function ChatView({ conversationId }: ChatViewProps) {
       // If not found in any provider's effective models (e.g. Ollama live models),
       // assume it's an Ollama model since those aren't registered in modelStore
       if (!found) {
-        entries.push({ modelId, nickname, provider: "ollama" as import("@/lib/types").Provider });
+        entries.push({ modelId, nickname, provider: "ollama" as import("@sarge/core").Provider });
       }
     }
     return entries;
@@ -220,7 +220,7 @@ export function ChatView({ conversationId }: ChatViewProps) {
         conversationId,
         role,
         content: text.trim(),
-        provider: currentProvider as import("@/lib/types").Provider,
+        provider: currentProvider as import("@sarge/core").Provider,
         model: currentModel,
         timestamp: new Date(),
       });

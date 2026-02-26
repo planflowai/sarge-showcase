@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { ResumeTailor } from "@/components/apps/ResumeTailor";
+import { ResumeTailor } from "./components/ResumeTailor";
 
 export const metadata: Metadata = {
   title: "Resume Tailor",

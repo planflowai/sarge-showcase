@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useDiagnosticsStore, type Finding, type ScanDepth } from "@/lib/stores/diagnosticsStore";
-import { useProviderStore } from "@/lib/stores/providerStore";
-import { useModelStore } from "@/lib/stores/modelStore";
-import { fetchOllamaModels, type LocalModel } from "@/lib/providers/localModels";
-import { groupOllamaModels } from "@/lib/ollamaModelGroups";
-import { providers } from "@/lib/providers";
+import { useDiagnosticsStore, type Finding, type ScanDepth } from "../stores/diagnosticsStore";
+import { useProviderStore } from "@sarge/core";
+import { useModelStore } from "@sarge/core";
+import { fetchOllamaModels, type LocalModel } from "@sarge/core";
+import { groupOllamaModels } from "@sarge/core";
+import { providers } from "@sarge/core";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -33,7 +33,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
-import { useAirGapStore } from "@/lib/stores/airGapStore";
+import { useAirGapStore } from "@sarge/core";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Severity Colors & Icons

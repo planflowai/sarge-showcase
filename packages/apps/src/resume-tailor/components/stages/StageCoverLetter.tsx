@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useResumeTailorStore } from '@/lib/stores/resumeTailorStore';
+import { useResumeTailorStore } from '../../resumeTailorStore';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Radio, Download, Copy, RotateCcw } from 'lucide-react';
-import { exportResumeToPDF, exportCoverLetterToPDF } from '@/lib/export/resumePdf';
-import { exportResumeToDocx, exportCoverLetterToDocx } from '@/lib/export/resumeDocx';
+import { exportResumeToPDF, exportCoverLetterToPDF } from '../../export/resumePdf';
+import { exportResumeToDocx, exportCoverLetterToDocx } from '../../export/resumeDocx';
 
 interface StageCoverLetterProps {
   providerStore: any;

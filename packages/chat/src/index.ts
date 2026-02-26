@@ -8,30 +8,45 @@ export * from './stores/debateStore';
 export * from './stores/debateHistoryStore';
 
 // ─── Components — Chat ──────────────────────────────────
-export { default as ChatView } from './components/chat/ChatView';
-export { default as ChatColumn } from './components/chat/ChatColumn';
-export { default as CodeBlock } from './components/chat/CodeBlock';
-export { default as InputArea } from './components/chat/InputArea';
-export { default as MessageBubble } from './components/chat/MessageBubble';
-export { default as ParallelChatView } from './components/chat/ParallelChatView';
-export { default as DebateBanner } from './components/chat/DebateBanner';
+export { ChatView, useBuilderPromptStore } from './components/chat/ChatView';
+export { ChatColumn } from './components/chat/ChatColumn';
+export { CodeBlock } from './components/chat/CodeBlock';
+export { InputArea } from './components/chat/InputArea';
+export { MessageBubble } from './components/chat/MessageBubble';
+export { ParallelChatView } from './components/chat/ParallelChatView';
+export { DebateBanner } from './components/chat/DebateBanner';
 export { default as ThreadGuardianIndicator } from './components/chat/ThreadGuardianIndicator';
-export { default as VaultAttachmentModal } from './components/chat/VaultAttachmentModal';
-export { default as VoiceButton } from './components/chat/VoiceButton';
-export { default as VoiceIndicator } from './components/chat/VoiceIndicator';
+export { VaultAttachmentModal, getVaultDocumentsForContext } from './components/chat/VaultAttachmentModal';
+export { VoiceButton } from './components/chat/VoiceButton';
+export { VoiceIndicator } from './components/chat/VoiceIndicator';
 
 // ─── Components — Conversation ──────────────────────────
-export { default as ConversationList } from './components/conversation/ConversationList';
+export { ConversationList } from './components/conversation/ConversationList';
 
 // ─── Components — Debate ────────────────────────────────
-export { default as AgentPanel } from './components/debate/AgentPanel';
-export { default as CollapsibleRow } from './components/debate/CollapsibleRow';
-export { default as DebateHistory } from './components/debate/DebateHistory';
-export { default as DebateView } from './components/debate/DebateView';
-export { default as ExecutiveSummaryModal } from './components/debate/ExecutiveSummaryModal';
-export { default as JudgePanel } from './components/debate/JudgePanel';
-export { default as JudgeSummary } from './components/debate/JudgeSummary';
-export { default as TruthAnchorsPanel } from './components/debate/TruthAnchorsPanel';
+export { AgentPanel } from './components/debate/AgentPanel';
+export { CollapsibleRow } from './components/debate/CollapsibleRow';
+export { DebateHistory } from './components/debate/DebateHistory';
+export { DebateView } from './components/debate/DebateView';
+export { ExecutiveSummaryModal } from './components/debate/ExecutiveSummaryModal';
+export { JudgePanel } from './components/debate/JudgePanel';
+export { JudgeSummary } from './components/debate/JudgeSummary';
+export { TruthAnchorsPanel } from './components/debate/TruthAnchorsPanel';
+
+// ─── Components — Forensic ─────────────────────────────
+export { ForensicLogView } from './components/forensic/ForensicLogView';
+export { ForensicSidebar } from './components/forensic/ForensicSidebar';
+export { TimelineView } from './components/forensic/TimelineView';
+export { InvestigationView } from './components/forensic/InvestigationView';
+export { ReplayView } from './components/forensic/ReplayView';
+export { ExportView } from './components/forensic/ExportView';
+
+// ─── Components — Test ─────────────────────────────────
+export { TestModeView } from './components/test/TestModeView';
+export { TestModeLLMSection } from './components/test/TestModeLLMSection';
+export { BatchView } from './components/test/BatchView';
+export { LiveConsolePanel } from './components/test/LiveConsolePanel';
+export { LivePassColumn } from './components/test/LivePassColumn';
 
 // ─── Lib — Debate Engine ────────────────────────────────
 export * from './lib/debate/engine';

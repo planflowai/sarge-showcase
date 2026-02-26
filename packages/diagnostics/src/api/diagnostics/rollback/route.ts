@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFileContent } from "@/lib/diagnostics/scanner";
+import { writeFileContent } from "../../../lib/scanner";
 import * as path from "path";
 import * as fs from "fs";
 

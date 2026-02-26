@@ -174,7 +174,7 @@ export async function preprocessMessage(input: OrchestratorInput): Promise<{
 
   if (enabled.includes('auto_router')) {
     // Import and use the existing auto-router
-    const { analyzeTask } = await import('./builderAutoRouter');
+    const { analyzeTask } = await import('@sarge/builder');
     // Pass the message and null for currentCode (context not available here)
     const decision = await analyzeTask(input.message, null);
 

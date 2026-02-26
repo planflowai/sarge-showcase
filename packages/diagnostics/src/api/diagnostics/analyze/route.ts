@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readFileContent } from "@/lib/diagnostics/scanner";
-import type { Finding } from "@/lib/stores/diagnosticsStore";
-import type { Provider } from "@/lib/types";
+import { readFileContent } from "../../../lib/scanner";
+import type { Finding } from "../../../stores/diagnosticsStore";
+import type { Provider } from "@sarge/core";
 import * as path from "path";
 
 // Provider imports
-import { chat as anthropicChat } from "@/lib/providers/anthropic";
-import { chat as openaiChat } from "@/lib/providers/openai";
-import { chat as googleChat } from "@/lib/providers/google";
-import { chat as xaiChat } from "@/lib/providers/xai";
-import { chat as ollamaChat } from "@/lib/providers/ollama";
-import { chat as deepseekChat } from "@/lib/providers/deepseek";
+import { chat as anthropicChat } from "@sarge/core/providers/anthropic";
+import { chat as openaiChat } from "@sarge/core/providers/openai";
+import { chat as googleChat } from "@sarge/core/providers/google";
+import { chat as xaiChat } from "@sarge/core/providers/xai";
+import { chat as ollamaChat } from "@sarge/core/providers/ollama";
+import { chat as deepseekChat } from "@sarge/core/providers/deepseek";
 
 const PROJECT_ROOT = process.cwd();
 const CONTEXT_FILE = path.join(PROJECT_ROOT, "PROJECT_CONTEXT.md");

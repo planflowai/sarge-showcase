@@ -1,6 +1,6 @@
 'use client';
 
-import { useResumeTailorStore } from '@/lib/stores/resumeTailorStore';
+import { useResumeTailorStore } from '../../resumeTailorStore';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Check, X } from 'lucide-react';

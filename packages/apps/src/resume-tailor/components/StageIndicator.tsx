@@ -1,6 +1,6 @@
 'use client';
 
-import { TailorStage } from '@/lib/stores/resumeTailorStore';
+import { TailorStage } from '../resumeTailorStore';
 import { CheckCircle2, Circle } from 'lucide-react';
 
 interface StageIndicatorProps {

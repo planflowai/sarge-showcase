@@ -5,7 +5,7 @@
  * Users can customize these or create their own.
  */
 
-import { HelperType } from './stores/builderHelpersStore';
+import { HelperType } from '../stores/builderHelpersStore';
 
 export const HELPER_PROMPTS: Record<HelperType, string> = {
   reviewer: `You are a Code Reviewer assistant. Your job is to review code and provide helpful, constructive feedback.

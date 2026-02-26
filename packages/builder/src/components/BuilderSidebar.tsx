@@ -6,7 +6,7 @@ import { useModelStore } from "@sarge/core";
 import { useBuilderStore, getLanguageFromPath } from "../stores/builderStore";
 import { useBuilderChatStore } from "../stores/builderChatStore";
 import { useChangesStore, type ChangeEntry } from "../stores/changesStore";
-import { usePromptLibraryStore, PROMPT_CATEGORIES, PREBUILT_PROMPTS, type Prompt, getComplexityColor, getOutputTypeLabel } from "@sarge/core";
+import { usePromptLibraryStore, PROMPT_CATEGORIES, PREBUILT_PROMPTS, type LibraryPrompt as Prompt, getComplexityColor, getOutputTypeLabel } from "@sarge/core";
 import { useAIModeStore } from "@sarge/core";
 import { PROJECT_TEMPLATES, type ProjectTemplate } from "../lib/projectTemplates";
 import TemplateCard from "./TemplateCard";

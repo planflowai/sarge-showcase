@@ -216,7 +216,7 @@ export default function DiagnosticsPage() {
   // Handle prefilled custom request (e.g., from Forensic Log "Diagnose" button)
   useEffect(() => {
     if (hydrated && prefilledCustomRequest) {
-      // Auto-open Custom Request modal with prefilled data
+      // Auto-open Ask AI to Fix modal with prefilled data
       setCustomRequest(prefilledCustomRequest.request);
       setCustomRequestTarget(prefilledCustomRequest.target);
       setShowCustomRequest(true);
@@ -646,7 +646,7 @@ export default function DiagnosticsPage() {
         <RollbackModal onClose={() => setShowRollback(false)} />
       )}
 
-      {/* Custom Request Modal */}
+      {/* Ask AI to Fix Modal */}
       {showCustomRequest && (
         <CustomRequestModal
           isOpen={showCustomRequest}
@@ -1274,7 +1274,7 @@ function ChangelogModal({ onClose }: { onClose: () => void }) {
           <div className="p-4 border-t border-zinc-200 dark:border-zinc-800">
             <Button variant="destructive" size="sm" onClick={clearChangelog}>
               <Trash2 className="h-4 w-4 mr-2" />
-              Clear Changelog
+              Clear History
             </Button>
           </div>
         )}
@@ -1327,7 +1327,7 @@ function RollbackModal({ onClose }: { onClose: () => void }) {
                       {snapshot.description}
                     </span>
                     <span className="text-xs text-zinc-500">
-                      {snapshot.timestamp.toLocaleString()}
+                      {new Date(snapshot.timestamp).toLocaleString()}
                     </span>
                   </div>
                   <p className="text-xs text-zinc-500 mb-3">
@@ -1342,12 +1342,12 @@ function RollbackModal({ onClose }: { onClose: () => void }) {
                       {rolling === snapshot.id ? (
                         <>
                           <Loader2 className="h-3 w-3 mr-2 animate-spin" />
-                          Rolling back...
+                          Restoring...
                         </>
                       ) : (
                         <>
                           <RotateCcw className="h-3 w-3 mr-2" />
-                          Rollback
+                          Restore
                         </>
                       )}
                     </Button>
@@ -1371,7 +1371,7 @@ function RollbackModal({ onClose }: { onClose: () => void }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Custom Request Modal with Live Preview
+// Ask AI to Fix Modal with Live Preview
 // ─────────────────────────────────────────────────────────────────────────────
 
 function CustomRequestModal({
@@ -1545,7 +1545,7 @@ function CustomRequestModal({
         setError("No more undo levels available");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Rollback failed");
+      setError(err instanceof Error ? err.message : "Restore failed");
     } finally {
       setIsApplying(false);
     }
@@ -1561,7 +1561,7 @@ function CustomRequestModal({
           {/* Header */}
           <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-zinc-900 dark:text-white">
-              Custom Request
+              Ask AI to Fix
             </h2>
             <div className="flex items-center gap-2">
               {applySuccess && lastSnapshotId && (

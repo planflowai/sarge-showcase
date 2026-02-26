@@ -11,7 +11,7 @@
 import { useSyncStatusStore, shouldSync } from "@sarge/core";
 import { useUIStore } from "@sarge/core";
 
-export interface ChangeEntry {
+export interface LogChangeEntry {
   timestamp: Date;
   filePath: string;
   action: 'created' | 'modified' | 'deleted';
@@ -22,7 +22,7 @@ export interface ChangeEntry {
 
 export interface SessionLog {
   date: string;
-  changes: ChangeEntry[];
+  changes: LogChangeEntry[];
   currentPlan?: string;
   nextSteps?: string[];
 }
@@ -30,7 +30,7 @@ export interface SessionLog {
 /**
  * Format a single change entry as markdown
  */
-function formatChangeEntry(entry: ChangeEntry): string {
+function formatLogChangeEntry(entry: LogChangeEntry): string {
   const time = entry.timestamp.toLocaleTimeString('en-US', {
     hour: '2-digit',
     minute: '2-digit',
@@ -260,9 +260,9 @@ Project loaded with ${totalFiles} files. ${htmlFiles.length > 0 ? `Entry point: 
 /**
  * Append a change entry to existing log content
  */
-export function appendChangeEntry(
+export function appendLogChangeEntry(
   existingContent: string,
-  entry: ChangeEntry,
+  entry: LogChangeEntry,
   projectName: string
 ): string {
   const now = new Date();
@@ -278,11 +278,11 @@ export function appendChangeEntry(
   // If no existing content, create new log
   if (!existingContent.trim()) {
     const newLog = generateNewLog(projectName);
-    return appendChangeEntry(newLog, entry, projectName);
+    return appendLogChangeEntry(newLog, entry, projectName);
   }
 
   const todayHeader = `## Session: ${formatSessionDate(now)}`;
-  const entryLine = formatChangeEntry(entry);
+  const entryLine = formatLogChangeEntry(entry);
 
   // Update "Last updated" timestamp
   let content = existingContent.replace(
@@ -354,7 +354,7 @@ ${entryLine}
 export function generateSessionSummary(
   existingContent: string,
   projectName: string,
-  recentChanges: ChangeEntry[],
+  recentChanges: LogChangeEntry[],
   currentState: string,
   nextSteps: string[]
 ): string {
@@ -377,7 +377,7 @@ export function generateSessionSummary(
 
   // Build changes section
   const changesSection = recentChanges.length > 0
-    ? recentChanges.map(formatChangeEntry).join('\n')
+    ? recentChanges.map(formatLogChangeEntry).join('\n')
     : '*No changes in this session.*';
 
   // Build next steps checklist
@@ -485,7 +485,7 @@ export async function syncBuilderLogToSupabase(
   }
 
   try {
-    const { processQueuedItem } = await import("@/lib/supabase/syncQueue");
+    const { processQueuedItem } = await import("@sarge/core");
     const success = await processQueuedItem({
       id: `log_${Date.now()}`,
       type: "builderLog",
@@ -531,7 +531,7 @@ export async function fetchBuilderLogFromSupabase(
   }
 
   try {
-    const { fetchSupabaseBuilderLog } = await import("@/lib/supabase/syncQueue");
+    const { fetchSupabaseBuilderLog } = await import("@sarge/core");
     return await fetchSupabaseBuilderLog(projectName);
   } catch (err) {
     console.warn("[BuilderLog] Failed to fetch from Supabase:", err);

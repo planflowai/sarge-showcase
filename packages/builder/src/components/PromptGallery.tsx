@@ -8,7 +8,7 @@ import {
   usePromptLibraryStore,
   PROMPT_CATEGORIES,
   PREBUILT_PROMPTS,
-  type Prompt,
+  type LibraryPrompt as Prompt,
   type PromptCategory,
   getComplexityColor,
   getOutputTypeLabel,

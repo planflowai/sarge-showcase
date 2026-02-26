@@ -2,10 +2,10 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { createDebouncedStorage } from "@/lib/utils/debouncedStorage";
-import { useTestModeStore } from "@/lib/stores/testModeStore";
-import { useDebateStore } from "@/lib/stores/debateStore";
-import { providers } from "@/lib/providers";
+import { createDebouncedStorage } from "@sarge/core";
+import { useTestModeStore } from "@sarge/core";
+import { useDebateStore } from "@sarge/chat";
+import { providers } from "@sarge/core";
 import type {
   Provider,
   Message,
@@ -25,7 +25,7 @@ import type {
   EchoConfig,
   SavedQuestion,
   SavedPoison,
-} from "@/lib/types";
+} from "@sarge/core";
 
 // ============================================================================
 // SUB-TAB TYPES

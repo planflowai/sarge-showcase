@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { FileText, Lock } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@sarge/core";
 
 export const metadata: Metadata = {
   title: "Apps",

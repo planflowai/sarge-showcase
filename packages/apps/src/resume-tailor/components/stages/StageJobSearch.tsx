@@ -1,6 +1,6 @@
 'use client';
 
-import { useResumeTailorStore, type JobResult } from '@/lib/stores/resumeTailorStore';
+import { useResumeTailorStore, type JobResult } from '../../resumeTailorStore';
 import { Button } from '@/components/ui/button';
 import { ExternalLink, Loader2, MapPin, Calendar } from 'lucide-react';
 

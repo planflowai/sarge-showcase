@@ -14,19 +14,15 @@ import {
   type CapabilityId,
   type WebsiteType,
   type OrchestrationMode,
-} from '../stores/unifiedCapabilitiesStore';
-import {
   preprocessMessage,
   postprocessResponse,
   isCapabilityEnabled,
   getOrchestrationMode,
   buildEnhancedSystemPrompt,
-} from '../capabilityOrchestrator';
-import {
   useCapabilityEvent,
   useCapabilityEventValue,
   useCapabilityEmit,
-} from '../capabilityEventBus';
+} from '@sarge/core';
 
 /**
  * Main hook for capability management

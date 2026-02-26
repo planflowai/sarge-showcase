@@ -3,11 +3,11 @@ import fs from 'fs/promises';
 import path from 'path';
 import { logForensicEvent } from '@sarge/core';
 import {
-  appendChangeEntry,
+  appendLogChangeEntry,
   generateNewLog,
   generateScanLog,
   generateSessionSummary,
-  type ChangeEntry
+  type LogChangeEntry
 } from '../../../lib/builderLogger';
 
 const LOG_FILENAME = 'BUILDER_LOG.md';
@@ -104,16 +104,16 @@ export async function POST(request: NextRequest) {
 
     if (action === 'append' && entry) {
       // Append a single change entry
-      const changeEntry: ChangeEntry = {
+      const changeEntry: LogChangeEntry = {
         ...entry,
         timestamp: new Date(entry.timestamp || Date.now())
       };
-      newContent = appendChangeEntry(existingContent, changeEntry, projectName || 'Project');
+      newContent = appendLogChangeEntry(existingContent, changeEntry, projectName || 'Project');
       console.log('[update-log] Appended change entry for:', entry.filePath);
     } else if (action === 'summary' && sessionSummary) {
       // Generate full session summary
       const { recentChanges, currentState, nextSteps } = sessionSummary;
-      const entries: ChangeEntry[] = (recentChanges || []).map((e: any) => ({
+      const entries: LogChangeEntry[] = (recentChanges || []).map((e: any) => ({
         ...e,
         timestamp: new Date(e.timestamp || Date.now())
       }));

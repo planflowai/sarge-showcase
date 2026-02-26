@@ -8,8 +8,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import capabilityEventBus from '../capabilityEventBus';
-import { useUnifiedCapabilitiesStore } from '../stores/unifiedCapabilitiesStore';
+import { capabilityEventBus, useUnifiedCapabilitiesStore } from '@sarge/core';
 
 // ============================================================================
 // TYPES

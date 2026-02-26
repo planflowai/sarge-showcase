@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { scanCodebase, collectFiles } from "@/lib/diagnostics/scanner";
-import type { ScanDepth } from "@/lib/stores/diagnosticsStore";
+import { scanCodebase, collectFiles } from "../../../lib/scanner";
+import type { ScanDepth } from "../../../stores/diagnosticsStore";
 import * as path from "path";
 
 // Project root - adjust if needed
