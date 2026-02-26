@@ -15,11 +15,14 @@ import { useTestModeStore } from "@/lib/stores/testModeStore";
 import { useUIStore } from "@/lib/stores/uiStore";
 import { useForensicLogStore } from "@/lib/stores/forensicLogStore";
 import { SupabaseStatus } from "@/components/layout/SupabaseStatus";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { SIDEBAR_HIDDEN_ROUTES } from "@/lib/constants";
+import { useParallelChatStore } from "@/lib/stores/parallelChatStore";
+import { useWarRoomStore } from "@/lib/stores/warRoomStore";
 
 export function Sidebar() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   const debate = useDebateStore((s) => s.debate);
   const showingSetup = useDebateStore((s) => s.showingSetup);
@@ -27,6 +30,8 @@ export function Sidebar() {
   const showingTestMode = useTestModeStore((s) => s.showingTestMode);
   const testModeHidden = useTestModeStore((s) => s.testModeHidden);
   const showingForensicLog = useForensicLogStore((s) => s.showingForensicLog);
+  const parallelEnabled = useParallelChatStore((s) => s.parallelEnabled);
+  const warRoomEnabled = useWarRoomStore((s) => s.enabled);
   const mainSidebarCollapsed = useUIStore((s) => s.mainSidebarCollapsed);
   const toggleMainSidebar = useUIStore((s) => s.toggleMainSidebar);
   const createConversation = useConversationStore((s) => s.createConversation);
@@ -44,10 +49,12 @@ export function Sidebar() {
   // Hide sidebar when debate or test mode is active — full-width view
   // But show sidebar when mode is hidden (user went back to chat)
   // Also hide sidebar on full-screen routes (see SIDEBAR_HIDDEN_ROUTES in lib/constants.ts)
+  // Hide for Multi-Chat and War Room — models are picked per-column/card
   const debateActive = (debate || showingSetup) && !debateHidden;
   const testModeActive = showingTestMode && !testModeHidden;
   const onHiddenRoute = SIDEBAR_HIDDEN_ROUTES.includes(pathname ?? "");
-  if (debateActive || testModeActive || showingForensicLog || onHiddenRoute) return null;
+  const isPopoutWindow = searchParams.get("warroom") === "1";
+  if (debateActive || testModeActive || showingForensicLog || onHiddenRoute || parallelEnabled || warRoomEnabled || isPopoutWindow) return null;
 
   // Collapsed view - thin vertical bar with icons
   if (mainSidebarCollapsed) {

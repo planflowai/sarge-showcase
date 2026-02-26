@@ -1,6 +1,6 @@
 "use client";
 
-import { Menu, Moon, Sun, Settings, CheckCircle, XCircle, Swords, BookOpen, FileSearch, MessageSquare, FlaskConical, ShieldCheck, Zap, Brain, Code, Code2, BookText, Shield, ShieldOff, Plane, Radio, Sparkles, Activity, Search, Building2, Stethoscope, LayoutDashboard } from "lucide-react";
+import { Menu, Moon, Sun, Settings, CheckCircle, XCircle, BookOpen, FileSearch, MessageSquare, FlaskConical, ShieldCheck, Zap, Brain, Code, Code2, BookText, Shield, ShieldOff, Plane, Radio, Activity, Search, Building2, Stethoscope, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { useState, useEffect } from "react";
@@ -11,9 +11,8 @@ import { useTestModeStore } from "@/lib/stores/testModeStore";
 import { useForensicLogStore } from "@/lib/stores/forensicLogStore";
 import { useAirGapStore } from "@/lib/stores/airGapStore";
 import { useAIAnalysisStore } from "@/lib/stores/aiAnalysisStore";
-import { useParallelChatStore } from "@/lib/stores/parallelChatStore";
 import Link from "next/link";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 type NavMode = 'dashboard' | 'chat' | 'builder' | 'research' | 'apps' | 'debate' | 'batch' | 'test' | 'review' | 'library' | 'forensic' | 'ai-analysis' | 'sandbox' | 'journal' | 'optimize' | 'live-checker' | 'real-world' | 'diagnostics' | 'demo';
@@ -33,6 +32,7 @@ const NAV_ITEMS: NavItem[] = [
 export function Header() {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [mounted, setMounted] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [supabaseConnected, setSupabaseConnected] = useState<boolean | null>(null);
@@ -58,9 +58,7 @@ export function Header() {
   const openForensicLog = useForensicLogStore((s) => s.openForensicLog);
   const closeForensicLog = useForensicLogStore((s) => s.closeForensicLog);
 
-  // Parallel chat mode
-  const parallelEnabled = useParallelChatStore((s) => s.enabled);
-  const toggleParallelMode = useParallelChatStore((s) => s.toggleParallelMode);
+  // (Parallel/War Room mode toggles moved to input area icons)
 
   // Air-gap mode
   const airGapEnabled = useAirGapStore((s) => s.airGapEnabled);
@@ -211,6 +209,9 @@ export function Header() {
     }
   };
 
+  // Hide header in popout windows (War Room popouts)
+  if (searchParams.get("warroom") === "1") return null;
+
   // Placeholder during hydration
   if (!mounted) {
     return (
@@ -306,38 +307,10 @@ export function Header() {
           </div>
         </div>
 
-        {/* Row 2: Chat/Multi-Chat Toggle (centered) + Icons */}
-        <div className="h-11 bg-gradient-to-r from-zinc-100 via-zinc-50 to-zinc-100 dark:from-zinc-900/80 dark:via-zinc-800/50 dark:to-zinc-900/80 flex items-center justify-center px-4 border-t border-zinc-200/50 dark:border-zinc-700/30 relative">
-          {/* Centered Chat / Multi-Chat Toggle */}
-          <div className="flex items-center bg-zinc-200/80 dark:bg-zinc-800/80 rounded-lg p-0.5 border border-zinc-300 dark:border-zinc-700">
-            <button
-              onClick={() => { if (parallelEnabled) toggleParallelMode(); }}
-              className={cn(
-                "flex items-center gap-2 px-5 py-1.5 rounded-md text-sm font-bold transition-all duration-200",
-                !parallelEnabled
-                  ? "bg-white dark:bg-indigo-600 text-indigo-700 dark:text-white shadow-sm"
-                  : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
-              )}
-            >
-              <MessageSquare className="h-4 w-4" />
-              <span>Chat</span>
-            </button>
-            <button
-              onClick={() => { if (!parallelEnabled) toggleParallelMode(); }}
-              className={cn(
-                "flex items-center gap-2 px-5 py-1.5 rounded-md text-sm font-bold transition-all duration-200",
-                parallelEnabled
-                  ? "bg-white dark:bg-indigo-600 text-indigo-700 dark:text-white shadow-sm"
-                  : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
-              )}
-            >
-              <Sparkles className="h-4 w-4" />
-              <span>Multi-Chat</span>
-            </button>
-          </div>
-
-          {/* Right side: Status + Air-Gap + Theme + Settings (absolute so toggle stays centered) */}
-          <div className="absolute right-4 flex items-center gap-2">
+        {/* Row 2: Status + Controls */}
+        <div className="h-11 bg-gradient-to-r from-zinc-100 via-zinc-50 to-zinc-100 dark:from-zinc-900/80 dark:via-zinc-800/50 dark:to-zinc-900/80 flex items-center justify-end px-4 border-t border-zinc-200/50 dark:border-zinc-700/30 relative">
+          {/* Right side: Status + Air-Gap + Theme + Settings */}
+          <div className="flex items-center gap-2">
             {/* Connection Status with pulse animation */}
             {supabaseConnected !== null && (
               <div className={cn(

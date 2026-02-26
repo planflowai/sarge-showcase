@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { useConversationStore } from "@/lib/stores/conversationStore";
 import { useKnowledgeStore } from "@/lib/stores/knowledgeStore";
 import { useRoleStore } from "@/lib/stores/roleStore";
@@ -8,14 +9,18 @@ import { useDebateStore } from "@/lib/stores/debateStore";
 import { useTestModeStore } from "@/lib/stores/testModeStore";
 import { useForensicLogStore } from "@/lib/stores/forensicLogStore";
 import { useParallelChatStore } from "@/lib/stores/parallelChatStore";
+import { useWarRoomStore } from "@/lib/stores/warRoomStore";
 import { ChatView } from "@/components/chat/ChatView";
 import { ParallelChatView } from "@/components/chat/ParallelChatView";
+import { WarRoomDashboard } from "@/components/chat/WarRoomDashboard";
+import { WarRoomPopout } from "@/components/chat/WarRoomPopout";
 import { DebateView } from "@/components/debate/DebateView";
 import { TestModeView } from "@/components/test/TestModeView";
 import { ForensicLogView } from "@/components/forensic/ForensicLogView";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 
 export default function Home() {
+  const searchParams = useSearchParams();
   const {
     currentConversationId,
     loadConversations,
@@ -29,6 +34,17 @@ export default function Home() {
   const parallelEnabled = useParallelChatStore((s) => s.enabled);
   const parallelHydrated = useParallelChatStore((s) => s.hydrated);
   const hydrateParallel = useParallelChatStore((s) => s.hydrate);
+
+  // War Room mode
+  const warRoomEnabled = useWarRoomStore((s) => s.enabled);
+  const setWarRoomEnabled = useWarRoomStore((s) => s.setEnabled);
+  const toggleParallelMode = useParallelChatStore((s) => s.toggleParallelMode);
+
+  // War Room popout detection — ?warroom=1&slot=mon5&provider=anthropic&model=...
+  const isPopout = searchParams.get("warroom") === "1";
+  const popoutSlotId = searchParams.get("slot") ?? "";
+  const popoutProvider = searchParams.get("provider") ?? "";
+  const popoutModel = searchParams.get("model") ?? "";
 
   // Overlay states
   const debate = useDebateStore((s) => s.debate);
@@ -58,6 +74,11 @@ export default function Home() {
     })();
   }, [loadConversations, createConversation, setCurrent, hydrateKnowledge, hydrateRoles, hydrateParallel]);
 
+  // War Room popout window — renders full-viewport overlay
+  if (isPopout && popoutSlotId && popoutProvider) {
+    return <WarRoomPopout slotId={popoutSlotId} provider={popoutProvider} model={popoutModel} />;
+  }
+
   // Show overlay views even when no conversation is loaded
   if (showingForensicLog) {
     return (
@@ -83,11 +104,22 @@ export default function Home() {
     );
   }
 
+  // Show War Room dashboard
+  if (warRoomEnabled) {
+    return (
+      <ErrorBoundary fallbackTitle="War Room Error">
+        <WarRoomDashboard />
+      </ErrorBoundary>
+    );
+  }
+
   // Show parallel chat view if enabled
   if (parallelHydrated && parallelEnabled) {
     return (
       <ErrorBoundary fallbackTitle="Parallel Chat Error">
-        <ParallelChatView />
+        <ParallelChatView
+          onWarRoom={() => { if (parallelEnabled) toggleParallelMode(); setWarRoomEnabled(true); }}
+        />
       </ErrorBoundary>
     );
   }
@@ -104,7 +136,11 @@ export default function Home() {
 
   return (
     <ErrorBoundary fallbackTitle="Chat Error">
-      <ChatView conversationId={currentConversationId} />
+      <ChatView
+        conversationId={currentConversationId}
+        onMultiChat={() => { if (!parallelEnabled) toggleParallelMode(); }}
+        onWarRoom={() => { if (parallelEnabled) toggleParallelMode(); setWarRoomEnabled(true); }}
+      />
     </ErrorBoundary>
   );
 }

@@ -96,9 +96,11 @@ function MultiChatModeToggle() {
 
 interface ChatViewProps {
   conversationId: string;
+  onMultiChat?: () => void;
+  onWarRoom?: () => void;
 }
 
-export function ChatView({ conversationId }: ChatViewProps) {
+export function ChatView({ conversationId, onMultiChat, onWarRoom }: ChatViewProps) {
   const router = useRouter();
   const { messages, loading, sending, loadMessages, sendMessage, generateImage } = useMessageStore();
   const { currentProvider, currentModel, setProvider, setModel, summarizeForCloud, sanitizeForCloud } = useProviderStore();
@@ -701,6 +703,8 @@ This chat application has built-in document export! When the user asks to "creat
         onDebate={openDebate}
         onDebateThread={handleDebateThread}
         onCopyThread={handleCopyThread}
+        onMultiChat={onMultiChat}
+        onWarRoom={onWarRoom}
         hasMessages={messages.length > 0}
         supportsImageGen={supportsImageGen}
         voiceState={voiceState}

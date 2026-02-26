@@ -20,6 +20,7 @@ import {
   type PermissionStatus,
 } from "@/lib/popoutManager";
 import { cn } from "@/lib/utils";
+import { providers } from "@/lib/providers";
 
 // ─── Constants ─────────────────────────────────────────────
 
@@ -44,6 +45,15 @@ const PROVIDER_NAMES: Record<string, string> = {
   anthropic: "Anthropic", openai: "OpenAI", google: "Google",
   xai: "xAI", deepseek: "DeepSeek", ollama: "Ollama", lmstudio: "LM Studio",
 };
+
+const CLOUD_PILL_LABELS: Record<string, string> = {
+  anthropic: "Claude", openai: "GPT", google: "Gemini",
+  xai: "Grok", deepseek: "DeepSeek",
+};
+
+const CLOUD_PROVIDERS = providers.filter((p) => p.type === "cloud");
+const OLLAMA_PROVIDER = providers.find((p) => p.id === "ollama");
+const LMSTUDIO_PROVIDER = providers.find((p) => p.id === "lmstudio");
 
 function getModelShortName(model: string): string {
   if (model.includes("claude")) {
@@ -74,11 +84,11 @@ function ModelCard({
   tokens: number;
 }) {
   const meta = PROVIDER_META[slot.provider] ?? { icon: "?", color: "#71717a", bg: "rgba(113,113,122,0.08)", gradient: "none" };
-  const providerName = PROVIDER_NAMES[slot.provider] ?? slot.provider;
-  const modelName = getModelShortName(slot.model);
   const isStreaming = slot.status === "streaming";
   const isError = slot.status === "error";
   const previewRef = useRef<HTMLDivElement>(null);
+  const setSlotProvider = useWarRoomStore((s) => s.setSlotProvider);
+  const setSlotModel = useWarRoomStore((s) => s.setSlotModel);
 
   // Auto-scroll preview to bottom
   useEffect(() => {
@@ -105,35 +115,16 @@ function ModelCard({
         borderColor: `${meta.color}${isLive ? "35" : "18"}`,
       }}
     >
-      {/* ── Card Header ── */}
+      {/* ── Card Header — Model Picker ── */}
       <div
-        className="flex items-center justify-between px-5 py-3"
+        className="px-4 py-2"
         style={{
           background: meta.bg,
           borderBottom: `1px solid ${meta.color}15`,
         }}
       >
-        <div className="flex items-center gap-3">
-          {/* Header provider icon */}
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center text-lg font-black"
-            style={{
-              border: `2px solid ${meta.color}40`,
-              color: meta.color,
-              boxShadow: `0 0 12px ${meta.color}15`,
-            }}
-          >
-            {meta.icon}
-          </div>
-          <div>
-            <div className="text-xs font-bold uppercase tracking-widest" style={{ color: meta.color }}>
-              {providerName}
-            </div>
-            <div className="text-base font-bold text-zinc-100 leading-tight">{modelName}</div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
+        {/* Top: Monitor label + Status */}
+        <div className="flex items-center justify-between mb-1.5">
           <span className="text-[10px] font-mono font-bold text-zinc-600 tracking-wider">
             MON {slot.monitorNumber}
           </span>
@@ -153,6 +144,96 @@ function ModelCard({
               <span className="text-[9px] font-bold tracking-wider" style={{ color: `${meta.color}80` }}>IDLE</span>
             </span>
           )}
+        </div>
+
+        {/* Cloud provider pills */}
+        <div className="flex items-center gap-1 mb-1">
+          <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-wider w-10 flex-shrink-0">Cloud</span>
+          <div className="flex gap-0.5 flex-wrap">
+            {CLOUD_PROVIDERS.map((p) => {
+              const selected = slot.provider === p.id;
+              const pColor = PROVIDER_META[p.id]?.color ?? "#71717a";
+              return (
+                <button
+                  key={p.id}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSlotProvider(slot.id, p.id);
+                    setSlotModel(slot.id, p.models[0]?.id ?? "");
+                  }}
+                  className={cn(
+                    "px-1.5 py-0.5 rounded text-[9px] font-bold transition-all",
+                    selected ? "text-black" : "text-zinc-600 hover:text-zinc-300 bg-zinc-800/50"
+                  )}
+                  style={selected ? { backgroundColor: pColor, boxShadow: `0 0 8px ${pColor}40` } : {}}
+                >
+                  {CLOUD_PILL_LABELS[p.id] ?? p.name}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Local (Ollama) pills */}
+        <div className="flex items-center gap-1 mb-1">
+          <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-wider w-10 flex-shrink-0">Local</span>
+          <div className="flex gap-0.5 flex-wrap">
+            {OLLAMA_PROVIDER && OLLAMA_PROVIDER.models.length > 0 ? (
+              OLLAMA_PROVIDER.models.map((m) => {
+                const selected = slot.provider === "ollama" && slot.model === m.id;
+                return (
+                  <button
+                    key={m.id}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSlotProvider(slot.id, "ollama");
+                      setSlotModel(slot.id, m.id);
+                    }}
+                    className={cn(
+                      "px-1.5 py-0.5 rounded text-[9px] font-bold transition-all",
+                      selected ? "text-black" : "text-zinc-600 hover:text-zinc-300 bg-zinc-800/50"
+                    )}
+                    style={selected ? { backgroundColor: PROVIDER_META.ollama?.color ?? "#fbbf24" } : {}}
+                  >
+                    {m.name}
+                  </button>
+                );
+              })
+            ) : (
+              <span className="text-[8px] text-zinc-700 italic">—</span>
+            )}
+          </div>
+        </div>
+
+        {/* LM Studio pills */}
+        <div className="flex items-center gap-1">
+          <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-wider w-10 flex-shrink-0">Studio</span>
+          <div className="flex gap-0.5 flex-wrap">
+            {LMSTUDIO_PROVIDER && LMSTUDIO_PROVIDER.models.length > 0 ? (
+              LMSTUDIO_PROVIDER.models.map((m) => {
+                const selected = slot.provider === "lmstudio" && slot.model === m.id;
+                return (
+                  <button
+                    key={m.id}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSlotProvider(slot.id, "lmstudio");
+                      setSlotModel(slot.id, m.id);
+                    }}
+                    className={cn(
+                      "px-1.5 py-0.5 rounded text-[9px] font-bold transition-all",
+                      selected ? "text-black" : "text-zinc-600 hover:text-zinc-300 bg-zinc-800/50"
+                    )}
+                    style={selected ? { backgroundColor: PROVIDER_META.lmstudio?.color ?? "#22c55e" } : {}}
+                  >
+                    {m.name}
+                  </button>
+                );
+              })
+            ) : (
+              <span className="text-[8px] text-zinc-700 italic">—</span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -368,21 +449,9 @@ export default function WarRoom() {
     <div className="flex flex-col h-full bg-zinc-950 overflow-hidden">
 
       {/* ═══ TOP BAR ═══ */}
-      <div className="h-10 flex items-center justify-between px-4 bg-zinc-900/50 border-b border-zinc-800/40 flex-shrink-0">
-        {/* Left: Branding */}
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <ShieldCheck className="h-4 w-4 text-indigo-400" />
-            <Zap className="h-1.5 w-1.5 text-amber-400 absolute -right-0.5 -bottom-0.5" />
-          </div>
-          <span className="text-[11px] font-bold text-zinc-500 tracking-wide">
-            <span className="text-indigo-400 font-black">S</span>.A.R.G.E.
-            <span className="text-red-400/50 ml-1 text-[9px] tracking-widest uppercase">War Room</span>
-          </span>
-        </div>
-
-        {/* Center: Mode pills */}
-        <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-0.5 bg-zinc-800/40 rounded-lg p-0.5 border border-zinc-800/60">
+      <div className="h-10 flex items-center justify-between px-4 bg-zinc-900/50 border-b border-zinc-800/40 flex-shrink-0 relative">
+        {/* Left: Mode pills */}
+        <div className="flex items-center gap-0.5 bg-zinc-800/40 rounded-lg p-0.5 border border-zinc-800/60">
           {MODES.map((m) => (
             <button
               key={m.id}
@@ -397,6 +466,18 @@ export default function WarRoom() {
               {m.label}
             </button>
           ))}
+        </div>
+
+        {/* Center: Branding */}
+        <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
+          <div className="relative">
+            <ShieldCheck className="h-4 w-4 text-indigo-400" />
+            <Zap className="h-1.5 w-1.5 text-amber-400 absolute -right-0.5 -bottom-0.5" />
+          </div>
+          <span className="text-[11px] font-bold text-zinc-500 tracking-wide">
+            <span className="text-indigo-400 font-black">S</span>.A.R.G.E.
+            <span className="text-red-400/50 ml-1 text-[9px] tracking-widest uppercase">War Room</span>
+          </span>
         </div>
 
         {/* Right: Controls */}

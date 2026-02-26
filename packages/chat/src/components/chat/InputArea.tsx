@@ -9,7 +9,7 @@ interface FileSystemDirectoryReader { readEntries(cb: (entries: FileSystemEntry[
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import TextareaAutosize from "react-textarea-autosize";
-import { Send, ImageIcon, Swords, Mic, Paperclip, MoreHorizontal, X, FileIcon, ImageIcon as ImgIcon, BookText, MessageSquare, Shield, ShieldAlert, ShieldCheck, ChevronDown, ClipboardCopy, Check, Database, Download } from "lucide-react";
+import { Send, ImageIcon, Mic, Paperclip, MoreHorizontal, X, FileIcon, ImageIcon as ImgIcon, BookText, MessageSquare, Shield, ShieldAlert, ShieldCheck, ChevronDown, ClipboardCopy, Check, Database, Download, Sparkles, Swords } from "lucide-react";
 import { usePromptStore } from "@sarge/core";
 import { useProviderStore } from "@sarge/core";
 import { useModelStore } from "@sarge/core";
@@ -52,6 +52,8 @@ interface InputAreaProps {
   onDebate?: () => void;
   onDebateThread?: () => void;
   onCopyThread?: () => void;
+  onMultiChat?: () => void;
+  onWarRoom?: () => void;
   hasMessages?: boolean;
   supportsImageGen?: boolean;
   disabled?: boolean;
@@ -69,6 +71,8 @@ export function InputArea({
   onDebate,
   onDebateThread,
   onCopyThread,
+  onMultiChat,
+  onWarRoom,
   hasMessages,
   supportsImageGen,
   disabled,
@@ -439,24 +443,22 @@ export function InputArea({
           </button>
           {showMore && (
             <div className="absolute bottom-full left-4 mb-2 flex flex-col gap-1 rounded-xl border border-zinc-700 bg-zinc-800 p-2 shadow-xl z-20">
-              <button
-                onClick={() => { onDebate?.(); setShowMore(false); }}
-                disabled={disabled}
-                className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs text-zinc-300 hover:bg-zinc-700 disabled:opacity-30"
-              >
-                <Swords className="h-4 w-4 text-amber-400" /> Debate
-              </button>
-              {hasMessages && (
+              {onMultiChat && (
                 <button
-                  onClick={() => { onDebateThread?.(); setShowMore(false); }}
+                  onClick={() => { onMultiChat(); setShowMore(false); }}
                   disabled={disabled}
                   className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs text-zinc-300 hover:bg-zinc-700 disabled:opacity-30"
                 >
-                  <span className="relative">
-                    <Swords className="h-4 w-4 text-amber-400" />
-                    <MessageSquare className="absolute -bottom-1 -right-1.5 h-2.5 w-2.5 text-indigo-400" />
-                  </span>
-                  Debate Thread
+                  <Sparkles className="h-4 w-4 text-indigo-400" /> Multi-Chat
+                </button>
+              )}
+              {onWarRoom && (
+                <button
+                  onClick={() => { onWarRoom(); setShowMore(false); }}
+                  disabled={disabled}
+                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs text-zinc-300 hover:bg-zinc-700 disabled:opacity-30"
+                >
+                  <Swords className="h-4 w-4 text-red-400" /> War Room
                 </button>
               )}
               <button
@@ -554,26 +556,27 @@ export function InputArea({
             <ImageIcon className="h-5 w-5" />
           </button>
 
-          {/* Debate */}
-          <button
-            onClick={onDebate}
-            disabled={disabled}
-            title="Start new debate"
-            className="p-2 rounded-lg text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-amber-500 dark:hover:text-amber-400 transition-colors disabled:opacity-30"
-          >
-            <Swords className="h-5 w-5" />
-          </button>
-
-          {/* Debate Thread */}
-          {hasMessages && (
+          {/* Multi-Chat */}
+          {onMultiChat && (
             <button
-              onClick={onDebateThread}
+              onClick={onMultiChat}
               disabled={disabled}
-              title="Debate this thread"
-              className="p-2 rounded-lg text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-amber-500 dark:hover:text-amber-400 transition-colors disabled:opacity-30 relative"
+              title="Switch to Multi-Chat"
+              className="p-2 rounded-lg text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors disabled:opacity-30"
+            >
+              <Sparkles className="h-5 w-5" />
+            </button>
+          )}
+
+          {/* War Room */}
+          {onWarRoom && (
+            <button
+              onClick={onWarRoom}
+              disabled={disabled}
+              title="Switch to War Room"
+              className="p-2 rounded-lg text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-red-500 dark:hover:text-red-400 transition-colors disabled:opacity-30"
             >
               <Swords className="h-5 w-5" />
-              <MessageSquare className="absolute bottom-1 right-1 h-2.5 w-2.5 text-indigo-400" />
             </button>
           )}
 

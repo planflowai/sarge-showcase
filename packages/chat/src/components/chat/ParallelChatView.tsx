@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
-import { Send, Loader2, Columns2, Columns3, Grid2X2, MessageSquare, Trash2, Paperclip, X, FileIcon, ImageIcon, Save, History, Copy, Check, Lock } from "lucide-react";
+import { Send, Loader2, Columns2, Columns3, Grid2X2, MessageSquare, Trash2, Paperclip, X, FileIcon, ImageIcon, Save, History, Copy, Check, Lock, Mic, ClipboardCopy, Swords, Sparkles } from "lucide-react";
 import { ChatColumn } from "./ChatColumn";
 import { Button } from "@/components/ui/button";
 import { useParallelChatStore } from "../../stores/parallelChatStore";
@@ -58,7 +58,12 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
 }
 
-export function ParallelChatView() {
+interface ParallelChatViewProps {
+  onSingleChat?: () => void;
+  onWarRoom?: () => void;
+}
+
+export function ParallelChatView({ onSingleChat, onWarRoom }: ParallelChatViewProps = {}) {
   const {
     columns,
     activeColumnCount,
@@ -614,84 +619,110 @@ export function ParallelChatView() {
             </div>
           )}
 
-          <div className="flex items-end gap-3">
-            {/* Attach button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => fileInputRef.current?.click()}
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept="image/*,.pdf,.txt,.md,.json,.csv,.xml,.html,.css,.js,.ts,.tsx,.jsx"
+            className="hidden"
+            onChange={async (e) => {
+              if (e.target.files) await addFiles(e.target.files);
+              e.target.value = "";
+            }}
+          />
+
+          {/* Textarea — same style as single chat */}
+          <textarea
+            value={sharedInput}
+            onChange={(e) => setSharedInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onPaste={handlePaste}
+            placeholder={attachments.length > 0 ? "Add a message about your files..." : "Type a message to send to all models... (Enter to send, Shift+Enter for new line)"}
+            disabled={anySending}
+            rows={2}
+            className="w-full resize-none rounded-lg bg-white dark:bg-zinc-800 px-4 py-3 text-sm text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none border border-zinc-300 dark:border-zinc-700 focus:border-zinc-400 dark:focus:border-zinc-600 disabled:opacity-50 min-h-[44px] max-h-[120px]"
+          />
+
+          {/* Bottom action bar — same icon row as single chat */}
+          <div className="flex items-center justify-center gap-1 mt-2">
+            {/* Generate Image */}
+            <button
+              onClick={() => setSharedInput("Generate an image: ")}
               disabled={anySending}
-              className="h-11 px-3 text-zinc-500 dark:text-zinc-400 hover:text-indigo-500 dark:hover:text-indigo-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-              title="Attach files (images, PDFs, etc.)"
+              title="Generate image"
+              className="p-2 rounded-lg text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors disabled:opacity-30"
             >
-              <Paperclip className="h-5 w-5" />
-            </Button>
+              <ImageIcon className="h-5 w-5" />
+            </button>
 
-            {/* Hidden file input */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              accept="image/*,.pdf,.txt,.md,.json,.csv,.xml,.html,.css,.js,.ts,.tsx,.jsx"
-              className="hidden"
-              onChange={async (e) => {
-                if (e.target.files) await addFiles(e.target.files);
-                e.target.value = "";
-              }}
-            />
-
-            <div className="flex-1">
-              <textarea
-                value={sharedInput}
-                onChange={(e) => setSharedInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                onPaste={handlePaste}
-                placeholder={attachments.length > 0 ? "Add a message about your files..." : "Type a message to send to all models..."}
-                disabled={anySending}
-                rows={1}
-                className={cn(
-                  "w-full resize-none rounded-lg px-4 py-3 text-sm",
-                  "bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-200",
-                  "placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500",
-                  "disabled:opacity-50 disabled:cursor-not-allowed",
-                  "min-h-[44px] max-h-[120px]"
-                )}
-                style={{
-                  height: "44px",
-                  overflowY: sharedInput.split("\n").length > 2 ? "auto" : "hidden",
-                }}
-              />
-            </div>
-            <Button
-              onClick={handleSendToAll}
-              disabled={(!sharedInput.trim() && attachments.length === 0) || anySending}
-              className="h-11 px-6 bg-indigo-600 hover:bg-indigo-700 gap-2"
+            {/* Copy All */}
+            <button
+              onClick={handleCopyAll}
+              disabled={columns.slice(0, activeColumnCount).every(c => c.messages.length === 0)}
+              title="Copy all responses"
+              className="p-2 rounded-lg text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-cyan-500 dark:hover:text-cyan-400 transition-colors disabled:opacity-30"
             >
-              {anySending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+              {copiedAll ? (
+                <Check className="h-5 w-5 text-emerald-400" />
               ) : (
-                <Send className="h-4 w-4" />
+                <ClipboardCopy className="h-5 w-5" />
               )}
-              <span className="font-medium">Send to All</span>
-            </Button>
-            <Button
+            </button>
+
+            {/* Compare */}
+            <button
               onClick={handleCompare}
               disabled={columns.slice(0, activeColumnCount).some(c => c.messages.length === 0) || anySending || isComparing}
-              variant="outline"
-              className="h-11 px-6 gap-2"
-              title="Show all answers to each model and let them comment"
+              title="Compare all responses"
+              className="p-2 rounded-lg text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-amber-500 dark:hover:text-amber-400 transition-colors disabled:opacity-30"
             >
-              {isComparing ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <MessageSquare className="h-4 w-4" />
-              )}
-              <span className="font-medium">Compare</span>
-            </Button>
+              <MessageSquare className="h-5 w-5" />
+            </button>
+
+            {/* War Room */}
+            {onWarRoom && (
+              <button
+                onClick={onWarRoom}
+                title="Switch to War Room"
+                className="p-2 rounded-lg text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+              >
+                <Swords className="h-5 w-5" />
+              </button>
+            )}
+
+            {/* Divider */}
+            <div className="w-px h-6 bg-zinc-300 dark:bg-zinc-700 mx-1" />
+
+            {/* Attach */}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={anySending}
+              title="Attach files"
+              className="p-2 rounded-lg text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-cyan-500 dark:hover:text-cyan-400 transition-colors disabled:opacity-30"
+            >
+              <Paperclip className="h-5 w-5" />
+            </button>
+
+            {/* Microphone */}
+            <button
+              disabled
+              title="Voice input"
+              className="p-2 rounded-lg text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-emerald-500 dark:hover:text-emerald-400 transition-colors disabled:opacity-30"
+            >
+              <Mic className="h-5 w-5" />
+            </button>
+
+            {/* Send to All */}
+            <button
+              onClick={handleSendToAll}
+              disabled={(!sharedInput.trim() && attachments.length === 0) || anySending}
+              title="Send to all models"
+              className="p-2.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-500 transition-colors disabled:opacity-30 disabled:hover:bg-indigo-600"
+            >
+              <Send className="h-5 w-5" />
+            </button>
           </div>
-          <p className="text-[10px] text-zinc-500 dark:text-zinc-600 text-center mt-2">
-            Paste screenshots, drag files, or click the clip icon to attach. Each pane also has its own input.
-          </p>
         </div>
       </div>
 
