@@ -1,21 +1,21 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
-import { useDebateStore } from "@/lib/stores/debateStore";
-import { useDebateHistoryStore } from "@/lib/stores/debateHistoryStore";
-import { useConversationStore } from "@/lib/stores/conversationStore";
-import { useParallelChatStore } from "@/lib/stores/parallelChatStore";
-import { useMessageStore } from "@/lib/stores/messageStore";
-import { useUIStore } from "@/lib/stores/uiStore";
-import { useRoleStore } from "@/lib/stores/roleStore";
-import { runDebate, type DebateConfig, type DebateEvent, type DebateAgent } from "@/lib/debate/engine";
+import { useDebateStore } from "../../stores/debateStore";
+import { useDebateHistoryStore } from "../../stores/debateHistoryStore";
+import { useConversationStore } from "../../stores/conversationStore";
+import { useParallelChatStore } from "../../stores/parallelChatStore";
+import { useMessageStore } from "../../stores/messageStore";
+import { useUIStore } from "@sarge/core";
+import { useRoleStore } from "@sarge/core";
+import { runDebate, type DebateConfig, type DebateEvent, type DebateAgent } from "../../lib/debate/engine";
 import { AgentPanel } from "./AgentPanel";
 import { JudgePanel } from "./JudgePanel";
 import { JudgeSummary } from "./JudgeSummary";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { providers } from "@/lib/providers";
-import { fetchOllamaModels, fetchLMStudioModels, type LocalModel } from "@/lib/providers/localModels";
+import { providers } from "@sarge/core";
+import { fetchOllamaModels, fetchLMStudioModels, type LocalModel } from "@sarge/core";
 import {
   Play,
   Pause,
@@ -23,7 +23,7 @@ import {
   Square,
   ChevronDown,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@sarge/core";
 
 interface AgentState {
   id: string;

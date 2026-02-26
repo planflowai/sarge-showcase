@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useDebateStore } from "@/lib/stores/debateStore";
+import { useDebateStore } from "../../stores/debateStore";
 import { Button } from "@/components/ui/button";
 import { Check, Zap } from "lucide-react";
 import { ExecutiveSummaryModal } from "./ExecutiveSummaryModal";

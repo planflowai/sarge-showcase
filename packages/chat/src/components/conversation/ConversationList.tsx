@@ -1,15 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useConversationStore } from "@/lib/stores/conversationStore";
-import { useMessageStore } from "@/lib/stores/messageStore";
-import { useUIStore } from "@/lib/stores/uiStore";
+import { useConversationStore } from "../../stores/conversationStore";
+import { useMessageStore } from "../../stores/messageStore";
+import { useUIStore } from "@sarge/core";
 import { MessageSquare, Compass, Trash2, Copy, Check } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { formatRelativeDate } from "@/lib/utils";
+import { cn } from "@sarge/core";
+import { formatRelativeDate } from "@sarge/core";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { providers } from "@/lib/providers";
-import type { Message, Conversation } from "@/lib/types";
+import { providers } from "@sarge/core";
+import type { Message, Conversation } from "@sarge/core";
 import {
   Accordion,
   AccordionContent,

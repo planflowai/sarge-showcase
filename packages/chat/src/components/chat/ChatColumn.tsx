@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useState } from "react";
 import { Send, Loader2, Trash2, ChevronDown, Shield, Plus, Pencil, X, Check } from "lucide-react";
-import { MessageBubble } from "@/components/chat/MessageBubble";
+import { MessageBubble } from "./MessageBubble";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -13,14 +13,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
-import { providers } from "@/lib/providers";
-import { useModelStore } from "@/lib/stores/modelStore";
-import { useRoleStore } from "@/lib/stores/roleStore";
-import { getOllamaFriendlyName } from "@/lib/ollamaModelGroups";
-import { fetchOllamaModels, type LocalModel } from "@/lib/providers/localModels";
-import type { ChatColumn as ChatColumnType } from "@/lib/stores/parallelChatStore";
-import type { Provider, Message } from "@/lib/types";
+import { cn } from "@sarge/core";
+import { providers } from "@sarge/core";
+import { useModelStore } from "@sarge/core";
+import { useRoleStore } from "@sarge/core";
+import { getOllamaFriendlyName } from "@sarge/core";
+import { fetchOllamaModels, type LocalModel } from "@sarge/core";
+import type { ChatColumn as ChatColumnType } from "../../stores/parallelChatStore";
+import type { Provider, Message } from "@sarge/core";
 
 interface ChatColumnProps {
   column: ChatColumnType;

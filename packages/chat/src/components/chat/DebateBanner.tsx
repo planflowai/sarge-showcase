@@ -1,7 +1,7 @@
 "use client";
 
-import { useDebateStore } from "@/lib/stores/debateStore";
-import { providers } from "@/lib/providers";
+import { useDebateStore } from "../../stores/debateStore";
+import { providers } from "@sarge/core";
 import { Swords, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 

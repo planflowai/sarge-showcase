@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { Shield, ShieldCheck, ShieldAlert, ShieldX } from "lucide-react";
-import { useThreadGuardianStore } from "@/lib/stores/threadGuardianStore";
-import { useAirGapStore, isCloudProvider } from "@/lib/stores/airGapStore";
-import { isGuardianRunning, getGuardianStatus } from "@/lib/threadGuardian/engine";
-import { getActiveWarnings } from "@/lib/threadGuardian/contextBuilder";
-import { cn } from "@/lib/utils";
+import { useThreadGuardianStore } from "@sarge/core";
+import { useAirGapStore, isCloudProvider } from "@sarge/core";
+import { isGuardianRunning, getGuardianStatus } from "@sarge/core";
+import { getActiveWarnings } from "@sarge/core";
+import { cn } from "@sarge/core";
 import GuardianMonitorPanel from "./GuardianMonitorPanel";
 
 interface ThreadGuardianIndicatorProps {

@@ -1,8 +1,8 @@
 "use client";
 
 import { Mic, Loader2, Volume2 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import type { VoiceState } from "@/lib/types";
+import { cn } from "@sarge/core";
+import type { VoiceState } from "@sarge/core";
 
 interface VoiceIndicatorProps {
   voiceState: VoiceState;

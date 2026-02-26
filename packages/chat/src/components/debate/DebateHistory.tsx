@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect } from "react";
-import { useDebateHistoryStore } from "@/lib/stores/debateHistoryStore";
-import { useDebateStore } from "@/lib/stores/debateStore";
+import { useDebateHistoryStore } from "../../stores/debateHistoryStore";
+import { useDebateStore } from "../../stores/debateStore";
 import { Trash2, FileText } from "lucide-react";
-import { formatRelativeDate } from "@/lib/utils";
-import { cn } from "@/lib/utils";
+import { formatRelativeDate } from "@sarge/core";
+import { cn } from "@sarge/core";
 import {
   Accordion,
   AccordionContent,

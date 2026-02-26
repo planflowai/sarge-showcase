@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useTruthAnchorStore, type TruthAnchor, type AnchorType } from "@/lib/stores/truthAnchorStore";
+import { useTruthAnchorStore, type TruthAnchor, type AnchorType } from "@sarge/core";
 import { Lock, AlertCircle, CheckCircle2, HelpCircle, X, RefreshCw } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@sarge/core";
 
 function timeAgo(date: Date): string {
   const seconds = Math.floor((new Date().getTime() - new Date(date).getTime()) / 1000);

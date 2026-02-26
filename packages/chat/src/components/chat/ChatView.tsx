@@ -3,29 +3,29 @@
 import { useEffect, useRef, useCallback, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { create } from "zustand";
-import { useMessageStore } from "@/lib/stores/messageStore";
-import { useProviderStore } from "@/lib/stores/providerStore";
-import { useModelStore } from "@/lib/stores/modelStore";
-import { useConversationStore } from "@/lib/stores/conversationStore";
-import { useDebateStore } from "@/lib/stores/debateStore";
-import { useTestModeStore } from "@/lib/stores/testModeStore";
-import { providers } from "@/lib/providers";
-import { getOllamaFriendlyName } from "@/lib/ollamaModelGroups";
-import { parseVoiceCommand, type NicknameEntry } from "@/lib/voice/voiceCommands";
-import { useVoiceChat } from "@/lib/voice/useVoiceChat";
-import { MessageBubble } from "@/components/chat/MessageBubble";
-import { InputArea, type Attachment } from "@/components/chat/InputArea";
-import { getVaultDocumentsForContext } from "@/components/chat/VaultAttachmentModal";
-import { useKnowledgeStore } from "@/lib/stores/knowledgeStore";
-import { VoiceIndicator } from "@/components/chat/VoiceIndicator";
-import { DebateView } from "@/components/debate/DebateView";
-import { TestModeView } from "@/components/test/TestModeView";
-import { ForensicLogView } from "@/components/forensic/ForensicLogView";
-import { useForensicLogStore } from "@/lib/stores/forensicLogStore";
-import { useAIModeStore } from "@/lib/stores/aiModeStore";
-import { exportChatToPDF } from "@/lib/export/pdf";
-import { exportChatToCSV } from "@/lib/export/csv";
-import { detectExportIntent, formatLabels, type ExportFormat } from "@/lib/export/exportDetector";
+import { useMessageStore } from "../../stores/messageStore";
+import { useProviderStore } from "@sarge/core";
+import { useModelStore } from "@sarge/core";
+import { useConversationStore } from "../../stores/conversationStore";
+import { useDebateStore } from "../../stores/debateStore";
+import { useTestModeStore } from "@sarge/core";
+import { providers } from "@sarge/core";
+import { getOllamaFriendlyName } from "@sarge/core";
+import { parseVoiceCommand, type NicknameEntry } from "../../lib/voice/voiceCommands";
+import { useVoiceChat } from "../../lib/voice/useVoiceChat";
+import { MessageBubble } from "./MessageBubble";
+import { InputArea, type Attachment } from "./InputArea";
+import { getVaultDocumentsForContext } from "./VaultAttachmentModal";
+import { useKnowledgeStore } from "@sarge/core";
+import { VoiceIndicator } from "./VoiceIndicator";
+import { DebateView } from "../debate/DebateView";
+import { TestModeView } from "../test/TestModeView";
+import { ForensicLogView } from "../forensic/ForensicLogView";
+import { useForensicLogStore } from "@sarge/core";
+import { useAIModeStore } from "@sarge/core";
+import { exportChatToPDF } from "../../lib/export/pdf";
+import { exportChatToCSV } from "../../lib/export/csv";
+import { detectExportIntent, formatLabels, type ExportFormat } from "../../lib/export/exportDetector";
 import {
   generateAndDownloadPptx,
   generateAndDownloadXlsx,
@@ -33,16 +33,16 @@ import {
   generateAndDownloadDocx,
   generateAndDownloadCsv,
   generateAndDownloadZip,
-} from "@/lib/export/chatDocumentExport";
-import { useUIStore } from "@/lib/stores/uiStore";
+} from "../../lib/export/chatDocumentExport";
+import { useUIStore } from "@sarge/core";
 import { Button } from "@/components/ui/button";
 import { FileText, Download, Bot, Sparkles, MessageSquare, Zap, Settings, Columns2 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useThreadGuardianStore } from "@/lib/stores/threadGuardianStore";
-import { useParallelChatStore } from "@/lib/stores/parallelChatStore";
-import { startGuardian, stopGuardian, isGuardianRunning } from "@/lib/threadGuardian/engine";
-import { getActiveWarnings, getGuardianSummary } from "@/lib/threadGuardian/contextBuilder";
-import ThreadGuardianIndicator from "@/components/chat/ThreadGuardianIndicator";
+import { cn } from "@sarge/core";
+import { useThreadGuardianStore } from "@sarge/core";
+import { useParallelChatStore } from "../../stores/parallelChatStore";
+import { startGuardian, stopGuardian, isGuardianRunning } from "@sarge/core";
+import { getActiveWarnings, getGuardianSummary } from "@sarge/core";
+import ThreadGuardianIndicator from "./ThreadGuardianIndicator";
 
 // Store for builder prompt to send between pages
 export const useBuilderPromptStore = create<{

@@ -6,9 +6,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import type { Message, Provider } from '@/lib/types';
-import { chatWithFallback } from '@/lib/fallback/providerWrapper';
-import type { ExportFormat } from '@/lib/export/exportDetector';
+import type { Message, Provider } from '@sarge/core';
+import { chatWithFallback } from '@sarge/core';
+import type { ExportFormat } from '../../../lib/export/exportDetector';
 
 // Get API key from environment based on provider
 function getApiKey(provider: Provider): string {

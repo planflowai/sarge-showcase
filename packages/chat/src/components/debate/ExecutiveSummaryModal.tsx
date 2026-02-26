@@ -11,8 +11,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useBuilderChatStore } from "@/lib/stores/builderChatStore";
-import { useDebateStore } from "@/lib/stores/debateStore";
+import { useBuilderChatStore } from "@sarge/builder";
+import { useDebateStore } from "../../stores/debateStore";
 
 interface ExecutiveSummaryModalProps {
   open: boolean;

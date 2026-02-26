@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { chatWithFallback } from "@/lib/fallback/providerWrapper";
-import type { Message, Provider } from "@/lib/types";
+import { chatWithFallback } from "@sarge/core";
+import type { Message, Provider } from "@sarge/core";
 
 // Provider display names for user-friendly error messages
 const PROVIDER_DISPLAY_NAMES: Record<string, string> = {

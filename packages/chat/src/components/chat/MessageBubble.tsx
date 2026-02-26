@@ -5,23 +5,23 @@ import { useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import type { Components } from "react-markdown";
 import { Copy, Check, Zap, Clock, Brain, AlertTriangle, KeyRound, Settings, XCircle, Database, Wrench, Share2 } from "lucide-react";
-import type { ChatColumn } from "@/lib/stores/parallelChatStore";
+import type { ChatColumn } from "../../stores/parallelChatStore";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useKnowledgeStore } from "@/lib/stores/knowledgeStore";
-import { useBuilderChatStore } from "@/lib/stores/builderChatStore";
-import { CodeBlock } from "@/components/chat/CodeBlock";
-import { cn } from "@/lib/utils";
-import { formatDate } from "@/lib/utils";
-import { ProviderBadge } from "@/components/providers/ProviderBadge";
-import { providers } from "@/lib/providers";
-import { getOllamaFriendlyName } from "@/lib/ollamaModelGroups";
+import { useKnowledgeStore } from "@sarge/core";
+import { useBuilderChatStore } from "@sarge/builder";
+import { CodeBlock } from "./CodeBlock";
+import { cn } from "@sarge/core";
+import { formatDate } from "@sarge/core";
+import { ProviderBadge } from "../providers/ProviderBadge";
+import { providers } from "@sarge/core";
+import { getOllamaFriendlyName } from "@sarge/core";
 import { Button } from "@/components/ui/button";
-import type { Message } from "@/lib/types";
+import type { Message } from "@sarge/core";
 import Link from "next/link";
 
 interface MessageBubbleProps {

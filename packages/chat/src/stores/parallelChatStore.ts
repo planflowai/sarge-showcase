@@ -2,8 +2,8 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { queueResponse, runInterventionCheck } from "@/lib/juryGuardian/engine";
-import { useJuryGuardianStore } from "@/lib/stores/juryGuardianStore";
+import { queueResponse, runInterventionCheck } from "@sarge/core";
+import { useJuryGuardianStore } from "@sarge/core";
 
 export interface ChatThread {
   id: string;

@@ -8,8 +8,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
-import type { VoiceState } from "@/lib/types";
+import { cn } from "@sarge/core";
+import type { VoiceState } from "@sarge/core";
 
 interface VoiceButtonProps {
   voiceState: VoiceState;

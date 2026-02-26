@@ -10,14 +10,14 @@ interface FileSystemDirectoryReader { readEntries(cb: (entries: FileSystemEntry[
 import { useState, useRef, useCallback, useEffect } from "react";
 import TextareaAutosize from "react-textarea-autosize";
 import { Send, ImageIcon, Swords, Mic, Paperclip, MoreHorizontal, X, FileIcon, ImageIcon as ImgIcon, BookText, MessageSquare, Shield, ShieldAlert, ShieldCheck, ChevronDown, ClipboardCopy, Check, Database, Download } from "lucide-react";
-import { usePromptStore } from "@/lib/stores/promptStore";
-import { useProviderStore } from "@/lib/stores/providerStore";
-import { useModelStore } from "@/lib/stores/modelStore";
-import { useKnowledgeStore } from "@/lib/stores/knowledgeStore";
-import { useUIStore } from "@/lib/stores/uiStore";
-import { useDraftStore } from "@/lib/stores/draftStore";
-import { VaultAttachmentModal } from "@/components/chat/VaultAttachmentModal";
-import { providers } from "@/lib/providers";
+import { usePromptStore } from "@sarge/core";
+import { useProviderStore } from "@sarge/core";
+import { useModelStore } from "@sarge/core";
+import { useKnowledgeStore } from "@sarge/core";
+import { useUIStore } from "@sarge/core";
+import { useDraftStore } from "@sarge/core";
+import { VaultAttachmentModal } from "./VaultAttachmentModal";
+import { providers } from "@sarge/core";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,11 +32,11 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import type { VoiceState } from "@/lib/types";
+import type { VoiceState } from "@sarge/core";
 
 // ─── Attachment types (shared) ───────────────────────────────────────────────
-import { type Attachment, readFileAsAttachment, formatFileSize } from "@/lib/utils/attachments";
-export { type Attachment, readFileAsAttachment, formatFileSize } from "@/lib/utils/attachments";
+import { type Attachment, readFileAsAttachment, formatFileSize } from "../../lib/utils/attachments";
+export { type Attachment, readFileAsAttachment, formatFileSize } from "../../lib/utils/attachments";
 
 // ─── Props ──────────────────────────────────────────────────────────────────
 

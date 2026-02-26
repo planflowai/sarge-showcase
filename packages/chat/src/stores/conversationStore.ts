@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { Conversation, ChatMode } from "@/lib/types";
+import type { Conversation, ChatMode } from "@sarge/core";
 
 interface ConversationState {
   conversations: Conversation[];

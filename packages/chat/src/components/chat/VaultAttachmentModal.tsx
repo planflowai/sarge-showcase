@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useKnowledgeStore, type KnowledgeDocument } from "@/lib/stores/knowledgeStore";
+import { useKnowledgeStore, type KnowledgeDocument } from "@sarge/core";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { FileText, Image, Check, X, Database, Search } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@sarge/core";
 
 interface VaultAttachmentModalProps {
   open: boolean;

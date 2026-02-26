@@ -2,17 +2,17 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { Send, Loader2, Columns2, Columns3, Grid2X2, MessageSquare, Trash2, Paperclip, X, FileIcon, ImageIcon, Save, History, Copy, Check, Lock } from "lucide-react";
-import { ChatColumn } from "@/components/chat/ChatColumn";
+import { ChatColumn } from "./ChatColumn";
 import { Button } from "@/components/ui/button";
-import { useParallelChatStore } from "@/lib/stores/parallelChatStore";
-import { useJuryGuardianStore } from "@/lib/stores/juryGuardianStore";
-import { startJury, stopJury } from "@/lib/juryGuardian/engine";
-import { JuryGuardianIndicator } from "@/components/chat/JuryGuardianIndicator";
-import { JuryToastContainer } from "@/components/chat/JuryToast";
-import { TruthAnchorsPanel } from "@/components/debate/TruthAnchorsPanel";
-import { cn } from "@/lib/utils";
-import type { Message, Provider } from "@/lib/types";
-import { useMessageStore } from "@/lib/stores/messageStore";
+import { useParallelChatStore } from "../../stores/parallelChatStore";
+import { useJuryGuardianStore } from "@sarge/core";
+import { startJury, stopJury } from "@sarge/core";
+import { JuryGuardianIndicator } from "./JuryGuardianIndicator";
+import { JuryToastContainer } from "./JuryToast";
+import { TruthAnchorsPanel } from "../debate/TruthAnchorsPanel";
+import { cn } from "@sarge/core";
+import type { Message, Provider } from "@sarge/core";
+import { useMessageStore } from "../../stores/messageStore";
 
 // ─── Attachment types ───────────────────────────────────────────────────────
 

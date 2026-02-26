@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import { Copy, Check, Download, Share2, RotateCcw, Maximize2, X } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@sarge/core";
 
 interface JudgeSummaryProps {
   summary: string;

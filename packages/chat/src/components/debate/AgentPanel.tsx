@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import { cn } from "@/lib/utils";
-import type { DebateAgent } from "@/lib/debate/engine";
+import { cn } from "@sarge/core";
+import type { DebateAgent } from "../../lib/debate/engine";
 
 interface AgentPanelProps {
   agent: DebateAgent | null;
