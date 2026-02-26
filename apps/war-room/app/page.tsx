@@ -1,37 +1,244 @@
 "use client";
 
-import { useState } from "react";
-import { ShieldCheck, Zap, Monitor, Send, Radio, Target, Power, Shield } from "lucide-react";
-import { providers } from "@/lib/providers";
-import { useWarRoomStore, type WarRoomMode } from "@/lib/stores/warRoomStore";
+import { useState, useEffect, useCallback, useRef } from "react";
+import {
+  ShieldCheck, Zap, Monitor, Send, Radio, Target, Shield,
+  Rocket, X, AlertTriangle, Activity,
+} from "lucide-react";
+import { useWarRoomStore, MODE_SLOT_IDS, type WarRoomMode } from "@/lib/stores/warRoomStore";
+import type { MonitorSlot } from "@/lib/stores/warRoomStore";
+import {
+  checkWindowManagement,
+  prefetchScreens,
+  launchPopouts,
+  launchSingleSlot,
+  getUnopenedSlotIds,
+  recallAllPopouts,
+  broadcastPrompt,
+  getOpenWindowCount,
+  isSlotOpen,
+  type PermissionStatus,
+} from "@/lib/popoutManager";
 import { cn } from "@/lib/utils";
 
-const MODES: { id: WarRoomMode; label: string; slots: number }[] = [
-  { id: "single", label: "Single", slots: 1 },
-  { id: "2-way", label: "2-Way", slots: 2 },
-  { id: "3-way", label: "3-Way", slots: 3 },
-  { id: "4-way", label: "4-Way", slots: 4 },
+// ─── Constants ─────────────────────────────────────────────
+
+const MODES: { id: WarRoomMode; label: string }[] = [
+  { id: "single", label: "1" },
+  { id: "2-way", label: "2" },
+  { id: "3-way", label: "3" },
+  { id: "4-way", label: "4" },
 ];
 
-const PROVIDER_COLORS: Record<string, string> = {
-  anthropic: "#d97706",
-  openai: "#10b981",
-  google: "#3b82f6",
-  xai: "#ec4899",
-  deepseek: "#6366f1",
-  ollama: "#fbbf24",
-  lmstudio: "#22c55e",
+const PROVIDER_META: Record<string, { icon: string; color: string; bg: string; gradient: string }> = {
+  anthropic: { icon: "A", color: "#d97706", bg: "rgba(217,119,6,0.10)", gradient: "radial-gradient(ellipse at 30% 20%, rgba(217,119,6,0.06) 0%, rgba(217,119,6,0.02) 50%, transparent 80%)" },
+  openai:    { icon: "O", color: "#10b981", bg: "rgba(16,185,129,0.10)", gradient: "radial-gradient(ellipse at 30% 20%, rgba(16,185,129,0.06) 0%, rgba(16,185,129,0.02) 50%, transparent 80%)" },
+  google:    { icon: "G", color: "#3b82f6", bg: "rgba(59,130,246,0.10)", gradient: "radial-gradient(ellipse at 30% 20%, rgba(59,130,246,0.06) 0%, rgba(59,130,246,0.02) 50%, transparent 80%)" },
+  xai:       { icon: "X", color: "#ec4899", bg: "rgba(236,72,153,0.10)", gradient: "radial-gradient(ellipse at 30% 20%, rgba(236,72,153,0.06) 0%, rgba(236,72,153,0.02) 50%, transparent 80%)" },
+  deepseek:  { icon: "D", color: "#6366f1", bg: "rgba(99,102,241,0.10)", gradient: "radial-gradient(ellipse at 30% 20%, rgba(99,102,241,0.06) 0%, rgba(99,102,241,0.02) 50%, transparent 80%)" },
+  ollama:    { icon: "L", color: "#fbbf24", bg: "rgba(251,191,36,0.10)", gradient: "radial-gradient(ellipse at 30% 20%, rgba(251,191,36,0.06) 0%, rgba(251,191,36,0.02) 50%, transparent 80%)" },
+  lmstudio:  { icon: "S", color: "#22c55e", bg: "rgba(34,197,94,0.10)", gradient: "radial-gradient(ellipse at 30% 20%, rgba(34,197,94,0.06) 0%, rgba(34,197,94,0.02) 50%, transparent 80%)" },
 };
 
-const STATUS_STYLES: Record<string, { dot: string; label: string }> = {
-  idle: { dot: "bg-zinc-500", label: "Idle" },
-  streaming: { dot: "bg-emerald-400 animate-pulse", label: "Streaming" },
-  error: { dot: "bg-red-500", label: "Error" },
-  offline: { dot: "bg-zinc-700", label: "Offline" },
+const PROVIDER_NAMES: Record<string, string> = {
+  anthropic: "Anthropic", openai: "OpenAI", google: "Google",
+  xai: "xAI", deepseek: "DeepSeek", ollama: "Ollama", lmstudio: "LM Studio",
 };
+
+function getModelShortName(model: string): string {
+  if (model.includes("claude")) {
+    const parts = model.replace("claude-", "").split("-");
+    const name = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
+    const ver = parts.slice(1).filter((p) => !p.match(/^\d{8}$/)).join(".");
+    return `Claude ${name} ${ver}`.trim();
+  }
+  if (model.includes("gpt-4o")) return "GPT-4o";
+  if (model.includes("gpt-4")) return "GPT-4";
+  if (model.includes("grok")) return model.charAt(0).toUpperCase() + model.slice(1).replace("-", " ");
+  if (model.includes("gemini")) return model.replace("gemini-", "Gemini ").replace("-pro", " Pro").replace("-flash", " Flash");
+  if (model.includes("deepseek")) return "DeepSeek Chat";
+  return model;
+}
+
+// ─── Model Card ────────────────────────────────────────────
+
+function ModelCard({
+  slot, isLive, isDirectTarget, onDirectSelect, sendMode, responseText, tokens,
+}: {
+  slot: MonitorSlot;
+  isLive: boolean;
+  isDirectTarget: boolean;
+  onDirectSelect: () => void;
+  sendMode: "broadcast" | "direct";
+  responseText: string;
+  tokens: number;
+}) {
+  const meta = PROVIDER_META[slot.provider] ?? { icon: "?", color: "#71717a", bg: "rgba(113,113,122,0.08)", gradient: "none" };
+  const providerName = PROVIDER_NAMES[slot.provider] ?? slot.provider;
+  const modelName = getModelShortName(slot.model);
+  const isStreaming = slot.status === "streaming";
+  const isError = slot.status === "error";
+  const previewRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll preview to bottom
+  useEffect(() => {
+    if (previewRef.current) previewRef.current.scrollTop = previewRef.current.scrollHeight;
+  }, [responseText]);
+
+  return (
+    <div
+      onClick={sendMode === "direct" ? onDirectSelect : undefined}
+      className={cn(
+        "relative flex flex-col overflow-hidden transition-all duration-300",
+        isDirectTarget && "ring-2 ring-amber-500/50",
+        sendMode === "direct" && "cursor-pointer",
+        !slot.enabled && "opacity-20 grayscale"
+      )}
+      style={{
+        background: meta.gradient,
+        backgroundColor: "#0c0c0f",
+        boxShadow: isLive
+          ? `inset 0 0 60px ${meta.color}08, 0 0 1px ${meta.color}30`
+          : `inset 0 0 40px ${meta.color}04, 0 0 1px ${meta.color}15`,
+        borderWidth: 1,
+        borderStyle: "solid",
+        borderColor: `${meta.color}${isLive ? "35" : "18"}`,
+      }}
+    >
+      {/* ── Card Header ── */}
+      <div
+        className="flex items-center justify-between px-5 py-3"
+        style={{
+          background: meta.bg,
+          borderBottom: `1px solid ${meta.color}15`,
+        }}
+      >
+        <div className="flex items-center gap-3">
+          {/* Header provider icon */}
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center text-lg font-black"
+            style={{
+              border: `2px solid ${meta.color}40`,
+              color: meta.color,
+              boxShadow: `0 0 12px ${meta.color}15`,
+            }}
+          >
+            {meta.icon}
+          </div>
+          <div>
+            <div className="text-xs font-bold uppercase tracking-widest" style={{ color: meta.color }}>
+              {providerName}
+            </div>
+            <div className="text-base font-bold text-zinc-100 leading-tight">{modelName}</div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-mono font-bold text-zinc-600 tracking-wider">
+            MON {slot.monitorNumber}
+          </span>
+          {isLive ? (
+            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/25">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-[9px] font-bold text-emerald-400 tracking-wider">LIVE</span>
+            </span>
+          ) : isError ? (
+            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500/10 border border-red-500/25">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+              <span className="text-[9px] font-bold text-red-400 tracking-wider">ERR</span>
+            </span>
+          ) : (
+            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full" style={{ background: `${meta.color}08`, border: `1px solid ${meta.color}15` }}>
+              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: `${meta.color}50` }} />
+              <span className="text-[9px] font-bold tracking-wider" style={{ color: `${meta.color}80` }}>IDLE</span>
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* ── Response Preview Area ── */}
+      <div
+        ref={previewRef}
+        className="flex-1 px-5 py-4 overflow-y-auto font-mono text-xs leading-relaxed scrollbar-thin"
+      >
+        {responseText ? (
+          <div className="text-zinc-400 whitespace-pre-wrap break-words">
+            {responseText}
+            {isStreaming && (
+              <span className="inline-block w-2 h-4 ml-0.5 animate-pulse rounded-sm" style={{ backgroundColor: meta.color }} />
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              {/* Large breathing icon — 120px */}
+              <div
+                className="w-[120px] h-[120px] rounded-3xl flex items-center justify-center mx-auto mb-4"
+                style={{
+                  color: meta.color,
+                  fontSize: "56px",
+                  fontWeight: 900,
+                  border: `3px solid ${meta.color}30`,
+                  boxShadow: `0 0 30px ${meta.color}15, 0 0 60px ${meta.color}08`,
+                  animation: "breathe 3s ease-in-out infinite",
+                }}
+              >
+                {meta.icon}
+              </div>
+              <div className="text-[12px] font-semibold tracking-wide" style={{ color: `${meta.color}90` }}>
+                {isLive ? "Waiting for response..." : "Launch to activate"}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Token / Status Footer ── */}
+      <div
+        className="flex items-center justify-between px-5 py-2 bg-black/30"
+        style={{ borderTop: `1px solid ${meta.color}12` }}
+      >
+        <div className="flex-1 mr-4">
+          <div className="h-1 w-full rounded-full bg-zinc-800/80 overflow-hidden">
+            {isStreaming ? (
+              <div className="h-full rounded-full w-full" style={{
+                background: `linear-gradient(90deg, transparent, ${meta.color}, transparent)`,
+                animation: "shimmer 1.5s ease-in-out infinite",
+              }} />
+            ) : isLive ? (
+              <div className="h-full rounded-full w-full transition-all duration-500" style={{ backgroundColor: `${meta.color}40` }} />
+            ) : null}
+          </div>
+        </div>
+        <div className="flex items-center gap-3 text-[10px] font-mono text-zinc-600">
+          {tokens > 0 && <span>{tokens.toLocaleString()} tok</span>}
+          {isDirectTarget && (
+            <span className="flex items-center gap-0.5 text-amber-500 font-bold">
+              <Target className="h-2.5 w-2.5" />
+              TARGET
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Component ────────────────────────────────────────
 
 export default function WarRoom() {
   const [input, setInput] = useState("");
+  const [workspaceActive, setWorkspaceActive] = useState(false);
+  const [openCount, setOpenCount] = useState(0);
+  const [permStatus, setPermStatus] = useState<PermissionStatus | null>(null);
+  const [launching, setLaunching] = useState(false);
+  const [launchError, setLaunchError] = useState<string | null>(null);
+  const [stepMode, setStepMode] = useState(false);
+  const [stepQueue, setStepQueue] = useState<string[]>([]);
+
+  // Per-slot response state from BroadcastChannel
+  const [slotResponses, setSlotResponses] = useState<Record<string, string>>({});
+  const [slotTokens, setSlotTokens] = useState<Record<string, number>>({});
 
   const mode = useWarRoomStore((s) => s.mode);
   const setMode = useWarRoomStore((s) => s.setMode);
@@ -40,59 +247,151 @@ export default function WarRoom() {
   const directTarget = useWarRoomStore((s) => s.directTarget);
   const setDirectTarget = useWarRoomStore((s) => s.setDirectTarget);
   const slots = useWarRoomStore((s) => s.slots);
-  const toggleSlot = useWarRoomStore((s) => s.toggleSlot);
-  const setSlotProvider = useWarRoomStore((s) => s.setSlotProvider);
-  const setSlotModel = useWarRoomStore((s) => s.setSlotModel);
   const guardianActive = useWarRoomStore((s) => s.guardianActive);
 
-  const activeMode = MODES.find((m) => m.id === mode)!;
-  const visibleSlots = slots.slice(0, activeMode.slots);
+  const modeSlotIds = MODE_SLOT_IDS[mode];
+  const visibleSlots = slots.filter((s) => modeSlotIds.includes(s.id));
   const activeSlots = visibleSlots.filter((s) => s.enabled);
 
-  const getModelsForProvider = (providerId: string) => {
-    const p = providers.find((pr) => pr.id === providerId);
-    return p?.models ?? [];
+  // Pre-cache screens on mount
+  useEffect(() => {
+    checkWindowManagement().then((status) => {
+      setPermStatus(status);
+      if (status === "granted" || status === "prompt") prefetchScreens();
+    });
+  }, []);
+
+  // Poll open windows
+  useEffect(() => {
+    if (!workspaceActive) return;
+    const interval = setInterval(() => {
+      const count = getOpenWindowCount();
+      setOpenCount(count);
+      if (count === 0) setWorkspaceActive(false);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [workspaceActive]);
+
+  // Listen for responses from popout windows via BroadcastChannel
+  useEffect(() => {
+    const ch = new BroadcastChannel("sarge-warroom");
+    ch.onmessage = (e) => {
+      const { type, payload } = e.data ?? {};
+      if (type === "RESPONSE_CHUNK" && payload?.slotId && payload?.text) {
+        setSlotResponses((prev) => ({
+          ...prev,
+          [payload.slotId]: (prev[payload.slotId] ?? "") + payload.text,
+        }));
+      }
+      if (type === "RESPONSE_DONE" && payload?.slotId) {
+        if (payload.tokens) {
+          setSlotTokens((prev) => ({ ...prev, [payload.slotId]: payload.tokens }));
+        }
+      }
+      if (type === "RESPONSE_START" && payload?.slotId) {
+        // Clear previous response for this slot when new one starts
+        setSlotResponses((prev) => ({ ...prev, [payload.slotId]: "" }));
+        setSlotTokens((prev) => ({ ...prev, [payload.slotId]: 0 }));
+      }
+    };
+    return () => ch.close();
+  }, []);
+
+  // ─── Launch ───
+  const handleLaunch = useCallback(() => {
+    setLaunchError(null);
+
+    if (stepMode && stepQueue.length > 0) {
+      const nextSlotId = stepQueue[0];
+      const slot = visibleSlots.find((s) => s.id === nextSlotId);
+      if (slot) {
+        const ok = launchSingleSlot(slot, activeSlots.indexOf(slot));
+        if (ok) {
+          const remaining = stepQueue.slice(1);
+          setStepQueue(remaining);
+          setOpenCount(getOpenWindowCount());
+          setWorkspaceActive(true);
+          if (remaining.length === 0) { setStepMode(false); setLaunchError(null); }
+        }
+      }
+      return;
+    }
+
+    setLaunching(true);
+    const result = launchPopouts(visibleSlots);
+    if (!result.success) {
+      setLaunchError("Popups blocked — allow popups for localhost:3004");
+    } else {
+      setWorkspaceActive(true);
+      setOpenCount(result.opened.length);
+      if (result.failed.length > 0) {
+        setStepMode(true);
+        setStepQueue(getUnopenedSlotIds(visibleSlots));
+      }
+    }
+    checkWindowManagement().then(setPermStatus);
+    setLaunching(false);
+  }, [visibleSlots, activeSlots, stepMode, stepQueue]);
+
+  const handleRecall = useCallback(() => {
+    recallAllPopouts();
+    setWorkspaceActive(false);
+    setOpenCount(0);
+    setStepMode(false);
+    setStepQueue([]);
+  }, []);
+
+  const handleSend = useCallback(() => {
+    if (!input.trim()) return;
+    // Clear all response previews for new broadcast
+    setSlotResponses({});
+    setSlotTokens({});
+    // Send prompt to all popout windows via BroadcastChannel
+    broadcastPrompt(input.trim(), sendMode === "direct" ? (directTarget ?? undefined) : undefined);
+    setInput("");
+  }, [input, sendMode, directTarget]);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
   };
 
-  const getProviderName = (providerId: string) => {
-    const p = providers.find((pr) => pr.id === providerId);
-    return p?.name ?? providerId;
-  };
-
-  const sendLabel =
-    sendMode === "broadcast"
-      ? `Broadcast to ${activeSlots.length} Monitor${activeSlots.length !== 1 ? "s" : ""}`
-      : directTarget
-        ? `Send to ${slots.find((s) => s.id === directTarget)?.label ?? "..."}`
-        : "Pick a target";
+  // Grid: full width, full height, no max-width
+  const gridClass = cn(
+    "grid flex-1 gap-0",
+    mode === "single" && "grid-cols-1",
+    mode === "2-way" && "grid-cols-2",
+    mode === "3-way" && "grid-cols-3",
+    mode === "4-way" && "grid-cols-2 grid-rows-2",
+  );
 
   return (
-    <div className="flex flex-col h-full bg-zinc-950">
-      {/* ═══ TOP BAR — Mode Selector ═══ */}
-      <div className="h-14 flex items-center justify-between px-6 bg-gradient-to-r from-zinc-900 via-indigo-950/20 to-zinc-900 border-b border-zinc-800 shadow-sm">
-        {/* Left: SARGE branding */}
-        <div className="flex items-center gap-2.5">
+    <div className="flex flex-col h-full bg-zinc-950 overflow-hidden">
+
+      {/* ═══ TOP BAR ═══ */}
+      <div className="h-10 flex items-center justify-between px-4 bg-zinc-900/50 border-b border-zinc-800/40 flex-shrink-0">
+        {/* Left: Branding */}
+        <div className="flex items-center gap-2">
           <div className="relative">
-            <ShieldCheck className="h-5 w-5 text-indigo-400" />
-            <Zap className="h-2 w-2 text-amber-400 absolute -right-0.5 -bottom-0.5" />
+            <ShieldCheck className="h-4 w-4 text-indigo-400" />
+            <Zap className="h-1.5 w-1.5 text-amber-400 absolute -right-0.5 -bottom-0.5" />
           </div>
-          <span className="text-sm font-bold text-zinc-300 tracking-wide">
+          <span className="text-[11px] font-bold text-zinc-500 tracking-wide">
             <span className="text-indigo-400 font-black">S</span>.A.R.G.E.
-            <span className="text-red-400/70 ml-2 text-xs tracking-widest uppercase font-semibold">War Room</span>
+            <span className="text-red-400/50 ml-1 text-[9px] tracking-widest uppercase">War Room</span>
           </span>
         </div>
 
-        {/* Center: Mode selector */}
-        <div className="flex items-center bg-zinc-800/80 rounded-lg p-0.5 border border-zinc-700">
+        {/* Center: Mode pills */}
+        <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-0.5 bg-zinc-800/40 rounded-lg p-0.5 border border-zinc-800/60">
           {MODES.map((m) => (
             <button
               key={m.id}
               onClick={() => setMode(m.id)}
               className={cn(
-                "px-4 py-1.5 rounded-md text-sm font-bold transition-all duration-200",
+                "w-7 h-6 rounded text-[11px] font-black transition-all",
                 mode === m.id
-                  ? "bg-indigo-600 text-white shadow-sm"
-                  : "text-zinc-400 hover:text-zinc-200"
+                  ? "bg-indigo-600 text-white"
+                  : "text-zinc-600 hover:text-zinc-400"
               )}
             >
               {m.label}
@@ -100,259 +399,130 @@ export default function WarRoom() {
           ))}
         </div>
 
-        {/* Right: Monitor count */}
-        <div className="flex items-center gap-2 text-xs text-zinc-500">
-          <Monitor className="h-4 w-4" />
-          <span>{activeSlots.length} of {visibleSlots.length} active</span>
-        </div>
-      </div>
-
-      {/* ═══ MAIN AREA — Sidebar + Center ═══ */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* ─── LEFT SIDEBAR — Monitor Slots ─── */}
-        <div className="w-[260px] flex-shrink-0 border-r border-zinc-800 bg-zinc-900/50 flex flex-col overflow-y-auto">
-          <div className="px-3 py-3 text-[10px] font-bold uppercase tracking-widest text-zinc-600 text-center">
-            Monitor Assignment
-          </div>
-
-          <div className="flex-1 px-3 pb-3 space-y-2">
-            {visibleSlots.map((slot) => {
-              const color = PROVIDER_COLORS[slot.provider] ?? "#71717a";
-              const models = getModelsForProvider(slot.provider);
-              const statusStyle = STATUS_STYLES[slot.status];
-
-              return (
-                <div
-                  key={slot.id}
-                  className={cn(
-                    "rounded-xl border p-3 transition-all duration-200",
-                    slot.enabled
-                      ? "border-zinc-700 bg-zinc-800/60"
-                      : "border-zinc-800/50 bg-zinc-900/30 opacity-50"
-                  )}
-                >
-                  {/* Header: label + toggle + status */}
-                  <div className="flex items-center justify-between mb-2.5">
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="w-2.5 h-2.5 rounded-full"
-                        style={{ backgroundColor: slot.enabled ? color : "#3f3f46" }}
-                      />
-                      <span className="text-sm font-bold text-zinc-200">{slot.label}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className={cn("w-2 h-2 rounded-full", statusStyle.dot)} />
-                      <button
-                        onClick={() => toggleSlot(slot.id)}
-                        className={cn(
-                          "w-9 h-5 rounded-full transition-all duration-200 relative",
-                          slot.enabled
-                            ? "bg-indigo-600"
-                            : "bg-zinc-700"
-                        )}
-                      >
-                        <div
-                          className={cn(
-                            "w-3.5 h-3.5 rounded-full bg-white absolute top-0.5 transition-all duration-200",
-                            slot.enabled ? "left-[18px]" : "left-[3px]"
-                          )}
-                        />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Provider select */}
-                  {slot.enabled && (
-                    <div className="space-y-1.5">
-                      <select
-                        value={slot.provider}
-                        onChange={(e) => setSlotProvider(slot.id, e.target.value)}
-                        className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-2 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-indigo-500"
-                        style={{ borderLeftColor: color, borderLeftWidth: 3 }}
-                      >
-                        {providers.map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {p.name} ({p.type})
-                          </option>
-                        ))}
-                      </select>
-
-                      {/* Model select */}
-                      <select
-                        value={slot.model}
-                        onChange={(e) => setSlotModel(slot.id, e.target.value)}
-                        className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-2 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-indigo-500"
-                      >
-                        {models.length === 0 ? (
-                          <option value="">(fetch on connect)</option>
-                        ) : (
-                          models.map((m) => (
-                            <option key={m.id} value={m.id}>
-                              {m.name}
-                            </option>
-                          ))
-                        )}
-                      </select>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* ─── CENTER — Chat Input ─── */}
-        <div className="flex-1 flex flex-col">
-          {/* Send mode toggle + target picker */}
-          <div className="px-6 py-4 border-b border-zinc-800/50 flex items-center gap-4">
-            {/* Broadcast / Direct toggle */}
-            <div className="flex items-center bg-zinc-800/80 rounded-lg p-0.5 border border-zinc-700">
-              <button
-                onClick={() => setSendMode("broadcast")}
-                className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all",
-                  sendMode === "broadcast"
-                    ? "bg-indigo-600 text-white shadow-sm"
-                    : "text-zinc-400 hover:text-zinc-200"
-                )}
-              >
-                <Radio className="h-3.5 w-3.5" />
-                Broadcast
-              </button>
-              <button
-                onClick={() => setSendMode("direct")}
-                className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all",
-                  sendMode === "direct"
-                    ? "bg-amber-600 text-white shadow-sm"
-                    : "text-zinc-400 hover:text-zinc-200"
-                )}
-              >
-                <Target className="h-3.5 w-3.5" />
-                Direct
-              </button>
-            </div>
-
-            {/* Direct mode: target selector */}
-            {sendMode === "direct" && (
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs text-zinc-500 mr-1">Target:</span>
-                {activeSlots.map((slot) => {
-                  const color = PROVIDER_COLORS[slot.provider];
-                  return (
-                    <button
-                      key={slot.id}
-                      onClick={() => setDirectTarget(slot.id)}
-                      className={cn(
-                        "px-3 py-1 rounded-md text-xs font-medium transition-all border",
-                        directTarget === slot.id
-                          ? "border-amber-500 bg-amber-600/20 text-amber-300"
-                          : "border-zinc-700 text-zinc-400 hover:text-zinc-200 hover:border-zinc-600"
-                      )}
-                    >
-                      <span className="inline-block w-2 h-2 rounded-full mr-1.5" style={{ backgroundColor: color }} />
-                      {slot.label}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Broadcast info */}
-            {sendMode === "broadcast" && (
-              <span className="text-xs text-zinc-500">
-                Message will be sent to all {activeSlots.length} active monitor{activeSlots.length !== 1 ? "s" : ""} simultaneously
-              </span>
-            )}
-          </div>
-
-          {/* Chat input area */}
-          <div className="flex-1 flex flex-col justify-center px-6 py-6">
-            <div className="max-w-3xl w-full mx-auto space-y-4">
-              {/* Prompt label */}
-              <div className="text-sm text-zinc-400 font-medium">
-                {sendMode === "broadcast" ? "Broadcast Prompt" : "Direct Prompt"}
-              </div>
-
-              {/* Textarea */}
-              <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Enter your prompt... All active monitors will receive this message."
-                rows={6}
-                className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 resize-none"
-              />
-
-              {/* Send button */}
-              <div className="flex items-center justify-between">
-                <div className="text-xs text-zinc-600">
-                  Enter to send, Shift+Enter for new line
-                </div>
-                <button
-                  disabled={!input.trim() || (sendMode === "direct" && !directTarget)}
-                  className={cn(
-                    "flex items-center gap-2 px-5 py-2.5 rounded-lg font-bold text-sm transition-all",
-                    sendMode === "broadcast"
-                      ? "bg-indigo-600 hover:bg-indigo-500 text-white disabled:bg-zinc-800 disabled:text-zinc-600"
-                      : "bg-amber-600 hover:bg-amber-500 text-white disabled:bg-zinc-800 disabled:text-zinc-600"
-                  )}
-                >
-                  <Send className="h-4 w-4" />
-                  {sendLabel}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ═══ BOTTOM STRIP — Status Bar ═══ */}
-      <div className="h-10 flex items-center justify-between px-6 bg-zinc-900/80 border-t border-zinc-800">
-        {/* Monitor status pills */}
-        <div className="flex items-center gap-3">
-          {slots.map((slot, i) => {
-            const isVisible = i < activeMode.slots;
-            const color = PROVIDER_COLORS[slot.provider];
-            const statusStyle = STATUS_STYLES[slot.status];
-
-            if (!isVisible) return null;
-
-            return (
-              <div
-                key={slot.id}
-                className={cn(
-                  "flex items-center gap-2 px-3 py-1 rounded-full text-xs border transition-all",
-                  slot.enabled
-                    ? "border-zinc-700 bg-zinc-800/50 text-zinc-300"
-                    : "border-zinc-800/50 bg-zinc-900/30 text-zinc-600"
-                )}
-              >
-                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: slot.enabled ? color : "#3f3f46" }} />
-                <span className="font-medium">{slot.label}</span>
-                <span className="text-zinc-500">|</span>
-                <span className="text-zinc-400">{getProviderName(slot.provider)}</span>
-                <span className={cn("w-1.5 h-1.5 rounded-full ml-1", statusStyle.dot)} />
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Guardian status */}
-        <div className="flex items-center gap-3 text-xs">
+        {/* Right: Controls */}
+        <div className="flex items-center gap-1.5">
           <div className={cn(
-            "flex items-center gap-1.5 px-2.5 py-1 rounded-full border",
-            guardianActive
-              ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-              : "border-zinc-700 bg-zinc-800/50 text-zinc-500"
+            "flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold border",
+            guardianActive ? "border-emerald-500/20 text-emerald-500/60" : "border-zinc-800 text-zinc-700"
           )}>
-            <Shield className="h-3 w-3" />
-            <span className="font-medium">Guardian {guardianActive ? "Active" : "Off"}</span>
+            <Shield className="h-2.5 w-2.5" />
+            GUARD
           </div>
-          <div className="text-zinc-600">
-            War Room v0.1 | Monitor 4
-          </div>
+
+          {workspaceActive && (
+            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-500/8 border border-emerald-500/15">
+              <Activity className="h-2.5 w-2.5 text-emerald-400 animate-pulse" />
+              <span className="text-[9px] font-bold text-emerald-400">{openCount}</span>
+            </div>
+          )}
+
+          {workspaceActive && !stepMode ? (
+            <button onClick={handleRecall}
+              className="flex items-center gap-1 px-2 py-1 bg-red-500/8 hover:bg-red-500/15 text-red-400 rounded border border-red-500/15 text-[9px] font-bold transition-all">
+              <X className="h-2.5 w-2.5" /> RECALL
+            </button>
+          ) : stepMode && stepQueue.length > 0 ? (
+            <button onClick={handleLaunch}
+              className="flex items-center gap-1 px-2 py-1 bg-amber-500/8 hover:bg-amber-500/15 text-amber-400 rounded border border-amber-500/15 text-[9px] font-bold animate-pulse">
+              <Monitor className="h-2.5 w-2.5" /> MON {slots.find((s) => s.id === stepQueue[0])?.monitorNumber} ({stepQueue.length})
+            </button>
+          ) : (
+            <button onClick={handleLaunch} disabled={launching || activeSlots.length === 0}
+              className="flex items-center gap-1 px-2 py-1 bg-indigo-500/8 hover:bg-indigo-500/15 text-indigo-400 rounded border border-indigo-500/15 text-[9px] font-bold transition-all disabled:opacity-20">
+              <Rocket className="h-2.5 w-2.5" /> LAUNCH
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Error / Step banner */}
+      {(launchError || (stepMode && stepQueue.length > 0)) && (
+        <div className="px-4 py-1 bg-amber-500/5 border-b border-amber-500/10 flex items-center gap-2">
+          <AlertTriangle className="h-2.5 w-2.5 text-amber-500/50" />
+          <span className="text-[9px] text-amber-400/60 flex-1">
+            {stepMode ? `Step-launch: ${stepQueue.length} remaining. Allow popups for one-click.` : launchError}
+          </span>
+          <button onClick={() => { setLaunchError(null); setStepMode(false); setStepQueue([]); }}>
+            <X className="h-2.5 w-2.5 text-amber-500/30 hover:text-amber-400" />
+          </button>
+        </div>
+      )}
+
+      {/* ═══ MAIN CANVAS — Full Viewport Model Cards ═══ */}
+      <div className={gridClass}>
+        {visibleSlots.map((slot) => (
+          <ModelCard
+            key={slot.id}
+            slot={slot}
+            isLive={workspaceActive && isSlotOpen(slot.id)}
+            isDirectTarget={sendMode === "direct" && directTarget === slot.id}
+            onDirectSelect={() => setDirectTarget(slot.id)}
+            sendMode={sendMode}
+            responseText={slotResponses[slot.id] ?? ""}
+            tokens={slotTokens[slot.id] ?? 0}
+          />
+        ))}
+      </div>
+
+      {/* ═══ BOTTOM INPUT BAR — Full Width ═══ */}
+      <div className="flex-shrink-0 border-t border-zinc-800/40 bg-zinc-900/30 px-3 py-2">
+        <div className="flex items-center gap-2">
+          {/* Broadcast/Direct toggle */}
+          <button
+            onClick={() => setSendMode(sendMode === "broadcast" ? "direct" : "broadcast")}
+            className={cn(
+              "flex items-center gap-1 px-2 py-2 rounded-lg text-[10px] font-bold border transition-all flex-shrink-0",
+              sendMode === "broadcast"
+                ? "border-indigo-500/25 bg-indigo-500/8 text-indigo-400"
+                : "border-amber-500/25 bg-amber-500/8 text-amber-400"
+            )}
+          >
+            {sendMode === "broadcast" ? <Radio className="h-3 w-3" /> : <Target className="h-3 w-3" />}
+            {sendMode === "broadcast" ? "ALL" : "1:1"}
+          </button>
+
+          {/* Input — full width */}
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={
+              !workspaceActive ? "Launch workspace to begin broadcasting..."
+                : sendMode === "broadcast" ? `Broadcast to ${openCount} monitors — Enter to send`
+                : directTarget ? `Direct to ${slots.find((s) => s.id === directTarget)?.label} — Enter to send`
+                : "Click a card to select target..."
+            }
+            rows={1}
+            className="flex-1 bg-zinc-800/40 border border-zinc-700/30 rounded-lg px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-indigo-500/40 resize-none"
+          />
+
+          {/* Send */}
+          <button
+            onClick={handleSend}
+            disabled={!input.trim() || (sendMode === "direct" && !directTarget) || !workspaceActive}
+            className={cn(
+              "flex items-center gap-1.5 px-4 py-2 rounded-lg font-bold text-[11px] transition-all flex-shrink-0",
+              sendMode === "broadcast"
+                ? "bg-indigo-600 hover:bg-indigo-500 text-white disabled:bg-zinc-800 disabled:text-zinc-700"
+                : "bg-amber-600 hover:bg-amber-500 text-white disabled:bg-zinc-800 disabled:text-zinc-700"
+            )}
+          >
+            <Send className="h-3.5 w-3.5" />
+            {sendMode === "broadcast" ? "BROADCAST" : "SEND"}
+          </button>
+        </div>
+      </div>
+
+      <style jsx>{`
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+        @keyframes breathe {
+          0%, 100% { transform: scale(1); opacity: 0.7; }
+          50% { transform: scale(1.04); opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 }
