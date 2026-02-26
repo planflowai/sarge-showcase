@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
-import { logForensicEvent } from '@sarge/core';
+import { logForensicEvent } from '@sarge/core/index.server';
 import {
   appendLogChangeEntry,
   generateNewLog,

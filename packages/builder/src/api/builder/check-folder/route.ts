@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import nodePath from "path";
-import { validatePathWithinProject, logForensicEvent } from "@sarge/core";
+import { validatePathWithinProject, logForensicEvent } from "@sarge/core/index.server";
 
 /**
  * POST /api/builder/check-folder

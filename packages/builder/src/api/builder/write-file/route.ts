@@ -4,7 +4,7 @@ import path from 'path';
 import {
   validatePathWithinProject,
   logForensicEvent,
-} from '@sarge/core';
+} from '@sarge/core/index.server';
 
 const MAX_CONTENT_BYTES = 5 * 1024 * 1024; // 5 MB
 
