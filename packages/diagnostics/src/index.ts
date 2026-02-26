@@ -1,10 +1,12 @@
-// @sarge/diagnostics
-// Diagnostics module — snaps onto @sarge/core
-//
-// Will export:
-//   - Components: DiagnosticsPage
-//   - Stores: useDiagnosticsStore, useAIAnalysisStore
-//   - Lib: scanner
-//   - API routes: /api/diagnostics/*
+// @sarge/diagnostics — Diagnostics module, snaps onto @sarge/core
+// Scanner, AI analysis, forensic logging
 
-export {};
+// ─── Stores ──────────────────────────────────────────────
+export * from './stores/diagnosticsStore';
+export * from './stores/aiAnalysisStore';
+
+// ─── Components ──────────────────────────────────────────
+export { default as DiagnosticsPage } from './components/DiagnosticsPage';
+
+// ─── Lib ─────────────────────────────────────────────────
+export * from './lib/scanner';
