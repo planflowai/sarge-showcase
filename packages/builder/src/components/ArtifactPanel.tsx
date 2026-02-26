@@ -4,14 +4,14 @@ import React, { useState, useEffect, useRef, useCallback, useMemo, memo } from "
 import { Code2, Eye, RefreshCw, AlertTriangle, Download, Copy, Check, Maximize2, Minimize2, Radio, GitCompare, X, Library, ChevronLeft, ChevronRight, Save, RotateCcw, Server, Monitor } from "lucide-react";
 import Editor from "@monaco-editor/react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { buildPreviewContent, detectLanguage, detectContentType } from "@/lib/contentDetector";
-import { STREAMING_MIN_UPDATE_INTERVAL_MS, STREAMING_MIN_CONTENT_DELTA } from "@/lib/constants";
-import { exportToZip, downloadZip } from "@/lib/sarge-build";
-import { useUIStore } from "@/lib/stores/uiStore";
-import { useArtifactStore } from "@/lib/stores/artifactStore";
-import { useBuilderStore } from "@/lib/stores/builderStore";
-import { useAirGapStore } from "@/lib/stores/airGapStore";
+import { cn } from "@sarge/core";
+import { buildPreviewContent, detectLanguage, detectContentType } from "../lib/contentDetector";
+import { STREAMING_MIN_UPDATE_INTERVAL_MS, STREAMING_MIN_CONTENT_DELTA } from "@sarge/core";
+import { exportToZip, downloadZip } from "../lib/sarge-build";
+import { useUIStore } from "@sarge/core";
+import { useArtifactStore } from "../stores/artifactStore";
+import { useBuilderStore } from "../stores/builderStore";
+import { useAirGapStore } from "@sarge/core";
 import BuilderDiffEditor from "./BuilderDiffEditor";
 import SaveToLibraryDialog from "./SaveToLibraryDialog";
 

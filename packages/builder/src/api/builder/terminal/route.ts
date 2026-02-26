@@ -6,7 +6,7 @@ import {
   validateTerminalCommand,
   validatePathWithinProject,
   logForensicEvent,
-} from '@/lib/security/pathValidator';
+} from '@sarge/core';
 
 export async function POST(request: NextRequest) {
   const clientIp = request.headers.get('x-forwarded-for') ||

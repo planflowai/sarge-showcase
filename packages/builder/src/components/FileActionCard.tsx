@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { FileCode, Check, X, GitCompare, Loader2, CheckCircle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { cn } from "@sarge/core";
 
 export interface FileActionCardProps {
   filePath: string;

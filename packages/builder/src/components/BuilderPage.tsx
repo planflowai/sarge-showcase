@@ -7,15 +7,15 @@ import BuilderChat from "./BuilderChat";
 import SessionActivity from "./SessionActivity";
 import ArtifactPanel from "./ArtifactPanel";
 import BuilderTerminal from "./BuilderTerminal";
-import { useBuilderStore } from "@/lib/stores/builderStore";
-import { useBuilderChatStore } from "@/lib/stores/builderChatStore";
-import { useArtifactStore } from "@/lib/stores/artifactStore";
-import { useBuilderDocumentStore } from "@/lib/stores/builderDocumentStore";
-import { flattenFileTree } from "@/lib/contextInjector";
-import { applyEditBlocks, type EditBlock, getDiffSummary } from "@/lib/editBlockParser";
-import { useWorkspaceStore, launchWorkspace, recallWorkspace } from "@/lib/stores/workspaceStore";
+import { useBuilderStore } from "../stores/builderStore";
+import { useBuilderChatStore } from "../stores/builderChatStore";
+import { useArtifactStore } from "../stores/artifactStore";
+import { useBuilderDocumentStore } from "../stores/builderDocumentStore";
+import { flattenFileTree } from "@sarge/core";
+import { applyEditBlocks, type EditBlock, getDiffSummary } from "../lib/editBlockParser";
+import { useWorkspaceStore, launchWorkspace, recallWorkspace } from "../stores/workspaceStore";
 import { Rocket, LayoutGrid, X } from "lucide-react";
-import ThreadGuardianIndicator from "@/components/chat/ThreadGuardianIndicator";
+import ThreadGuardianIndicator from "@sarge/chat";
 
 // Clear old builder chat messages on load (one-time cleanup)
 if (typeof window !== 'undefined') {

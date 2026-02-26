@@ -13,13 +13,13 @@ import {
   Sparkles,
   ExternalLink,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@sarge/core";
 import {
   useComponentLibraryStore,
   COMPONENT_CATEGORIES,
   type ComponentCategory,
   type LibraryComponent,
-} from "@/lib/stores/componentLibraryStore";
+} from "../stores/componentLibraryStore";
 import Link from "next/link";
 
 interface ComponentLibrarySectionProps {

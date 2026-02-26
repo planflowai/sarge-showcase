@@ -9,14 +9,14 @@
 
 import { useMemo, useState, useEffect } from "react";
 import { Image, Gamepad2, ChevronDown, ChevronUp } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@sarge/core";
 import {
   useUnifiedCapabilitiesStore,
   CAPABILITY_DEFINITIONS,
   WEBSITE_TEMPLATES,
   type CapabilityId,
-} from "@/lib/stores/unifiedCapabilitiesStore";
-import { useCapabilityEventValue } from "@/lib/capabilityEventBus";
+} from "@sarge/core";
+import { useCapabilityEventValue } from "@sarge/core";
 
 interface DependencyGraphProps {
   className?: string;

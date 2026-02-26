@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import { parseEditBlocks } from "@/lib/editBlockParser";
-import { cn } from "@/lib/utils";
+import { parseEditBlocks } from "../lib/editBlockParser";
+import { cn } from "@sarge/core";
 
 interface EditBlockItem {
   startLine: number;

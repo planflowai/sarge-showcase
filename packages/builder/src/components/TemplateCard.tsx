@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { FileCode, Layers } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { type ProjectTemplate } from "@/lib/projectTemplates";
-import { buildPreviewContent } from "@/lib/contentDetector";
+import { cn } from "@sarge/core";
+import { type ProjectTemplate } from "../lib/projectTemplates";
+import { buildPreviewContent } from "../lib/contentDetector";
 
 interface TemplateCardProps {
   template: ProjectTemplate;

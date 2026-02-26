@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useMemo } from "react";
-import type { BuilderMessage } from "@/lib/stores/builderChatStore";
+import type { BuilderMessage } from "../stores/builderChatStore";
 import BuilderMessageBubble from "./BuilderMessageBubble";
 
 interface MessageListProps {

@@ -1,8 +1,8 @@
 "use client";
 
 import { ChevronRight, ChevronDown, Folder, FolderOpen } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { FileNode, getFileIcon, useBuilderStore } from "@/lib/stores/builderStore";
+import { cn } from "@sarge/core";
+import { FileNode, getFileIcon, useBuilderStore } from "../stores/builderStore";
 
 interface FileTreeProps {
   nodes: FileNode[];

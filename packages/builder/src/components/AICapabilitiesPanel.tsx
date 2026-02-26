@@ -30,7 +30,7 @@ import {
   Settings,
   Rocket,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@sarge/core";
 import {
   useUnifiedCapabilitiesStore,
   CAPABILITY_DEFINITIONS,
@@ -39,8 +39,8 @@ import {
   getActiveCapabilitiesSummary,
   type CapabilityId,
   type WebsiteType,
-} from "@/lib/stores/unifiedCapabilitiesStore";
-import { useSaaSStore } from "@/lib/stores/saasStore";
+} from "@sarge/core";
+import { useSaaSStore } from "@sarge/core";
 import TemplatePickerPanel, { TemplatePickerMini } from "./TemplatePickerPanel";
 
 type PanelMode = 'user' | 'admin';

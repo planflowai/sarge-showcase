@@ -9,13 +9,13 @@
 
 import { useState, useEffect } from "react";
 import { ChevronDown, ChevronUp, Sparkles, AlertCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@sarge/core";
 import {
   useUnifiedCapabilitiesStore,
   CAPABILITY_DEFINITIONS,
   WEBSITE_TEMPLATES,
   type CapabilityId,
-} from "@/lib/stores/unifiedCapabilitiesStore";
+} from "@sarge/core";
 
 interface CapabilityStatusBarProps {
   className?: string;

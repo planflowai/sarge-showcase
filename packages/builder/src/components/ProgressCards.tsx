@@ -13,7 +13,7 @@ import {
   FileCode,
   Zap
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@sarge/core";
 
 export type ProgressStep = {
   id: string;

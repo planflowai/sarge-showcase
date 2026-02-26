@@ -11,7 +11,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { createDebouncedStorage } from "@/lib/utils/debouncedStorage";
+import { createDebouncedStorage } from "@sarge/core";
 
 // Helper types with user-friendly names
 export type HelperType = 'reviewer' | 'judge' | 'designer' | 'debater' | 'custom';

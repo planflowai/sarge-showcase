@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { X, ChevronRight } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@sarge/core";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,12 +16,12 @@ import {
   HELPER_TYPES,
   TRIGGER_MODE_LABELS,
   useBuilderHelpersStore,
-} from "@/lib/stores/builderHelpersStore";
-import { getDefaultPrompt } from "@/lib/helperPrompts";
-import { useModelStore } from "@/lib/stores/modelStore";
-import { fetchOllamaModels, type LocalModel } from "@/lib/providers/localModels";
-import { providers } from "@/lib/providers";
-import { getOllamaFriendlyName } from "@/lib/ollamaModelGroups";
+} from "../stores/builderHelpersStore";
+import { getDefaultPrompt } from "../lib/helperPrompts";
+import { useModelStore } from "@sarge/core";
+import { fetchOllamaModels, type LocalModel } from "@sarge/core";
+import { providers } from "@sarge/core";
+import { getOllamaFriendlyName } from "@sarge/core";
 
 interface AddHelperModalProps {
   isOpen: boolean;

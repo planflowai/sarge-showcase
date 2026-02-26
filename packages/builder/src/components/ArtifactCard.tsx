@@ -3,8 +3,8 @@
 import { useMemo } from "react";
 import { Code2, Eye, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { detectContentType, detectLanguage } from "@/lib/contentDetector";
+import { cn } from "@sarge/core";
+import { detectContentType, detectLanguage } from "../lib/contentDetector";
 
 interface ArtifactCardProps {
   code: string;

@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { BuilderMessage } from "@/lib/stores/builderChatStore";
-import type { EditBlock } from "@/lib/editBlockParser";
-import { parseEditBlocks, applyEditBlocks, getDiffSummary } from "@/lib/editBlockParser";
-import { extractSummaryFromResponse } from "@/lib/builderLogger";
+import type { BuilderMessage } from "../stores/builderChatStore";
+import type { EditBlock } from "../lib/editBlockParser";
+import { parseEditBlocks, applyEditBlocks, getDiffSummary } from "../lib/editBlockParser";
+import { extractSummaryFromResponse } from "../lib/builderLogger";
 
 interface StreamingUpdateState {
   code: string | null;

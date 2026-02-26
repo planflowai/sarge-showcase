@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useChangesStore, type ChangeEntry } from "@/lib/stores/changesStore";
-import { useBuilderChatStore } from "@/lib/stores/builderChatStore";
+import { useChangesStore, type ChangeEntry } from "../stores/changesStore";
+import { useBuilderChatStore } from "../stores/builderChatStore";
 import {
   FileCode,
   FilePlus,
@@ -17,7 +17,7 @@ import {
   Sparkles,
   Activity,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@sarge/core";
 import { Button } from "@/components/ui/button";
 
 // Simple relative time formatter (no external dependency)

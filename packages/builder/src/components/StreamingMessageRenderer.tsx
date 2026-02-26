@@ -4,7 +4,7 @@ import { useMemo, useState, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import type { Components } from "react-markdown";
 import EditCard from "./EditCard";
-import { cn } from "@/lib/utils";
+import { cn } from "@sarge/core";
 
 /**
  * Infer a meaningful filename from code content instead of generic "artifact.html"

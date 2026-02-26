@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { FolderOpen, Settings, Plus, FolderPlus, RefreshCw, X, Terminal, Sparkles, Zap, Star, Rocket, Code2, Save, Loader2, History, FileEdit, FilePlus, FileX, Check, XCircle, ChevronDown, ChevronRight, BookOpen, Trash2, LayoutTemplate, Grid3X3, Clock, Layers } from "lucide-react";
-import { useModelStore } from "@/lib/stores/modelStore";
-import { useBuilderStore, getLanguageFromPath } from "@/lib/stores/builderStore";
-import { useBuilderChatStore } from "@/lib/stores/builderChatStore";
-import { useChangesStore, type ChangeEntry } from "@/lib/stores/changesStore";
-import { usePromptLibraryStore, PROMPT_CATEGORIES, PREBUILT_PROMPTS, type Prompt, getComplexityColor, getOutputTypeLabel } from "@/lib/stores/promptLibraryStore";
-import { useAIModeStore } from "@/lib/stores/aiModeStore";
-import { PROJECT_TEMPLATES, type ProjectTemplate } from "@/lib/projectTemplates";
+import { useModelStore } from "@sarge/core";
+import { useBuilderStore, getLanguageFromPath } from "../stores/builderStore";
+import { useBuilderChatStore } from "../stores/builderChatStore";
+import { useChangesStore, type ChangeEntry } from "../stores/changesStore";
+import { usePromptLibraryStore, PROMPT_CATEGORIES, PREBUILT_PROMPTS, type Prompt, getComplexityColor, getOutputTypeLabel } from "@sarge/core";
+import { useAIModeStore } from "@sarge/core";
+import { PROJECT_TEMPLATES, type ProjectTemplate } from "../lib/projectTemplates";
 import TemplateCard from "./TemplateCard";
 import PromptGallery from "./PromptGallery";
 import ComponentLibrarySection from "./ComponentLibrarySection";
@@ -16,15 +16,15 @@ import AIHelpersSection from "./AIHelpersSection";
 import RouterStatus from "./RouterStatus";
 import AICapabilitiesPanel from "./AICapabilitiesPanel";
 import DependencyGraph from "./DependencyGraph";
-import { fetchOllamaModels, type LocalModel } from "@/lib/providers/localModels";
-import { providers, getCloudProviders, getLocalProviders } from "@/lib/providers";
-import { groupOllamaModels } from "@/lib/ollamaModelGroups";
+import { fetchOllamaModels, type LocalModel } from "@sarge/core";
+import { providers, getCloudProviders, getLocalProviders } from "@sarge/core";
+import { groupOllamaModels } from "@sarge/core";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
+import { cn } from "@sarge/core";
 import { Button } from "@/components/ui/button";
 import FileTree from "./FileTree";
 import { SkeletonFileTree } from "@/components/ui/skeleton";
-import type { Provider } from "@/lib/types";
+import type { Provider } from "@sarge/core";
 import type { LucideIcon } from "lucide-react";
 
 // Provider icons (same as ProviderBadge)

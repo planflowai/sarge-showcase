@@ -8,8 +8,8 @@
  * - Syncs to Supabase for persistence
  */
 
-import { useSyncStatusStore, shouldSync } from "@/lib/stores/syncStatusStore";
-import { useUIStore } from "@/lib/stores/uiStore";
+import { useSyncStatusStore, shouldSync } from "@sarge/core";
+import { useUIStore } from "@sarge/core";
 
 export interface ChangeEntry {
   timestamp: Date;

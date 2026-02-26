@@ -12,7 +12,7 @@
  * Tier 3: Heavy cloud models for complex builds (Claude, Grok, GPT-4o)
  */
 
-import { fetchOllamaModels, type LocalModel } from '@/lib/providers/localModels';
+import { fetchOllamaModels, type LocalModel } from '@sarge/core';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 

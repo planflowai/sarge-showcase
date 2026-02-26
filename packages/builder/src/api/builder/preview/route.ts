@@ -10,7 +10,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
-import { validatePathWithinProject, logForensicEvent } from '@/lib/security/pathValidator';
+import { validatePathWithinProject, logForensicEvent } from '@sarge/core';
 
 const BUILDER_PROJECTS_DIR = process.env.BUILDER_PROJECTS_DIR || 'L:/ai_builder/projects';
 

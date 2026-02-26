@@ -5,7 +5,7 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark, oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { Copy, Check, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useSettingsStore } from "@/lib/stores/settingsStore";
+import { useSettingsStore } from "@sarge/core";
 
 interface BuilderCodeBlockProps {
   code: string;

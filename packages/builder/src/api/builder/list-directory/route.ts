@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
-import { validatePathWithinProject, logForensicEvent } from '@/lib/security/pathValidator';
+import { validatePathWithinProject, logForensicEvent } from '@sarge/core';
 
 interface FileNode {
   name: string;

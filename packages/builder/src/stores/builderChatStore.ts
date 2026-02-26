@@ -2,9 +2,9 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { useThreadGuardianStore } from "@/lib/stores/threadGuardianStore";
-import { countTokens } from "@/lib/threadGuardian/engine";
-import { createDebouncedStorage } from "@/lib/utils/debouncedStorage";
+import { useThreadGuardianStore } from "@sarge/core";
+import { countTokens } from "@sarge/core";
+import { createDebouncedStorage } from "@sarge/core";
 
 // Fixed conversation ID for builder chat (isolated from main chat)
 const BUILDER_CONVERSATION_ID = 'builder-chat';

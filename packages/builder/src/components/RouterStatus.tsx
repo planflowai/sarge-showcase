@@ -2,8 +2,8 @@
 
 import { useEffect } from "react";
 import { Router, Zap, Cloud, Server, ChevronRight } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useBuilderHelpersStore, RouterDecision } from "@/lib/stores/builderHelpersStore";
+import { cn } from "@sarge/core";
+import { useBuilderHelpersStore, RouterDecision } from "../stores/builderHelpersStore";
 
 interface RouterStatusProps {
   className?: string;

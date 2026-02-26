@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
-import { logForensicEvent } from '@/lib/security/pathValidator';
+import { logForensicEvent } from '@sarge/core';
 import {
   appendChangeEntry,
   generateNewLog,
   generateScanLog,
   generateSessionSummary,
   type ChangeEntry
-} from '@/lib/builderLogger';
+} from '../../../lib/builderLogger';
 
 const LOG_FILENAME = 'BUILDER_LOG.md';
 

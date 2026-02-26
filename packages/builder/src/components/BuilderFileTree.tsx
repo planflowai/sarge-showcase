@@ -17,11 +17,11 @@ import {
   RefreshCw,
   X,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@sarge/core";
 import {
   useBuilderDocumentStore,
   type FileEntry,
-} from "@/lib/stores/builderDocumentStore";
+} from "../stores/builderDocumentStore";
 
 // ─── File Icon Detection ─────────────────────────────────────────────────────
 

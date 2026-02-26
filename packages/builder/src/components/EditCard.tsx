@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { FileCode, FilePlus, Check, X, ChevronDown, ChevronUp, Loader2, Eye } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@sarge/core";
 import { Button } from "@/components/ui/button";
 
 interface EditCardProps {

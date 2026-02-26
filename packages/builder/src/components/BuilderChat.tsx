@@ -2,28 +2,28 @@
 
 import { useEffect, useRef, useCallback, useState } from "react";
 import { Send, X, StopCircle, Paperclip, CheckCircle, Bookmark, Database, ImageIcon, MessageSquare, Hammer, Pencil, RefreshCw, Bot, Check, Image as ImageLucide } from "lucide-react";
-import { type Attachment, readFileAsAttachment, formatFileSize } from "@/lib/utils/attachments";
-import { useBuilderChatStore } from "@/lib/stores/builderChatStore";
-import { useChangesStore } from "@/lib/stores/changesStore";
-import { usePromptLibraryStore } from "@/lib/stores/promptLibraryStore";
-import MessageList from "@/components/Builder/MessageList";
-import BuilderMessageBubble from "@/components/Builder/BuilderMessageBubble";
-import ProgressCards, { useProgressSteps } from "@/components/Builder/ProgressCards";
-import { cn } from "@/lib/utils";
+import { type Attachment, readFileAsAttachment, formatFileSize } from "../lib/utils/attachments";
+import { useBuilderChatStore } from "../stores/builderChatStore";
+import { useChangesStore } from "../stores/changesStore";
+import { usePromptLibraryStore } from "@sarge/core";
+import MessageList from "./MessageList";
+import BuilderMessageBubble from "./BuilderMessageBubble";
+import ProgressCards, { useProgressSteps } from "./ProgressCards";
+import { cn } from "@sarge/core";
 import { Button } from "@/components/ui/button";
-import { buildPromptWithContext } from "@/lib/contextInjector";
-import { useKnowledgeStore } from "@/lib/stores/knowledgeStore";
-import { VaultAttachmentModal, getVaultDocumentsForContext } from "@/components/chat/VaultAttachmentModal";
-import { useDraftStore, BUILDER_DRAFT_KEY } from "@/lib/stores/draftStore";
-import { useBuilderModeStore, getBuilderSystemPrompt, getEditModeSystemPrompt, buildEditModePrompt } from "@/lib/stores/builderModeStore";
-import { useBuilderStore } from "@/lib/stores/builderStore";
-import { useThreadGuardianStore } from "@/lib/stores/threadGuardianStore";
-import { startGuardian, stopGuardian, isGuardianRunning } from "@/lib/threadGuardian/engine";
-import { shouldInjectContext, buildContextForModel } from "@/lib/threadGuardian/contextBuilder";
-import { useBuilderHelpersStore } from "@/lib/stores/builderHelpersStore";
+import { buildPromptWithContext } from "@sarge/core";
+import { useKnowledgeStore } from "@sarge/core";
+import { VaultAttachmentModal, getVaultDocumentsForContext } from "@sarge/chat";
+import { useDraftStore, BUILDER_DRAFT_KEY } from "@sarge/core";
+import { useBuilderModeStore, getBuilderSystemPrompt, getEditModeSystemPrompt, buildEditModePrompt } from "../stores/builderModeStore";
+import { useBuilderStore } from "../stores/builderStore";
+import { useThreadGuardianStore } from "@sarge/core";
+import { startGuardian, stopGuardian, isGuardianRunning } from "@sarge/core";
+import { shouldInjectContext, buildContextForModel } from "@sarge/core";
+import { useBuilderHelpersStore } from "../stores/builderHelpersStore";
 import HelperBubble from "./HelperBubble";
-import { useStreamingUpdates } from "@/hooks/useStreamingUpdates";
-import { useAIHelpers } from "@/hooks/useAIHelpers";
+import { useStreamingUpdates } from "../hooks/useStreamingUpdates";
+import { useAIHelpers } from "../hooks/useAIHelpers";
 
 interface BuilderChatProps {
   selectedModel: string | null;

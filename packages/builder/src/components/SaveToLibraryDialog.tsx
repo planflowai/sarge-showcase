@@ -4,14 +4,14 @@ import { useState, useCallback } from "react";
 import { X, Save, Tag, Folder, FileText, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
+import { cn } from "@sarge/core";
 import {
   useComponentLibraryStore,
   COMPONENT_CATEGORIES,
   type ComponentCategory,
   detectCodeLanguage,
-} from "@/lib/stores/componentLibraryStore";
-import { useUIStore } from "@/lib/stores/uiStore";
+} from "../stores/componentLibraryStore";
+import { useUIStore } from "@sarge/core";
 
 interface SaveToLibraryDialogProps {
   isOpen: boolean;

@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { Check, X, Loader2, Copy, ChevronDown, ChevronUp } from "lucide-react";
 import ReactMarkdown from "react-markdown";
-import { cn } from "@/lib/utils";
-import { HelperResponse, HELPER_TYPES, HelperType } from "@/lib/stores/builderHelpersStore";
+import { cn } from "@sarge/core";
+import { HelperResponse, HELPER_TYPES, HelperType } from "../stores/builderHelpersStore";
 
 interface HelperBubbleProps {
   response: HelperResponse;

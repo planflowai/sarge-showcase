@@ -3,8 +3,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { X, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { useBuilderStore } from "@/lib/stores/builderStore";
+import { cn } from "@sarge/core";
+import { useBuilderStore } from "../stores/builderStore";
 
 const COMMAND_TIMEOUT_MS = 30_000;
 

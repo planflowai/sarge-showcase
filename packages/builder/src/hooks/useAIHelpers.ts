@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
-import type { BuilderMessage } from "@/lib/stores/builderChatStore";
-import type { HelperResponse, BuilderHelper, TriggerMode } from "@/lib/stores/builderHelpersStore";
-import { buildHelperPrompt } from "@/lib/helperPrompts";
+import type { BuilderMessage } from "../stores/builderChatStore";
+import type { HelperResponse, BuilderHelper, TriggerMode } from "../stores/builderHelpersStore";
+import { buildHelperPrompt } from "../lib/helperPrompts";
 
 interface UseAIHelpersProps {
   messages: BuilderMessage[];

@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useMemo } from "react";
 import { X, Search, Sparkles, Clock, Zap, Layers, Grid3X3 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@sarge/core";
 import { Button } from "@/components/ui/button";
 import {
   usePromptLibraryStore,
@@ -12,7 +12,7 @@ import {
   type PromptCategory,
   getComplexityColor,
   getOutputTypeLabel,
-} from "@/lib/stores/promptLibraryStore";
+} from "@sarge/core";
 
 interface PromptGalleryProps {
   isOpen: boolean;

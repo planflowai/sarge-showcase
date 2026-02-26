@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { createDebouncedStorage } from "@/lib/utils/debouncedStorage";
-import type { ModelPreference } from "@/lib/builderAutoRouter";
+import { createDebouncedStorage } from "@sarge/core";
+import type { ModelPreference } from "../lib/builderAutoRouter";
 
 export type BuilderMode = "plan" | "build";
 export type EditMode = "edit" | "generate";

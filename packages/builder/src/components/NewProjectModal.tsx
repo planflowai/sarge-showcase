@@ -33,10 +33,10 @@ import {
   Loader2,
   Folder,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { type SaaSTemplate } from "@/lib/stores/saasStore";
-import { useBuilderStore } from "@/lib/stores/builderStore";
-import { PROJECT_TEMPLATES } from "@/lib/projectTemplates";
+import { cn } from "@sarge/core";
+import { type SaaSTemplate } from "@sarge/core";
+import { useBuilderStore } from "../stores/builderStore";
+import { PROJECT_TEMPLATES } from "../lib/projectTemplates";
 
 interface NewProjectModalProps {
   isOpen: boolean;

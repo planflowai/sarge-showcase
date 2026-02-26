@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { CheckCircle2, Circle, Loader2, Sparkles, Code2, Eye, Zap, Clock, FileCode, Cpu } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@sarge/core";
 
 interface BuilderProgressProps {
   isGenerating: boolean;

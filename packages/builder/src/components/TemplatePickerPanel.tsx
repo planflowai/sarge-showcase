@@ -22,16 +22,16 @@ import {
   Gamepad2,
   Globe,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@sarge/core";
 import {
   useSaaSStore,
   type SaaSTemplate,
-} from "@/lib/stores/saasStore";
+} from "@sarge/core";
 import {
   useUnifiedCapabilitiesStore,
   CAPABILITY_DEFINITIONS,
   type CapabilityId,
-} from "@/lib/stores/unifiedCapabilitiesStore";
+} from "@sarge/core";
 import NewProjectModal from "./NewProjectModal";
 
 interface TemplatePickerPanelProps {

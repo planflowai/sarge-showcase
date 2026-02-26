@@ -13,9 +13,9 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { createDebouncedStorage } from "@/lib/utils/debouncedStorage";
+import { createDebouncedStorage } from "@sarge/core";
 import { useWorkspaceStore } from './workspaceStore';
-import { ARTIFACT_MAX_VERSIONS } from '@/lib/constants';
+import { ARTIFACT_MAX_VERSIONS } from '@sarge/core';
 
 interface ArtifactVersion {
   code: string;
