@@ -5,6 +5,14 @@ const emptyStub = path.resolve(__dirname, "lib/stubs/empty.ts");
 
 const nextConfig: NextConfig = {
   transpilePackages: ["@sarge/core", "@sarge/chat", "@sarge/builder"],
+  async rewrites() {
+    return [
+      {
+        source: "/api/:path*",
+        destination: "http://localhost:5000/api/:path*",
+      },
+    ];
+  },
   webpack: (config, { isServer }) => {
     // Stub out packages that builder-standalone doesn't need.
     // @sarge/diagnostics gets pulled in transitively via forensic components.
