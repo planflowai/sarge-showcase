@@ -54,11 +54,13 @@ L:\ai_builder\ai_builderv2\
 │   │   └── MobileNav.tsx
 │   │
 │   ├── Builder/
-│   │   ├── BuilderPage.tsx       # Main 3-panel layout
+│   │   ├── BuilderPage.tsx       # Main 3-panel layout, auto-apply flow
 │   │   ├── BuilderSidebar.tsx    # Model selector + file explorer
-│   │   ├── BuilderChat.tsx       # Isolated builder chat
-│   │   ├── ArtifactPanel.tsx     # Code/Preview/Diff tabs
+│   │   ├── BuilderChat.tsx       # Isolated builder chat, image context injection
+│   │   ├── ArtifactPanel.tsx     # Code/Preview/Diff tabs, version nav
 │   │   ├── ArtifactCard.tsx      # Compact card in chat
+│   │   ├── EditProgressPanel.tsx # Edit block streaming progress
+│   │   ├── StreamingMessageRenderer.tsx  # Progressive edit application
 │   │   ├── BuilderCodeEditor.tsx # Monaco wrapper
 │   │   ├── BuilderPreview.tsx    # iframe sandbox
 │   │   ├── BuilderDiffEditor.tsx # Monaco diff viewer
@@ -114,9 +116,17 @@ L:\ai_builder\ai_builderv2\
 │   │   ├── storageManager.ts     # localStorage utility
 │   │   └── [other utilities]/
 │   │
-│   ├── contextInjector.ts        # BUILDER_LOG + vault doc injection
+│   ├── contextInjector.ts        # BUILDER_LOG + vault doc injection + image context
+│   ├── builderLogger.ts          # BUILDER_LOG.md generation/append utilities
 │   ├── capabilityOrchestrator.ts # guardianAvailable flag
 │   ├── constants.ts              # Global constants
+│   ├── utils/
+│   │   ├── cn.ts                 # Tailwind classname merge
+│   │   ├── formatNumber.ts
+│   │   ├── storageManager.ts     # localStorage utility
+│   │   ├── attachments.ts        # Shared attachment handling (chat + builder)
+│   │   ├── debouncedStorage.ts   # Debounced localStorage for stores
+│   │   └── [other utilities]/
 │   ├── supabase/                 # Supabase client (optional backend)
 │   └── [other helpers]/
 │
@@ -280,6 +290,39 @@ User message
 
 ---
 
+## Builder Auto-Apply Flow
+
+When `builderStore.autoApply` is enabled:
+1. AI generates code (FILE: blocks or full code block)
+2. Code extracted and stored in artifactStore
+3. File changes automatically written to disk via `/api/builder/write-file`
+4. Change logged to BUILDER_LOG.md via `/api/builder/update-log` (append action)
+5. File tree refreshed via `/api/builder/list-directory`
+6. No user confirmation required (toggle disables for manual apply/reject)
+
+### Asset Proxy
+- Preview iframe loads project assets via `/api/builder/asset?projectPath=...&file=...`
+- Replaces broken relative paths in srcdoc with absolute API URLs
+- Serves images, fonts, CSS, JS, media with correct MIME types
+- Path traversal protection: resolved path must be within project directory
+
+### Image Context Injection
+- BuilderChat scans file tree for image files (png, jpg, gif, webp, svg, ico)
+- Image paths injected into AI system prompt context
+- AI can reference existing project images by correct relative path
+- Prevents AI from inventing non-existent image filenames
+
+### BUILDER_LOG.md System
+- **Module:** `lib/builderLogger.ts`
+- **API:** `POST /api/builder/update-log` with 4 actions:
+  - `init` — Create new log skeleton
+  - `append` — Add timestamped change entry (file path, action, summary, model)
+  - `scan` — Walk project tree and generate inventory
+  - `summary` — Generate session summary with changes, current state, next steps
+- **Context:** Log content injected into builder AI context via `readBuilderLog()` in contextInjector.ts
+
+---
+
 ## API Route Categories
 
 ### Streaming Routes (Server-Sent Events)
@@ -294,6 +337,8 @@ User message
 - `/api/builder/write-file`
 - `/api/builder/files` (CRUD)
 - `/api/builder/create-project`
+- `/api/builder/asset` (binary file proxy for preview)
+- `/api/builder/update-log` (BUILDER_LOG.md management)
 
 ### Completion Routes (non-streaming)
 - `/api/test/completion` — Single D1/D2/D3/Judge pass
@@ -415,3 +460,4 @@ npm run dev
 ---
 
 Generated from SARGE_PLATFORM.md and codebase analysis
+Last updated: 2026-02-25

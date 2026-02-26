@@ -5,20 +5,22 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatDate(date: Date): string {
+export function formatDate(date: Date | string): string {
+  const d = date instanceof Date ? date : new Date(date);
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
     hour: "numeric",
     minute: "2-digit",
-  }).format(date);
+  }).format(d);
 }
 
-export function formatRelativeDate(date: Date): string {
+export function formatRelativeDate(date: Date | string): string {
+  const d = date instanceof Date ? date : new Date(date);
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const target = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const target = new Date(d.getFullYear(), d.getMonth(), d.getDate());
   const diffDays = Math.floor(
     (today.getTime() - target.getTime()) / (1000 * 60 * 60 * 24)
   );

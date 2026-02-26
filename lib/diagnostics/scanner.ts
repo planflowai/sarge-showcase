@@ -34,6 +34,7 @@ const SKIP_FILE_PATTERNS = [
   /\.min\.css$/,
   /\.bundle\.js$/,
   /\.production\./,
+  /lib[\\/]diagnostics[\\/]scanner\.ts$/, // Don't scan ourselves — pattern strings trigger false positives
 ];
 
 // Patterns that indicate issues

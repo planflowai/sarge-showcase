@@ -1,6 +1,6 @@
 # Pages Reference — SARGE Platform
 
-All 19 routes with purposes, components, and API dependencies.
+All 21 routes with purposes, components, and API dependencies.
 
 ---
 
@@ -19,11 +19,11 @@ All 19 routes with purposes, components, and API dependencies.
 - **Route:** `/dashboard`
 - **File:** `app/dashboard/page.tsx`
 - **Emoji:** 📊
-- **Purpose:** Landing page with animated grid background, 16-module grid display, provider status cards (live model counts), Thread Guardian stats, and platform health metrics.
-- **Key Components:** Module grid (MODULES_DATA), Provider status cards, Guardian stats card, Dynamic stats
-- **API Routes:** /api/status, /api/models/scan
+- **Purpose:** Landing page with animated grid background, 20-module grid display (5-col), 7 provider status cards (live model counts), Thread Guardian stats, and platform health metrics.
+- **Key Components:** Module grid (MODULES_DATA — 20 modules), Provider status cards (7 providers including LM Studio), Guardian stats card, Dynamic stats
+- **API Routes:** /api/status, /api/models/scan, /api/lmstudio/models
 - **Stores:** modelStore, providerStore, threadGuardianStore, settingsStore
-- **Special Feature:** All stats derived from live store state (not hardcoded)
+- **Special Feature:** All stats derived from live store state (API routes: 42, stores: 43). Includes Apps Hub, Multi-Chat, Resume Tailor module cards.
 
 ---
 
@@ -69,18 +69,20 @@ All 19 routes with purposes, components, and API dependencies.
 - **Emoji:** 🔨
 - **Purpose:** Full-screen code generation environment replacing Pinegrow + Claude Code. Three-panel layout: slim sidebar (model selector + file explorer) | chat | artifact panel (code/preview/diff). Auto-streams live preview during code generation.
 - **Key Components:**
-  - BuilderPage.tsx — 3-panel layout, drag-resize
+  - BuilderPage.tsx — 3-panel layout, drag-resize, auto-apply flow
   - BuilderSidebar.tsx — model selector + file tree
-  - BuilderChat.tsx — isolated streaming chat, artifact card emission
-  - ArtifactPanel.tsx — Monaco editor + iframe preview + diff viewer
+  - BuilderChat.tsx — isolated streaming chat, artifact card emission, image context injection
+  - ArtifactPanel.tsx — Monaco editor + iframe preview + diff viewer + version navigation
   - BuilderTerminal.tsx — sandboxed shell (30s timeout, OS-aware)
   - FileExplorer.tsx / FileTree.tsx — project navigator
   - ArtifactCard.tsx — compact code card in chat
+  - EditProgressPanel.tsx — edit block streaming progress UI
+  - StreamingMessageRenderer.tsx — progressive edit application during streaming
   - BuilderDiffEditor.tsx — Monaco diff viewer
   - contentDetector.ts — HTML vs React vs snippet detection
-- **API Routes:** /api/builder/* (11 routes), /api/chat
+- **API Routes:** /api/builder/* (13 routes including asset proxy + update-log), /api/chat, /api/test/stream
 - **Stores:** builderStore, builderChatStore, artifactStore, builderModeStore
-- **Features:** Vault/guardian context injection, BUILDER_LOG.md tracking, live preview, artifact versioning (max 10)
+- **Features:** Vault/guardian context injection, BUILDER_LOG.md tracking (init/append/scan/summary), live preview, artifact versioning (max 10), auto-apply mode, asset proxy for preview, image context injection, plan/build mode, edit/generate mode, auto-router
 
 ---
 
@@ -233,12 +235,25 @@ All 19 routes with purposes, components, and API dependencies.
 
 ---
 
-## 19. Apps (NEW)
+## 19. Apps Hub
 - **Route:** `/apps`
 - **File:** `app/apps/page.tsx`
 - **Emoji:** 📱
-- **Purpose:** Applications hub (placeholder, future expansion).
-- **Status:** Framework in place, content TBD
+- **Purpose:** Applications hub with app card grid. Active apps: Resume Tailor. Others: Coming Soon placeholders.
+- **Sidebar:** Hidden (in `SIDEBAR_HIDDEN_ROUTES`)
+
+---
+
+## 20. Resume Tailor
+- **Route:** `/apps/resume-tailor`
+- **File:** `components/apps/ResumeTailor.tsx`
+- **Emoji:** 📄
+- **Purpose:** AI-powered resume and cover letter tailoring. 5-stage pipeline: Input → Analysis (keyword extraction) → Tailor (streaming) → Cover Letter (streaming) → Download (PDF/DOCX).
+- **Key Components:** ResumeTailor (orchestrates 5 stages)
+- **API Routes:** /api/chat (keyword extraction via Haiku), /api/test/stream (streaming tailoring + cover letter)
+- **Stores:** resumeTailorStore
+- **Export:** PDF via jsPDF (`lib/export/resumePdf.ts`), DOCX via docx package (`lib/export/resumeDocx.ts`)
+- **Sidebar:** Hidden
 
 ---
 
@@ -264,8 +279,10 @@ All 19 routes with purposes, components, and API dependencies.
 | /vault | Vault | ✅ | — | No |
 | /component-library | Components | ✅ | — | No |
 | /demo | Demo | ✅ | — | No |
-| /apps | Apps | ✅ | — | Yes |
+| /apps | Apps Hub | ✅ | — | Yes |
+| /apps/resume-tailor | Resume Tailor | ✅ | — | Yes |
 
 ---
 
 Generated from SARGE_PLATFORM.md
+Last updated: 2026-02-25

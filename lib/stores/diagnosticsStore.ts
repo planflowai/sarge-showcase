@@ -79,6 +79,7 @@ interface DiagnosticsState {
   setAnalysisProvider: (provider: string) => void;
   setAnalysisModel: (model: string) => void;
   exportChangelog: () => string;
+  exportScanReport: () => string;
   clearChangelog: () => void;
   clearFindings: () => void;
   addFindings: (findings: Finding[]) => void;
@@ -132,7 +133,7 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
   },
 
   startScan: async (depth) => {
-    set({ isScanning: true, scanDepth: depth, scanProgress: 0 });
+    set({ isScanning: true, scanDepth: depth, scanProgress: 0, findings: [], selectedFindingId: null });
   },
 
   stopScan: () => {
@@ -160,8 +161,68 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
   },
 
   exportChangelog: () => {
-    // Return changelog as JSON string
-    return JSON.stringify([], null, 2);
+    const state = get();
+    const report = {
+      exportedAt: new Date().toISOString(),
+      scanDepth: state.scanDepth,
+      lastScanTime: state.lastScanTime ? new Date(state.lastScanTime).toISOString() : null,
+      totalFiles: state.totalFiles,
+      filesScanned: state.filesScanned,
+      summary: {
+        total: state.findings.length,
+        errors: state.findings.filter(f => f.type === 'error').length,
+        warnings: state.findings.filter(f => f.type === 'warning').length,
+        security: state.findings.filter(f => f.type === 'security').length,
+        enhancements: state.findings.filter(f => f.type === 'enhancement').length,
+        critical: state.findings.filter(f => f.severity === 'critical').length,
+        high: state.findings.filter(f => f.severity === 'high').length,
+        medium: state.findings.filter(f => f.severity === 'medium').length,
+        low: state.findings.filter(f => f.severity === 'low').length,
+      },
+      findings: state.findings,
+      changelog: state.changelog,
+    };
+    return JSON.stringify(report, null, 2);
+  },
+
+  exportScanReport: () => {
+    const state = get();
+    const report = {
+      exportedAt: new Date().toISOString(),
+      scanDepth: state.scanDepth,
+      lastScanTime: state.lastScanTime ? new Date(state.lastScanTime).toISOString() : null,
+      totalFiles: state.totalFiles,
+      filesScanned: state.filesScanned,
+      summary: {
+        total: state.findings.length,
+        byType: {
+          error: state.findings.filter(f => f.type === 'error').length,
+          warning: state.findings.filter(f => f.type === 'warning').length,
+          security: state.findings.filter(f => f.type === 'security').length,
+          enhancement: state.findings.filter(f => f.type === 'enhancement').length,
+        },
+        bySeverity: {
+          critical: state.findings.filter(f => f.severity === 'critical').length,
+          high: state.findings.filter(f => f.severity === 'high').length,
+          medium: state.findings.filter(f => f.severity === 'medium').length,
+          low: state.findings.filter(f => f.severity === 'low').length,
+        },
+      },
+      findings: state.findings.map(f => ({
+        id: f.id,
+        file: f.file,
+        line: f.line,
+        column: f.column,
+        type: f.type,
+        severity: f.severity,
+        message: f.message,
+        code: f.code,
+        suggestedFix: f.suggestedFix || null,
+        aiExplanation: f.aiExplanation || null,
+      })),
+      changelog: state.changelog,
+    };
+    return JSON.stringify(report, null, 2);
   },
 
   clearChangelog: () => {

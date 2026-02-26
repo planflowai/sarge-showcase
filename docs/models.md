@@ -139,20 +139,24 @@ All cloud and local providers with models, context windows, and capabilities.
 
 ### LM Studio
 - **ID:** `lmstudio`
-- **Discovery:** Live /v1/models query to localhost:1234
+- **Discovery:** Live /v1/models query to localhost:1234 (via `/api/lmstudio/models`)
 - **Default Port:** 1234
 - **Override Env:** NEXT_PUBLIC_LM_STUDIO_URL
 - **Image Gen:** No
 - **Air-gap:** ✅ Fully supported
 - **Rate Limit:** None (local)
+- **Streaming:** OpenAI-compatible SSE (same protocol as OpenAI/xAI/DeepSeek)
+- **Dashboard:** Live status card with connectivity check
 
 #### Supported Models (OpenAI-compatible API)
-Same models as Ollama, loaded via LM Studio GUI instead of CLI.
+Same models as Ollama, loaded via LM Studio GUI instead of CLI. Any model loaded in LM Studio's model manager appears automatically in SARGE's model dropdown.
 
 **Advantages over Ollama:**
-- GUI model manager
-- Presets for context/temperature
-- Better performance tuning
+- GUI model manager with download/load/unload
+- Presets for context/temperature per model
+- Better performance tuning and GPU layer configuration
+- Visual VRAM/RAM usage monitoring
+- Compatible with OpenAI API format (same routing as cloud providers)
 
 ---
 
@@ -333,3 +337,4 @@ presencePenalty: 0                // No penalty
 ---
 
 Generated from SARGE_PLATFORM.md and provider documentation
+Last updated: 2026-02-25

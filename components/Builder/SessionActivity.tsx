@@ -21,9 +21,10 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 // Simple relative time formatter (no external dependency)
-function formatRelativeTime(date: Date): string {
+function formatRelativeTime(date: Date | string): string {
+  const d = date instanceof Date ? date : new Date(date);
   const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
+  const diffMs = now.getTime() - d.getTime();
   const diffSec = Math.floor(diffMs / 1000);
   const diffMin = Math.floor(diffSec / 60);
   const diffHour = Math.floor(diffMin / 60);
@@ -31,7 +32,7 @@ function formatRelativeTime(date: Date): string {
   if (diffSec < 60) return "just now";
   if (diffMin < 60) return `${diffMin}m ago`;
   if (diffHour < 24) return `${diffHour}h ago`;
-  return date.toLocaleDateString();
+  return d.toLocaleDateString();
 }
 
 interface SessionActivityProps {

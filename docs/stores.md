@@ -160,27 +160,41 @@ All 43 stores, state fields, and persistence methods.
 
 ### builderStore
 - **File:** `lib/stores/builderStore.ts`
-- **Persistence:** localStorage
+- **Persistence:** localStorage (debounced)
 - **Key Fields:**
-  - `projectPath: string`
+  - `projectPath: string | null`
+  - `projectName: string | null`
   - `fileTree: FileNode[]`
-  - `currentFile: File | null`
+  - `currentFilePath: string | null`
+  - `currentFileContent: string`
+  - `currentFileLanguage: string`
   - `isDirty: boolean`
-  - `setProjectPath(path)`
+  - `expandedFolders: string[]`
+  - `autoApply: boolean` (auto-apply file changes without confirmation)
+  - `hydrated: boolean`
+  - `setProject(path, name, tree)`
+  - `clearProject()`
   - `setFileTree(tree)`
-  - `setCurrentFile(file)`
-- **Used By:** Builder page, file explorer
-- **Purpose:** Project state and file navigation
+  - `setCurrentFile(path, content, language)`
+  - `updateCurrentContent(content)`
+  - `setAutoApply(enabled)`
+  - `toggleAutoApply()`
+- **Used By:** BuilderPage, FileExplorer, BuilderChat
+- **Purpose:** Project state, file navigation, auto-apply toggle
 
 ### builderChatStore
 - **File:** `lib/stores/builderChatStore.ts`
-- **Persistence:** localStorage
+- **Persistence:** localStorage (debounced)
 - **Key Fields:**
-  - `messages: ChatMessage[]` (isolated from main chat)
+  - `messages: BuilderMessage[]` (isolated from main chat)
+  - `isStreaming: boolean`
+  - `streamingMessageId: string | null`
   - `addMessage(msg)`
   - `updateMessage(id, content)`
+  - `updateStreamingMessage(id, content)`
+  - `sendMessage(content, model, provider, options)`
 - **Used By:** BuilderChat component
-- **Purpose:** Isolated chat for builder mode (separate from main chat)
+- **Purpose:** Isolated chat for builder mode (separate from main chat), with streaming support and Thread Guardian integration
 
 ### artifactStore
 - **File:** `lib/stores/artifactStore.ts`
@@ -198,16 +212,25 @@ All 43 stores, state fields, and persistence methods.
 
 ### builderModeStore
 - **File:** `lib/stores/builderModeStore.ts`
-- **Persistence:** localStorage
+- **Persistence:** localStorage (version 3, with migration)
 - **Key Fields:**
-  - `sidebarVisible: boolean`
-  - `panelWidths: { sidebar: number, chat: number, artifact: number }`
-  - `activeTab: 'code' | 'preview' | 'diff'`
-  - `setSidebarVisible(visible)`
-  - `setPanelWidths(widths)`
-  - `setActiveTab(tab)`
-- **Used By:** BuilderPage (layout)
-- **Purpose:** Builder UI layout state
+  - `mode: 'plan' | 'build'` (plan = discussion only, build = code generation)
+  - `editMode: 'edit' | 'generate'` (edit = surgical EDIT blocks, generate = full file)
+  - `autoRouterEnabled: boolean` (auto-route to optimal model)
+  - `modelPreference: 'cost' | 'quality'` (auto-router optimization target)
+  - `hydrated: boolean`
+  - `setMode(mode)`, `toggleMode()`
+  - `setEditMode(editMode)`, `toggleEditMode()`
+  - `setAutoRouterEnabled(enabled)`
+  - `setModelPreference(pref)`, `toggleModelPreference()`
+- **Exports:**
+  - `BUILDER_SYSTEM_PROMPTS` — plan/build mode system prompts
+  - `EDIT_MODE_SYSTEM_PROMPT` — surgical edit format instructions
+  - `getBuilderSystemPrompt(mode, isProjectMode)` — returns appropriate prompt
+  - `buildEditModePrompt(currentCode, userMessage)` — wraps code with line numbers for edit mode
+  - `getEditModeSystemPrompt()` — returns edit mode prompt
+- **Used By:** BuilderPage, BuilderChat (mode selection + prompt generation)
+- **Purpose:** Builder mode state (plan/build), edit mode (edit/generate), auto-router preferences
 
 ### builderDocumentStore
 - **File:** `lib/stores/builderDocumentStore.ts`
@@ -243,19 +266,24 @@ All 43 stores, state fields, and persistence methods.
 - **File:** `lib/stores/testModeStore.ts`
 - **Persistence:** localStorage
 - **Key Fields:**
-  - `slots: TestSlot[]` (D1, D2, D3 model selections)
-  - `questions: Question[]`
-  - `poisons: PoisonPill[]`
-  - `history: TestResult[]` (max 50, trim oldest)
-  - `batchModeActive: boolean`
-  - `batchIterations: number`
-  - `debateLogic: DebateLogicTemplate[]`
-  - `setSlotModel(slotIndex, modelId)`
-  - `addQuestion(question)`
-  - `addPoison(pill)`
-  - `addTestResult(result)`
-- **Used By:** Test Mode UI, Library, Batch Mode
-- **Trim:** 50 max entries
+  - `testCases: TestCase[]`
+  - `questions: SavedQuestion[]`
+  - `poisons: SavedPoison[]`
+  - `isRunning: boolean`
+  - `showingTestMode: boolean` / `testModeHidden: boolean`
+  - `batchModeActive: boolean` / `batchRunning: boolean` / `batchPaused: boolean`
+  - `batchCurrentPass: number` / `batchCurrentTest: number`
+  - `batchProgress: number` / `batchTotalTests: number`
+  - `batchId: string`
+  - `batchPassLogs: BatchPassLog[]`
+  - `batchEvents: EnhancedForensicEvent[]`
+  - `batchActivity: string`
+  - `batchHistory: BatchHistoryEntry[]` (persisted batch archives)
+  - `sessionStats: SessionStats`
+  - `debateLogic: DebateLogicTemplates` (D1/D2/D3/Judge prompts, poison injection, keyword detection)
+- **Types:** `TestCase`, `BatchHistoryEntry`, `DebateLogicTemplates`
+- **Used By:** Test Mode UI, Library, Batch Mode, Review
+- **Purpose:** Full test mode state including batch execution, history, forensic events, and debate logic templates
 
 ### debateStore
 - **File:** `lib/stores/debateStore.ts`
@@ -544,3 +572,4 @@ All 43 stores, state fields, and persistence methods.
 ---
 
 Generated from codebase analysis
+Last updated: 2026-02-25

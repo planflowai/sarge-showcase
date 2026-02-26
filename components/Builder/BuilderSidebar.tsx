@@ -917,7 +917,7 @@ export default function BuilderSidebar({ selectedModel, selectedProvider, onMode
                     {change.summary.slice(0, 40)}{change.summary.length > 40 ? '...' : ''}
                   </span>
                   <span className="text-[8px] text-zinc-400 dark:text-zinc-600 flex-shrink-0">
-                    {change.timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                    {new Date(change.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
               </button>

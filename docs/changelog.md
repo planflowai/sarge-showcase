@@ -4,6 +4,78 @@ Version history and feature tracking.
 
 ---
 
+## Session: 2026-02-25
+
+### Changes Made
+
+**Dashboard Updates (a2348b4)**
+- Dashboard module grid expanded from 4-col to 5-col layout
+- Added 4 new module cards: Apps Hub, Multi-Chat, Resume Tailor, Vault (moved from modules to security section)
+- Provider grid expanded from 6-col to 7-col, added **LM Studio** provider card
+- LM Studio live status check via `/api/lmstudio/models`
+- Security grid expanded from 5-col to 7-col with Vault and Thread Guardian cards
+- Updated stat counters: API routes 28→42, stores "20+"→43
+- Settings module tags updated to include "Docs"
+
+**Multi-Chat Architecture Spec (c66061b)**
+- Created `docs/MULTI_CHAT_ARCHITECTURE.md` — full spec for multi-chat workspace + Jury Duty system
+- Clarified Thread Guardian (single-chat security) vs Jury Duty (multi-chat quality) split
+
+**Builder Auto-Apply, Auto-Load, Asset Proxy (00b7f36)**
+- **Auto-apply toggle** in `builderStore` — when enabled, file changes write to disk without confirmation
+- **Asset proxy** — new `GET /api/builder/asset` route serves binary files (images, fonts, media) from project folders for preview iframe
+- **Image context injection** — builder chat detects images in project tree, injects paths into AI context
+- **BUILDER_LOG.md system** — new `POST /api/builder/update-log` route with 4 actions: `init`, `append`, `scan`, `summary`
+- **builderLogger.ts** — new module for generating/appending BUILDER_LOG.md content
+- **attachments.ts** — shared attachment utilities extracted from InputArea (used by both main chat and builder chat)
+- **builderModeStore.ts** — new store for plan/build mode, edit/generate mode, auto-router settings
+- **Edit mode system prompts** — surgical EDIT block format for small changes, full regeneration for large changes
+- **EditProgressPanel** — new component showing EDIT block progress during streaming
+- **read-file route** expanded with additional metadata
+- **list-directory route** — minor fixes
+- **test/stream route** — major expansion (~150 lines changed): batch/chat fixes, improved streaming
+
+**Batch & Chat Fixes (00b7f36)**
+- `testModeStore.ts` reworked: new batch history, forensic event types, session stats
+- `builderChatStore.ts` updated: debounced storage, improved message handling
+- `InputArea.tsx` refactored: attachment logic extracted to shared `lib/utils/attachments.ts`
+- `BatchView.tsx` minor fixes
+
+**On-Topic Poisons + Forensic Logging (94dc153)**
+- On-topic poison pill injection (3 passes: baseline, poisoned, protected)
+- Before/after forensic logging with full infected/recovered response text
+- Kill chain tracking with complete response capture
+
+### Files Created
+- `app/api/builder/asset/route.ts` — Asset proxy for preview iframe
+- `app/api/builder/update-log/route.ts` — BUILDER_LOG.md management (4 actions)
+- `lib/builderLogger.ts` — Changelog generation utilities
+- `lib/stores/builderModeStore.ts` — Builder mode + edit mode + auto-router state
+- `lib/utils/attachments.ts` — Shared attachment handling
+- `components/Builder/EditProgressPanel.tsx` — Edit block streaming progress UI
+- `docs/MULTI_CHAT_ARCHITECTURE.md` — Multi-chat architecture specification
+
+### Files Modified
+- `app/dashboard/page.tsx` — New modules, LM Studio provider, grid layout updates
+- `components/Builder/BuilderPage.tsx` — Auto-apply flow, layout improvements
+- `components/Builder/BuilderChat.tsx` — Image context injection, attachment support
+- `components/Builder/ArtifactPanel.tsx` — Version navigation, expanded toolbar
+- `components/Builder/BuilderMessageBubble.tsx` — Edit mode interception
+- `components/Builder/StreamingMessageRenderer.tsx` — Progressive edit application
+- `components/Builder/MessageList.tsx` — Minor updates
+- `components/chat/InputArea.tsx` — Attachment logic extracted to shared utility
+- `components/test/BatchView.tsx` — Minor fixes
+- `app/api/test/stream/route.ts` — Major streaming expansion
+- `app/api/builder/read-file/route.ts` — Additional metadata
+- `app/api/builder/list-directory/route.ts` — Fixes
+- `lib/stores/builderStore.ts` — Auto-apply toggle, expanded state
+- `lib/stores/builderChatStore.ts` — Debounced storage
+- `lib/stores/testModeStore.ts` — Batch history, forensic events, session stats
+- `lib/contextInjector.ts` — Image context support
+- `lib/types.ts` — New type definitions
+
+---
+
 ## Session: 2026-02-21
 
 ### Changes Made
@@ -23,38 +95,24 @@ Version history and feature tracking.
   - Emoji: 📱
   - Color: Violet
 
-- **IN PROGRESS:** Context injection setup
-  - Selective doc injection (context is mode-aware)
-  - Settings toggle to enable/disable auto-injection
-  - Max 3000 tokens per injection
+- **NEW:** Resume Tailor app (`/apps/resume-tailor`)
+  - 5-stage pipeline: Input → Analysis → Tailor → Cover Letter → Download
+  - PDF export via jsPDF, DOCX export via docx package
+  - Streaming AI processing for tailoring and cover letter stages
 
-### Files Modified
-- `components/layout/Header.tsx` — Added 'apps' to NavMode type, NAV_ITEMS, routing
-- Created `/app/apps/page.tsx` — Placeholder Apps page
+- **COMPLETED:** Context injection setup
+  - Selective doc injection via `getRelevantDocs(mode)` in contextInjector.ts
+  - Settings toggle `buildDocsAutoInject` (defaults to false)
+  - Max 3000 tokens per injection, truncates at newline boundary
 
 ### Files Created
-- `docs/index.md` — Master documentation index
-- `docs/pages.md` — Page reference (19 routes)
-- `docs/ai-logic.md` — AI system prompts and flows
-- `docs/architecture.md` — Tech stack and design
-- `docs/stores.md` — State management (43 stores)
-- `docs/api-routes.md` — API reference (39 endpoints)
-- `docs/models.md` — Provider and model reference
-- `docs/changelog.md` — Version history
-
-### Current Plan
-Next: Implement selective context injection
-1. Update `lib/contextInjector.ts` with `getRelevantDocs(mode)` function
-2. Wire selective injection into system prompts per mode
-3. Add Settings toggle for "Build Docs Auto-Inject"
-4. Test context truncation at 3000 tokens
-
-### Next Steps
-- [ ] Create `getRelevantDocs(mode)` function in contextInjector.ts
-- [ ] Update Settings page to add "Build Docs Auto-Inject" toggle
-- [ ] Wire selective injection into BuilderChat, Chat, Test Mode, etc.
-- [ ] Test that docs are only injected when toggle enabled
-- [ ] Verify context truncation works correctly (no mid-line cuts)
+- `docs/` — 8 documentation files (see above)
+- `app/apps/page.tsx` — Apps hub with card grid
+- `app/apps/resume-tailor/` — Resume Tailor route
+- `components/apps/ResumeTailor.tsx` — 5-stage resume pipeline
+- `lib/stores/resumeTailorStore.ts` — Resume tailor state with persistence
+- `lib/export/resumePdf.ts` — PDF export via jsPDF
+- `lib/export/resumeDocx.ts` — DOCX export via docx package
 
 ---
 
@@ -136,15 +194,22 @@ Next: Implement selective context injection
 - CAUGHT/ECHO/MISS verdicts
 - Batch mode with configurable iterations
 
-### AI Builder (Phase 2 In Progress)
+### AI Builder (Phase 2-3 In Progress)
 - 3-panel layout (sidebar | chat | artifact panel)
 - File explorer with project navigation
 - Code generation with live preview (streaming)
 - Monaco editor with syntax highlighting
 - Artifact versioning (max 10 per artifact)
 - Sandboxed terminal (30s timeout, blocklist protected)
-- BUILDER_LOG.md auto-generation
+- BUILDER_LOG.md auto-generation (init, append, scan, summary actions)
 - Vault/Guardian context injection
+- Auto-apply mode (writes to disk without confirmation)
+- Asset proxy for preview iframe (images, fonts, media)
+- Image context injection (detects images in project tree)
+- Edit mode with surgical EDIT blocks + EditProgressPanel
+- Plan/Build mode toggle
+- Edit/Generate mode toggle
+- Auto-router with cost/quality preference
 
 ### Analysis & Monitoring (Stable ✅)
 - 6-tab AI Analysis hub (chat, debate, test, batch, forensic, review)
@@ -266,4 +331,4 @@ No deprecated features at this time.
 ---
 
 Generated by Build Documentation System
-Last regenerated: 2026-02-21
+Last regenerated: 2026-02-25

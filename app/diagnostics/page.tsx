@@ -29,6 +29,7 @@ import {
   MessageSquarePlus,
   Send,
   X,
+  ClipboardCopy,
 } from "lucide-react";
 import Link from "next/link";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
@@ -40,9 +41,26 @@ import { useAirGapStore } from "@/lib/stores/airGapStore";
 
 const severityColors = {
   critical: "text-red-500 bg-red-500/10 border-red-500/30",
-  high: "text-orange-500 bg-orange-500/10 border-orange-500/30",
-  medium: "text-yellow-500 bg-yellow-500/10 border-yellow-500/30",
-  low: "text-blue-500 bg-blue-500/10 border-blue-500/30",
+  high: "text-orange-400 bg-orange-400/10 border-orange-400/30",
+  medium: "text-yellow-400 bg-yellow-400/10 border-yellow-400/30",
+  low: "text-emerald-400 bg-emerald-400/10 border-emerald-400/30",
+};
+
+// Severity-level icons — each level gets its own shape
+const severityIcons = {
+  critical: AlertCircle,    // filled circle with ! — unmistakable danger
+  high: AlertTriangle,      // triangle warning
+  medium: Shield,           // shield — needs attention
+  low: Lightbulb,           // lightbulb — minor tip
+};
+
+// Severity-level colors for the group headers
+const severityGroupColors = {
+  critical: "text-red-500",
+  high: "text-orange-400",
+  medium: "text-yellow-400",
+  low: "text-emerald-400",
+  info: "text-sky-400",
 };
 
 const typeIcons = {
@@ -53,11 +71,22 @@ const typeIcons = {
 };
 
 const typeColors = {
-  error: "text-red-400",
+  error: "text-orange-400",
   warning: "text-yellow-400",
-  enhancement: "text-emerald-400",
-  security: "text-purple-400",
+  enhancement: "text-sky-400",
+  security: "text-red-400",
 };
+
+// User-facing labels
+const typeLabels: Record<string, string> = {
+  security: "High",
+  error: "Medium",
+  warning: "Low",
+  enhancement: "Info",
+};
+
+// Enhancement / Info specific color — a muted blue that works in both light & dark
+const infoColors = "text-sky-400 bg-sky-400/10 border-sky-400/30";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Main Page Component
@@ -91,6 +120,7 @@ export default function DiagnosticsPage() {
     setAnalysisProvider,
     setAnalysisModel,
     exportChangelog,
+    exportScanReport,
     clearFindings,
     addFindings,
     completeScan,
@@ -198,12 +228,16 @@ export default function DiagnosticsPage() {
   // Get selected finding
   const selectedFinding = findings.find((f) => f.id === selectedFindingId);
 
-  // Group findings by type
-  const findingsByType = {
-    error: findings.filter((f) => f.type === "error"),
-    warning: findings.filter((f) => f.type === "warning"),
-    enhancement: findings.filter((f) => f.type === "enhancement"),
-    security: findings.filter((f) => f.type === "security"),
+  // Severity weight for sorting (higher = more important)
+  const severityWeight: Record<string, number> = { critical: 4, high: 3, medium: 2, low: 1 };
+
+  // Group findings by severity level for clear visual hierarchy
+  const findingsBySeverity = {
+    critical: findings.filter((f) => f.severity === "critical"),
+    high: findings.filter((f) => f.severity === "high"),
+    medium: findings.filter((f) => f.severity === "medium"),
+    low: findings.filter((f) => f.severity === "low"),
+    info: findings.filter((f) => f.type === "enhancement"),
   };
 
   // Handle scan
@@ -229,17 +263,18 @@ export default function DiagnosticsPage() {
         addFindings(data.findings);
       }
 
-      // Mark scan as complete
+      // Mark scan as complete and show changelog
       completeScan();
+      setShowChangelog(true);
     } catch (error) {
       console.error("[diagnostics] Scan error:", error);
       stopScan();
     }
   }, [scanDepth, startScan, stopScan, addFindings, completeScan]);
 
-  // Handle export
+  // Handle export — downloads full scan report as JSON
   const handleExport = useCallback(() => {
-    const json = exportChangelog();
+    const json = exportScanReport();
     const blob = new Blob([json], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -247,7 +282,13 @@ export default function DiagnosticsPage() {
     a.download = `sarge-diagnostics-${new Date().toISOString().split("T")[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
-  }, [exportChangelog]);
+  }, [exportScanReport]);
+
+  // Copy scan report JSON to clipboard
+  const handleCopyReport = useCallback(() => {
+    const json = exportScanReport();
+    navigator.clipboard.writeText(json);
+  }, [exportScanReport]);
 
   // Get models for current provider
   const getModelsForProvider = () => {
@@ -361,141 +402,157 @@ export default function DiagnosticsPage() {
           </div>
         </div>
 
-        {/* Scan Settings */}
-        <div className="p-4 border-b border-zinc-200 dark:border-zinc-800">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-3">
-            Scan Depth
-          </h3>
-          <div className="space-y-1">
-            {(["quick", "standard", "deep"] as ScanDepth[]).map((depth) => (
-              <button
-                key={depth}
-                onClick={() => setScanDepth(depth)}
-                className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm capitalize transition-colors ${
-                  scanDepth === depth
-                    ? "bg-indigo-600/20 text-indigo-600 dark:text-indigo-400"
-                    : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                }`}
-              >
-                {depth}
-              </button>
-            ))}
-          </div>
-          <p className="text-xs text-zinc-400 mt-2">
-            {scanDepth === "quick" && "Fast scan, basic issues only"}
-            {scanDepth === "standard" && "Balanced scan with AI analysis"}
-            {scanDepth === "deep" && "Thorough scan, all file types"}
-          </p>
-        </div>
-
-        {/* Actions */}
-        <div className="p-4 space-y-2 mt-auto">
-          <Button
-            className="w-full justify-start bg-indigo-600 hover:bg-indigo-700 text-white"
-            onClick={() => setShowCustomRequest(true)}
-          >
-            <MessageSquarePlus className="h-4 w-4 mr-2" />
-            Custom Request
-          </Button>
-          <Button
-            variant="ghost"
-            className="w-full justify-start text-zinc-600 dark:text-zinc-400"
-            onClick={() => setShowRollback(true)}
-          >
-            <History className="h-4 w-4 mr-2" />
-            Rollback ({snapshots.length})
-          </Button>
-          <Button
-            variant="ghost"
-            className="w-full justify-start text-zinc-600 dark:text-zinc-400"
-            onClick={() => setShowChangelog(true)}
-          >
-            <FileCode className="h-4 w-4 mr-2" />
-            Changelog ({changelog.length})
-          </Button>
-          <Button
-            variant="ghost"
-            className="w-full justify-start text-zinc-600 dark:text-zinc-400"
-            onClick={handleExport}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Export Log
-          </Button>
-        </div>
+        {/* Spacer */}
+        <div className="flex-1" />
       </div>
 
       {/* ─────────────────────────────────────────────────────────────────────
           MAIN CONTENT
       ───────────────────────────────────────────────────────────────────── */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Scan Controls */}
-        <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-          <div className="flex items-center gap-4">
-            {!isScanning ? (
-              <>
-                <Button
-                  onClick={handleStartScan}
-                  className="bg-indigo-600 hover:bg-indigo-700"
-                >
-                  <Play className="h-4 w-4 mr-2" />
-                  Scan Now
-                </Button>
-                {canResume && (
-                  <Button variant="outline" onClick={resumeScan}>
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Resume
+        {/* Top Toolbar — all actions in one bar */}
+        <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+          <div className="flex items-center gap-2">
+            {/* ── Left group: Scan controls ── */}
+            <div className="flex items-center gap-2">
+              {!isScanning ? (
+                <>
+                  <Button
+                    onClick={handleStartScan}
+                    className="bg-indigo-600 hover:bg-indigo-700"
+                  >
+                    <Play className="h-4 w-4 mr-2" />
+                    Scan Now
                   </Button>
-                )}
-              </>
-            ) : (
-              <Button variant="destructive" onClick={stopScan}>
-                <Square className="h-4 w-4 mr-2" />
-                Stop
+                  {canResume && (
+                    <Button variant="outline" onClick={resumeScan}>
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Resume
+                    </Button>
+                  )}
+                </>
+              ) : (
+                <Button variant="destructive" onClick={stopScan}>
+                  <Square className="h-4 w-4 mr-2" />
+                  Stop
+                </Button>
+              )}
+
+              {/* Scan depth dropdown */}
+              <select
+                value={scanDepth}
+                onChange={(e) => setScanDepth(e.target.value as ScanDepth)}
+                className="rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-sm text-zinc-700 dark:text-zinc-300 focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+              >
+                <option value="quick">Quick Look</option>
+                <option value="standard">Standard</option>
+                <option value="deep">Deep Dive</option>
+              </select>
+            </div>
+
+            {/* ── Divider ── */}
+            <div className="w-px h-6 bg-zinc-300 dark:bg-zinc-700 mx-1" />
+
+            {/* ── Center group: Actions ── */}
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                onClick={() => setShowCustomRequest(true)}
+                className="text-indigo-600 dark:text-indigo-400 border-indigo-500/30 hover:bg-indigo-600/10"
+              >
+                <MessageSquarePlus className="h-4 w-4 mr-2" />
+                Ask AI to Fix
               </Button>
-            )}
 
-            {findings.length > 0 && !isScanning && (
-              <Button variant="ghost" onClick={clearFindings}>
-                <Trash2 className="h-4 w-4 mr-2" />
-                Clear
+              <Button
+                variant="ghost"
+                onClick={() => setShowChangelog(true)}
+                className="text-zinc-600 dark:text-zinc-400"
+              >
+                <FileCode className="h-4 w-4 mr-2" />
+                Results ({findings.length})
               </Button>
-            )}
 
-            {/* Progress */}
-            {isScanning && (
-              <div className="flex-1 flex items-center gap-3">
-                <div className="flex-1 h-2 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-indigo-600 transition-all duration-300"
-                    style={{ width: `${scanProgress}%` }}
-                  />
-                </div>
-                <span className="text-sm text-zinc-500 w-24">
-                  {filesScanned}/{totalFiles} files
-                </span>
-                <span className="text-xs text-zinc-400 capitalize">
-                  {scanPhase}
-                </span>
-              </div>
-            )}
+              <Button
+                variant="ghost"
+                onClick={() => setShowRollback(true)}
+                className="text-zinc-600 dark:text-zinc-400"
+              >
+                <History className="h-4 w-4 mr-2" />
+                Restore ({snapshots.length})
+              </Button>
 
-            {/* Last scan time */}
+              {findings.length > 0 && !isScanning && (
+                <Button variant="ghost" onClick={clearFindings} className="text-zinc-600 dark:text-zinc-400">
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Clear
+                </Button>
+              )}
+            </div>
+
+            {/* ── Divider ── */}
+            <div className="w-px h-6 bg-zinc-300 dark:bg-zinc-700 mx-1" />
+
+            {/* ── Right group: Export ── */}
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleExport}
+                disabled={findings.length === 0}
+                className="text-zinc-500 dark:text-zinc-500"
+              >
+                <Download className="h-4 w-4 mr-1" />
+                Export
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleCopyReport}
+                disabled={findings.length === 0}
+                className="text-zinc-500 dark:text-zinc-500"
+              >
+                <ClipboardCopy className="h-4 w-4 mr-1" />
+                Copy
+              </Button>
+            </div>
+
+            {/* ── Last scan time — far right ── */}
             {!isScanning && lastScanTime && (
-              <span className="text-xs text-zinc-400 ml-auto">
-                Last scan: {lastScanTime.toLocaleString()}
+              <span className="text-xs text-zinc-400 ml-auto whitespace-nowrap">
+                Last scan: {new Date(lastScanTime).toLocaleString()}
               </span>
             )}
           </div>
+
+          {/* Progress bar — below buttons when scanning */}
+          {isScanning && (
+            <div className="flex items-center gap-3 mt-3">
+              <div className="flex-1 h-2 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-indigo-600 transition-all duration-300"
+                  style={{ width: `${scanProgress}%` }}
+                />
+              </div>
+              <span className="text-sm text-zinc-500 w-24">
+                {filesScanned}/{totalFiles} files
+              </span>
+              <span className="text-xs text-zinc-400 capitalize">
+                {scanPhase}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Content Area */}
         <div className="flex-1 flex overflow-hidden">
           {/* Findings List */}
           <div className="w-96 border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex flex-col">
-            <div className="p-3 border-b border-zinc-200 dark:border-zinc-800">
-              <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-                Findings ({findings.length})
+            <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800">
+              <h2 className="text-lg font-bold text-zinc-800 dark:text-zinc-100">
+                Findings
               </h2>
+              <p className="text-xs text-zinc-500 mt-0.5">{findings.length} issues found</p>
             </div>
 
             <ScrollArea className="flex-1">
@@ -508,42 +565,52 @@ export default function DiagnosticsPage() {
                   </p>
                 </div>
               ) : (
-                <div className="p-2 space-y-4">
-                  {/* Errors */}
-                  {findingsByType.error.length > 0 && (
-                    <FindingGroup
-                      type="error"
-                      findings={findingsByType.error}
+                <div className="p-2 space-y-3">
+                  {findingsBySeverity.critical.length > 0 && (
+                    <SeverityGroup
+                      severity="critical"
+                      label="Critical"
+                      findings={findingsBySeverity.critical}
                       selectedId={selectedFindingId}
                       onSelect={selectFinding}
                     />
                   )}
 
-                  {/* Warnings */}
-                  {findingsByType.warning.length > 0 && (
-                    <FindingGroup
-                      type="warning"
-                      findings={findingsByType.warning}
+                  {findingsBySeverity.high.length > 0 && (
+                    <SeverityGroup
+                      severity="high"
+                      label="High"
+                      findings={findingsBySeverity.high}
                       selectedId={selectedFindingId}
                       onSelect={selectFinding}
                     />
                   )}
 
-                  {/* Security */}
-                  {findingsByType.security.length > 0 && (
-                    <FindingGroup
-                      type="security"
-                      findings={findingsByType.security}
+                  {findingsBySeverity.medium.length > 0 && (
+                    <SeverityGroup
+                      severity="medium"
+                      label="Medium"
+                      findings={findingsBySeverity.medium}
                       selectedId={selectedFindingId}
                       onSelect={selectFinding}
                     />
                   )}
 
-                  {/* Enhancements */}
-                  {findingsByType.enhancement.length > 0 && (
-                    <FindingGroup
-                      type="enhancement"
-                      findings={findingsByType.enhancement}
+                  {findingsBySeverity.low.length > 0 && (
+                    <SeverityGroup
+                      severity="low"
+                      label="Low"
+                      findings={findingsBySeverity.low}
+                      selectedId={selectedFindingId}
+                      onSelect={selectFinding}
+                    />
+                  )}
+
+                  {findingsBySeverity.info.length > 0 && (
+                    <SeverityGroup
+                      severity="info"
+                      label="Enhancements"
+                      findings={findingsBySeverity.info}
                       selectedId={selectedFindingId}
                       onSelect={selectFinding}
                     />
@@ -611,58 +678,62 @@ export default function DiagnosticsPage() {
 // Finding Group Component
 // ─────────────────────────────────────────────────────────────────────────────
 
-function FindingGroup({
-  type,
+function SeverityGroup({
+  severity,
+  label,
   findings,
   selectedId,
   onSelect,
 }: {
-  type: Finding["type"];
+  severity: "critical" | "high" | "medium" | "low" | "info";
+  label: string;
   findings: Finding[];
   selectedId: string | null;
   onSelect: (id: string) => void;
 }) {
-  const Icon = typeIcons[type];
-  const [expanded, setExpanded] = useState(true);
+  // Map severity to icon
+  const iconMap = {
+    critical: AlertCircle,
+    high: AlertTriangle,
+    medium: Shield,
+    low: Lightbulb,
+    info: Lightbulb,
+  };
+  const Icon = iconMap[severity];
+  const color = severityGroupColors[severity];
+  const [expanded, setExpanded] = useState(severity === "critical" || severity === "high");
 
   return (
     <div>
       <button
         onClick={() => setExpanded(!expanded)}
-        className={`flex items-center gap-2 w-full px-2 py-1 text-sm font-medium ${typeColors[type]}`}
+        className={`flex items-center gap-2.5 w-full px-2 py-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800/50 transition-colors ${color}`}
       >
         <ChevronRight
-          className={`h-4 w-4 transition-transform ${expanded ? "rotate-90" : ""}`}
+          className={`h-4 w-4 transition-transform flex-shrink-0 ${expanded ? "rotate-90" : ""}`}
         />
-        <Icon className="h-4 w-4" />
-        <span className="capitalize">{type}s</span>
-        <span className="text-zinc-500">({findings.length})</span>
+        <Icon className="h-5 w-5 flex-shrink-0" />
+        <span className="text-base font-semibold">{label}</span>
+        <span className="text-sm text-zinc-500 ml-auto">({findings.length})</span>
       </button>
 
       {expanded && (
-        <div className="space-y-1 mt-1">
+        <div className="space-y-1 mt-1 ml-3">
           {findings.map((f) => (
             <button
               key={f.id}
               onClick={() => onSelect(f.id)}
-              className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+              className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors ${
                 selectedId === f.id
-                  ? "bg-indigo-600/20 text-indigo-600 dark:text-indigo-400"
-                  : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                  ? "bg-indigo-600/20 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30"
+                  : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-transparent"
               }`}
             >
               <div className="flex items-center gap-2">
-                <span
-                  className={`px-1.5 py-0.5 rounded text-[10px] font-medium uppercase ${
-                    severityColors[f.severity]
-                  }`}
-                >
-                  {f.severity}
-                </span>
-                <span className="truncate flex-1">{f.file.split("/").pop()}</span>
-                <span className="text-zinc-400">:{f.line}</span>
+                <span className="truncate flex-1 font-medium">{f.file.split("/").pop()}</span>
+                <span className="text-zinc-500 text-xs">:{f.line}</span>
               </div>
-              <p className="text-xs text-zinc-500 truncate mt-1">{f.message}</p>
+              <p className="text-xs text-zinc-500 truncate mt-0.5">{f.message}</p>
             </button>
           ))}
         </div>
@@ -816,13 +887,16 @@ function FindingDetail({ finding }: { finding: Finding }) {
     <div className="p-6">
       {/* Header */}
       <div className="flex items-start gap-4 mb-6">
-        <div className={`p-3 rounded-lg ${severityColors[finding.severity]}`}>
-          <Icon className="h-6 w-6" />
+        <div className={`p-3 rounded-xl ${severityColors[finding.severity]}`}>
+          {(() => {
+            const SevIcon = severityIcons[finding.severity] || AlertCircle;
+            return <SevIcon className="h-7 w-7" />;
+          })()}
         </div>
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
             <span
-              className={`px-2 py-0.5 rounded text-xs font-medium uppercase ${
+              className={`px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wide ${
                 severityColors[finding.severity]
               }`}
             >
@@ -832,7 +906,7 @@ function FindingDetail({ finding }: { finding: Finding }) {
               {finding.type}
             </span>
           </div>
-          <h2 className="text-lg font-semibold text-zinc-900 dark:text-white">
+          <h2 className="text-xl font-bold text-zinc-900 dark:text-white mt-1">
             {finding.message}
           </h2>
           <p className="text-sm text-zinc-500 mt-1">
@@ -1028,40 +1102,140 @@ function FindingDetail({ finding }: { finding: Finding }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function ChangelogModal({ onClose }: { onClose: () => void }) {
-  const { changelog, exportChangelog, clearChangelog } = useDiagnosticsStore();
+  const { changelog, findings, scanDepth, lastScanTime, totalFiles, filesScanned, exportScanReport, clearChangelog } = useDiagnosticsStore();
+  const [tab, setTab] = useState<'findings' | 'changelog'>(findings.length > 0 ? 'findings' : 'changelog');
+  const [copied, setCopied] = useState(false);
+
+  // Severity weight for sorting
+  const sevWeight: Record<string, number> = { critical: 4, high: 3, medium: 2, low: 1 };
+
+  // Sort findings: critical first, then security, then by severity
+  const sortedFindings = [...findings].sort((a, b) => {
+    // Critical severity first
+    if (a.severity === 'critical' && b.severity !== 'critical') return -1;
+    if (b.severity === 'critical' && a.severity !== 'critical') return 1;
+    // Security type second
+    if (a.type === 'security' && b.type !== 'security') return -1;
+    if (b.type === 'security' && a.type !== 'security') return 1;
+    // Then by severity weight
+    return (sevWeight[b.severity] || 0) - (sevWeight[a.severity] || 0);
+  });
+
+  const handleExport = () => {
+    const json = exportScanReport();
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `sarge-diagnostics-${new Date().toISOString().split("T")[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(exportScanReport());
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const summary = {
+    critical: findings.filter(f => f.severity === 'critical').length,
+    high: findings.filter(f => f.severity === 'high').length,
+    medium: findings.filter(f => f.severity === 'medium').length,
+    low: findings.filter(f => f.severity === 'low').length,
+    enhancements: findings.filter(f => f.type === 'enhancement').length,
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col">
-        <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-zinc-900 dark:text-white">
-            Changelog ({changelog.length} entries)
-          </h2>
-          <div className="flex gap-2">
-            <Button variant="ghost" size="sm" onClick={() => {
-              const json = exportChangelog();
-              const blob = new Blob([json], { type: "application/json" });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement("a");
-              a.href = url;
-              a.download = `sarge-changelog-${new Date().toISOString().split("T")[0]}.json`;
-              a.click();
-            }}>
-              <Download className="h-4 w-4 mr-1" />
-              Export
-            </Button>
-            <Button variant="ghost" size="sm" onClick={onClose}>
-              ✕
-            </Button>
+      <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-xl w-full max-w-3xl max-h-[85vh] flex flex-col">
+        <div className="p-4 border-b border-zinc-200 dark:border-zinc-800">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-semibold text-zinc-900 dark:text-white">
+              Scan Report
+            </h2>
+            <div className="flex gap-2">
+              <Button variant="ghost" size="sm" onClick={handleCopy}>
+                <ClipboardCopy className="h-4 w-4 mr-1" />
+                {copied ? 'Copied!' : 'Copy JSON'}
+              </Button>
+              <Button variant="ghost" size="sm" onClick={handleExport}>
+                <Download className="h-4 w-4 mr-1" />
+                Export
+              </Button>
+              <Button variant="ghost" size="sm" onClick={onClose}>
+                ✕
+              </Button>
+            </div>
+          </div>
+
+          {/* Summary bar */}
+          {findings.length > 0 && (
+            <div className="flex items-center gap-3 text-xs mb-3">
+              <span className="text-zinc-500">{filesScanned}/{totalFiles} files · {scanDepth} scan{lastScanTime ? ` · ${new Date(lastScanTime).toLocaleString()}` : ''}</span>
+              <span className="ml-auto flex gap-2">
+                {summary.critical > 0 && <span className="px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 font-medium">{summary.critical} Critical</span>}
+                {summary.high > 0 && <span className="px-1.5 py-0.5 rounded bg-orange-400/15 text-orange-400">{summary.high} High</span>}
+                {summary.medium > 0 && <span className="px-1.5 py-0.5 rounded bg-yellow-400/15 text-yellow-400">{summary.medium} Medium</span>}
+                {summary.low > 0 && <span className="px-1.5 py-0.5 rounded bg-emerald-400/15 text-emerald-400">{summary.low} Low</span>}
+                {summary.enhancements > 0 && <span className="px-1.5 py-0.5 rounded bg-sky-400/15 text-sky-400">{summary.enhancements} Info</span>}
+              </span>
+            </div>
+          )}
+
+          {/* Tabs */}
+          <div className="flex gap-1">
+            <button
+              onClick={() => setTab('findings')}
+              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${tab === 'findings' ? 'bg-indigo-600 text-white' : 'text-zinc-400 hover:text-zinc-200'}`}
+            >
+              Findings ({findings.length})
+            </button>
+            <button
+              onClick={() => setTab('changelog')}
+              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${tab === 'changelog' ? 'bg-indigo-600 text-white' : 'text-zinc-400 hover:text-zinc-200'}`}
+            >
+              Applied Fixes ({changelog.length})
+            </button>
           </div>
         </div>
 
         <ScrollArea className="flex-1 p-4">
-          {changelog.length === 0 ? (
-            <p className="text-center text-zinc-500 py-8">No changes recorded yet</p>
+          {tab === 'findings' ? (
+            sortedFindings.length === 0 ? (
+              <p className="text-center text-zinc-500 py-8">No findings. Run a scan first.</p>
+            ) : (
+              <div className="space-y-2">
+                {sortedFindings.map((f) => (
+                  <div
+                    key={f.id}
+                    className="p-3 rounded-lg border bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700"
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${typeColors[f.type]}`}>
+                        {typeLabels[f.type] || f.type}
+                      </span>
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium uppercase ${severityColors[f.severity]}`}>
+                        {f.severity}
+                      </span>
+                      <span className="text-sm font-medium text-zinc-900 dark:text-white">
+                        {f.file}:{f.line}
+                      </span>
+                    </div>
+                    <p className="text-xs text-zinc-600 dark:text-zinc-400">{f.message}</p>
+                    {f.code && (
+                      <pre className="mt-1.5 text-[11px] bg-zinc-100 dark:bg-zinc-900 rounded px-2 py-1 text-zinc-500 overflow-x-auto">{f.code.trim()}</pre>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )
+          ) : (
+          changelog.length === 0 ? (
+            <p className="text-center text-zinc-500 py-8">No fixes applied yet</p>
           ) : (
             <div className="space-y-3">
-              {changelog.map((entry) => (
+              {changelog.map((entry: any) => (
                 <div
                   key={entry.id}
                   className={`p-3 rounded-lg border ${
@@ -1075,7 +1249,7 @@ function ChangelogModal({ onClose }: { onClose: () => void }) {
                       {entry.file}:{entry.line}
                     </span>
                     <span className="text-xs text-zinc-500">
-                      {entry.timestamp.toLocaleString()}
+                      {new Date(entry.timestamp).toLocaleString()}
                     </span>
                   </div>
                   <p className="text-xs text-zinc-600 dark:text-zinc-400 mb-2">
@@ -1092,6 +1266,7 @@ function ChangelogModal({ onClose }: { onClose: () => void }) {
                 </div>
               ))}
             </div>
+          )
           )}
         </ScrollArea>
 
@@ -1130,7 +1305,7 @@ function RollbackModal({ onClose }: { onClose: () => void }) {
       <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col">
         <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-zinc-900 dark:text-white">
-            Rollback Snapshots ({snapshots.length})
+            Restore Points ({snapshots.length})
           </h2>
           <Button variant="ghost" size="sm" onClick={onClose}>
             ✕

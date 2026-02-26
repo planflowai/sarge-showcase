@@ -38,36 +38,58 @@ User submits message on `/` (chat page).
 ### Trigger
 User opens Builder tab (`/builder`) and submits a code generation request.
 
-### Flow
+### Modes
+- **Plan mode** (`builderModeStore.mode = 'plan'`): Discussion only — AI helps plan, does NOT generate code
+- **Build mode** (`builderModeStore.mode = 'build'`): Code generation — AI creates/modifies files
+  - **Generate mode** (`editMode = 'generate'`): Full file output
+  - **Edit mode** (`editMode = 'edit'`): Surgical EDIT blocks (line ranges)
+
+### Flow (Build Mode — Generate)
 1. User message sent to BuilderChat.tsx
-2. buildPromptWithContext() prepends BUILDER_LOG.md context (if available) to system prompt
-3. Vault/Guardian context added to system prompt (invisible to user in chat)
-4. Route to /api/chat with builder system prompt
+2. `getBuilderSystemPrompt('build', isProjectMode)` selects system prompt
+3. Vault/Guardian context + BUILDER_LOG.md + image paths added to system prompt (invisible)
+4. Route to /api/test/stream with builder system prompt
 5. Stream code tokens into ArtifactCard
 6. contentDetector.ts identifies HTML, React, or snippet
-7. Emit ArtifactCard to chat (zero code lines visible, title auto-generated from content)
+7. Emit ArtifactCard to chat (zero code lines visible, title auto-generated)
 8. Code stored in artifactStore with version tracking (max 10 versions)
-9. iframe preview srcdoc updated every 100ms with current code buffer (live streaming preview)
-10. ForensicLog records all file write ops via /api/builder/update-log
+9. iframe preview srcdoc updated with streaming debounce (300ms / 150 char delta)
+10. If auto-apply enabled: file written to disk, BUILDER_LOG.md updated via /api/builder/update-log
+11. Asset proxy serves images/fonts from project via /api/builder/asset
+
+### Flow (Build Mode — Edit)
+1. User message sent to BuilderChat.tsx
+2. `getEditModeSystemPrompt()` returns EDIT block format instructions
+3. `buildEditModePrompt(currentCode, userMessage)` wraps code with line numbers
+4. AI returns surgical EDIT blocks: `EDIT lines 45-48: \`\`\`...code...\`\`\``
+5. `parseEditBlocks()` extracts complete EDIT blocks during streaming
+6. `applyEditBlocks()` applies changes to original code progressively
+7. EditProgressPanel shows per-block progress (streaming / complete)
+8. Preview updates live as each EDIT block completes
+9. If auto-apply: modified file written to disk
 
 ### Models Used
 - builder-tagged models (all cloud + local code models: qwen2.5-coder, deepseek-coder, codellama, starcoder)
+- Auto-router (`builderModeStore.autoRouterEnabled`): selects model by cost or quality preference
 - Fallback: claude-haiku-4-5 if builder model unavailable
 
-### System Prompt Summary
-"You are a code builder assistant. RULES: Generate single, self-contained files. HTML must include ALL CSS in <style> tags and ALL JS in <script> tags. Never reference external files. When modifying existing code, output the COMPLETE updated file. Start with brief explanation (1-3 sentences), then code block. Be concise."
+### System Prompts (from builderModeStore.ts)
+- **Plan mode:** "Help plan, discuss, answer questions. Do NOT write code."
+- **Build mode (generate):** "Expert frontend developer. Generate complete, working vanilla HTML/CSS/JS. Use FILE: format for project files. No React/TypeScript/imports." (Extensive prompt with design philosophy, navigation rules, image handling)
+- **Edit mode:** "Expert code editor. Use EDIT blocks for small changes (`EDIT lines N-M:`), full file for large changes (>50% of file)."
 
 ### Expected Output
-- Single code block (HTML/React/CSS/JS)
-- Brief explanation preceding code
+- **Generate:** FILE: blocks with complete code, or single code block for artifact mode
+- **Edit:** EDIT line range blocks with surgical changes
+- Brief explanation preceding code (1-3 sentences)
 - Artifact card with zero code visible in chat
 - Code stored in artifactStore with version history
 - Live preview updating as tokens stream in
 
-### Phase 2 Features
-- Artifact versioning with diff button (not yet wired)
-- Update cards showing change summary
-- Fullscreen preview mode (planned)
+### Image Context Injection
+- Builder scans file tree for images (png, jpg, gif, webp, svg, ico)
+- Image paths injected into system prompt so AI references correct filenames
+- Asset proxy rewrites relative paths to `/api/builder/asset?...` for preview iframe
 
 ---
 
@@ -333,3 +355,4 @@ All system prompts prepend:
 ---
 
 Generated from codebase analysis and SARGE_PLATFORM.md
+Last updated: 2026-02-25

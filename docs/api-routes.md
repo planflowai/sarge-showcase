@@ -1,6 +1,6 @@
 # API Routes Reference — SARGE Platform
 
-All 39 API endpoints with purposes, request/response shapes, and security checks.
+All 42 API endpoints with purposes, request/response shapes, and security checks.
 
 ---
 
@@ -81,7 +81,7 @@ All 39 API endpoints with purposes, request/response shapes, and security checks
 
 ---
 
-## Builder File Operations (11 routes)
+## Builder File Operations (13 routes)
 
 ### POST /api/builder/check-folder
 - **Purpose:** Validate project directory and check read/write permissions.
@@ -212,18 +212,41 @@ All 39 API endpoints with purposes, request/response shapes, and security checks
 - **30s Timeout:** Enforced with kill signal
 - **Used By:** BuilderTerminal
 
+### GET /api/builder/asset
+- **Purpose:** Serve binary files (images, fonts, media) from a project folder for preview iframe.
+- **Request (query params):**
+  ```
+  GET /api/builder/asset?projectPath=/path/to/project&file=assets/logo.png
+  ```
+- **Response:** Binary file content with correct MIME type and caching headers
+- **Auth:** None
+- **Security:** Path traversal prevention (resolved path must be within project directory)
+- **MIME Types:** png, jpg, gif, webp, svg, ico, bmp, avif, woff/woff2, ttf, otf, css, js, json, mp4, webm, mp3, wav, pdf
+- **Caching:** `Cache-Control: public, max-age=3600`
+- **Used By:** BuilderPreview iframe (loads project assets via absolute URLs instead of broken relative paths)
+
 ### POST /api/builder/update-log
-- **Purpose:** Append to BUILDER_LOG.md (truncates at newline boundary, not mid-line).
+- **Purpose:** Manage BUILDER_LOG.md in project root. Supports 4 actions: init, append, scan, summary.
 - **Request:**
   ```json
   {
-    "entry": "- Created index.html"
+    "projectPath": "/path/to/project",
+    "projectName": "My App",
+    "action": "append" | "init" | "scan" | "summary",
+    "entry": { "filePath": "index.html", "action": "created", "summary": "Initial page", "model": "claude-opus-4-6", "provider": "anthropic" },
+    "sessionSummary": { "recentChanges": [], "currentState": "...", "nextSteps": [] }
   }
   ```
-- **Response:** `{ "success": true }`
+- **Actions:**
+  - `init` — Create new log (skip if exists)
+  - `append` — Add single change entry with timestamp, file path, action, model
+  - `scan` — Walk project directory tree (max depth 5) and generate inventory log (skip if log exists)
+  - `summary` — Generate full session summary with changes, current state, next steps
+- **Response:** `{ "success": true, "path": "...", "action": "..." }`
+- **GET variant:** `GET /api/builder/update-log?projectPath=...` — Read existing log content
 - **Auth:** None
-- **Security:** Newline-boundary truncation (prevents mid-token cutoff)
-- **Used By:** BuilderChat (artifact creation/updates)
+- **Security:** Path normalization, forensic event logging
+- **Used By:** BuilderChat (auto-logging after file changes), BuilderPage (project load)
 
 ---
 
@@ -345,11 +368,12 @@ All 39 API endpoints with purposes, request/response shapes, and security checks
 - **Used By:** Test Mode, Debate Arena
 
 ### POST /api/test/stream
-- **Purpose:** SSE streaming for live test mode.
-- **Request:** Same as /api/test/completion
+- **Purpose:** SSE streaming for live test mode and builder chat. Handles multi-provider routing with streaming support.
+- **Request:** Same as /api/test/completion (plus optional `stream: true`)
 - **Response:** Server-sent events text/event-stream
 - **Auth:** None
-- **Used By:** TestModeView (live display)
+- **Providers:** Routes to Anthropic SDK streaming, OpenAI/xAI/DeepSeek SSE, Ollama chunked, LM Studio OpenAI-compatible, Google Generative AI streaming
+- **Used By:** TestModeView (live display), BuilderChat (code streaming), BatchView, Resume Tailor
 
 ### GET /api/test/status
 - **Purpose:** Test mode health (models available, queue depth).
@@ -642,14 +666,15 @@ All 39 API endpoints with purposes, request/response shapes, and security checks
 | Category | Count | Status |
 |----------|-------|--------|
 | Chat & Core | 5 | ✅ Stable |
-| Builder File Ops | 11 | ✅ Stable |
+| Builder File Ops | 13 | ✅ Stable |
 | Diagnostics | 5 | ✅ Stable |
 | Test & Evaluation | 5 | ✅ Stable |
 | Guardian & Verification | 3 | ✅ Stable |
 | Content & Search | 6 | ✅ Stable |
-| Journal & Infrastructure | 4 | ✅ Stable |
-| **TOTAL** | **39** | ✅ |
+| Journal & Infrastructure | 5 | ✅ Stable |
+| **TOTAL** | **42** | ✅ |
 
 ---
 
 Generated from SARGE_PLATFORM.md and codebase analysis
+Last updated: 2026-02-25
