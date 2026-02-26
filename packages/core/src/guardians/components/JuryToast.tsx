@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { X, AlertTriangle, AlertCircle, Info, TrendingDown, UserMinus } from "lucide-react";
-import { useJuryGuardianStore } from "@/lib/stores/juryGuardianStore";
-import { cn } from "@/lib/utils";
-import type { JuryToastData, JuryToastType } from "@/lib/types/juryGuardian";
+import { useJuryGuardianStore } from "../../stores/juryGuardianStore";
+import { cn } from "../../lib/utils";
+import type { JuryToastData, JuryToastType } from "../../lib/types/juryGuardian";
 
 // Toast colors and icons by type
 const toastConfig: Record<

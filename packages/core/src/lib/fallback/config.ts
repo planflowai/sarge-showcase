@@ -5,7 +5,7 @@
  * Each primary model has 3-4 fallback models from different providers.
  */
 
-import type { Provider } from '@/lib/types';
+import type { Provider } from "../types";
 import { ErrorType } from './errorClassification';
 
 export interface FallbackModel {

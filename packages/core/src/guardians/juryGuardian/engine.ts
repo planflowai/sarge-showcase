@@ -1,13 +1,13 @@
 "use client";
 
-import { useJuryGuardianStore } from "@/lib/stores/juryGuardianStore";
+import { useJuryGuardianStore } from "../../stores/juryGuardianStore";
 import type {
   PaneResponse,
   Tier1Result,
   Tier2Result,
   Tier3Result,
   JuryApiResponse,
-} from "@/lib/types/juryGuardian";
+} from "../../lib/types/juryGuardian";
 
 // Mutex for local model execution - only ONE local model at a time
 let localModelBusy = false;

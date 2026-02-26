@@ -2,9 +2,9 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { SavedQuestion, SavedPoison, BatchPassLog, EnhancedForensicEvent, ForensicEvent, BatchConfig, SessionStats } from "@/lib/types";
-import { DEFAULT_QUESTIONS, DEFAULT_POISONS, DEFAULT_PROMPT_POOLS } from "@/lib/constants/testDefaults";
-import { useForensicLogStore } from "@/lib/stores/forensicLogStore";
+import type { SavedQuestion, SavedPoison, BatchPassLog, EnhancedForensicEvent, ForensicEvent, BatchConfig, SessionStats } from "../lib/types";
+import { DEFAULT_QUESTIONS, DEFAULT_POISONS, DEFAULT_PROMPT_POOLS } from "../lib/constants/testDefaults";
+import { useForensicLogStore } from "./forensicLogStore";
 
 // Helper function
 function generateAIId(): string {
@@ -1136,7 +1136,7 @@ export const useTestModeStore = create<TestModeState>()(persist((set, get) => ({
         } else {
           // Fallback: try to fetch from Ollama directly
           try {
-            const { fetchOllamaModels } = await import('@/lib/providers/localModels');
+            const { fetchOllamaModels } = await import('../lib/providers/localModels');
             const freshModels = await fetchOllamaModels();
             availableModels = freshModels.map(m => ({ ...m, providerId: 'ollama' }));
           } catch (err) {
@@ -1146,7 +1146,7 @@ export const useTestModeStore = create<TestModeState>()(persist((set, get) => ({
         }
       } else {
         // Cloud models: use providers list
-        const { getCloudProviders } = await import('@/lib/providers');
+        const { getCloudProviders } = await import('../lib/providers');
         const providers = getCloudProviders();
         availableModels = providers
           .filter((p: any) => p.id !== 'ollama' && p.id !== 'lmstudio')

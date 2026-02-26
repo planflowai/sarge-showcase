@@ -17,10 +17,10 @@ import {
   TrendingDown,
   RefreshCw,
 } from "lucide-react";
-import { useJuryGuardianStore } from "@/lib/stores/juryGuardianStore";
-import { runTier1, runTier2, vaultNow, getJuryStatus } from "@/lib/juryGuardian/engine";
+import { useJuryGuardianStore } from "../../stores/juryGuardianStore";
+import { runTier1, runTier2, vaultNow, getJuryStatus } from "../juryGuardian/engine";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { cn } from "../../lib/utils";
 
 type TabId = "status" | "ledger" | "timeline" | "config";
 

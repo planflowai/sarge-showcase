@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { Shield, ShieldCheck, ShieldAlert, ShieldX } from "lucide-react";
-import { useJuryGuardianStore } from "@/lib/stores/juryGuardianStore";
-import { getJuryStatus, isJuryActive } from "@/lib/juryGuardian/engine";
-import { cn } from "@/lib/utils";
+import { useJuryGuardianStore } from "../../stores/juryGuardianStore";
+import { getJuryStatus, isJuryActive } from "../juryGuardian/engine";
+import { cn } from "../../lib/utils";
 import { JuryMonitorPanel } from "./JuryMonitorPanel";
 
 interface JuryGuardianIndicatorProps {

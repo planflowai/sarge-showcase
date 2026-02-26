@@ -5,7 +5,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { createDebouncedStorage } from "@/lib/utils/debouncedStorage";
+import { createDebouncedStorage } from "../lib/utils/debouncedStorage";
 
 export type OutputType = 'landing-page' | 'form' | 'dashboard' | 'component' | 'layout' | 'navigation' | 'page';
 export type Complexity = 'simple' | 'medium' | 'complex';

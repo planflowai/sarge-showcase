@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import { providers } from "@/lib/providers";
+import { providers } from "../lib/providers";
 
 export interface Model {
   id: string;

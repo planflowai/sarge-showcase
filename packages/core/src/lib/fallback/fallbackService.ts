@@ -8,7 +8,7 @@ import { classifyError, ClassifiedError, ErrorType } from './errorClassification
 import { CircuitBreaker } from './circuitBreaker';
 import { exponentialBackoff, shouldRetry, getRetryDelay } from './retry';
 import { getFallbackChain, DEFAULT_FALLBACK_CONFIG } from './config';
-import type { Provider } from '@/lib/types';
+import type { Provider } from "../types";
 
 export interface FallbackAttempt {
   attemptNumber: number;

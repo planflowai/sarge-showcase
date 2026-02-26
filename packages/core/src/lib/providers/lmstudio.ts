@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import type { Message, ChatOptions, ChatResponse } from "@/lib/types";
+import type { Message, ChatOptions, ChatResponse } from "../types";
 
 // LM Studio uses an OpenAI-compatible API on local port
 const LM_STUDIO_BASE_URL = process.env.NEXT_PUBLIC_LM_STUDIO_URL || "http://127.0.0.1:1240/v1";

@@ -19,9 +19,9 @@
  * - Air-gap mode is respected: Tier 3 falls back to local models when enabled
  */
 
-import { useThreadGuardianStore } from '@/lib/stores/threadGuardianStore';
-import { useAirGapStore, isCloudProvider } from '@/lib/stores/airGapStore';
-import type { Message } from '@/lib/types';
+import { useThreadGuardianStore } from "../../stores/threadGuardianStore";
+import { useAirGapStore, isCloudProvider } from "../../stores/airGapStore";
+import type { Message } from "../../lib/types";
 import type {
   TierConfig,
   ContextLedger,
@@ -32,7 +32,7 @@ import type {
   TopicEntry,
   ComplexityType,
   Tier3SavePoint,
-} from '@/lib/types/threadGuardian';
+} from "../../lib/types/threadGuardian";
 
 // Local model fallback priority for air-gap mode
 const AIR_GAP_FALLBACK_MODELS = ['llama3.2:latest', 'llama3.2', 'mistral:latest', 'mistral', 'phi4:latest', 'phi4'];

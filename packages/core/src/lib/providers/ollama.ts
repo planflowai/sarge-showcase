@@ -1,5 +1,5 @@
 import { Ollama } from "ollama";
-import type { Message, ChatOptions, ChatResponse } from "@/lib/types";
+import type { Message, ChatOptions, ChatResponse } from "../types";
 
 // Tavily search - direct API call (works server-side)
 async function searchWeb(query: string): Promise<string> {

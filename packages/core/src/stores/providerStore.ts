@@ -2,9 +2,9 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { createDebouncedStorage } from "@/lib/utils/debouncedStorage";
-import { providers } from "@/lib/providers";
-import type { Provider } from "@/lib/types";
+import { createDebouncedStorage } from "../lib/utils/debouncedStorage";
+import { providers } from "../lib/providers";
+import type { Provider } from "../lib/types";
 
 interface ProviderState {
   currentProvider: Provider;

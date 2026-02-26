@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage, StateStorage } from "zustand/middleware";
-import { createDebouncedStorage } from "@/lib/utils/debouncedStorage";
+import { createDebouncedStorage } from "../lib/utils/debouncedStorage";
 import type {
   SharedContextLedger,
   TierConfig,
@@ -15,7 +15,7 @@ import type {
   SavePoint,
   JuryToastData,
   KilledResponse,
-} from "@/lib/types/juryGuardian";
+} from "../lib/types/juryGuardian";
 
 // Array size limits to prevent localStorage bloat
 const MAX_ACTIVE_FACTS = 50;

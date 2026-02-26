@@ -10,7 +10,7 @@
  * 3. Route through the appropriate pipeline
  */
 
-import { useUnifiedCapabilitiesStore, type CapabilityId } from './stores/unifiedCapabilitiesStore';
+import { useUnifiedCapabilitiesStore, type CapabilityId } from '../stores/unifiedCapabilitiesStore';
 import capabilityEventBus from './capabilityEventBus';
 
 // ============================================================================
@@ -193,7 +193,7 @@ export async function preprocessMessage(input: OrchestratorInput): Promise<{
   if (enabled.includes('knowledge_vault')) {
     // TODO: Integrate with knowledgeStore
     // For now, this is a placeholder for RAG context injection
-    const { useKnowledgeStore } = await import('./stores/knowledgeStore');
+    const { useKnowledgeStore } = await import('../stores/knowledgeStore');
     const knowledgeState = useKnowledgeStore.getState();
 
     if (knowledgeState.documents.length > 0) {
@@ -212,7 +212,7 @@ export async function preprocessMessage(input: OrchestratorInput): Promise<{
   // Thread Guardian: Get current context ledger state
   if (enabled.includes('thread_guardian')) {
     try {
-      const { useThreadGuardianStore } = await import('./stores/threadGuardianStore');
+      const { useThreadGuardianStore } = await import('../stores/threadGuardianStore');
       const guardianState = useThreadGuardianStore.getState();
       const activeConvoId = guardianState.activeConversationId;
       const currentLedger = activeConvoId ? guardianState.ledgers[activeConvoId] : null;
@@ -347,7 +347,7 @@ export async function handleErrorWithFallback(
 
   // Import fallback store
   try {
-    const { useFallbackStore } = await import('./stores/fallbackStore');
+    const { useFallbackStore } = await import('../stores/fallbackStore');
     const fallbackState = useFallbackStore.getState();
 
     if (!fallbackState.enabled) {

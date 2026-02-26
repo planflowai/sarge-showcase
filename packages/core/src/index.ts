@@ -16,7 +16,8 @@ export * from './stores/fallbackStore';
 export * from './stores/airGapStore';
 export * from './stores/uiStore';
 export * from './stores/promptStore';
-export * from './stores/promptLibraryStore';
+// promptLibraryStore has a 'Prompt' type that conflicts with promptStore
+export { usePromptLibraryStore } from './stores/promptLibraryStore';
 export * from './stores/truthAnchorStore';
 export * from './stores/pinStore';
 export * from './stores/feedbackStore';
@@ -55,18 +56,68 @@ export * from './lib/fallback/retry';
 export * from './lib/security/cyberSecure';
 export * from './lib/security/pathValidator';
 
-// ─── Types ───────────────────────────────────────────────
-export * from './lib/types/juryGuardian';
-export * from './lib/types/threadGuardian';
+// ─── Types (namespaced re-exports to avoid collisions) ──
+// juryGuardian types — some names conflict with threadGuardian
+export type {
+  JuryToastData,
+  JuryToastType,
+  BehaviorConfig as JuryBehaviorConfig,
+  SharedContextLedger as JuryLedger,
+  KilledResponse as JuryKill,
+  PaneResponse as JuryIntervention,
+  ActiveFact as JuryActiveFact,
+  RetiredFact as JuryRetiredFact,
+  Contradiction as JuryContradiction,
+  DriftAlert as JuryDriftAlert,
+  TierConfig as JuryTierConfig,
+  EchoAlert,
+  ScopeConfig,
+  Tier1Result as JuryTier1Result,
+  Tier2Result as JuryTier2Result,
+  Tier3Result as JuryTier3Result,
+} from './lib/types/juryGuardian';
+
+// threadGuardian types
+export type {
+  GuardianScope,
+  TierStatus,
+  TrackedFact,
+  RetiredFact as ThreadRetiredFact,
+  Contradiction as ThreadContradiction,
+  DriftAlert as ThreadDriftAlert,
+  TierConfig as ThreadTierConfig,
+  Hallucination,
+  TopicEntry,
+  Tier3SavePoint,
+  ModelAttribution,
+  EscalationEntry,
+  ArchivedLedgerItems,
+  ContextLedger,
+  ComplexityType,
+} from './lib/types/threadGuardian';
+
 export * from './lib/types/trading';
 
-// ─── Guardians — Engines ─────────────────────────────────
-export * from './guardians/threadGuardian/engine';
+// ─── Guardians — Engines (namespaced to avoid collisions) ─
+export {
+  runTier1 as threadRunTier1,
+  runTier2 as threadRunTier2,
+  runTier3 as threadRunTier3,
+  runTierManually,
+  isGuardianRunning,
+} from './guardians/threadGuardian/engine';
 export * from './guardians/threadGuardian/contextBuilder';
-export * from './guardians/juryGuardian/engine';
+
+export {
+  runTier1 as juryRunTier1,
+  runTier2 as juryRunTier2,
+  vaultNow,
+  getJuryStatus,
+  isJuryActive,
+} from './guardians/juryGuardian/engine';
 
 // ─── Guardians — Components ─────────────────────────────
 export { default as GuardianMonitorPanel } from './guardians/components/GuardianMonitorPanel';
-export { default as JuryGuardianIndicator } from './guardians/components/JuryGuardianIndicator';
-export { default as JuryMonitorPanel } from './guardians/components/JuryMonitorPanel';
-export { default as JuryToast } from './guardians/components/JuryToast';
+export { JuryGuardianIndicator } from './guardians/components/JuryGuardianIndicator';
+export { JuryMonitorPanel } from './guardians/components/JuryMonitorPanel';
+export { JuryToastContainer as JuryToast } from './guardians/components/JuryToast';

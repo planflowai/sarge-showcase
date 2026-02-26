@@ -6,9 +6,9 @@
  */
 
 import { fallbackService } from './fallbackService';
-import type { Provider } from '@/lib/types';
-import type { Message } from '@/lib/types';
-import { useAirGapStore, isCloudProvider } from '@/lib/stores/airGapStore';
+import type { Provider } from "../types";
+import type { Message } from "../types";
+import { useAirGapStore, isCloudProvider } from "../../stores/airGapStore";
 
 /**
  * Check if air-gap mode blocks this provider
@@ -34,20 +34,20 @@ export class AirGapBlockedError extends Error {
 }
 
 // Import provider implementations
-import { chat as anthropicChat } from '@/lib/providers/anthropic';
-import { chat as openaiChat } from '@/lib/providers/openai';
-import { chat as googleChat } from '@/lib/providers/google';
-import { chat as xaiChat } from '@/lib/providers/xai';
-import { chat as deepseekChat } from '@/lib/providers/deepseek';
-import { chat as ollamaChat } from '@/lib/providers/ollama';
-import { chat as lmstudioChat } from '@/lib/providers/lmstudio';
+import { chat as anthropicChat } from "../providers/anthropic";
+import { chat as openaiChat } from "../providers/openai";
+import { chat as googleChat } from "../providers/google";
+import { chat as xaiChat } from "../providers/xai";
+import { chat as deepseekChat } from "../providers/deepseek";
+import { chat as ollamaChat } from "../providers/ollama";
+import { chat as lmstudioChat } from "../providers/lmstudio";
 
 // Import test provider implementations
-import { OllamaProvider } from '@/lib/test-providers/ollama';
-import { AnthropicProvider } from '@/lib/test-providers/anthropic';
-import { OpenAIProvider } from '@/lib/test-providers/openai';
-import { GoogleProvider } from '@/lib/test-providers/google';
-import { XAIProvider } from '@/lib/test-providers/xai';
+import { OllamaProvider } from "../test-providers/ollama";
+import { AnthropicProvider } from "../test-providers/anthropic";
+import { OpenAIProvider } from "../test-providers/openai";
+import { GoogleProvider } from "../test-providers/google";
+import { XAIProvider } from "../test-providers/xai";
 
 /**
  * Get API key for current provider

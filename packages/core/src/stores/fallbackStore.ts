@@ -7,10 +7,10 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { createDebouncedStorage } from "@/lib/utils/debouncedStorage";
-import { DEFAULT_FALLBACK_CONFIG, DEFAULT_FALLBACK_CHAINS } from '@/lib/fallback/config';
-import type { FallbackConfig, FallbackChain } from '@/lib/fallback/config';
-import type { Provider } from '@/lib/types';
+import { createDebouncedStorage } from "../lib/utils/debouncedStorage";
+import { DEFAULT_FALLBACK_CONFIG, DEFAULT_FALLBACK_CHAINS } from "../lib/fallback/config";
+import type { FallbackConfig, FallbackChain } from "../lib/fallback/config";
+import type { Provider } from "../lib/types";
 
 interface FallbackState {
   // Configuration

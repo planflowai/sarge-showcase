@@ -23,10 +23,10 @@ import {
   ArrowUp,
   RotateCcw,
 } from "lucide-react";
-import { useThreadGuardianStore } from "@/lib/stores/threadGuardianStore";
-import { useAirGapStore, isCloudProvider } from "@/lib/stores/airGapStore";
-import { runTierManually, isGuardianRunning } from "@/lib/threadGuardian/engine";
-import { getActiveWarnings, calculateHealthScore, type GuardianWarning } from "@/lib/threadGuardian/contextBuilder";
+import { useThreadGuardianStore } from "../../stores/threadGuardianStore";
+import { useAirGapStore, isCloudProvider } from "../../stores/airGapStore";
+import { runTierManually, isGuardianRunning } from "../threadGuardian/engine";
+import { getActiveWarnings, calculateHealthScore, type GuardianWarning } from "../threadGuardian/contextBuilder";
 import type {
   TierConfig,
   ContextLedger,
@@ -35,9 +35,9 @@ import type {
   Hallucination,
   DriftAlert,
   ComplexityType,
-} from "@/lib/types/threadGuardian";
+} from "../../lib/types/threadGuardian";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { cn } from "../../lib/utils";
 
 interface GuardianMonitorPanelProps {
   conversationId: string;

@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { createDebouncedStorage } from "@/lib/utils/debouncedStorage";
+import { createDebouncedStorage } from "../lib/utils/debouncedStorage";
 
 export type AnchorConfidence = "high" | "medium" | "low";
 export type AnchorType = "TRUE" | "FALSE" | "UNCERTAIN";

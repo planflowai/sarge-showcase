@@ -2,8 +2,8 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { createDebouncedStorage } from "@/lib/utils/debouncedStorage";
-import type { Role } from "@/lib/types";
+import { createDebouncedStorage } from "../lib/utils/debouncedStorage";
+import type { Role } from "../lib/types";
 
 const STORAGE_KEY = "ai-workbench-roles";
 

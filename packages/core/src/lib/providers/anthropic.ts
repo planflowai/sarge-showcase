@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
-import type { Message, ChatOptions, ChatResponse } from "@/lib/types";
-import { useAirGapStore } from "@/lib/stores/airGapStore";
+import type { Message, ChatOptions, ChatResponse } from "../types";
+import { useAirGapStore } from "../../stores/airGapStore";
 
 export function createClient(apiKey: string) {
   return new Anthropic({ apiKey });

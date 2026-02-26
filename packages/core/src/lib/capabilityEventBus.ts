@@ -12,7 +12,7 @@
  * 5. Forensic Log listens to all events, logs everything
  */
 
-import { EVENT_BUS_MAX_HISTORY } from '@/lib/constants';
+import { EVENT_BUS_MAX_HISTORY } from "./constants";
 
 type EventCallback<T = unknown> = (data: T) => void;
 

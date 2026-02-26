@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { createDebouncedStorage } from "@/lib/utils/debouncedStorage";
+import { createDebouncedStorage } from "../lib/utils/debouncedStorage";
 
 interface AirGapState {
   // Air-gap mode enabled (network isolation)

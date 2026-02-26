@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import type { ChatMode } from "@/lib/types";
+import type { ChatMode } from "../lib/types";
 
 export interface ToastNotification {
   id: string;

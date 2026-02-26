@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import type { Message, ChatOptions, ChatResponse } from "@/lib/types";
-import { useAirGapStore } from "@/lib/stores/airGapStore";
+import type { Message, ChatOptions, ChatResponse } from "../types";
+import { useAirGapStore } from "../../stores/airGapStore";
 
 // Web search for real-time information - calls Tavily directly
 async function searchWeb(query: string): Promise<string> {

@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { createDebouncedStorage } from "@/lib/utils/debouncedStorage";
+import { createDebouncedStorage } from "../lib/utils/debouncedStorage";
 import { useAirGapStore } from "./airGapStore";
 
 // Sync status types
@@ -164,7 +164,7 @@ export const useSyncStatusStore = create<SyncStatusState>()(
 
           try {
             // Import sync functions dynamically to avoid circular dependencies
-            const { processQueuedItem } = await import("@/lib/supabase/syncQueue");
+            const { processQueuedItem } = await import("../lib/supabase/syncQueue");
             const success = await processQueuedItem(item);
 
             if (success) {

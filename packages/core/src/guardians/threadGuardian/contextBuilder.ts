@@ -13,7 +13,7 @@
  * - Recent model attributions (who said what)
  */
 
-import { useThreadGuardianStore } from '@/lib/stores/threadGuardianStore';
+import { useThreadGuardianStore } from "../../stores/threadGuardianStore";
 import type {
   ContextLedger,
   Contradiction,
@@ -21,7 +21,7 @@ import type {
   DriftAlert,
   TrackedFact,
   ModelAttribution,
-} from '@/lib/types/threadGuardian';
+} from "../../lib/types/threadGuardian";
 import { countTokens } from './engine';
 
 // Maximum tokens for the context prefix

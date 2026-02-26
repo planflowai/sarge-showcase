@@ -1,6 +1,6 @@
 import OpenAI from "openai";
-import type { Message, ChatOptions, ChatResponse } from "@/lib/types";
-import { useAirGapStore } from "@/lib/stores/airGapStore";
+import type { Message, ChatOptions, ChatResponse } from "../types";
+import { useAirGapStore } from "../../stores/airGapStore";
 
 export function createClient(apiKey: string) {
   return new OpenAI({
