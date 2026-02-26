@@ -18,6 +18,7 @@ interface MessageListProps {
     status: 'applied' | 'rejected';
   }) => void;
   autoApply?: boolean;
+  onRefreshFileTree?: () => Promise<void>;
 }
 
 /**
@@ -40,6 +41,7 @@ export default function MessageList({
   onViewDiff,
   onChangeTracked,
   autoApply = false,
+  onRefreshFileTree,
 }: MessageListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -71,9 +73,10 @@ export default function MessageList({
           onViewDiff={onViewDiff}
           onChangeTracked={onChangeTracked}
           autoApply={autoApply}
+          onRefreshFileTree={onRefreshFileTree}
         />
       )),
-    [messages, onOpenInEditor, onOpenPreview, projectPath, projectName, onViewDiff, onChangeTracked, autoApply]
+    [messages, onOpenInEditor, onOpenPreview, projectPath, projectName, onViewDiff, onChangeTracked, autoApply, onRefreshFileTree]
   );
 
   return (

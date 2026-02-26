@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import BuilderSidebar from "./BuilderSidebar";
 import BuilderChat from "./BuilderChat";
-import BuilderProgress from "./BuilderProgress";
+// BuilderProgress removed — redundant with ProgressCards in chat
 import SessionActivity from "./SessionActivity";
 import ArtifactPanel from "./ArtifactPanel";
 import BuilderTerminal from "./BuilderTerminal";
@@ -72,13 +72,13 @@ export default function BuilderPage() {
 
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  // Resizable panel width (stored in state, persists during session)
-  const [artifactPanelWidth, setArtifactPanelWidth] = useState<number>(() => {
+  // Resizable chat panel width (stored in state, persists via localStorage)
+  const [chatPanelWidth, setChatPanelWidth] = useState<number>(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('builder-artifact-panel-width');
-      return saved ? parseInt(saved, 10) : 600;
+      const saved = localStorage.getItem('builder-chat-panel-width');
+      return saved ? parseInt(saved, 10) : 480;
     }
-    return 600;
+    return 480;
   });
   const isResizing = useRef(false);
 
@@ -97,7 +97,7 @@ export default function BuilderPage() {
   const [generationStartTime, setGenerationStartTime] = useState<number | null>(null);
 
   // Builder store for file and project state
-  const { updateCurrentContent, projectPath, projectName, fileTree, clearProject, isDirty, markClean } = useBuilderStore();
+  const { updateCurrentContent, projectPath, projectName, fileTree, setFileTree, clearProject, isDirty, markClean, autoApply } = useBuilderStore();
 
   // Document store for project management (multi-file projects)
   const { currentProject: docProject, hydrated: docHydrated, hydrate: hydrateDocuments } = useBuilderDocumentStore();
@@ -116,33 +116,105 @@ export default function BuilderPage() {
   // Builder log content for AI context
   const [builderLogContent, setBuilderLogContent] = useState<string | null>(null);
 
-  // Fetch BUILDER_LOG.md when project opens
+  // Fetch or auto-generate BUILDER_LOG.md when project opens
   useEffect(() => {
     if (!projectPath) {
       setBuilderLogContent(null);
       return;
     }
 
-    const fetchLog = async () => {
+    const fetchOrScanLog = async () => {
       try {
+        // First, try to read existing log
         const res = await fetch(`/api/builder/update-log?projectPath=${encodeURIComponent(projectPath)}`);
         if (res.ok) {
           const data = await res.json();
           if (data.exists && data.content) {
             setBuilderLogContent(data.content);
-            console.log('[BuilderPage] Loaded BUILDER_LOG.md for context');
-          } else {
-            setBuilderLogContent(null);
+            console.log('[BuilderPage] Loaded existing BUILDER_LOG.md for context');
+            return;
+          }
+        }
+
+        // No existing log — auto-generate via full tree scan
+        console.log('[BuilderPage] No BUILDER_LOG.md found, running scan...');
+        const scanRes = await fetch('/api/builder/update-log', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            projectPath,
+            projectName: projectName || 'Project',
+            action: 'scan',
+          }),
+        });
+        if (scanRes.ok) {
+          const scanData = await scanRes.json();
+          // Re-read the newly created log
+          const reRead = await fetch(`/api/builder/update-log?projectPath=${encodeURIComponent(projectPath)}`);
+          if (reRead.ok) {
+            const reData = await reRead.json();
+            if (reData.exists && reData.content) {
+              setBuilderLogContent(reData.content);
+              console.log('[BuilderPage] Auto-generated BUILDER_LOG.md from scan');
+            }
           }
         }
       } catch (err) {
-        console.log('[BuilderPage] No BUILDER_LOG.md found');
+        console.log('[BuilderPage] Failed to fetch/generate BUILDER_LOG.md:', err);
         setBuilderLogContent(null);
       }
     };
 
-    fetchLog();
-  }, [projectPath]);
+    fetchOrScanLog();
+  }, [projectPath, projectName]);
+
+  // Auto-load index.html into preview when project opens
+  useEffect(() => {
+    if (!projectPath || fileTree.length === 0) return;
+
+    // Find index.html (or similar entry point) in the file tree
+    const findEntryFile = (nodes: typeof fileTree): string | null => {
+      for (const node of nodes) {
+        if (node.type === 'file') {
+          const name = node.name.toLowerCase();
+          if (name === 'index.html' || name === 'index.htm') return node.path;
+        }
+        if (node.type === 'directory' && node.children) {
+          const found = findEntryFile(node.children);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+
+    const entryFile = findEntryFile(fileTree);
+    if (!entryFile) return;
+
+    // Only auto-load if artifact panel is empty (don't overwrite active work)
+    if (artifactCode && artifactCode.trim().length > 0) return;
+
+    const loadEntry = async () => {
+      try {
+        const res = await fetch('/api/builder/read-file', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: entryFile, projectPath }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.content) {
+            setArtifactCode(data.content, entryFile);
+            setActiveTab("preview");
+            console.log('[BuilderPage] Auto-loaded entry file:', entryFile);
+          }
+        }
+      } catch (err) {
+        console.log('[BuilderPage] Failed to auto-load entry file:', err);
+      }
+    };
+
+    loadEntry();
+  }, [projectPath, fileTree, artifactCode, setArtifactCode, setActiveTab]);
 
   // Diff view state
   const [diffView, setDiffView] = useState<{
@@ -202,10 +274,10 @@ export default function BuilderPage() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Save panel width to localStorage
+  // Save chat panel width to localStorage
   useEffect(() => {
-    localStorage.setItem('builder-artifact-panel-width', String(artifactPanelWidth));
-  }, [artifactPanelWidth]);
+    localStorage.setItem('builder-chat-panel-width', String(chatPanelWidth));
+  }, [chatPanelWidth]);
 
   // Handle escape key for fullscreen
   useEffect(() => {
@@ -332,6 +404,26 @@ export default function BuilderPage() {
     }
   }, []);
 
+  // Refresh file tree after file operations
+  const handleRefreshFileTree = useCallback(async () => {
+    if (!projectPath) return;
+    try {
+      const res = await fetch('/api/builder/list-directory', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: projectPath }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          setFileTree(data.tree);
+        }
+      }
+    } catch (err) {
+      console.error('[BuilderPage] Failed to refresh file tree:', err);
+    }
+  }, [projectPath, setFileTree]);
+
   // Handle prompt selection from sidebar
   const handlePromptSelect = useCallback((prompt: string) => {
     setPendingPrompt(prompt);
@@ -407,21 +499,24 @@ Please provide the complete modified version of this component. Make only the re
     console.log('[BuilderPage] Inserting component with AI modifications:', componentId, modifications);
   }, [updateCurrentContent, setArtifactCode, setActiveTab]);
 
-  // Handle resize drag
+  // Handle resize drag — controls chat panel width
   const handleResizeStart = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     isResizing.current = true;
     document.body.style.cursor = 'col-resize';
     document.body.style.userSelect = 'none';
 
+    const sidebarWidth = 320; // Fixed sidebar width
+
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizing.current) return;
-      // Calculate new width: window width - mouse X position - sidebar width (320px)
-      const newWidth = window.innerWidth - e.clientX - 320;
-      // Clamp between 400px and 80% of available space
-      const maxWidth = (window.innerWidth - 320 - 480) * 0.9; // Leave 480px for chat minimum
-      const clampedWidth = Math.max(400, Math.min(maxWidth, newWidth));
-      setArtifactPanelWidth(clampedWidth);
+      // Chat width = mouse position minus sidebar width
+      const newChatWidth = e.clientX - sidebarWidth;
+      // Clamp between 300px and 60% of available space (leave room for artifact)
+      const availableWidth = window.innerWidth - sidebarWidth;
+      const maxChatWidth = availableWidth * 0.6;
+      const clampedWidth = Math.max(300, Math.min(maxChatWidth, newChatWidth));
+      setChatPanelWidth(clampedWidth);
     };
 
     const handleMouseUp = () => {
@@ -548,7 +643,7 @@ Please provide the complete modified version of this component. Make only the re
         <div
           ref={chatRef}
           className="h-full flex-shrink-0 flex-grow-0 flex flex-col border-r border-zinc-200 dark:border-zinc-800 overflow-hidden"
-          style={{ width: '480px', maxWidth: '480px', minWidth: '480px' }}
+          style={{ width: `${chatPanelWidth}px`, minWidth: '300px' }}
         >
           <BuilderChat
             selectedModel={selectedModel}
@@ -565,6 +660,8 @@ Please provide the complete modified version of this component. Make only the re
             pendingPrompt={pendingPrompt}
             onPendingPromptConsumed={handlePendingPromptConsumed}
             onPromptSent={handlePromptSent}
+            onRefreshFileTree={handleRefreshFileTree}
+            autoApply={autoApply}
           />
         </div>
 
@@ -580,14 +677,6 @@ Please provide the complete modified version of this component. Make only the re
           className="flex-1 flex-shrink-0 h-full flex flex-col bg-white dark:bg-zinc-900 overflow-hidden"
           style={{ minWidth: '400px' }}
         >
-          {/* Build Progress Indicator - shows during generation and for 30s after */}
-          <BuilderProgress
-            isGenerating={sending || isStreaming}
-            hasCode={previewCode.length > 0}
-            codeLength={previewCode.length}
-            startTime={generationStartTime || undefined}
-          />
-
           {/* Session Activity - shows when NOT generating and there's activity */}
           {!sending && !isStreaming && (
             <SessionActivity

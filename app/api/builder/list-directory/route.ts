@@ -15,12 +15,16 @@ interface FileNode {
 const SUPPORTED_EXTENSIONS = new Set([
   'html', 'htm', 'css', 'scss', 'sass', 'less',
   'js', 'mjs', 'cjs', 'jsx', 'ts', 'tsx',
-  'json', 'md', 'mdx', 'yaml', 'yml', 'xml', 'svg', 'txt'
+  'json', 'md', 'mdx', 'yaml', 'yml', 'xml', 'svg', 'txt',
+  // Images & media
+  'png', 'jpg', 'jpeg', 'gif', 'webp', 'ico', 'bmp', 'avif',
+  // Fonts
+  'woff', 'woff2', 'ttf', 'otf', 'eot',
 ]);
 
 // Directories to skip
 const SKIP_DIRS = new Set([
-  'node_modules', '.git', '.next', 'dist', 'build', '.cache',
+  'node_modules', '.git', '.next', 'dist', '.cache',
   '__pycache__', '.vscode', '.idea', 'coverage', '.turbo'
 ]);
 

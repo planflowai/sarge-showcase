@@ -34,46 +34,9 @@ import {
 } from "@/components/ui/dialog";
 import type { VoiceState } from "@/lib/types";
 
-// ─── Attachment types ───────────────────────────────────────────────────────
-
-export interface Attachment {
-  id: string;
-  name: string;
-  type: string;
-  size: number;
-  content: string; // text content or base64 data URL for images
-  isImage: boolean;
-}
-
-async function readFileAsAttachment(file: File): Promise<Attachment> {
-  const isImage = file.type.startsWith("image/");
-
-  const content = await new Promise<string>((resolve) => {
-    const reader = new FileReader();
-    if (isImage) {
-      reader.onload = () => resolve(reader.result as string);
-      reader.readAsDataURL(file);
-    } else {
-      reader.onload = () => resolve(reader.result as string);
-      reader.readAsText(file);
-    }
-  });
-
-  return {
-    id: crypto.randomUUID(),
-    name: file.name,
-    type: file.type,
-    size: file.size,
-    content,
-    isImage,
-  };
-}
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes}B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
-}
+// ─── Attachment types (shared) ───────────────────────────────────────────────
+import { type Attachment, readFileAsAttachment, formatFileSize } from "@/lib/utils/attachments";
+export { type Attachment, readFileAsAttachment, formatFileSize } from "@/lib/utils/attachments";
 
 // ─── Props ──────────────────────────────────────────────────────────────────
 

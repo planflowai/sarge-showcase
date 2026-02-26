@@ -31,6 +31,7 @@ interface BuilderMessageBubbleProps {
     status: 'applied' | 'rejected';
   }) => void;
   autoApply?: boolean;
+  onRefreshFileTree?: () => Promise<void>;
 }
 
 /**
@@ -55,6 +56,7 @@ export default function BuilderMessageBubble({
   onViewDiff,
   onChangeTracked,
   autoApply = false,
+  onRefreshFileTree,
 }: BuilderMessageBubbleProps) {
   const [copied, setCopied] = useState(false);
   const [fileProposals, setFileProposals] = useState<FileEditProposal[]>([]);
@@ -195,6 +197,9 @@ export default function BuilderMessageBubble({
     } catch (logErr) {
       console.warn('[BuilderMessageBubble] Failed to update builder log:', logErr);
     }
+
+    // Refresh file tree so sidebar shows the new/updated file
+    onRefreshFileTree?.().catch(() => {});
   };
 
   // Handle reject for a file proposal
@@ -279,6 +284,21 @@ export default function BuilderMessageBubble({
         {/* User messages */}
         {isUser && message.content && <div className="text-sm leading-relaxed">{message.content}</div>}
 
+        {/* User attached images */}
+        {isUser && message.images && message.images.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-2">
+            {message.images.map((img, i) => (
+              <img
+                key={i}
+                src={img}
+                alt={`Attached ${i + 1}`}
+                className="h-16 w-16 rounded-md object-cover border border-indigo-400/30 cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => window.open(img, '_blank')}
+              />
+            ))}
+          </div>
+        )}
+
         {/* Generated image */}
         {!isUser && message.imageUrl && (
           <div className="mb-2">
@@ -302,7 +322,11 @@ export default function BuilderMessageBubble({
                 if (proposal) {
                   await handleApplyFile(proposal);
                 } else {
-                  onOpenPreview?.(content);
+                  // Write as a new file even if not in fileProposals
+                  // (StreamingMessageRenderer parsed it from a code block)
+                  const ext = filePath.split('.').pop()?.toLowerCase() || 'html';
+                  const langMap: Record<string, string> = { html: 'html', css: 'css', js: 'javascript', ts: 'typescript', tsx: 'typescript', jsx: 'javascript', json: 'json' };
+                  await handleApplyFile({ filePath, content, language: langMap[ext] || 'plaintext' });
                 }
               }}
               onReject={(filePath) => {

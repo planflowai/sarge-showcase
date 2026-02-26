@@ -77,6 +77,21 @@ export const EXTENSION_LANGUAGE_MAP: Record<string, string> = {
   'xml': 'xml',
   'svg': 'xml',
   'txt': 'plaintext',
+  // Images & media
+  'png': 'plaintext',
+  'jpg': 'plaintext',
+  'jpeg': 'plaintext',
+  'gif': 'plaintext',
+  'webp': 'plaintext',
+  'ico': 'plaintext',
+  'bmp': 'plaintext',
+  'avif': 'plaintext',
+  // Fonts
+  'woff': 'plaintext',
+  'woff2': 'plaintext',
+  'ttf': 'plaintext',
+  'otf': 'plaintext',
+  'eot': 'plaintext',
 };
 
 // Supported file extensions for the file explorer
@@ -118,7 +133,21 @@ export function getFileIcon(fileName: string): string {
     case 'yml':
       return '⚙️';
     case 'svg':
+    case 'png':
+    case 'jpg':
+    case 'jpeg':
+    case 'gif':
+    case 'webp':
+    case 'ico':
+    case 'bmp':
+    case 'avif':
       return '🖼️';
+    case 'woff':
+    case 'woff2':
+    case 'ttf':
+    case 'otf':
+    case 'eot':
+      return '🔤';
     default:
       return '📄';
   }
@@ -135,7 +164,7 @@ export const useBuilderStore = create<BuilderState>()(
       currentFileLanguage: 'plaintext',
       isDirty: false,
       expandedFolders: [],
-      autoApply: false,  // Default to manual apply
+      autoApply: true,  // Default to auto-apply (files write to disk automatically)
       hydrated: false,
 
       hydrate: () => {

@@ -6,6 +6,54 @@ import type { Components } from "react-markdown";
 import EditCard from "./EditCard";
 import { cn } from "@/lib/utils";
 
+/**
+ * Infer a meaningful filename from code content instead of generic "artifact.html"
+ */
+function inferFilename(code: string, ext: string, language: string): string {
+  // HTML files
+  if (ext === "html" || language === "html" || language === "htm") {
+    if (code.includes("<!DOCTYPE html>") || code.includes("<html")) return "index.html";
+    if (code.includes("<nav") || code.includes("navbar")) return "navbar.html";
+    if (code.includes("<form") && (code.includes("login") || code.includes("sign"))) return "login.html";
+    if (code.includes("<form")) return "form.html";
+    if (code.includes("<footer")) return "footer.html";
+    if (code.includes("<header")) return "header.html";
+    return "index.html";
+  }
+  // CSS files
+  if (ext === "css" || language === "css" || language === "scss") {
+    if (code.match(/^:root\s*\{|--[a-z]/m)) return "variables.css";
+    if (code.match(/dark|theme|color-scheme/i)) return "theme.css";
+    return "styles.css";
+  }
+  // TypeScript/React files
+  if (ext === "tsx" || ext === "ts" || language === "tsx" || language === "typescript") {
+    const fnMatch = code.match(/export\s+default\s+function\s+(\w+)/);
+    if (fnMatch) return `${fnMatch[1]}.tsx`;
+    const constMatch = code.match(/(?:export\s+)?(?:const|function)\s+(\w+)/);
+    if (constMatch && constMatch[1][0] === constMatch[1][0].toUpperCase()) return `${constMatch[1]}.tsx`;
+    return "Component.tsx";
+  }
+  // JavaScript files
+  if (ext === "jsx" || ext === "js" || language === "javascript" || language === "jsx") {
+    const fnMatch = code.match(/export\s+default\s+function\s+(\w+)/);
+    if (fnMatch) return `${fnMatch[1]}.jsx`;
+    if (code.includes("addEventListener") || code.includes("document.querySelector")) return "main.js";
+    return "script.js";
+  }
+  // JSON
+  if (ext === "json" || language === "json") {
+    if (code.includes('"name"') && code.includes('"version"')) return "package.json";
+    if (code.includes('"compilerOptions"')) return "tsconfig.json";
+    return "data.json";
+  }
+  // Python
+  if (ext === "py" || language === "python") {
+    return "main.py";
+  }
+  return `file.${ext}`;
+}
+
 interface ParsedContent {
   explanationBefore: string;
   edits: {
@@ -94,15 +142,8 @@ function parseStreamingContent(content: string): ParsedContent {
     else if (language === "python" || language === "py") ext = "py";
     else if (language === "html" || language === "htm") ext = "html";
 
-    // Try to infer a better filename from the content
-    let filename = `artifact.${ext}`;
-    if (code.includes("<!DOCTYPE html>") || code.includes("<html")) {
-      filename = "index.html";
-    } else if (code.includes("export default function") || code.includes("const Component")) {
-      filename = "Component.tsx";
-    } else if (code.match(/^:root\s*\{|^body\s*\{|^\*\s*\{|^html\s*\{/m)) {
-      filename = "styles.css";
-    }
+    // Infer a meaningful filename from the content
+    let filename = inferFilename(code, ext, language);
 
     result.edits.push({
       filePath: filename,
@@ -134,7 +175,7 @@ function parseStreamingContent(content: string): ParsedContent {
       let ext = lang === "css" ? "css" : lang === "tsx" || lang === "typescript" ? "tsx" : "html";
 
       result.edits.push({
-        filePath: `artifact.${ext}`,
+        filePath: inferFilename(code, ext, lang),
         content: code,
         language: lang,
         isNew: true,
@@ -295,9 +336,7 @@ export default function StreamingMessageRenderer({
         else if (lang === "jsx" || lang === "javascript" || lang === "js") ext = "jsx";
         else if (lang === "json") ext = "json";
 
-        let filename = `artifact.${ext}`;
-        if (code.includes("<!DOCTYPE") || code.includes("<html")) filename = "index.html";
-        else if (code.match(/^:root|^body\s*\{|^\*\s*\{/m)) filename = "styles.css";
+        let filename = inferFilename(code, ext, lang);
 
         foundBlocks.push({
           filePath: filename,

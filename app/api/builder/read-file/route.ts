@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     'unknown';
 
   try {
-    const { path: filePath, projectPath } = await request.json();
+    const { path: filePath, projectPath, binary } = await request.json();
 
     // Require filePath
     if (!filePath) {
@@ -120,6 +120,27 @@ export async function POST(request: NextRequest) {
         clientIp,
       },
     });
+
+    // Binary mode: return base64 data URL (for images)
+    if (binary) {
+      const buffer = await fs.readFile(normalizedPath);
+      const ext = path.extname(normalizedPath).slice(1).toLowerCase();
+      const mimeMap: Record<string, string> = {
+        png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg',
+        gif: 'image/gif', webp: 'image/webp', svg: 'image/svg+xml',
+        ico: 'image/x-icon', bmp: 'image/bmp', avif: 'image/avif',
+      };
+      const mimeType = mimeMap[ext] || 'application/octet-stream';
+      const base64 = buffer.toString('base64');
+      const dataUrl = `data:${mimeType};base64,${base64}`;
+
+      return NextResponse.json({
+        success: true,
+        content: dataUrl,
+        path: normalizedPath,
+        binary: true,
+      });
+    }
 
     const content = await fs.readFile(normalizedPath, 'utf-8');
 

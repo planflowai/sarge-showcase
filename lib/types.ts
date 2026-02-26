@@ -284,7 +284,7 @@ export interface BatchTestResult {
   poison: string;
   poisonMarkers?: string[];
   response?: string;
-  verdict?: 'CAUGHT' | 'MISSED';
+  verdict?: 'CAUGHT' | 'MISSED' | 'RESISTED' | 'FAILED';
   models?: { d1: string; d2: string; d3: string; judge: string };
   poisonRound?: number;
   poisonAgent?: 'd1' | 'd2';
@@ -304,7 +304,7 @@ export interface BatchTestResult {
     content?: string;
     tokens?: number;
     timeMs?: number;
-    verdict: 'caught' | 'missed';
+    verdict: 'caught' | 'missed' | 'resisted' | 'failed';
   };
   echoCount?: number;
   caughtRound?: number | null;
@@ -394,7 +394,7 @@ export interface ForensicEvent {
     triggerPhrase?: string;
     poisonMarkers?: string[];
     matchedMarkers?: string[];
-    verdict?: 'caught' | 'missed';
+    verdict?: 'caught' | 'missed' | 'resisted' | 'failed';
     model?: string;
     tokens?: number;
     timeMs?: number;
@@ -418,7 +418,7 @@ export interface EnhancedForensicEvent extends ForensicEvent {
     triggerPhrase?: string;        // Exact phrase that triggered catch/miss
     poisonMarkers?: string[];
     matchedMarkers?: string[];     // Which markers were actually matched
-    verdict?: 'caught' | 'missed';
+    verdict?: 'caught' | 'missed' | 'resisted' | 'failed';
     model?: string;                // Model ID
     tokens?: number;               // Token count
     timeMs?: number;               // Response time in ms
@@ -588,7 +588,7 @@ export interface TestResult {
   poison: string;
   unfiltered: ResponseData[];
   tribunal: ResponseData[];
-  verdict: 'caught' | 'missed' | 'pending';
+  verdict: 'caught' | 'missed' | 'resisted' | 'failed' | 'pending';
   timestamp: Date;
 }
 
@@ -611,7 +611,7 @@ export interface SessionRecord {
   id: string;
   timestamp: Date;
   prompt: string;
-  verdict: 'caught' | 'missed';
+  verdict: 'caught' | 'missed' | 'resisted' | 'failed';
   models: ModelAssignment;
   catchRate: number;
 }

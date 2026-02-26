@@ -157,6 +157,107 @@ Last updated: ${timestamp}
 }
 
 /**
+ * Generate a comprehensive BUILDER_LOG.md from a file tree scan.
+ * Called when a project is first opened to give the AI full context.
+ */
+export function generateScanLog(
+  projectName: string,
+  fileInventory: { path: string; type: 'file' | 'directory'; size?: number }[]
+): string {
+  const now = new Date();
+  const timestamp = now.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  });
+
+  // Categorize files
+  const htmlFiles: string[] = [];
+  const cssFiles: string[] = [];
+  const jsFiles: string[] = [];
+  const imageFiles: string[] = [];
+  const fontFiles: string[] = [];
+  const dataFiles: string[] = [];
+  const otherFiles: string[] = [];
+  const directories: string[] = [];
+
+  for (const item of fileInventory) {
+    if (item.type === 'directory') {
+      directories.push(item.path);
+      continue;
+    }
+    const ext = item.path.split('.').pop()?.toLowerCase() || '';
+    if (['html', 'htm'].includes(ext)) htmlFiles.push(item.path);
+    else if (['css', 'scss', 'sass', 'less'].includes(ext)) cssFiles.push(item.path);
+    else if (['js', 'mjs', 'jsx', 'ts', 'tsx'].includes(ext)) jsFiles.push(item.path);
+    else if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'ico', 'bmp', 'avif'].includes(ext)) imageFiles.push(item.path);
+    else if (['woff', 'woff2', 'ttf', 'otf', 'eot'].includes(ext)) fontFiles.push(item.path);
+    else if (['json', 'yaml', 'yml', 'xml', 'csv'].includes(ext)) dataFiles.push(item.path);
+    else otherFiles.push(item.path);
+  }
+
+  const totalFiles = fileInventory.filter(f => f.type === 'file').length;
+
+  const formatList = (files: string[]) =>
+    files.length > 0 ? files.map(f => `  - \`${f}\``).join('\n') : '  *None*';
+
+  // Build full tree representation
+  const treeLines = fileInventory.map(f =>
+    f.type === 'directory' ? `📁 ${f.path}/` : `  ${f.path}`
+  ).join('\n');
+
+  return `# Builder Log — ${projectName}
+Last updated: ${timestamp}
+
+## Project Inventory
+**${totalFiles} files** across **${directories.length} folders**
+
+### HTML Pages (${htmlFiles.length})
+${formatList(htmlFiles)}
+
+### Stylesheets (${cssFiles.length})
+${formatList(cssFiles)}
+
+### Scripts (${jsFiles.length})
+${formatList(jsFiles)}
+
+### Images & Assets (${imageFiles.length})
+${formatList(imageFiles)}
+
+### Fonts (${fontFiles.length})
+${formatList(fontFiles)}
+
+### Data Files (${dataFiles.length})
+${formatList(dataFiles)}
+
+### Other (${otherFiles.length})
+${formatList(otherFiles)}
+
+## Full File Tree
+\`\`\`
+${treeLines}
+\`\`\`
+
+## Current State
+Project loaded with ${totalFiles} files. ${htmlFiles.length > 0 ? `Entry point: \`${htmlFiles[0]}\`.` : 'No HTML entry point found.'} ${imageFiles.length > 0 ? `${imageFiles.length} image assets available for use.` : ''}
+
+## Session: ${formatSessionDate(now)}
+### Changes Made
+*Project scanned and inventory created.*
+
+### Current Plan
+*Ready for development.*
+
+### Next Steps
+- [ ] Review existing files
+- [ ] Continue development
+`;
+}
+
+/**
  * Append a change entry to existing log content
  */
 export function appendChangeEntry(

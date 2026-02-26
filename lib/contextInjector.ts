@@ -36,6 +36,7 @@ RULES:
 3. Only modify files the user explicitly asks about
 4. Keep explanations brief - one sentence about what you changed
 5. MINIMAL CHANGES: Only change what was requested, preserve everything else
+6. IMAGES: If the project has image files (listed in AVAILABLE IMAGE ASSETS), USE THEM in your HTML with <img src="path/to/image.ext">. Use the exact paths provided. Do NOT use placeholder images or external URLs when real project images are available.
 `;
 
 /**
@@ -74,6 +75,24 @@ export function buildPromptWithContext(params: ContextInjectorParams): string {
       parts.push("");
       parts.push("=== PROJECT FILE TREE ===");
       parts.push(projectFileTree.join("\n"));
+
+      // Extract image/asset files and list them explicitly so the AI can't miss them
+      const imageExtensions = /\.(png|jpg|jpeg|gif|webp|svg|ico|bmp|avif)$/i;
+      const imageFiles = projectFileTree
+        .map(line => line.trim())
+        .filter(line => !line.startsWith('📁') && imageExtensions.test(line));
+
+      if (imageFiles.length > 0) {
+        parts.push("");
+        parts.push("=== AVAILABLE IMAGE ASSETS (use these in your HTML) ===");
+        parts.push("You MUST use these images when the user asks for images, logos, or photos.");
+        parts.push("Reference them with relative paths from the HTML file location:");
+        for (const img of imageFiles) {
+          // img is like "assets/logo.png" or "build/assets/worker.jpg"
+          parts.push(`  <img src="${img}" alt="${img.split('/').pop()?.replace(/\.[^.]+$/, '') || 'image'}">`);
+        }
+        parts.push("These files EXIST on disk. Use the exact paths shown above.");
+      }
     }
 
     // Include BUILDER_LOG.md content for project history context

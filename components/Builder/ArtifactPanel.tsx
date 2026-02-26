@@ -231,10 +231,69 @@ function ArtifactPanelInner({
   const language = useMemo(() => detectLanguage(memoizedCode), [memoizedCode]);
   const contentType = useMemo(() => detectContentType(memoizedCode), [memoizedCode]);
 
+  /**
+   * Rewrite relative asset paths (images, fonts, etc.) to use the asset proxy API.
+   * This allows srcdoc iframes to load project files via absolute URLs.
+   */
+  const rewriteAssetPaths = useCallback((html: string): string => {
+    if (!projectPath) return html;
+    const encodedProject = encodeURIComponent(projectPath);
+
+    // Rewrite <img src="relative/path.png"> (skip data:, http://, https://, //)
+    let result = html.replace(
+      /(<img\s[^>]*\bsrc=["'])(?!data:|https?:\/\/|\/\/)([^"']+)(["'])/gi,
+      (match, before, src, after) => {
+        const encodedFile = encodeURIComponent(src);
+        return `${before}/api/builder/asset?projectPath=${encodedProject}&file=${encodedFile}${after}`;
+      }
+    );
+
+    // Rewrite CSS url('relative/path') in inline styles and <style> blocks
+    result = result.replace(
+      /url\(["']?(?!data:|https?:\/\/|\/\/)([^"')]+)["']?\)/gi,
+      (match, src) => {
+        const encodedFile = encodeURIComponent(src);
+        return `url('/api/builder/asset?projectPath=${encodedProject}&file=${encodedFile}')`;
+      }
+    );
+
+    // Rewrite <source src="..."> for video/audio
+    result = result.replace(
+      /(<source\s[^>]*\bsrc=["'])(?!data:|https?:\/\/|\/\/)([^"']+)(["'])/gi,
+      (match, before, src, after) => {
+        const encodedFile = encodeURIComponent(src);
+        return `${before}/api/builder/asset?projectPath=${encodedProject}&file=${encodedFile}${after}`;
+      }
+    );
+
+    // Rewrite <link href="style.css"> for stylesheets
+    result = result.replace(
+      /(<link\s[^>]*\bhref=["'])(?!data:|https?:\/\/|\/\/)([^"']+)(["'])/gi,
+      (match, before, href, after) => {
+        const encodedFile = encodeURIComponent(href);
+        return `${before}/api/builder/asset?projectPath=${encodedProject}&file=${encodedFile}${after}`;
+      }
+    );
+
+    // Rewrite <script src="script.js">
+    result = result.replace(
+      /(<script\s[^>]*\bsrc=["'])(?!data:|https?:\/\/|\/\/)([^"']+)(["'])/gi,
+      (match, before, src, after) => {
+        const encodedFile = encodeURIComponent(src);
+        return `${before}/api/builder/asset?projectPath=${encodedProject}&file=${encodedFile}${after}`;
+      }
+    );
+
+    return result;
+  }, [projectPath]);
+
   // Build preview content and update state - NO iframe remount to prevent flicker
   const buildPreview = useCallback((newCode: string, forceUpdate: boolean = false) => {
     try {
-      const content = buildPreviewContent(newCode, airGapEnabled);
+      let content = buildPreviewContent(newCode, airGapEnabled);
+
+      // Rewrite relative asset paths to use the proxy (so images load in srcdoc)
+      content = rewriteAssetPaths(content);
 
       // CRITICAL: Never remount iframe during streaming - just update srcDoc
       // The browser will handle the update smoothly without flashing white
@@ -257,7 +316,7 @@ function ArtifactPanelInner({
       console.error('[ArtifactPanel] buildPreview error:', err);
       setPreviewError(err.message || "Failed to build preview");
     }
-  }, [previewContent.length, isStreaming, airGapEnabled]);
+  }, [previewContent.length, isStreaming, airGapEnabled, rewriteAssetPaths]);
 
   // Track when streaming starts - do we already have a preview?
   useEffect(() => {
@@ -365,7 +424,8 @@ function ArtifactPanelInner({
   // Force refresh preview
   const handleRefresh = () => {
     try {
-      const content = buildPreviewContent(code, airGapEnabled);
+      let content = buildPreviewContent(code, airGapEnabled);
+      content = rewriteAssetPaths(content);
       setPreviewContent(content);
       setPreviewError(null);
     } catch (err: any) {

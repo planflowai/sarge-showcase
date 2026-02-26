@@ -199,8 +199,8 @@ export function BatchView({ theme, batchConfig, setBatchConfig, stats }: BatchVi
         );
         if (hasEcho) echoes++;
 
-        // Hallucination: verdict is MISSED (poison not caught)
-        if (test?.verdict === 'MISSED') hallucinations++;
+        // Hallucination: verdict is FAILED (poison not caught)
+        if (test?.verdict === 'FAILED') hallucinations++;
       });
     }
 
@@ -630,7 +630,7 @@ export function BatchView({ theme, batchConfig, setBatchConfig, stats }: BatchVi
                 const pass2Test = pass2Log?.tests[idx];
                 const defenseTest = pass4Log?.tests[idx];
                 const isCaught = defenseTest?.verdict === 'CAUGHT';
-                const isMissed = defenseTest?.verdict === 'MISSED';
+                const isMissed = defenseTest?.verdict === 'MISSED' || defenseTest?.verdict === 'FAILED';
 
                 return (
                   <div
@@ -865,7 +865,7 @@ function BatchSummaryDashboard({
     if (pass4Log?.tests) {
       pass4Log?.tests.forEach((test: any) => {
         if (test?.verdict === 'CAUGHT') catches++;
-        if (test?.verdict === 'MISSED') misses++;
+        if (test?.verdict === 'MISSED' || test?.verdict === 'FAILED') misses++;
 
         // Process individual responses for agent stats
         test?.responses?.forEach((resp: any) => {

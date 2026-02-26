@@ -225,6 +225,17 @@ FILE: style.css
 body { margin: 0; padding: 20px; }
 \`\`\`
 
+USING IMAGES AND ASSETS:
+The project file tree is shown in context. If there are images (png, jpg, jpeg, gif, webp, svg, ico) or other assets in the project:
+- Reference them with RELATIVE PATHS from the HTML file's location
+- Example: If images are in "assets/" and HTML is at root → <img src="assets/logo.png">
+- Example: If images are in "build/assets/" → <img src="build/assets/photo.jpg">
+- ALWAYS check the file tree to get the correct path to existing images
+- Use the EXACT filenames shown in the file tree (case-sensitive)
+- For CSS backgrounds: background-image: url('assets/hero.jpg')
+- NEVER invent image filenames that don't exist in the project — check the tree first
+- If the user asks you to add an image that exists in the project, look at the file tree for its path
+
 RULES:
 - Output ALL files you create/modify in FILE: format
 - One FILE: block per file

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useCallback, useState } from "react";
-import { Send, X, StopCircle, Paperclip, CheckCircle, Bookmark, Database, ImageIcon, MessageSquare, Hammer, Pencil, RefreshCw, Bot, Check } from "lucide-react";
+import { Send, X, StopCircle, Paperclip, CheckCircle, Bookmark, Database, ImageIcon, MessageSquare, Hammer, Pencil, RefreshCw, Bot, Check, Image as ImageLucide } from "lucide-react";
+import { type Attachment, readFileAsAttachment, formatFileSize } from "@/lib/utils/attachments";
 import { useBuilderChatStore } from "@/lib/stores/builderChatStore";
 import { useChangesStore } from "@/lib/stores/changesStore";
 import { usePromptLibraryStore } from "@/lib/stores/promptLibraryStore";
@@ -39,6 +40,8 @@ interface BuilderChatProps {
   pendingPrompt?: string | null;
   onPendingPromptConsumed?: () => void;
   onPromptSent?: (prompt: string) => void;
+  onRefreshFileTree?: () => Promise<void>;
+  autoApply?: boolean;
 }
 
 export default function BuilderChat({
@@ -56,6 +59,8 @@ export default function BuilderChat({
   pendingPrompt,
   onPendingPromptConsumed,
   onPromptSent,
+  onRefreshFileTree,
+  autoApply: autoApplyProp,
 }: BuilderChatProps) {
   const { messages, sending, hydrated, hydrate, sendMessage, generateImage, clearMessages, abortStream, prefilledInput, setPrefilledInput } = useBuilderChatStore();
   const addChange = useChangesStore(state => state.addChange);
@@ -75,6 +80,8 @@ export default function BuilderChat({
   const [selectedVaultIds, setSelectedVaultIds] = useState<string[]>([]);
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [imagePrompt, setImagePrompt] = useState("");
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -294,13 +301,59 @@ export default function BuilderChat({
     }
   }, [input]);
 
+  // ── Attachment handlers ──────────────────────────────────────────────
+  const handleFilesSelected = useCallback(async (files: FileList | File[]) => {
+    const fileArr = Array.from(files);
+    for (const file of fileArr) {
+      if (file.size > 20 * 1024 * 1024) continue; // Skip files > 20MB
+      const att = await readFileAsAttachment(file);
+      setAttachments(prev => [...prev, att]);
+    }
+  }, []);
+
+  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    const imageFiles: File[] = [];
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith('image/')) {
+        const file = items[i].getAsFile();
+        if (file) imageFiles.push(file);
+      }
+    }
+    if (imageFiles.length > 0) {
+      e.preventDefault();
+      handleFilesSelected(imageFiles);
+    }
+  }, [handleFilesSelected]);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const files = e.dataTransfer?.files;
+    if (files && files.length > 0) {
+      handleFilesSelected(files);
+    }
+  }, [handleFilesSelected]);
+
+  const removeAttachment = useCallback((id: string) => {
+    setAttachments(prev => prev.filter(a => a.id !== id));
+  }, []);
+
   const handleSend = async () => {
-    if (!input.trim() || !selectedModel) return;
-    const userMessage = input.trim();
+    if ((!input.trim() && attachments.length === 0) || !selectedModel) return;
+    const userMessage = input.trim() || (attachments.length > 0 ? '[Image attached]' : '');
     setInput("");
     clearDraft(BUILDER_DRAFT_KEY); // Clear persisted draft on send
     const vaultIdsToSend = [...selectedVaultIds]; // Copy before clearing
     setSelectedVaultIds([]); // Clear vault selection after send
+    const imagesToSend = attachments.filter(a => a.isImage).map(a => a.content);
+    setAttachments([]); // Clear attachments after send
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
     }
@@ -385,7 +438,7 @@ export default function BuilderChat({
     }
 
     // Pass both: display message (what user typed) and API prompt (with injected context)
-    await sendMessage(userMessage, finalPrompt, selectedProvider, selectedModel, systemPrompt);
+    await sendMessage(userMessage, finalPrompt, selectedProvider, selectedModel, systemPrompt, imagesToSend.length > 0 ? imagesToSend : undefined);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -434,6 +487,7 @@ export default function BuilderChat({
             projectName={projectName}
             onViewDiff={onViewDiff}
             autoApply={autoApply}
+            onRefreshFileTree={onRefreshFileTree}
             onChangeTracked={(change) => {
               const correspondingMsg = messages.find(m => !m.isStreaming && m.role === 'assistant');
               addChange({
@@ -501,7 +555,11 @@ export default function BuilderChat({
       )}
 
       {/* Input area */}
-      <div className="border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 px-3 py-3">
+      <div
+        className="border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 px-3 py-3"
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+      >
         <div>
           {/* Vault attachment pills */}
           {selectedVaultDocs.length > 0 && (
@@ -524,6 +582,49 @@ export default function BuilderChat({
             </div>
           )}
 
+          {/* Image attachment pills */}
+          {attachments.length > 0 && (
+            <div className="mb-2 flex flex-wrap gap-1.5">
+              {attachments.map((att) => (
+                <div
+                  key={att.id}
+                  className="flex items-center gap-1.5 rounded-md border border-cyan-500/50 bg-cyan-600/20 px-2 py-1 text-xs text-cyan-300"
+                >
+                  {att.isImage ? (
+                    <img
+                      src={att.content}
+                      alt={att.name}
+                      className="h-6 w-6 rounded object-cover"
+                    />
+                  ) : (
+                    <ImageLucide className="h-3 w-3 text-cyan-400" />
+                  )}
+                  <span className="max-w-[80px] truncate font-medium">{att.name}</span>
+                  <span className="text-[9px] text-cyan-400/70">{formatFileSize(att.size)}</span>
+                  <button
+                    onClick={() => removeAttachment(att.id)}
+                    className="rounded p-0.5 text-cyan-400 hover:text-red-400 transition-colors"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Hidden file input for image picker */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              if (e.target.files) handleFilesSelected(e.target.files);
+              e.target.value = ''; // Reset so same file can be selected again
+            }}
+          />
+
           {/* Text area - full width on top */}
           <div className="relative mb-2">
             <textarea
@@ -531,7 +632,8 @@ export default function BuilderChat({
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={noModel ? "Select a model first..." : "Describe what you want to build..."}
+              onPaste={handlePaste}
+              placeholder={noModel ? "Select a model first..." : "Describe what you want to build... (paste or drop images here)"}
               disabled={noModel || sending}
               rows={3}
               className={cn(
@@ -609,6 +711,28 @@ export default function BuilderChat({
                   <ImageIcon className="h-3.5 w-3.5" />
                 </Button>
               )}
+
+              {/* Attach Image/Screenshot button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={noModel || sending}
+                onClick={() => fileInputRef.current?.click()}
+                className={cn(
+                  "h-8 px-2 gap-1 transition-colors",
+                  attachments.length > 0
+                    ? "bg-cyan-500/10 border border-cyan-500/30 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/20"
+                    : "text-zinc-500 hover:text-cyan-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                )}
+                title="Attach image or screenshot (or paste/drag-drop)"
+              >
+                <ImageLucide className="h-3.5 w-3.5" />
+                {attachments.length > 0 ? (
+                  <span className="text-[10px] font-bold">{attachments.length}</span>
+                ) : (
+                  <span className="text-[10px] font-medium">Img</span>
+                )}
+              </Button>
             </div>
 
             {/* Center group: Mode toggles */}

@@ -65,6 +65,7 @@ export interface BuilderMessage {
   latencyMs?: number;
   isStreaming?: boolean;
   imageUrl?: string;  // For image generation responses
+  images?: string[];  // Base64 data URLs for vision (user attachments)
 }
 
 const STORAGE_KEY = "builder-chat-store";
@@ -88,7 +89,8 @@ interface BuilderChatState {
     apiPrompt: string,
     provider: string,
     model: string,
-    systemPrompt?: string
+    systemPrompt?: string,
+    images?: string[]
   ) => Promise<void>;
   generateImage: (
     prompt: string,
@@ -152,7 +154,7 @@ export const useBuilderChatStore = create<BuilderChatState>()(
     }
   },
 
-  sendMessage: async (displayMessage, apiPrompt, provider, model, systemPrompt) => {
+  sendMessage: async (displayMessage, apiPrompt, provider, model, systemPrompt, images) => {
     // Use provided system prompt or fall back to default
     const effectiveSystemPrompt = systemPrompt || BUILDER_SYSTEM_PROMPT;
     const { addMessage, updateStreamingMessage, finalizeStreamingMessage } = get();
@@ -165,6 +167,7 @@ export const useBuilderChatStore = create<BuilderChatState>()(
       provider,
       model,
       timestamp: new Date(),
+      images: images && images.length > 0 ? images : undefined,
     };
     addMessage(userMessage);
 
@@ -212,6 +215,7 @@ export const useBuilderChatStore = create<BuilderChatState>()(
           prompt: apiPrompt,
           systemPrompt: effectiveSystemPrompt,
           source,
+          images: images && images.length > 0 ? images : undefined,
         }),
         signal: abortController.signal,
       });

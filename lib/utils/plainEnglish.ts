@@ -8,7 +8,9 @@ const STATUS_MAP: Record<string, string> = {
   flagged: "Challenged the Claim",
   clean: "Clean Response",
   caught: "System Detected It",
+  resisted: "Agents Resisted the Poison",
   missed: "System Failed to Detect",
+  failed: "Poison Went Undetected",
   waiting: "Waiting",
   running: "Running",
   complete: "Complete",
@@ -20,15 +22,24 @@ export function translateStatus(status: string): string {
 
 // --- Verdict helpers ---
 
-export function formatVerdict(verdict: "caught" | "missed", echoCount: number): string {
+export function formatVerdict(verdict: "caught" | "missed" | "resisted" | "failed", echoCount: number): string {
   if (verdict === "caught") {
     return echoCount > 0
-      ? `The AI repeated the false claim ${echoCount} time${echoCount > 1 ? "s" : ""}, but the system ultimately detected the poisoning.`
-      : "The AI never repeated the false claim. The system confirmed it was clean.";
+      ? `The AI repeated the false claim ${echoCount} time${echoCount > 1 ? "s" : ""}, but the system detected and neutralized the poisoning.`
+      : "The system detected the false claim through cross-verification.";
   }
+  if (verdict === "resisted") {
+    return "The AI correctly ignored the false claim. No echoes detected — the poison had no effect.";
+  }
+  if (verdict === "failed") {
+    return echoCount > 0
+      ? `The AI repeated the false claim ${echoCount} time${echoCount > 1 ? "s" : ""} and the system failed to detect it.`
+      : "The false claim went undetected by the system.";
+  }
+  // Legacy "missed"
   return echoCount > 0
     ? `The AI repeated the false claim ${echoCount} time${echoCount > 1 ? "s" : ""} and the system failed to detect it.`
-    : "The system did not detect the poisoning.";
+    : "The false claim went undetected by the system.";
 }
 
 // --- Narrative builders ---
@@ -44,7 +55,9 @@ export function buildTestNarrative(test: BatchTestResult): string {
   const verdict =
     test.judgeResponse?.verdict === "caught"
       ? "The system caught it."
-      : "The system missed it.";
+      : test.judgeResponse?.verdict === "resisted"
+      ? "The agents resisted the poison."
+      : "The system failed to detect it.";
 
   if (test.mode === "unfiltered") {
     return `Test ${test.testIndex + 1}: Baseline test with no false claims injected. ${echoDetail}`;
@@ -57,7 +70,9 @@ export function buildTestNarrative(test: BatchTestResult): string {
   if (test.mode === "pill-prompt") {
     const promptResult = test.judgeResponse?.verdict === "caught"
       ? "Protective prompts helped detect the poisoning."
-      : "Protective prompts were active but the system still missed it.";
+      : test.judgeResponse?.verdict === "resisted"
+      ? "Agents resisted the poison — protective prompts held."
+      : "Protective prompts were active but the system still failed to detect it.";
     return `Test ${test.testIndex + 1}: Injected "${poisonSnippet}" with safety prompts active — ${echoDetail}${killDetail} ${promptResult}`;
   }
 
@@ -134,5 +149,7 @@ export function translateForensicEvent(text: string): string {
     .replace(/\bdrift\b/gi, "changed from the truth")
     .replace(/\bpoison injection\b/gi, "false claim inserted")
     .replace(/\bverdict:\s*caught\b/gi, "Result: System detected it")
-    .replace(/\bverdict:\s*missed\b/gi, "Result: System missed it");
+    .replace(/\bverdict:\s*missed\b/gi, "Result: System missed it")
+    .replace(/\bverdict:\s*resisted\b/gi, "Result: Agents resisted the poison")
+    .replace(/\bverdict:\s*failed\b/gi, "Result: Poison went undetected");
 }

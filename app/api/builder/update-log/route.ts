@@ -5,11 +5,59 @@ import { logForensicEvent } from '@/lib/security/pathValidator';
 import {
   appendChangeEntry,
   generateNewLog,
+  generateScanLog,
   generateSessionSummary,
   type ChangeEntry
 } from '@/lib/builderLogger';
 
 const LOG_FILENAME = 'BUILDER_LOG.md';
+
+// Directories to skip during scan
+const SCAN_SKIP_DIRS = new Set([
+  'node_modules', '.git', '.next', '.cache', 'dist', '.svelte-kit',
+  '__pycache__', '.DS_Store', 'coverage', '.turbo',
+]);
+
+/**
+ * Recursively walk a directory and return a flat inventory of all files/folders
+ */
+async function walkDirectory(
+  dirPath: string,
+  basePath: string,
+  maxDepth = 5,
+  depth = 0
+): Promise<{ path: string; type: 'file' | 'directory'; size?: number }[]> {
+  if (depth > maxDepth) return [];
+  const results: { path: string; type: 'file' | 'directory'; size?: number }[] = [];
+
+  try {
+    const entries = await fs.readdir(dirPath, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.name.startsWith('.') && entry.name !== '.env.example') continue;
+      if (SCAN_SKIP_DIRS.has(entry.name)) continue;
+
+      const fullPath = path.join(dirPath, entry.name);
+      const relativePath = path.relative(basePath, fullPath).replace(/\\/g, '/');
+
+      if (entry.isDirectory()) {
+        results.push({ path: relativePath, type: 'directory' });
+        const children = await walkDirectory(fullPath, basePath, maxDepth, depth + 1);
+        results.push(...children);
+      } else if (entry.isFile()) {
+        try {
+          const stat = await fs.stat(fullPath);
+          results.push({ path: relativePath, type: 'file', size: stat.size });
+        } catch {
+          results.push({ path: relativePath, type: 'file' });
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[update-log] walkDirectory error:', err);
+  }
+
+  return results;
+}
 
 export async function POST(request: NextRequest) {
   const clientIp = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
@@ -77,6 +125,20 @@ export async function POST(request: NextRequest) {
         nextSteps || []
       );
       console.log('[update-log] Generated session summary');
+    } else if (action === 'scan') {
+      // Full tree walk scan — generates comprehensive inventory log
+      // Only create if log doesn't already exist
+      if (existingContent.trim()) {
+        return NextResponse.json({
+          success: true,
+          message: 'Log already exists',
+          path: logPath,
+          content: existingContent,
+        });
+      }
+      const inventory = await walkDirectory(normalizedProjectPath, normalizedProjectPath);
+      newContent = generateScanLog(projectName || 'Project', inventory);
+      console.log('[update-log] Generated scan log with', inventory.length, 'items');
     } else if (action === 'init') {
       // Initialize new log (only if doesn't exist)
       if (existingContent.trim()) {

@@ -1,28 +1,52 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// ── Helpers for image handling ──────────────────────────────────────────
+
+/** Parse a base64 data URL into { mimeType, base64Data } */
+function parseDataUrl(dataUrl: string): { mimeType: string; base64Data: string } | null {
+  const match = dataUrl.match(/^data:(image\/[a-z+]+);base64,(.+)$/i);
+  if (!match) return null;
+  return { mimeType: match[1], base64Data: match[2] };
+}
+
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  const { model, prompt, systemPrompt, source, provider } = body;
+  const { model, prompt, systemPrompt, source, provider, images } = body;
+
+  const hasImages = Array.isArray(images) && images.length > 0;
 
   console.log('[API/test/stream] Received request:', {
     model,
     source,
     provider,
     hasSystemPrompt: !!systemPrompt,
+    imageCount: hasImages ? images.length : 0,
   });
 
   const ollamaUrl = process.env.OLLAMA_URL || 'http://localhost:11434';
   const lmstudioUrl = process.env.NEXT_PUBLIC_LM_STUDIO_URL || 'http://127.0.0.1:1240/v1';
   const lmstudioApiKey = process.env.LMStudio_API_KEY || process.env.LM_STUDIO_API_KEY || '';
 
-  // Build messages
-  const messages = [];
+  // For non-vision providers, append image note to prompt
+  const promptWithImageNote = hasImages
+    ? `${prompt}\n\n[${images.length} image(s) attached — this model does not support vision, images cannot be displayed]`
+    : prompt;
+
+  // Build messages (text-only, for providers without vision)
+  const messages: { role: string; content: string }[] = [];
   if (systemPrompt) {
     messages.push({ role: 'system', content: systemPrompt });
   }
   messages.push({ role: 'user', content: prompt });
 
-  // LM Studio streaming (OpenAI-compatible)
+  // Messages with image note for non-vision providers
+  const messagesWithNote: { role: string; content: string }[] = [];
+  if (systemPrompt) {
+    messagesWithNote.push({ role: 'system', content: systemPrompt });
+  }
+  messagesWithNote.push({ role: 'user', content: promptWithImageNote });
+
+  // LM Studio streaming (OpenAI-compatible, no vision)
   if (source === 'local' && provider === 'lmstudio') {
     console.log('[API/test/stream] Routing to LM Studio:', { model, lmstudioUrl });
     try {
@@ -32,7 +56,7 @@ export async function POST(request: NextRequest) {
       const res = await fetch(`${lmstudioUrl}/chat/completions`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ model, messages, max_tokens: 1024, stream: true }),
+        body: JSON.stringify({ model, messages: hasImages ? messagesWithNote : messages, max_tokens: 1024, stream: true }),
       });
 
       if (!res.ok) {
@@ -73,14 +97,30 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // Ollama streaming
+  // Ollama streaming (supports vision for llava/bakllava models)
   if (source === 'local') {
     console.log('[API/test/stream] Routing to Ollama:', { model, ollamaUrl });
     try {
+      // Ollama vision: send images as base64 in the message
+      const ollamaMessages: any[] = [];
+      if (systemPrompt) {
+        ollamaMessages.push({ role: 'system', content: systemPrompt });
+      }
+      if (hasImages) {
+        // Ollama expects images as base64 strings (without the data:image/... prefix)
+        const ollamaImages = images
+          .map((img: string) => parseDataUrl(img))
+          .filter(Boolean)
+          .map((parsed: any) => parsed.base64Data);
+        ollamaMessages.push({ role: 'user', content: prompt, images: ollamaImages.length > 0 ? ollamaImages : undefined });
+      } else {
+        ollamaMessages.push({ role: 'user', content: prompt });
+      }
+
       const res = await fetch(`${ollamaUrl}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model, messages, stream: true }),
+        body: JSON.stringify({ model, messages: ollamaMessages, stream: true }),
       });
 
       if (!res.ok) {
@@ -117,31 +157,31 @@ export async function POST(request: NextRequest) {
       if (!process.env.ANTHROPIC_API_KEY && !process.env.CLAUDE_API_KEY) {
         return NextResponse.json({ error: 'Anthropic API key not configured. Please add ANTHROPIC_API_KEY to your .env file.' }, { status: 500 });
       }
-      return await streamAnthropic(model, prompt, systemPrompt);
+      return await streamAnthropic(model, prompt, systemPrompt, hasImages ? images : undefined);
     }
     if (model.includes('gpt') || model.startsWith('o3') || model.startsWith('o4')) {
       if (!process.env.OPENAI_API_KEY) {
         return NextResponse.json({ error: 'OpenAI API key not configured. Please add OPENAI_API_KEY to your .env file.' }, { status: 500 });
       }
-      return await streamOpenAI(model, messages);
+      return await streamOpenAI(model, messages, hasImages ? images : undefined);
     }
     if (model.includes('gemini')) {
       if (!process.env.GOOGLE_API_KEY) {
         return NextResponse.json({ error: 'Google API key not configured. Please add GOOGLE_API_KEY to your .env file.' }, { status: 500 });
       }
-      return await streamGemini(model, prompt, systemPrompt);
+      return await streamGemini(model, prompt, systemPrompt, hasImages ? images : undefined);
     }
     if (model.includes('grok')) {
       if (!process.env.XAI_API_KEY) {
         return NextResponse.json({ error: 'xAI API key not configured. Please add XAI_API_KEY to your .env file.' }, { status: 500 });
       }
-      return await streamXAI(model, messages);
+      return await streamXAI(model, hasImages ? messagesWithNote : messages);
     }
     if (model.includes('deepseek')) {
       if (!process.env.DEEPSEEK_API_KEY) {
         return NextResponse.json({ error: 'DeepSeek API key not configured. Please add DEEPSEEK_API_KEY to your .env file.' }, { status: 500 });
       }
-      return await streamDeepSeek(model, messages);
+      return await streamDeepSeek(model, hasImages ? messagesWithNote : messages);
     }
     return NextResponse.json({ error: 'Unknown model provider' }, { status: 400 });
   } catch (error: any) {
@@ -149,9 +189,29 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// ── Anthropic (Claude) — native SSE streaming ──────────────────────────
-async function streamAnthropic(model: string, prompt: string, systemPrompt?: string) {
+// ── Anthropic (Claude) — native SSE streaming with vision ───────────────
+async function streamAnthropic(model: string, prompt: string, systemPrompt?: string, images?: string[]) {
   const apiKey = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY || '';
+
+  // Build content array with images + text
+  const content: any[] = [];
+  if (images && images.length > 0) {
+    for (const dataUrl of images) {
+      const parsed = parseDataUrl(dataUrl);
+      if (parsed) {
+        content.push({
+          type: 'image',
+          source: {
+            type: 'base64',
+            media_type: parsed.mimeType,
+            data: parsed.base64Data,
+          },
+        });
+      }
+    }
+  }
+  content.push({ type: 'text', text: prompt });
+
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -161,10 +221,10 @@ async function streamAnthropic(model: string, prompt: string, systemPrompt?: str
     },
     body: JSON.stringify({
       model,
-      max_tokens: 1024,
+      max_tokens: 4096,
       stream: true,
       system: systemPrompt || undefined,
-      messages: [{ role: 'user', content: prompt }],
+      messages: [{ role: 'user', content }],
     }),
   });
 
@@ -196,14 +256,31 @@ async function streamAnthropic(model: string, prompt: string, systemPrompt?: str
   });
 }
 
-// ── OpenAI (GPT) — native SSE streaming ─────────────────────────────────
-async function streamOpenAI(model: string, messages: { role: string; content: string }[]) {
+// ── OpenAI (GPT) — native SSE streaming with vision ─────────────────────
+async function streamOpenAI(model: string, messages: { role: string; content: any }[], images?: string[]) {
   const apiKey = process.env.OPENAI_API_KEY || '';
-  // Reasoning models (o3, o4-*) require max_completion_tokens instead of max_tokens
   const isReasoning = model.startsWith('o3') || model.startsWith('o4');
   const tokenParam = isReasoning
-    ? { max_completion_tokens: 1024 }
-    : { max_tokens: 1024 };
+    ? { max_completion_tokens: 4096 }
+    : { max_tokens: 4096 };
+
+  // If images present, convert last user message to multimodal content
+  if (images && images.length > 0) {
+    const lastUserIdx = messages.findLastIndex(m => m.role === 'user');
+    if (lastUserIdx !== -1) {
+      const textContent = messages[lastUserIdx].content;
+      const contentParts: any[] = [];
+      for (const dataUrl of images) {
+        contentParts.push({
+          type: 'image_url',
+          image_url: { url: dataUrl },
+        });
+      }
+      contentParts.push({ type: 'text', text: textContent });
+      messages[lastUserIdx] = { ...messages[lastUserIdx], content: contentParts };
+    }
+  }
+
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -241,7 +318,7 @@ async function streamOpenAI(model: string, messages: { role: string; content: st
   });
 }
 
-// ── xAI (Grok) — OpenAI-compatible SSE streaming ──────────────────────
+// ── xAI (Grok) — OpenAI-compatible SSE streaming (no vision) ───────────
 async function streamXAI(model: string, messages: { role: string; content: string }[]) {
   const apiKey = process.env.XAI_API_KEY || process.env.GROK_API_KEY || '';
   const res = await fetch('https://api.x.ai/v1/chat/completions', {
@@ -250,7 +327,7 @@ async function streamXAI(model: string, messages: { role: string; content: strin
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey}`,
     },
-    body: JSON.stringify({ model, messages, max_tokens: 1024, stream: true }),
+    body: JSON.stringify({ model, messages, max_tokens: 4096, stream: true }),
   });
 
   if (!res.ok || !res.body) {
@@ -281,15 +358,32 @@ async function streamXAI(model: string, messages: { role: string; content: strin
   });
 }
 
-// ── Google (Gemini) — streamGenerateContent ─────────────────────────────
-async function streamGemini(model: string, prompt: string, systemPrompt?: string) {
+// ── Google (Gemini) — streamGenerateContent with vision ─────────────────
+async function streamGemini(model: string, prompt: string, systemPrompt?: string, images?: string[]) {
   const apiKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY || '';
-  const contents = [];
+  const contents: any[] = [];
   if (systemPrompt) {
     contents.push({ role: 'user', parts: [{ text: systemPrompt }] });
     contents.push({ role: 'model', parts: [{ text: 'Understood.' }] });
   }
-  contents.push({ role: 'user', parts: [{ text: prompt }] });
+
+  // Build user message parts with images + text
+  const userParts: any[] = [];
+  if (images && images.length > 0) {
+    for (const dataUrl of images) {
+      const parsed = parseDataUrl(dataUrl);
+      if (parsed) {
+        userParts.push({
+          inlineData: {
+            mimeType: parsed.mimeType,
+            data: parsed.base64Data,
+          },
+        });
+      }
+    }
+  }
+  userParts.push({ text: prompt });
+  contents.push({ role: 'user', parts: userParts });
 
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${apiKey}`,
@@ -328,7 +422,7 @@ async function streamGemini(model: string, prompt: string, systemPrompt?: string
   });
 }
 
-// ── DeepSeek — OpenAI-compatible SSE streaming ──────────────────────────
+// ── DeepSeek — OpenAI-compatible SSE streaming (no vision) ──────────────
 async function streamDeepSeek(model: string, messages: { role: string; content: string }[]) {
   const apiKey = process.env.DEEPSEEK_API_KEY || '';
   const res = await fetch('https://api.deepseek.com/chat/completions', {
