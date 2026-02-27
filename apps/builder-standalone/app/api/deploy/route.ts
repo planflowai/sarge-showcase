@@ -106,16 +106,21 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Missing 'projectName' for init" }, { status: 400 });
       }
 
-      // 1. Check all 4 CLIs
-      const [gh, wrangler, vercel, netlify] = await Promise.all([
-        checkCli("gh", projectPath),
+      // 1. Check GITHUB_TOKEN + CLIs
+      const githubToken = process.env.GITHUB_TOKEN;
+      if (!githubToken) {
+        return NextResponse.json({
+          error: "Missing GITHUB_TOKEN. Add it to .env.local:\n\nGITHUB_TOKEN=ghp_your_personal_access_token\n\nCreate one at https://github.com/settings/tokens with 'repo' scope.",
+        }, { status: 400 });
+      }
+
+      const [wrangler, vercel, netlify] = await Promise.all([
         checkCli("npx wrangler", projectPath),
         checkCli("vercel", projectPath),
         checkCli("netlify", projectPath),
       ]);
 
       const missing: string[] = [];
-      if (!gh.ok) missing.push("gh (GitHub CLI) — install from https://cli.github.com and run 'gh auth login'");
       if (!wrangler.ok) missing.push("wrangler (Cloudflare CLI) — install with 'npm i -g wrangler' and run 'wrangler login'");
       if (!vercel.ok) missing.push("vercel (Vercel CLI) — install with 'npm i -g vercel' and run 'vercel login'");
       if (!netlify.ok) missing.push("netlify (Netlify CLI) — install with 'npm i -g netlify-cli' and run 'netlify login'");
@@ -153,24 +158,66 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // 4. GitHub — create private repo and push
+      // 4. GitHub — create private repo via API and push
       let githubUrl = "";
-      const ghResult = await runCommand(
-        `gh repo create "${projectName}" --private --source=. --remote=origin --push`,
-        projectPath
-      );
-      if (ghResult.code !== 0) {
-        // If remote origin already exists, try to extract URL
-        if (ghResult.stderr.includes("already exists")) {
-          const remoteResult = await runCommand("git remote get-url origin", projectPath);
-          githubUrl = remoteResult.stdout;
-        } else {
-          return NextResponse.json({ error: `gh repo create failed: ${ghResult.stderr}` }, { status: 500 });
+      const remoteCheck = await runCommand("git remote get-url origin", projectPath);
+      if (remoteCheck.code === 0 && remoteCheck.stdout) {
+        // Remote already exists — use it
+        githubUrl = remoteCheck.stdout.replace(/\.git$/, "");
+        if (!githubUrl.startsWith("http")) {
+          // SSH URL like git@github.com:user/repo — convert to HTTPS
+          const m = githubUrl.match(/github\.com[:/](.+)/);
+          githubUrl = m ? `https://github.com/${m[1]}` : githubUrl;
         }
       } else {
-        // Parse URL from gh output (typically prints the repo URL)
-        const urlMatch = ghResult.stdout.match(/https:\/\/github\.com\/[^\s]+/);
-        githubUrl = urlMatch ? urlMatch[0] : ghResult.stdout.split("\n")[0];
+        // Create repo via GitHub API
+        const createRes = await fetch("https://api.github.com/user/repos", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${githubToken}`,
+            Accept: "application/vnd.github+json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ name: projectName, private: true, auto_init: false }),
+        });
+        if (!createRes.ok) {
+          const errData = await createRes.json().catch(() => ({}));
+          // 422 = repo already exists under this account
+          if (createRes.status === 422) {
+            // Fetch username to build URL
+            const userRes = await fetch("https://api.github.com/user", {
+              headers: { Authorization: `Bearer ${githubToken}`, Accept: "application/vnd.github+json" },
+            });
+            const userData = await userRes.json();
+            githubUrl = `https://github.com/${userData.login}/${projectName}`;
+          } else {
+            return NextResponse.json({
+              error: `GitHub API error (${createRes.status}): ${errData.message || "Failed to create repo"}`,
+            }, { status: 500 });
+          }
+        } else {
+          const repoData = await createRes.json();
+          githubUrl = repoData.html_url;
+        }
+
+        // Add remote origin with token-embedded URL for push auth
+        const userRes = await fetch("https://api.github.com/user", {
+          headers: { Authorization: `Bearer ${githubToken}`, Accept: "application/vnd.github+json" },
+        });
+        const userData = await userRes.json();
+        const authRemote = `https://${userData.login}:${githubToken}@github.com/${userData.login}/${projectName}.git`;
+        await runCommand(`git remote add origin "${authRemote}"`, projectPath);
+
+        // Push to origin
+        const pushResult = await runCommand("git push -u origin main", projectPath);
+        if (pushResult.code !== 0) {
+          // If branch is master instead of main
+          const branchResult = await runCommand("git branch --show-current", projectPath);
+          const branch = branchResult.stdout || "main";
+          if (branch !== "main") {
+            await runCommand(`git push -u origin ${branch}`, projectPath);
+          }
+        }
       }
 
       // 5. Vercel — link project
@@ -252,7 +299,7 @@ export async function POST(request: NextRequest) {
         cloudflareUrl,
         vercelUrl,
         netlifyUrl,
-        clis: { gh: gh.version, wrangler: wrangler.version, vercel: vercel.version, netlify: netlify.version },
+        clis: { wrangler: wrangler.version, vercel: vercel.version, netlify: netlify.version },
       });
     }
 
