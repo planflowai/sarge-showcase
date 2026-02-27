@@ -91,6 +91,12 @@ export type {
   ComplexityType,
 } from './lib/types/threadGuardian';
 
+export {
+  DEFAULT_TIER1_CONFIG,
+  DEFAULT_TIER2_CONFIG,
+  DEFAULT_TIER3_CONFIG,
+} from './lib/types/threadGuardian';
+
 export * from './lib/types/trading';
 
 // ─── Guardians — Engines ─────────────────────────────────
