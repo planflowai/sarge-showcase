@@ -121,7 +121,18 @@ export async function POST(request: NextRequest) {
         checkCli("netlify", projectPath),
       ]);
 
-      // 2. Git init (skip if already a repo)
+      // 2. Fetch GitHub user info (needed for git config + repo creation)
+      const ghUserRes = await fetch("https://api.github.com/user", {
+        headers: { Authorization: `Bearer ${githubToken}`, Accept: "application/vnd.github+json" },
+      });
+      if (!ghUserRes.ok) {
+        return NextResponse.json({ error: `GitHub API error: invalid token (${ghUserRes.status})` }, { status: 400 });
+      }
+      const ghUser = await ghUserRes.json();
+      const ghLogin = ghUser.login as string;
+      const ghEmail = (ghUser.email as string) || `${ghLogin}@users.noreply.github.com`;
+
+      // 3. Git init (skip if already a repo)
       const gitDir = path.join(projectPath, ".git");
       if (!fs.existsSync(gitDir)) {
         const initResult = await runCommand("git init", projectPath);
@@ -130,7 +141,11 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // 3. Initial commit (skip if already has commits)
+      // Set git user config in this repo (required for commit)
+      await runCommand(`git config user.name "${ghLogin}"`, projectPath);
+      await runCommand(`git config user.email "${ghEmail}"`, projectPath);
+
+      // 4. Initial commit (skip if already has commits)
       const logCheck = await runCommand("git log --oneline -1", projectPath);
       if (logCheck.code !== 0) {
         // No commits yet — stage and commit
@@ -147,7 +162,7 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // 4. GitHub — create private repo via API and push
+      // 5. GitHub — create private repo via API and push
       let githubUrl = "";
       const remoteCheck = await runCommand("git remote get-url origin", projectPath);
       if (remoteCheck.code === 0 && remoteCheck.stdout) {
@@ -173,12 +188,7 @@ export async function POST(request: NextRequest) {
           const errData = await createRes.json().catch(() => ({}));
           // 422 = repo already exists under this account
           if (createRes.status === 422) {
-            // Fetch username to build URL
-            const userRes = await fetch("https://api.github.com/user", {
-              headers: { Authorization: `Bearer ${githubToken}`, Accept: "application/vnd.github+json" },
-            });
-            const userData = await userRes.json();
-            githubUrl = `https://github.com/${userData.login}/${projectName}`;
+            githubUrl = `https://github.com/${ghLogin}/${projectName}`;
           } else {
             return NextResponse.json({
               error: `GitHub API error (${createRes.status}): ${errData.message || "Failed to create repo"}`,
@@ -190,11 +200,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Add remote origin with token-embedded URL for push auth
-        const userRes = await fetch("https://api.github.com/user", {
-          headers: { Authorization: `Bearer ${githubToken}`, Accept: "application/vnd.github+json" },
-        });
-        const userData = await userRes.json();
-        const authRemote = `https://${userData.login}:${githubToken}@github.com/${userData.login}/${projectName}.git`;
+        const authRemote = `https://${ghLogin}:${githubToken}@github.com/${ghLogin}/${projectName}.git`;
         await runCommand(`git remote add origin "${authRemote}"`, projectPath);
 
         // Push to origin
@@ -209,7 +215,7 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // 5. Vercel — link project (skip if CLI not installed)
+      // 6. Vercel — link project (skip if CLI not installed)
       let vercelUrl = "";
       if (vercel.ok) {
         const vercelResult = await runCommand("vercel link --yes", projectPath);
@@ -227,7 +233,7 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // 6. Netlify — create site and link (skip if CLI not installed)
+      // 7. Netlify — create site and link (skip if CLI not installed)
       let netlifyUrl = "";
       if (netlify.ok) {
         const netlifyResult = await runCommand(
@@ -243,7 +249,7 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // 7. Cloudflare Pages — create project (skip if CLI not installed)
+      // 8. Cloudflare Pages — create project (skip if CLI not installed)
       let cloudflareUrl = "";
       if (wrangler.ok) {
         const cfResult = await runCommand(
