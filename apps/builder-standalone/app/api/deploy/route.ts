@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
       // Check .vercel/url.txt (saved by our deploy), fall back to project.json
       const vercelUrlFile = path.join(projectPath, ".vercel", "url.txt");
       if (fs.existsSync(vercelUrlFile)) {
-        vercelUrl = fs.readFileSync(vercelUrlFile, "utf-8").trim();
+        vercelUrl = fs.readFileSync(vercelUrlFile, "utf-8").replace(/^\uFEFF/, "").trim();
       } else {
         const vercelProjectFile = path.join(projectPath, ".vercel", "project.json");
         if (fs.existsSync(vercelProjectFile)) {
@@ -165,11 +165,14 @@ export async function POST(request: NextRequest) {
         } catch { /* ignore */ }
       }
 
-      // Check .wrangler or wrangler.toml for Cloudflare
+      // Check wrangler.toml for Cloudflare Pages
       const wranglerToml = path.join(projectPath, "wrangler.toml");
       if (fs.existsSync(wranglerToml)) {
-        const pName = projectName || path.basename(projectPath);
-        cloudflareUrl = `https://${pName}.pages.dev`;
+        const wranglerCfg = fs.readFileSync(wranglerToml, "utf-8");
+        const cfNameMatch = wranglerCfg.match(/name\s*=\s*"([^"]+)"/);
+        if (cfNameMatch) {
+          cloudflareUrl = `https://${cfNameMatch[1]}.pages.dev`;
+        }
       }
 
       return NextResponse.json({
@@ -426,15 +429,31 @@ export async function POST(request: NextRequest) {
         if (!netlifyUrl) netlifyUrl = `https://${safeName}.netlify.app`;
       }
 
-      // 8. Cloudflare Pages — create project (skip if CLI not installed)
+      // 8. Cloudflare Pages — create project and deploy files (skip if CLI not installed)
       let cloudflareUrl = "";
       if (wrangler.ok) {
-        const cfResult = await runCommand(
-          `npx wrangler pages project create "${projectName}" --production-branch main`,
+        const safeCfName = projectName.replace(/_/g, "-").toLowerCase();
+        // Create project (ignore "already exists" errors)
+        await runCommand(
+          `npx wrangler pages project create "${safeCfName}" --production-branch main`,
           projectPath
         );
-        if (cfResult.code === 0 || cfResult.stderr.includes("already exists") || cfResult.stdout.includes("already exists")) {
-          cloudflareUrl = `https://${projectName}.pages.dev`;
+        // Deploy files to Cloudflare Pages
+        const cfDeploy = await runCommand(
+          `npx wrangler pages deploy "." --project-name="${safeCfName}"`,
+          projectPath, 120_000
+        );
+        if (cfDeploy.code === 0) {
+          // Parse deployment URL from output
+          const cfUrlMatch = cfDeploy.stdout.match(/https:\/\/[^\s]+\.pages\.dev/);
+          cloudflareUrl = cfUrlMatch ? cfUrlMatch[0] : `https://${safeCfName}.pages.dev`;
+        } else if (cfDeploy.stderr.includes("already exists") || cfDeploy.stdout.includes("pages.dev")) {
+          cloudflareUrl = `https://${safeCfName}.pages.dev`;
+        }
+        // Save wrangler.toml so detect and push can find it
+        const wranglerTomlPath = path.join(projectPath, "wrangler.toml");
+        if (!fs.existsSync(wranglerTomlPath) && cloudflareUrl) {
+          fs.writeFileSync(wranglerTomlPath, `name = "${safeCfName}"\n`, "utf-8");
         }
       }
 
@@ -492,12 +511,22 @@ export async function POST(request: NextRequest) {
 
       const hashResult = await runCommand("git rev-parse --short HEAD", projectPath);
 
-      // Re-deploy to Vercel and Netlify in parallel (non-blocking — don't fail the push)
+      // Re-deploy to hosting services in parallel
       const redeployTasks: Promise<any>[] = [];
       const vercelProjectFile = path.join(projectPath, ".vercel", "project.json");
       if (fs.existsSync(vercelProjectFile)) {
         redeployTasks.push(
-          runCommand("npx vercel --prod --yes", projectPath, 120_000).catch(() => {})
+          runCommand("npx vercel --prod --yes", projectPath, 120_000).then((r) => {
+            // Update saved URL in case Vercel assigned a new alias
+            if (r.code === 0) {
+              const allUrls = r.stdout.match(/https:\/\/[^\s]+\.vercel\.app/g);
+              if (allUrls && allUrls.length > 0) {
+                const prodUrl = allUrls[allUrls.length - 1];
+                const urlFile = path.join(projectPath, ".vercel", "url.txt");
+                fs.writeFileSync(urlFile, prodUrl, "utf-8");
+              }
+            }
+          }).catch(() => {})
         );
       }
       const netlifyStateFile = path.join(projectPath, ".netlify", "state.json");
@@ -505,6 +534,20 @@ export async function POST(request: NextRequest) {
         redeployTasks.push(
           runCommand('npx netlify deploy --prod --dir "."', projectPath, 120_000).catch(() => {})
         );
+      }
+      // Cloudflare Pages redeploy
+      const wranglerToml = path.join(projectPath, "wrangler.toml");
+      if (fs.existsSync(wranglerToml)) {
+        const wranglerCfg = fs.readFileSync(wranglerToml, "utf-8");
+        const cfNameMatch = wranglerCfg.match(/name\s*=\s*"([^"]+)"/);
+        if (cfNameMatch) {
+          redeployTasks.push(
+            runCommand(
+              `npx wrangler pages deploy "." --project-name="${cfNameMatch[1]}"`,
+              projectPath, 120_000
+            ).catch(() => {})
+          );
+        }
       }
       if (redeployTasks.length > 0) {
         await Promise.all(redeployTasks);

@@ -8,6 +8,7 @@ interface PushResult {
 }
 
 interface DeployState {
+  currentProjectPath: string | null;  // Track which project this state belongs to
   projectName: string;
   githubUrl: string | null;
   cloudflareUrl: string | null;
@@ -20,12 +21,13 @@ interface DeployState {
 
   detectProject: (projectPath: string) => Promise<void>;
   initProject: (name: string, projectPath: string) => Promise<void>;
-  pushProject: (projectPath: string) => Promise<void>;
+  pushProject: (projectPath: string, projectName: string) => Promise<void>;
   exportZip: (projectPath: string) => Promise<string | null>;
   reset: () => void;
 }
 
-export const useDeployStore = create<DeployState>()((set) => ({
+export const useDeployStore = create<DeployState>()((set, get) => ({
+  currentProjectPath: null,
   projectName: "",
   githubUrl: null,
   cloudflareUrl: null,
@@ -37,7 +39,24 @@ export const useDeployStore = create<DeployState>()((set) => ({
   error: null,
 
   detectProject: async (projectPath) => {
-    set({ isDetecting: true });
+    // If switching projects, reset all state first
+    const current = get().currentProjectPath;
+    if (current && current !== projectPath) {
+      set({
+        currentProjectPath: projectPath,
+        projectName: "",
+        githubUrl: null,
+        cloudflareUrl: null,
+        vercelUrl: null,
+        netlifyUrl: null,
+        lastPush: null,
+        error: null,
+        isDetecting: true,
+      });
+    } else {
+      set({ currentProjectPath: projectPath, isDetecting: true });
+    }
+
     try {
       const res = await fetch("/api/deploy", {
         method: "POST",
@@ -45,6 +64,8 @@ export const useDeployStore = create<DeployState>()((set) => ({
         body: JSON.stringify({ action: "detect", projectPath }),
       });
       const data = await res.json();
+      // Only apply if still on the same project (user might have switched again)
+      if (get().currentProjectPath !== projectPath) return;
       if (res.ok && data.success) {
         set({
           isDetecting: false,
@@ -57,12 +78,14 @@ export const useDeployStore = create<DeployState>()((set) => ({
         set({ isDetecting: false });
       }
     } catch {
-      set({ isDetecting: false });
+      if (get().currentProjectPath === projectPath) {
+        set({ isDetecting: false });
+      }
     }
   },
 
   initProject: async (name, projectPath) => {
-    set({ isDeploying: true, error: null, projectName: name });
+    set({ isDeploying: true, error: null, projectName: name, currentProjectPath: projectPath });
     try {
       const res = await fetch("/api/deploy", {
         method: "POST",
@@ -86,13 +109,19 @@ export const useDeployStore = create<DeployState>()((set) => ({
     }
   },
 
-  pushProject: async (projectPath) => {
+  pushProject: async (projectPath, projectName) => {
+    // Guard: don't push if store is tracking a different project
+    const current = get().currentProjectPath;
+    if (current && current !== projectPath) {
+      set({ error: "Project mismatch — reopen the deploy tab" });
+      return;
+    }
     set({ isDeploying: true, error: null });
     try {
       const res = await fetch("/api/deploy", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "push", projectPath }),
+        body: JSON.stringify({ action: "push", projectPath, projectName }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -137,6 +166,7 @@ export const useDeployStore = create<DeployState>()((set) => ({
 
   reset: () =>
     set({
+      currentProjectPath: null,
       projectName: "",
       githubUrl: null,
       cloudflareUrl: null,

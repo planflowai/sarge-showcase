@@ -73,7 +73,7 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
 
   const handlePush = async () => {
     if (!projectPath) return;
-    await pushProject(projectPath);
+    await pushProject(projectPath, projectName || "");
     const state = useDeployStore.getState();
     if (state.error) {
       showToast({ message: `Push failed: ${state.error}`, type: "error" });
