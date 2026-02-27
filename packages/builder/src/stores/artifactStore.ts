@@ -31,7 +31,7 @@ interface ArtifactState {
   language: string;
 
   // UI state
-  activeTab: 'code' | 'preview' | 'diff';
+  activeTab: 'code' | 'preview' | 'diff' | 'deploy';
 
   // Version history (for diff/undo)
   versions: ArtifactVersion[];
@@ -50,7 +50,7 @@ interface ArtifactState {
   setStreamingCode: (code: string) => void;
   setIsStreaming: (streaming: boolean) => void;
   finalizeStreaming: () => void;
-  setActiveTab: (tab: 'code' | 'preview' | 'diff') => void;
+  setActiveTab: (tab: 'code' | 'preview' | 'diff' | 'deploy') => void;
   setLanguage: (language: string) => void;
   clear: () => void;
 

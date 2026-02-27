@@ -5,7 +5,7 @@ import {
   Send, Rocket, X, Copy, Check, GitCompare, ShieldCheck,
   MonitorOff, MonitorUp, Columns2, Columns3, Grid2X2,
   ChevronDown, Trash2, Paperclip, Save,
-  ImageIcon, ClipboardCopy, MessageSquare, Mic, Sparkles,
+  ImageIcon, ClipboardCopy, MessageSquare, Mic, LogOut,
 } from "lucide-react";
 import { useParallelChatStore } from "@sarge/chat/index.client";
 import { useWarRoomStore, MODE_SLOT_IDS, type WarRoomMode, type MonitorSlot, type SlotStatus } from "@/lib/stores/warRoomStore";
@@ -721,6 +721,16 @@ export function WarRoomDashboard() {
               <Rocket className="h-3.5 w-3.5" /> LAUNCH
             </button>
           )}
+          <button
+            onClick={() => {
+              recallAllPopouts();
+              setEnabled(false);
+            }}
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[10px] font-bold text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/60 border border-zinc-700/30 transition-all"
+            title="Exit Workbench and return to chat"
+          >
+            <LogOut className="h-3 w-3" /> Exit
+          </button>
         </div>
       </div>
 
@@ -748,11 +758,7 @@ export function WarRoomDashboard() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={
-              !workspaceActive
-                ? "Launch workspace to begin broadcasting..."
-                : `Type a message to send to all models... (Enter to send, Shift+Enter for new line)`
-            }
+            placeholder="Type a message to send to all models... (Enter to send, Shift+Enter for new line)"
             rows={2}
             className="w-full resize-none rounded-lg bg-white dark:bg-zinc-800 px-4 py-3 text-sm text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none border border-zinc-300 dark:border-zinc-700 focus:border-zinc-400 dark:focus:border-zinc-600 min-h-[44px] max-h-[160px]"
           />
@@ -795,19 +801,6 @@ export function WarRoomDashboard() {
               <MessageSquare className="h-5 w-5" />
             </button>
 
-            {/* Switch to Multi-Chat */}
-            <button
-              onClick={() => {
-                setEnabled(false);
-                const pc = useParallelChatStore.getState();
-                if (!pc.enabled) pc.toggleParallelMode();
-              }}
-              title="Switch to Multi-Chat"
-              className="p-2 rounded-lg text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
-            >
-              <Sparkles className="h-5 w-5" />
-            </button>
-
             {/* Divider */}
             <div className="w-px h-6 bg-zinc-300 dark:bg-zinc-700 mx-1" />
 
@@ -832,7 +825,7 @@ export function WarRoomDashboard() {
             {/* Send to All */}
             <button
               onClick={handleSend}
-              disabled={!input.trim() || !workspaceActive}
+              disabled={!input.trim()}
               title="Send to all monitors"
               className="p-2.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-500 transition-colors disabled:opacity-30 disabled:hover:bg-indigo-600"
             >

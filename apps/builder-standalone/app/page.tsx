@@ -7,6 +7,7 @@ import { ErrorBoundary } from "../components/ui/error-boundary";
 import { JuryToast } from "@sarge/core";
 import { useConversationStore } from "@sarge/chat/index.client";
 import { WarRoomPopout } from "@/components/chat/WarRoomPopout";
+import DeployPanel from "@/components/deploy/DeployPanel";
 
 export default function Home() {
   const searchParams = useSearchParams();
@@ -47,7 +48,7 @@ export default function Home() {
   return (
     <div className="flex h-full w-full">
       <ErrorBoundary fallbackTitle="Builder Error">
-        <BuilderPage />
+        <BuilderPage deployContent={<DeployPanel />} />
       </ErrorBoundary>
       <JuryToast />
     </div>

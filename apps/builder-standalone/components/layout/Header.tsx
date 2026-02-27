@@ -262,10 +262,13 @@ export function Header() {
             {/* Workbench button — purple accent, wrench icon */}
             <button
               onClick={() => {
-                setWarRoomEnabled(!warRoomEnabled);
-                if (!warRoomEnabled && pathname !== "/chat") {
+                if (!warRoomEnabled) {
+                  setWarRoomEnabled(true);
+                  if (pathname !== "/chat") router.push("/chat");
+                } else if (pathname !== "/chat") {
                   router.push("/chat");
                 }
+                // When already enabled + on /chat, do nothing — close from dashboard only
               }}
               className={cn(
                 "flex items-center gap-1.5 ml-3 px-2.5 py-1.5 rounded-md text-xs font-bold transition-all duration-300 border",
@@ -273,7 +276,7 @@ export function Header() {
                   ? "bg-purple-600/30 border-purple-500/60 text-purple-300 ring-1 ring-purple-500/40 shadow-[0_0_12px_rgba(168,85,247,0.3)]"
                   : "border-transparent text-zinc-500 dark:text-zinc-400 hover:bg-purple-500/10 hover:text-purple-300 hover:border-purple-500/30"
               )}
-              title={warRoomEnabled ? "Close Workbench" : "Open Workbench — multi-monitor broadcast"}
+              title={warRoomEnabled ? "Go to Workbench" : "Open Workbench — multi-monitor broadcast"}
             >
               <Wrench className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Workbench</span>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import BuilderSidebar from "./BuilderSidebar";
 import BuilderChat from "./BuilderChat";
 // BuilderProgress removed — redundant with ProgressCards in chat
@@ -37,7 +37,7 @@ if (typeof window !== 'undefined') {
  * - Terminal (bottom): hidden by default, toggled from sidebar
  */
 
-export default function BuilderPage() {
+export default function BuilderPage({ deployContent }: { deployContent?: React.ReactNode } = {}) {
   const [selectedModel, setSelectedModel] = useState<string | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<string>("deepseek");
 
@@ -550,6 +550,7 @@ Please provide the complete modified version of this component. Make only the re
           onCloseDiff={handleCloseDiff}
           lastPrompt={lastPrompt}
           projectName={activeProjectName}
+          deployContent={deployContent}
         />
       </div>
     );
@@ -697,6 +698,7 @@ Please provide the complete modified version of this component. Make only the re
             onCloseDiff={handleCloseDiff}
             lastPrompt={lastPrompt}
             projectName={activeProjectName}
+            deployContent={deployContent}
           />
         </div>
       </div>

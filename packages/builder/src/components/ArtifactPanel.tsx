@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback, useMemo, memo } from "react";
-import { Code2, Eye, RefreshCw, AlertTriangle, Download, Copy, Check, Maximize2, Minimize2, Radio, GitCompare, X, Library, ChevronLeft, ChevronRight, Save, RotateCcw, Server, Monitor } from "lucide-react";
+import { Code2, Eye, RefreshCw, AlertTriangle, Download, Copy, Check, Maximize2, Minimize2, Radio, GitCompare, X, Library, ChevronLeft, ChevronRight, Save, RotateCcw, Server, Monitor, Rocket } from "lucide-react";
 import Editor from "@monaco-editor/react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@sarge/core";
@@ -21,11 +21,13 @@ export interface DiffViewState {
   proposedContent: string;
 }
 
+type ArtifactTab = "code" | "preview" | "diff" | "deploy";
+
 interface ArtifactPanelProps {
   code: string;
   onCodeChange: (code: string) => void;
-  activeTab: "code" | "preview" | "diff";
-  onTabChange: (tab: "code" | "preview" | "diff") => void;
+  activeTab: ArtifactTab;
+  onTabChange: (tab: ArtifactTab) => void;
   isFullscreen: boolean;
   onToggleFullscreen: () => void;
   isStreaming?: boolean;
@@ -33,6 +35,7 @@ interface ArtifactPanelProps {
   onCloseDiff?: () => void;
   lastPrompt?: string; // The prompt that generated the current code
   projectName?: string | null; // If set, use API-based preview with CSS/JS inlining
+  deployContent?: React.ReactNode; // Optional deploy panel content
 }
 
 // Check if HTML code is complete (has closing </html> tag)
@@ -52,6 +55,7 @@ function ArtifactPanelInner({
   onCloseDiff,
   lastPrompt = "",
   projectName = null,
+  deployContent,
 }: ArtifactPanelProps) {
   const [previewContent, setPreviewContent] = useState<string>("");
   const [previewError, setPreviewError] = useState<string | null>(null);
@@ -526,6 +530,21 @@ function ArtifactPanelInner({
                 Diff
               </button>
             )}
+            {/* Deploy tab - only shown when deployContent is provided */}
+            {deployContent && (
+              <button
+                onClick={() => onTabChange("deploy")}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
+                  activeTab === "deploy"
+                    ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
+                    : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
+                )}
+              >
+                <Rocket className="h-3.5 w-3.5" />
+                Deploy
+              </button>
+            )}
           </div>
 
           {/* Content type badge */}
@@ -798,6 +817,10 @@ function ArtifactPanelInner({
               />
             </div>
           </div>
+        )}
+
+        {activeTab === "deploy" && deployContent && (
+          <div className="h-full overflow-hidden">{deployContent}</div>
         )}
       </div>
 
