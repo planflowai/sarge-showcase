@@ -117,8 +117,8 @@ export async function POST(request: NextRequest) {
       // Check which optional CLIs are available (none are required — GitHub uses API)
       const [wrangler, vercel, netlify] = await Promise.all([
         checkCli("npx wrangler", projectPath),
-        checkCli("vercel", projectPath),
-        checkCli("netlify", projectPath),
+        checkCli("npx vercel", projectPath),
+        checkCli("npx netlify", projectPath),
       ]);
 
       // 2. Fetch GitHub user info (needed for git config + repo creation)
@@ -218,7 +218,7 @@ export async function POST(request: NextRequest) {
       // 6. Vercel — link project (skip if CLI not installed)
       let vercelUrl = "";
       if (vercel.ok) {
-        const vercelResult = await runCommand("vercel link --yes", projectPath);
+        const vercelResult = await runCommand("npx vercel link --yes", projectPath);
         if (vercelResult.code === 0 || vercelResult.stderr.includes("already linked")) {
           const vercelProjectFile = path.join(projectPath, ".vercel", "project.json");
           if (fs.existsSync(vercelProjectFile)) {
@@ -237,14 +237,14 @@ export async function POST(request: NextRequest) {
       let netlifyUrl = "";
       if (netlify.ok) {
         const netlifyResult = await runCommand(
-          `netlify sites:create --name "${projectName}" --account-slug ""`,
+          `npx netlify sites:create --name "${projectName}" --account-slug ""`,
           projectPath
         );
         if (netlifyResult.code === 0) {
           netlifyUrl = netlifyResult.stdout.match(/https:\/\/[^\s]+\.netlify\.app/)?.[0] || "";
-          await runCommand("netlify link", projectPath);
+          await runCommand("npx netlify link", projectPath);
         } else if (netlifyResult.stderr.includes("already exists") || netlifyResult.stdout.includes("already exists")) {
-          const linkResult = await runCommand("netlify link", projectPath);
+          const linkResult = await runCommand("npx netlify link", projectPath);
           netlifyUrl = linkResult.stdout.match(/https:\/\/[^\s]+\.netlify\.app/)?.[0] || "https://netlify.com (linked)";
         }
       }
