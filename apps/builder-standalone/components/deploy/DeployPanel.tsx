@@ -32,8 +32,10 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
     vercelUrl,
     netlifyUrl,
     isDeploying,
+    isDetecting,
     lastPush,
     error,
+    detectProject,
     initProject,
     pushProject,
     exportZip,
@@ -42,10 +44,13 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
 
   const isInitialized = !!(githubUrl || cloudflareUrl || vercelUrl || netlifyUrl);
 
-  // Reset deploy state when project changes
+  // When project changes, reset then auto-detect existing connections
   useEffect(() => {
     reset();
-  }, [projectPath, reset]);
+    if (projectPath) {
+      detectProject(projectPath);
+    }
+  }, [projectPath, reset, detectProject]);
 
   const handleInit = async () => {
     if (!projectName || !projectPath) return;
@@ -118,8 +123,16 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
       </div>
 
       <div className="flex-1 p-6 space-y-6">
-        {/* ═══ Init Section ═══ */}
-        {!isInitialized ? (
+        {/* ═══ Detecting existing connections ═══ */}
+        {isDetecting ? (
+          <div className="flex items-center gap-3 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50">
+            <Loader2 className="h-5 w-5 animate-spin text-indigo-500" />
+            <span className="text-sm text-zinc-500 dark:text-zinc-400">
+              Checking for existing connections...
+            </span>
+          </div>
+        ) : !isInitialized ? (
+          /* ═══ Init Section ═══ */
           <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 p-6 space-y-4">
             <div className="space-y-1">
               <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">

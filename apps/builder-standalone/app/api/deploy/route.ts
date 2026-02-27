@@ -101,6 +101,82 @@ export async function POST(request: NextRequest) {
     }
 
     // ════════════════════════════════════════
+    //  ACTION: detect — check if project is already connected
+    // ════════════════════════════════════════
+    if (action === "detect") {
+      let githubUrl = "";
+      let vercelUrl = "";
+      let netlifyUrl = "";
+      let cloudflareUrl = "";
+
+      // Check git remote for GitHub
+      const gitDir = path.join(projectPath, ".git");
+      if (fs.existsSync(gitDir)) {
+        const remoteResult = await runCommand("git remote get-url origin", projectPath);
+        if (remoteResult.code === 0 && remoteResult.stdout) {
+          let raw = remoteResult.stdout.replace(/\.git$/, "");
+          // Strip embedded credentials from URL
+          raw = raw.replace(/https?:\/\/[^@]+@/, "https://");
+          if (raw.includes("github.com")) {
+            // Convert SSH format if needed
+            const m = raw.match(/github\.com[:/](.+)/);
+            githubUrl = m ? `https://github.com/${m[1]}` : raw;
+          }
+        }
+      }
+
+      // Check .vercel/project.json
+      const vercelProjectFile = path.join(projectPath, ".vercel", "project.json");
+      if (fs.existsSync(vercelProjectFile)) {
+        try {
+          const vp = JSON.parse(fs.readFileSync(vercelProjectFile, "utf-8"));
+          if (vp.projectName) {
+            const safeName = vp.projectName.replace(/_/g, "-").toLowerCase();
+            vercelUrl = `https://${safeName}.vercel.app`;
+          }
+        } catch { /* ignore */ }
+      }
+
+      // Check .netlify/state.json
+      const netlifyStateFile = path.join(projectPath, ".netlify", "state.json");
+      if (fs.existsSync(netlifyStateFile)) {
+        try {
+          const ns = JSON.parse(fs.readFileSync(netlifyStateFile, "utf-8"));
+          if (ns.siteId) {
+            // Try to get the actual site URL from sites:list
+            const listResult = await runCommand(
+              `npx netlify sites:list --json`,
+              projectPath, 30_000
+            );
+            try {
+              const sites = JSON.parse(listResult.stdout);
+              const site = sites.find((s: any) => s.id === ns.siteId);
+              if (site) {
+                netlifyUrl = site.ssl_url || site.url || "";
+              }
+            } catch { /* ignore */ }
+            if (!netlifyUrl) netlifyUrl = "https://app.netlify.com (linked)";
+          }
+        } catch { /* ignore */ }
+      }
+
+      // Check .wrangler or wrangler.toml for Cloudflare
+      const wranglerToml = path.join(projectPath, "wrangler.toml");
+      if (fs.existsSync(wranglerToml)) {
+        const pName = projectName || path.basename(projectPath);
+        cloudflareUrl = `https://${pName}.pages.dev`;
+      }
+
+      return NextResponse.json({
+        success: true,
+        githubUrl,
+        vercelUrl,
+        netlifyUrl,
+        cloudflareUrl,
+      });
+    }
+
+    // ════════════════════════════════════════
     //  ACTION: init
     // ════════════════════════════════════════
     if (action === "init") {

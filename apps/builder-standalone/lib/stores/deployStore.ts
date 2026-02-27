@@ -14,9 +14,11 @@ interface DeployState {
   vercelUrl: string | null;
   netlifyUrl: string | null;
   isDeploying: boolean;
+  isDetecting: boolean;
   lastPush: PushResult | null;
   error: string | null;
 
+  detectProject: (projectPath: string) => Promise<void>;
   initProject: (name: string, projectPath: string) => Promise<void>;
   pushProject: (projectPath: string) => Promise<void>;
   exportZip: (projectPath: string) => Promise<string | null>;
@@ -30,8 +32,34 @@ export const useDeployStore = create<DeployState>()((set) => ({
   vercelUrl: null,
   netlifyUrl: null,
   isDeploying: false,
+  isDetecting: false,
   lastPush: null,
   error: null,
+
+  detectProject: async (projectPath) => {
+    set({ isDetecting: true });
+    try {
+      const res = await fetch("/api/deploy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "detect", projectPath }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        set({
+          isDetecting: false,
+          githubUrl: data.githubUrl || null,
+          cloudflareUrl: data.cloudflareUrl || null,
+          vercelUrl: data.vercelUrl || null,
+          netlifyUrl: data.netlifyUrl || null,
+        });
+      } else {
+        set({ isDetecting: false });
+      }
+    } catch {
+      set({ isDetecting: false });
+    }
+  },
 
   initProject: async (name, projectPath) => {
     set({ isDeploying: true, error: null, projectName: name });
@@ -115,6 +143,7 @@ export const useDeployStore = create<DeployState>()((set) => ({
       vercelUrl: null,
       netlifyUrl: null,
       isDeploying: false,
+      isDetecting: false,
       lastPush: null,
       error: null,
     }),
