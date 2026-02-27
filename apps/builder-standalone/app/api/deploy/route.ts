@@ -106,15 +106,17 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Missing 'projectName' for init" }, { status: 400 });
       }
 
-      // 1. Check all 3 CLIs
-      const [gh, vercel, netlify] = await Promise.all([
+      // 1. Check all 4 CLIs
+      const [gh, wrangler, vercel, netlify] = await Promise.all([
         checkCli("gh", projectPath),
+        checkCli("npx wrangler", projectPath),
         checkCli("vercel", projectPath),
         checkCli("netlify", projectPath),
       ]);
 
       const missing: string[] = [];
       if (!gh.ok) missing.push("gh (GitHub CLI) — install from https://cli.github.com and run 'gh auth login'");
+      if (!wrangler.ok) missing.push("wrangler (Cloudflare CLI) — install with 'npm i -g wrangler' and run 'wrangler login'");
       if (!vercel.ok) missing.push("vercel (Vercel CLI) — install with 'npm i -g vercel' and run 'vercel login'");
       if (!netlify.ok) missing.push("netlify (Netlify CLI) — install with 'npm i -g netlify-cli' and run 'netlify login'");
 
@@ -225,12 +227,32 @@ export async function POST(request: NextRequest) {
         await runCommand("netlify link", projectPath);
       }
 
+      // 7. Cloudflare Pages — create project
+      let cloudflareUrl = "";
+      const cfResult = await runCommand(
+        `npx wrangler pages project create "${projectName}" --production-branch main`,
+        projectPath
+      );
+      if (cfResult.code !== 0) {
+        // Project may already exist
+        if (cfResult.stderr.includes("already exists") || cfResult.stdout.includes("already exists")) {
+          cloudflareUrl = `https://${projectName}.pages.dev`;
+        } else {
+          return NextResponse.json({
+            error: `wrangler pages project create failed: ${cfResult.stderr || cfResult.stdout}`,
+          }, { status: 500 });
+        }
+      } else {
+        cloudflareUrl = `https://${projectName}.pages.dev`;
+      }
+
       return NextResponse.json({
         success: true,
         githubUrl,
+        cloudflareUrl,
         vercelUrl,
         netlifyUrl,
-        clis: { gh: gh.version, vercel: vercel.version, netlify: netlify.version },
+        clis: { gh: gh.version, wrangler: wrangler.version, vercel: vercel.version, netlify: netlify.version },
       });
     }
 

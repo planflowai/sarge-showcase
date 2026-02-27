@@ -3,6 +3,7 @@ import { create } from "zustand";
 interface DeployState {
   projectName: string;
   githubUrl: string | null;
+  cloudflareUrl: string | null;
   vercelUrl: string | null;
   netlifyUrl: string | null;
   isDeploying: boolean;
@@ -18,6 +19,7 @@ interface DeployState {
 export const useDeployStore = create<DeployState>()((set) => ({
   projectName: "",
   githubUrl: null,
+  cloudflareUrl: null,
   vercelUrl: null,
   netlifyUrl: null,
   isDeploying: false,
@@ -40,6 +42,7 @@ export const useDeployStore = create<DeployState>()((set) => ({
       set({
         isDeploying: false,
         githubUrl: data.githubUrl || null,
+        cloudflareUrl: data.cloudflareUrl || null,
         vercelUrl: data.vercelUrl || null,
         netlifyUrl: data.netlifyUrl || null,
       });
@@ -95,6 +98,7 @@ export const useDeployStore = create<DeployState>()((set) => ({
     set({
       projectName: "",
       githubUrl: null,
+      cloudflareUrl: null,
       vercelUrl: null,
       netlifyUrl: null,
       isDeploying: false,

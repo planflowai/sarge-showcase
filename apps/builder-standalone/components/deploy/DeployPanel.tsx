@@ -25,6 +25,7 @@ export default function DeployPanel() {
 
   const {
     githubUrl,
+    cloudflareUrl,
     vercelUrl,
     netlifyUrl,
     isDeploying,
@@ -37,7 +38,7 @@ export default function DeployPanel() {
   } = useDeployStore();
 
   const [pushSuccess, setPushSuccess] = useState(false);
-  const isInitialized = !!(githubUrl || vercelUrl || netlifyUrl);
+  const isInitialized = !!(githubUrl || cloudflareUrl || vercelUrl || netlifyUrl);
 
   // Reset deploy state when project changes
   useEffect(() => {
@@ -60,7 +61,7 @@ export default function DeployPanel() {
     if (state.error) {
       showToast({ message: `Deploy init failed: ${state.error}`, type: "error" });
     } else {
-      showToast({ message: "GitHub, Vercel, Netlify connected", type: "success" });
+      showToast({ message: "GitHub, Cloudflare Pages, Vercel, Netlify connected", type: "success" });
     }
   };
 
@@ -129,13 +130,13 @@ export default function DeployPanel() {
                 Connect Services
               </h3>
               <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                Creates a private GitHub repo, links Vercel and Netlify for
-                auto-deploy on push.
+                Creates a private GitHub repo, links Cloudflare Pages, Vercel,
+                and Netlify for auto-deploy on push.
               </p>
             </div>
 
             <div className="text-[10px] text-zinc-400 dark:text-zinc-500 space-y-1">
-              <p>Requires: <code className="bg-zinc-200 dark:bg-zinc-800 px-1 rounded">gh</code>, <code className="bg-zinc-200 dark:bg-zinc-800 px-1 rounded">vercel</code>, <code className="bg-zinc-200 dark:bg-zinc-800 px-1 rounded">netlify</code> CLIs installed and logged in.</p>
+              <p>Requires: <code className="bg-zinc-200 dark:bg-zinc-800 px-1 rounded">gh</code>, <code className="bg-zinc-200 dark:bg-zinc-800 px-1 rounded">wrangler</code>, <code className="bg-zinc-200 dark:bg-zinc-800 px-1 rounded">vercel</code>, <code className="bg-zinc-200 dark:bg-zinc-800 px-1 rounded">netlify</code> CLIs installed and logged in.</p>
             </div>
 
             <button
@@ -154,10 +155,29 @@ export default function DeployPanel() {
         ) : (
           <>
             {/* ═══ Service Links ═══ */}
-            <div className="space-y-2">
+            <div className="space-y-3">
               <h3 className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                 Connected Services
               </h3>
+
+              {/* Cloudflare Pages — PRIMARY */}
+              {cloudflareUrl && (
+                <a
+                  href={cloudflareUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm font-bold bg-orange-500 text-white hover:bg-orange-400 transition-colors shadow-lg shadow-orange-500/20"
+                >
+                  <Globe className="h-5 w-5" />
+                  <div className="flex-1">
+                    <div>Cloudflare Pages</div>
+                    <div className="text-[10px] font-normal opacity-80">Free unlimited bandwidth &middot; Commercial use</div>
+                  </div>
+                  <ExternalLink className="h-4 w-4 opacity-60" />
+                </a>
+              )}
+
+              {/* Secondary links */}
               <div className="flex flex-wrap gap-2">
                 {githubUrl && (
                   <a
@@ -179,7 +199,7 @@ export default function DeployPanel() {
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-black dark:bg-white text-white dark:text-black hover:opacity-80 transition-opacity"
                   >
                     <Globe className="h-3.5 w-3.5" />
-                    Vercel Live
+                    Vercel
                     <ExternalLink className="h-3 w-3 opacity-60" />
                   </a>
                 )}
@@ -191,7 +211,7 @@ export default function DeployPanel() {
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-teal-600 text-white hover:opacity-80 transition-opacity"
                   >
                     <Globe className="h-3.5 w-3.5" />
-                    Netlify Live
+                    Netlify
                     <ExternalLink className="h-3 w-3 opacity-60" />
                   </a>
                 )}
@@ -205,8 +225,8 @@ export default function DeployPanel() {
                   Push Changes
                 </h3>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  Commits and pushes all current files. Vercel and Netlify
-                  auto-deploy from the push.
+                  Commits and pushes all current files. Cloudflare Pages,
+                  Vercel, and Netlify auto-deploy from the push.
                 </p>
               </div>
 
@@ -292,6 +312,10 @@ export default function DeployPanel() {
           <p>
             <code className="bg-zinc-200 dark:bg-zinc-800 px-1 rounded">gh</code>{" "}
             — GitHub CLI, logged in (<code>gh auth login</code>)
+          </p>
+          <p>
+            <code className="bg-zinc-200 dark:bg-zinc-800 px-1 rounded">wrangler</code>{" "}
+            — Cloudflare CLI, logged in (<code>wrangler login</code>)
           </p>
           <p>
             <code className="bg-zinc-200 dark:bg-zinc-800 px-1 rounded">vercel</code>{" "}
