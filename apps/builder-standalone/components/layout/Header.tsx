@@ -13,6 +13,7 @@ import {
   Radio,
   Activity,
   Hammer,
+  Wrench,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
@@ -20,8 +21,9 @@ import {
   useSettingsStore,
   useAirGapStore,
 } from "@sarge/core";
+import { useWarRoomStore } from "@/lib/stores/warRoomStore";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 type NavMode = "builder" | "chat" | "settings";
@@ -67,11 +69,16 @@ const NAV_ITEMS: NavItem[] = [
 
 export function Header() {
   const pathname = usePathname();
+  const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [apiConnected, setApiConnected] = useState<boolean | null>(null);
 
   const theme = useSettingsStore((s) => s.theme);
   const setTheme = useSettingsStore((s) => s.setTheme);
+
+  // Workbench (War Room)
+  const warRoomEnabled = useWarRoomStore((s) => s.enabled);
+  const setWarRoomEnabled = useWarRoomStore((s) => s.setEnabled);
 
   // Air-gap mode
   const airGapEnabled = useAirGapStore((s) => s.airGapEnabled);
@@ -251,6 +258,26 @@ export function Header() {
                 </span>
               </div>
             )}
+
+            {/* Workbench button — purple accent, wrench icon */}
+            <button
+              onClick={() => {
+                setWarRoomEnabled(!warRoomEnabled);
+                if (!warRoomEnabled && pathname !== "/chat") {
+                  router.push("/chat");
+                }
+              }}
+              className={cn(
+                "flex items-center gap-1.5 ml-3 px-2.5 py-1.5 rounded-md text-xs font-bold transition-all duration-300 border",
+                warRoomEnabled
+                  ? "bg-purple-600/30 border-purple-500/60 text-purple-300 ring-1 ring-purple-500/40 shadow-[0_0_12px_rgba(168,85,247,0.3)]"
+                  : "border-transparent text-zinc-500 dark:text-zinc-400 hover:bg-purple-500/10 hover:text-purple-300 hover:border-purple-500/30"
+              )}
+              title={warRoomEnabled ? "Close Workbench" : "Open Workbench — multi-monitor broadcast"}
+            >
+              <Wrench className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Workbench</span>
+            </button>
           </div>
 
           {/* Spacer */}
