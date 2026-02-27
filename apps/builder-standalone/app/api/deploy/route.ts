@@ -125,16 +125,21 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Check .vercel/project.json
-      const vercelProjectFile = path.join(projectPath, ".vercel", "project.json");
-      if (fs.existsSync(vercelProjectFile)) {
-        try {
-          const vp = JSON.parse(fs.readFileSync(vercelProjectFile, "utf-8"));
-          if (vp.projectName) {
-            const safeName = vp.projectName.replace(/_/g, "-").toLowerCase();
-            vercelUrl = `https://${safeName}.vercel.app`;
-          }
-        } catch { /* ignore */ }
+      // Check .vercel/url.txt (saved by our deploy), fall back to project.json
+      const vercelUrlFile = path.join(projectPath, ".vercel", "url.txt");
+      if (fs.existsSync(vercelUrlFile)) {
+        vercelUrl = fs.readFileSync(vercelUrlFile, "utf-8").trim();
+      } else {
+        const vercelProjectFile = path.join(projectPath, ".vercel", "project.json");
+        if (fs.existsSync(vercelProjectFile)) {
+          try {
+            const vp = JSON.parse(fs.readFileSync(vercelProjectFile, "utf-8"));
+            if (vp.projectName) {
+              const safeName = vp.projectName.replace(/_/g, "-").toLowerCase();
+              vercelUrl = `https://${safeName}.vercel.app`;
+            }
+          } catch { /* ignore */ }
+        }
       }
 
       // Check .netlify/state.json
@@ -334,6 +339,12 @@ export async function POST(request: NextRequest) {
         if (!vercelUrl) {
           const safeName = projectName.replace(/_/g, "-").toLowerCase();
           vercelUrl = `https://${safeName}.vercel.app`;
+        }
+        // Save the production URL so detect can find it later
+        if (vercelUrl) {
+          const vercelDir = path.join(projectPath, ".vercel");
+          if (!fs.existsSync(vercelDir)) fs.mkdirSync(vercelDir, { recursive: true });
+          fs.writeFileSync(path.join(vercelDir, "url.txt"), vercelUrl, "utf-8");
         }
       }
 
