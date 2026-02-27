@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { ChatView } from "@sarge/chat/index.client";
 import { ParallelChatView } from "@sarge/chat/index.client";
 import { ConversationList } from "@sarge/chat/index.client";
+import { useConversationStore } from "@sarge/chat/index.client";
+import { MessageSquare } from "lucide-react";
 
 type Tab = "chat" | "multi" | "history";
 
@@ -16,6 +18,7 @@ const TABS: { key: Tab; label: string }[] = [
 export default function ChatDrawer() {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<Tab>("chat");
+  const currentConversationId = useConversationStore((s) => s.currentConversationId);
 
   const toggle = useCallback(() => setOpen((o) => !o), []);
 
@@ -42,7 +45,7 @@ export default function ChatDrawer() {
           ${open ? "right-[420px]" : "right-0"}`}
         title="Toggle Chat (Ctrl+Shift+C)"
       >
-        {open ? "\u203A" : "\u2039"}
+        <MessageSquare className="h-3.5 w-3.5" />
       </button>
 
       {/* Drawer overlay */}
@@ -71,7 +74,14 @@ export default function ChatDrawer() {
 
         {/* Tab content */}
         <div className="flex-1 overflow-hidden">
-          {tab === "chat" && <ChatView />}
+          {tab === "chat" && currentConversationId && (
+            <ChatView conversationId={currentConversationId} />
+          )}
+          {tab === "chat" && !currentConversationId && (
+            <div className="flex items-center justify-center h-full text-zinc-500 text-sm">
+              Loading conversation...
+            </div>
+          )}
           {tab === "multi" && <ParallelChatView />}
           {tab === "history" && (
             <div className="h-full overflow-y-auto p-3">
