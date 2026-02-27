@@ -818,7 +818,11 @@ function ArtifactPanelInner({
         )}
 
         {activeTab === "deploy" && deployContent && (
-          <div className="h-full overflow-hidden">{deployContent}</div>
+          <div className="h-full overflow-hidden">
+            {React.isValidElement(deployContent)
+              ? React.cloneElement(deployContent as React.ReactElement<any>, { projectPath, projectName: storeProjectName })
+              : deployContent}
+          </div>
         )}
       </div>
 

@@ -15,12 +15,14 @@ import {
   X,
 } from "lucide-react";
 import { useDeployStore } from "@/lib/stores/deployStore";
-import { useBuilderStore } from "@sarge/builder/stores/builderStore";
 import { useUIStore } from "@sarge/core";
 
-export default function DeployPanel() {
-  const projectPath = useBuilderStore((s) => s.projectPath);
-  const projectName = useBuilderStore((s) => s.projectName);
+interface DeployPanelProps {
+  projectPath?: string | null;
+  projectName?: string | null;
+}
+
+export default function DeployPanel({ projectPath, projectName }: DeployPanelProps) {
   const showToast = useUIStore((s) => s.showToast);
 
   const {
