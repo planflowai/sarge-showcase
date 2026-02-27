@@ -114,23 +114,12 @@ export async function POST(request: NextRequest) {
         }, { status: 400 });
       }
 
+      // Check which optional CLIs are available (none are required — GitHub uses API)
       const [wrangler, vercel, netlify] = await Promise.all([
         checkCli("npx wrangler", projectPath),
         checkCli("vercel", projectPath),
         checkCli("netlify", projectPath),
       ]);
-
-      const missing: string[] = [];
-      if (!wrangler.ok) missing.push("wrangler (Cloudflare CLI) — install with 'npm i -g wrangler' and run 'wrangler login'");
-      if (!vercel.ok) missing.push("vercel (Vercel CLI) — install with 'npm i -g vercel' and run 'vercel login'");
-      if (!netlify.ok) missing.push("netlify (Netlify CLI) — install with 'npm i -g netlify-cli' and run 'netlify login'");
-
-      if (missing.length > 0) {
-        return NextResponse.json({
-          error: `Missing required CLIs:\n${missing.join("\n")}`,
-          missing,
-        }, { status: 400 });
-      }
 
       // 2. Git init (skip if already a repo)
       const gitDir = path.join(projectPath, ".git");
@@ -220,77 +209,50 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // 5. Vercel — link project
+      // 5. Vercel — link project (skip if CLI not installed)
       let vercelUrl = "";
-      const vercelResult = await runCommand("vercel link --yes", projectPath);
-      if (vercelResult.code !== 0 && !vercelResult.stderr.includes("already linked")) {
-        return NextResponse.json({ error: `vercel link failed: ${vercelResult.stderr}` }, { status: 500 });
-      }
-      // Try to read project URL from .vercel/project.json
-      const vercelProjectFile = path.join(projectPath, ".vercel", "project.json");
-      if (fs.existsSync(vercelProjectFile)) {
-        try {
-          const vercelProject = JSON.parse(fs.readFileSync(vercelProjectFile, "utf-8"));
-          const orgId = vercelProject.orgId || "";
-          const projId = vercelProject.projectId || "";
-          if (projId) {
-            vercelUrl = `https://vercel.com/~/projects/${projId}`;
+      if (vercel.ok) {
+        const vercelResult = await runCommand("vercel link --yes", projectPath);
+        if (vercelResult.code === 0 || vercelResult.stderr.includes("already linked")) {
+          const vercelProjectFile = path.join(projectPath, ".vercel", "project.json");
+          if (fs.existsSync(vercelProjectFile)) {
+            try {
+              const vercelProject = JSON.parse(fs.readFileSync(vercelProjectFile, "utf-8"));
+              if (vercelProject.projectId) {
+                vercelUrl = `https://vercel.com/~/projects/${vercelProject.projectId}`;
+              }
+            } catch { /* ignore */ }
           }
-        } catch {
-          // Fall back to generic URL
+          if (!vercelUrl) vercelUrl = `https://vercel.com (linked — check dashboard)`;
         }
       }
-      if (!vercelUrl) {
-        vercelUrl = `https://vercel.com (linked — check dashboard)`;
-      }
 
-      // 6. Netlify — create site and link
+      // 6. Netlify — create site and link (skip if CLI not installed)
       let netlifyUrl = "";
-      const netlifyResult = await runCommand(
-        `netlify sites:create --name "${projectName}" --account-slug ""`,
-        projectPath
-      );
-      if (netlifyResult.code !== 0) {
-        // Site name might be taken — try without name
-        if (netlifyResult.stderr.includes("already exists") || netlifyResult.stdout.includes("already exists")) {
-          // Try linking to existing
+      if (netlify.ok) {
+        const netlifyResult = await runCommand(
+          `netlify sites:create --name "${projectName}" --account-slug ""`,
+          projectPath
+        );
+        if (netlifyResult.code === 0) {
+          netlifyUrl = netlifyResult.stdout.match(/https:\/\/[^\s]+\.netlify\.app/)?.[0] || "";
+          await runCommand("netlify link", projectPath);
+        } else if (netlifyResult.stderr.includes("already exists") || netlifyResult.stdout.includes("already exists")) {
           const linkResult = await runCommand("netlify link", projectPath);
           netlifyUrl = linkResult.stdout.match(/https:\/\/[^\s]+\.netlify\.app/)?.[0] || "https://netlify.com (linked)";
-        } else {
-          // Try create without specific name
-          const retryResult = await runCommand("netlify sites:create", projectPath);
-          if (retryResult.code === 0) {
-            netlifyUrl = retryResult.stdout.match(/https:\/\/[^\s]+\.netlify\.app/)?.[0] || "";
-          }
-          if (!netlifyUrl) {
-            return NextResponse.json({
-              error: `netlify sites:create failed: ${netlifyResult.stderr || netlifyResult.stdout}`,
-            }, { status: 500 });
-          }
         }
-      } else {
-        netlifyUrl = netlifyResult.stdout.match(/https:\/\/[^\s]+\.netlify\.app/)?.[0] || "";
-        // Link the site to the directory
-        await runCommand("netlify link", projectPath);
       }
 
-      // 7. Cloudflare Pages — create project
+      // 7. Cloudflare Pages — create project (skip if CLI not installed)
       let cloudflareUrl = "";
-      const cfResult = await runCommand(
-        `npx wrangler pages project create "${projectName}" --production-branch main`,
-        projectPath
-      );
-      if (cfResult.code !== 0) {
-        // Project may already exist
-        if (cfResult.stderr.includes("already exists") || cfResult.stdout.includes("already exists")) {
+      if (wrangler.ok) {
+        const cfResult = await runCommand(
+          `npx wrangler pages project create "${projectName}" --production-branch main`,
+          projectPath
+        );
+        if (cfResult.code === 0 || cfResult.stderr.includes("already exists") || cfResult.stdout.includes("already exists")) {
           cloudflareUrl = `https://${projectName}.pages.dev`;
-        } else {
-          return NextResponse.json({
-            error: `wrangler pages project create failed: ${cfResult.stderr || cfResult.stdout}`,
-          }, { status: 500 });
         }
-      } else {
-        cloudflareUrl = `https://${projectName}.pages.dev`;
       }
 
       return NextResponse.json({
