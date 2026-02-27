@@ -473,16 +473,50 @@ export default function BuilderChat({
     <div className="flex flex-col h-full w-full overflow-hidden bg-white dark:bg-zinc-900">
       {/* Messages area */}
       {messages.length === 0 ? (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <Bot className="h-12 w-12 text-zinc-400 dark:text-zinc-600 mx-auto mb-4" />
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">
-              {noModel ? "Select a model to start building" : "Start a conversation to build code"}
-            </p>
-            <p className="text-xs text-zinc-400 dark:text-zinc-600 mt-2">
-              Builder chat is isolated from main Chat
-            </p>
+        <div className="flex-1 flex flex-col items-center justify-center px-5 py-8 overflow-y-auto">
+          {/* Forge icon */}
+          <div className="relative mb-5">
+            <div className="absolute inset-0 bg-purple-500/10 blur-3xl rounded-full scale-150" />
+            <Hammer className="relative h-9 w-9 text-purple-500/60 mx-auto" />
           </div>
+
+          <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-200 text-center mb-1">
+            What would you like to build?
+          </h2>
+          <p className="text-[11px] text-zinc-400 dark:text-zinc-500 text-center mb-5">
+            {noModel ? "Select a model above to get started" : "Describe it below or start with a template"}
+          </p>
+
+          {/* Template cards */}
+          <div className="grid grid-cols-2 gap-2 w-full mb-5">
+            {[
+              { icon: "🍽️", label: "Restaurant", prompt: "Build a modern restaurant website with a hero section, menu, photo gallery, and reservation form. Use a warm, elegant color scheme with smooth dark mode support." },
+              { icon: "💼", label: "Portfolio", prompt: "Create a personal developer portfolio with a hero, skills list, featured projects grid, and contact form. Clean, minimal, and modern." },
+              { icon: "🚀", label: "Landing Page", prompt: "Build a SaaS landing page with a hero, features section, pricing table with three tiers, testimonials, and a prominent CTA. Modern and conversion-focused." },
+              { icon: "📊", label: "Dashboard", prompt: "Create an analytics dashboard with stat cards, a line chart, recent activity feed, and a sidebar with navigation. Dark theme by default." },
+            ].map(({ icon, label, prompt }) => (
+              <button
+                key={label}
+                disabled={noModel}
+                onClick={() => {
+                  setInput(prompt);
+                  setTimeout(() => textareaRef.current?.focus(), 0);
+                }}
+                className="flex items-center gap-2 p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-700/80 bg-white dark:bg-zinc-800/40 hover:border-purple-400/50 hover:bg-purple-50/40 dark:hover:bg-purple-900/10 transition-all text-left group disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <span className="text-base flex-shrink-0">{icon}</span>
+                <span className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400 group-hover:text-purple-600 dark:group-hover:text-purple-300 transition-colors leading-tight">{label}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Open Existing Project */}
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent("builder:open-project"))}
+            className="text-[11px] text-zinc-400 hover:text-purple-500 dark:hover:text-purple-400 transition-colors hover:underline underline-offset-2"
+          >
+            Open existing project
+          </button>
         </div>
       ) : (
         <>

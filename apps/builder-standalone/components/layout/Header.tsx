@@ -5,7 +5,7 @@ import {
   Sun,
   Settings,
   XCircle,
-  Zap,
+  Flame,
   Shield,
   ShieldOff,
   Plane,
@@ -175,22 +175,16 @@ export function Header() {
             {/* Builder icon */}
             <div className="relative">
               <Hammer className="h-6 w-6 text-purple-600 dark:text-purple-400 drop-shadow-sm" />
-              <Zap className="h-2.5 w-2.5 text-amber-500 dark:text-amber-400 absolute -right-0.5 -bottom-0.5 drop-shadow-[0_0_3px_rgba(245,158,11,0.8)]" />
+              <Flame className="h-2.5 w-2.5 text-orange-400 dark:text-orange-300 absolute -right-0.5 -bottom-0.5 drop-shadow-[0_0_4px_rgba(251,146,60,0.9)]" />
             </div>
 
-            {/* Standalone title — clearly identifies this as the Builder app */}
+            {/* S.A.R.G.E. Forge — premium builder identity */}
             <h1 className="text-base sm:text-lg md:text-xl font-semibold tracking-wide">
-              <span className="text-purple-700 dark:text-purple-400 font-black text-xl sm:text-2xl md:text-3xl">
-                AI
+              <span className="text-purple-700 dark:text-purple-400 font-black text-xl sm:text-2xl md:text-3xl tracking-wider">
+                S.A.R.G.E.
               </span>
-              <span className="text-slate-700 dark:text-slate-300">
-                {" "}
-              </span>
-              <span className="text-purple-700 dark:text-purple-400 font-black text-xl sm:text-2xl md:text-3xl">
-                Builder
-              </span>
-              <span className="text-slate-500 dark:text-slate-400 font-normal text-sm sm:text-base ml-2">
-                standalone · port 3101
+              <span className="text-purple-500 dark:text-purple-300 font-semibold text-base sm:text-lg md:text-xl ml-2 tracking-widest uppercase">
+                Forge
               </span>
             </h1>
           </div>
@@ -256,7 +250,7 @@ export function Header() {
                   "flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium transition-all",
                   apiConnected
                     ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
-                    : "bg-red-500/10 text-red-400 border border-red-500/30"
+                    : "bg-zinc-500/10 text-zinc-400 border border-zinc-500/30"
                 )}
               >
                 {apiConnected ? (
@@ -266,8 +260,8 @@ export function Header() {
                   </>
                 ) : (
                   <>
-                    <XCircle className="h-3 w-3" />
-                    <span className="hidden sm:inline">Offline</span>
+                    <Hammer className="h-3 w-3" />
+                    <span className="hidden sm:inline">Local Mode</span>
                   </>
                 )}
               </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback, useMemo, memo } from "react";
-import { Code2, Eye, RefreshCw, AlertTriangle, Download, Copy, Check, Maximize2, Minimize2, Radio, GitCompare, X, Library, ChevronLeft, ChevronRight, Save, RotateCcw, Server, Monitor, Rocket } from "lucide-react";
+import { Code2, Eye, RefreshCw, AlertTriangle, Download, Copy, Check, Maximize2, Minimize2, Radio, GitCompare, X, Library, ChevronLeft, ChevronRight, Save, RotateCcw, Server, Monitor, Rocket, Hammer } from "lucide-react";
 import Editor from "@monaco-editor/react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@sarge/core";
@@ -773,11 +773,13 @@ function ArtifactPanelInner({
                 }}
               />
             ) : (
-              <div className="flex flex-col items-center justify-center h-full text-zinc-400 dark:text-zinc-500">
-                <Eye className="h-12 w-12 mb-4 opacity-50" />
-                <p className="text-sm font-medium">No preview available</p>
-                <p className="text-xs mt-1 text-zinc-400 dark:text-zinc-600">
-                  Generate some code to see it here
+              <div className="flex flex-col items-center justify-center h-full bg-zinc-950/20">
+                <div className="relative mb-5">
+                  <div className="absolute inset-0 bg-purple-500/10 blur-2xl rounded-full scale-[2]" />
+                  <Hammer className="relative h-11 w-11 text-purple-500/30" />
+                </div>
+                <p className="text-xs font-semibold text-zinc-500 tracking-widest uppercase">
+                  Ready to forge
                 </p>
               </div>
             )}

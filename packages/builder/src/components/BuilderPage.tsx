@@ -14,8 +14,8 @@ import { useArtifactStore } from "../stores/artifactStore";
 import { useBuilderDocumentStore } from "../stores/builderDocumentStore";
 import { flattenFileTree } from "@sarge/core";
 import { applyEditBlocks, type EditBlock, getDiffSummary } from "../lib/editBlockParser";
-import { useWorkspaceStore, launchWorkspace, recallWorkspace } from "../stores/workspaceStore";
-import { Rocket, LayoutGrid, X, Plus, Save, Terminal as TerminalIcon, Loader2, FolderOpen } from "lucide-react";
+import { useWorkspaceStore, recallWorkspace } from "../stores/workspaceStore";
+import { LayoutGrid, X, Plus, Save, Terminal as TerminalIcon, Loader2, FolderOpen } from "lucide-react";
 import { ThreadGuardianIndicator } from "@sarge/chat";
 
 // Clear old builder chat messages on load (one-time cleanup)
@@ -597,17 +597,9 @@ Please provide the complete modified version of this component. Make only the re
 
   return (
     <div className="relative flex flex-col h-full w-full bg-zinc-50 dark:bg-zinc-950">
-      {/* Floating top-right: Thread Guardian + Launch Workspace */}
-      <div className="fixed top-4 right-4 z-[100] flex items-center gap-3">
+      {/* Thread Guardian — fixed top right */}
+      <div className="fixed top-4 right-4 z-[100]">
         <ThreadGuardianIndicator conversationId="builder-chat" />
-        <button
-          onClick={launchWorkspace}
-          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-lg shadow-lg transition-all text-sm font-medium"
-          title="Launch multi-window workspace across your monitors"
-        >
-          <Rocket className="w-4 h-4" />
-          Launch Workspace
-        </button>
       </div>
 
       {/* Horizontal toolbar ribbon — full width, below header */}
@@ -630,29 +622,18 @@ Please provide the complete modified version of this component. Make only the re
           className="h-full flex-shrink-0 flex-grow-0 flex flex-col border-r border-zinc-200 dark:border-zinc-800 overflow-hidden"
           style={{ width: `${chatPanelWidth}px`, minWidth: '300px' }}
         >
-          {/* New / Open Project — centered above chat */}
-          <div className="flex-shrink-0 flex items-center justify-center gap-2 px-3 py-2 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60">
-            <button
-              onClick={() => window.dispatchEvent(new CustomEvent("builder:new-project"))}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-500 shadow-sm transition-colors"
-            >
-              <Plus className="h-4 w-4" />
-              New Project
-            </button>
-            <button
-              onClick={() => window.dispatchEvent(new CustomEvent("builder:open-project"))}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-500 shadow-sm transition-colors"
-            >
-              <FolderOpen className="h-4 w-4" />
-              Open Project
-            </button>
-            {projectName && (
-              <span className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-400/30 max-w-[150px]" title={projectPath || ""}>
+          {/* Project badge — only shown when a project is open */}
+          {projectName && (
+            <div className="flex-shrink-0 flex items-center px-3 py-2 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60">
+              <span
+                className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-400/30 max-w-xs cursor-default"
+                title={projectPath || ""}
+              >
                 <FolderOpen className="h-3 w-3 flex-shrink-0" />
                 <span className="truncate">{projectName}</span>
               </span>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Model selector at top of chat column */}
           <BuilderModelBar

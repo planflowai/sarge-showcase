@@ -147,6 +147,8 @@ export default function BuilderMessageBubble({
   const [originalContents, setOriginalContents] = useState<Record<string, string>>({});
 
   const isUser = message.role === "user";
+  // Detect raw error messages — render as a friendly warning card instead of raw text
+  const isError = !isUser && /^Error:/i.test(message.content.trim());
   const providerConfig = providers.find((p) => p.id === message.provider);
   const isProjectMode = !!projectPath;
 
@@ -368,6 +370,8 @@ export default function BuilderMessageBubble({
           "rounded-lg px-5 py-4 overflow-hidden break-words",
           isUser
             ? "bg-indigo-600 text-white max-w-[85%]"
+            : isError
+            ? "bg-amber-50 dark:bg-amber-900/10 border border-amber-200/80 dark:border-amber-500/20 text-zinc-800 dark:text-zinc-200 w-full"
             : "bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 w-full"
         )}
       >
@@ -443,6 +447,19 @@ export default function BuilderMessageBubble({
             // Live streaming view: show raw text + growing code block in real-time
             // Bypasses ReactMarkdown (which breaks on partial/incomplete markdown)
             <LiveStreamingContent content={message.content} />
+          ) : isError ? (
+            // Friendly error card — never show raw "Error: API error: 500" to the user
+            <div className="flex items-start gap-2.5">
+              <span className="text-lg flex-shrink-0 mt-0.5">⚡</span>
+              <div>
+                <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
+                  Couldn't reach the model.
+                </p>
+                <p className="text-xs text-amber-600/80 dark:text-amber-400/70 mt-1 leading-relaxed">
+                  Check that Ollama is running, or switch to a cloud model in the selector above. Local and cloud models are both supported.
+                </p>
+              </div>
+            </div>
           ) : (
             <div className="prose prose-sm prose-invert max-w-none">
               <ReactMarkdown components={markdownComponents}>{message.content}</ReactMarkdown>
