@@ -12,7 +12,9 @@ function runCommand(
   timeoutMs = 60_000
 ): Promise<{ stdout: string; stderr: string; code: number }> {
   return new Promise((resolve, reject) => {
-    const child = spawn("powershell.exe", ["-NoProfile", "-Command", cmd], {
+    // Wrap command with Set-Location so PowerShell respects the working directory
+    const wrappedCmd = `Set-Location '${cwd.replace(/'/g, "''")}'; ${cmd}`;
+    const child = spawn("powershell.exe", ["-NoProfile", "-Command", wrappedCmd], {
       cwd,
       env: { ...process.env },
     });
@@ -223,9 +225,9 @@ export async function POST(request: NextRequest) {
         // Deploy to production — captures the live URL
         const vercelDeploy = await runCommand("npx vercel --prod --yes", projectPath, 120_000);
         if (vercelDeploy.code === 0) {
-          // Output contains the deployment URL on a line like "https://project-xyz.vercel.app"
-          const urlMatch = vercelDeploy.stdout.match(/https:\/\/[^\s]+\.vercel\.app/);
-          vercelUrl = urlMatch ? urlMatch[0] : "";
+          // Output has multiple URLs — grab the last .vercel.app one (the aliased production URL)
+          const allUrls = vercelDeploy.stdout.match(/https:\/\/[^\s]+\.vercel\.app/g);
+          vercelUrl = allUrls ? allUrls[allUrls.length - 1] : "";
         }
         // Fallback: construct from project name (standard Vercel pattern)
         if (!vercelUrl) {
@@ -234,35 +236,81 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // 7. Netlify — create site and deploy (skip if CLI not installed)
+      // 7. Netlify — create site and deploy files (skip if CLI not installed)
       let netlifyUrl = "";
       if (netlify.ok) {
-        // Get the account slug for sites:create
-        const acctResult = await runCommand(
-          `npx netlify api listAccountsForUser --data '{}'`,
-          projectPath, 15_000
-        );
-        let acctSlug = "";
-        try {
-          const accts = JSON.parse(acctResult.stdout);
-          if (Array.isArray(accts) && accts.length > 0) acctSlug = accts[0].slug;
-        } catch { /* ignore */ }
+        const safeName = projectName!.replace(/_/g, "-").toLowerCase();
+        let siteId = "";
 
-        // Create site with proper account slug
-        const safeName = projectName.replace(/_/g, "-").toLowerCase();
-        const createCmd = acctSlug
-          ? `npx netlify sites:create --name "${safeName}" --account-slug "${acctSlug}"`
-          : `npx netlify sites:create --name "${safeName}"`;
-        const netlifyResult = await runCommand(createCmd, projectPath);
-
-        if (netlifyResult.code === 0) {
-          netlifyUrl = netlifyResult.stdout.match(/https:\/\/[^\s]+\.netlify\.app/)?.[0] || "";
-          // Link the site
-          await runCommand("npx netlify link", projectPath);
-        } else if (netlifyResult.stderr.includes("already exists") || netlifyResult.stdout.includes("already exists")) {
-          netlifyUrl = `https://${safeName}.netlify.app`;
+        // Check if already linked from a previous init
+        const netlifyStateFile = path.join(projectPath, ".netlify", "state.json");
+        if (fs.existsSync(netlifyStateFile)) {
+          try {
+            const state = JSON.parse(fs.readFileSync(netlifyStateFile, "utf-8"));
+            if (state.siteId) siteId = state.siteId;
+          } catch { /* ignore */ }
         }
-        // Fallback URL
+
+        // Create a new site if not already linked
+        if (!siteId) {
+          // Get account slug dynamically
+          const acctResult = await runCommand(
+            `npx netlify api listAccountsForUser --data '{}'`,
+            projectPath, 15_000
+          );
+          let acctSlug = "";
+          try {
+            const accts = JSON.parse(acctResult.stdout);
+            if (Array.isArray(accts) && accts.length > 0) acctSlug = accts[0].slug;
+          } catch { /* ignore */ }
+
+          // Try creating site with preferred name
+          const acctFlag = acctSlug ? ` --account-slug "${acctSlug}"` : "";
+          const createResult = await runCommand(
+            `npx netlify sites:create --name "${safeName}"${acctFlag}`,
+            projectPath, 30_000
+          );
+          if (createResult.code === 0) {
+            const idMatch = createResult.stdout.match(/Site ID:\s+([a-f0-9-]+)/i);
+            if (idMatch) siteId = idMatch[1];
+          } else {
+            // Name taken — check if we already own a site with this name from earlier
+            const listResult = await runCommand(
+              `npx netlify sites:list --json`,
+              projectPath, 30_000
+            );
+            try {
+              const sites = JSON.parse(listResult.stdout);
+              const existing = sites.find((s: any) =>
+                s.name === safeName || s.name === projectName
+              );
+              if (existing) {
+                siteId = existing.id;
+                netlifyUrl = existing.ssl_url || existing.url || "";
+              }
+            } catch { /* ignore */ }
+          }
+        }
+
+        // Link and deploy if we have a site
+        if (siteId) {
+          // Link by ID (non-interactive, always works)
+          await runCommand(`npx netlify link --id "${siteId}"`, projectPath, 15_000);
+          // Deploy files
+          const deployResult = await runCommand(
+            `npx netlify deploy --prod --dir "."`,
+            projectPath, 120_000
+          );
+          // Parse production URL from deploy output
+          const prodMatch = deployResult.stdout.match(/Deployed to production URL:\s+(https:\/\/[^\s]+)/);
+          if (prodMatch) {
+            netlifyUrl = prodMatch[1];
+          } else {
+            const anyUrl = deployResult.stdout.match(/https:\/\/[^\s]+\.netlify\.app/);
+            if (anyUrl) netlifyUrl = anyUrl[0];
+          }
+        }
+
         if (!netlifyUrl) netlifyUrl = `https://${safeName}.netlify.app`;
       }
 
@@ -331,6 +379,25 @@ export async function POST(request: NextRequest) {
       }
 
       const hashResult = await runCommand("git rev-parse --short HEAD", projectPath);
+
+      // Re-deploy to Vercel and Netlify in parallel (non-blocking — don't fail the push)
+      const redeployTasks: Promise<any>[] = [];
+      const vercelProjectFile = path.join(projectPath, ".vercel", "project.json");
+      if (fs.existsSync(vercelProjectFile)) {
+        redeployTasks.push(
+          runCommand("npx vercel --prod --yes", projectPath, 120_000).catch(() => {})
+        );
+      }
+      const netlifyStateFile = path.join(projectPath, ".netlify", "state.json");
+      if (fs.existsSync(netlifyStateFile)) {
+        redeployTasks.push(
+          runCommand('npx netlify deploy --prod --dir "."', projectPath, 120_000).catch(() => {})
+        );
+      }
+      if (redeployTasks.length > 0) {
+        await Promise.all(redeployTasks);
+      }
+
       return NextResponse.json({
         success: true,
         commitHash: hashResult.stdout,
