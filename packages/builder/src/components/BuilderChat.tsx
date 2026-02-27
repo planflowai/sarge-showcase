@@ -346,7 +346,7 @@ export default function BuilderChat({
   }, []);
 
   const handleSend = async () => {
-    if ((!input.trim() && attachments.length === 0) || !selectedModel) return;
+    if ((!input.trim() && attachments.length === 0) || !selectedModel || sending) return;
     const userMessage = input.trim() || (attachments.length > 0 ? '[Image attached]' : '');
     setInput("");
     clearDraft(BUILDER_DRAFT_KEY); // Clear persisted draft on send
@@ -437,11 +437,15 @@ export default function BuilderChat({
       systemPrompt += '\n\n' + `PRIORITY: When building a project, generate the main entry point file FIRST (index.html, main.jsx, app.tsx, etc). This allows the preview to load immediately while you generate supporting files. Generate entry point as your FIRST FILE: block, then other files follow.`;
     }
 
-    // Context is built — advance progress past "Reading context..."
-    progress.startStep("analyze", "Sending to model...");
+    // "context" step stays in_progress until first token arrives.
+    // The useStreamingUpdates hook fires "analyze" → "generate" → "preview"
+    // steps based on actual streaming content events.
 
     // Pass both: display message (what user typed) and API prompt (with injected context)
     await sendMessage(userMessage, finalPrompt, selectedProvider, selectedModel, systemPrompt, imagesToSend.length > 0 ? imagesToSend : undefined);
+
+    // Restore focus to textarea after send (disabled→enabled transition shifts focus to nav links)
+    setTimeout(() => textareaRef.current?.focus(), 0);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -637,7 +641,7 @@ export default function BuilderChat({
               onKeyDown={handleKeyDown}
               onPaste={handlePaste}
               placeholder={noModel ? "Select a model first..." : "Describe what you want to build... (paste or drop images here)"}
-              disabled={noModel || sending}
+              disabled={noModel}
               rows={3}
               className={cn(
                 "w-full resize-none rounded-lg border px-4 py-3 text-sm",
@@ -649,8 +653,8 @@ export default function BuilderChat({
             />
           </div>
 
-          {/* Action buttons - wrapped layout */}
-          <div className="flex flex-wrap items-center gap-2">
+          {/* Action buttons - centered layout */}
+          <div className="flex flex-wrap items-center justify-center gap-2">
             {/* Left group: Vault + Attach + Image */}
             <div className="flex items-center gap-1.5">
               {/* Knowledge Vault button */}
@@ -825,9 +829,6 @@ export default function BuilderChat({
                 </button>
               )}
             </div>
-
-            {/* Spacer */}
-            <div className="flex-1 min-w-[10px]" />
 
             {/* Send/Stop button */}
             {sending ? (

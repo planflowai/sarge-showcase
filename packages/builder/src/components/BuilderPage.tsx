@@ -15,7 +15,7 @@ import { useBuilderDocumentStore } from "../stores/builderDocumentStore";
 import { flattenFileTree } from "@sarge/core";
 import { applyEditBlocks, type EditBlock, getDiffSummary } from "../lib/editBlockParser";
 import { useWorkspaceStore, launchWorkspace, recallWorkspace } from "../stores/workspaceStore";
-import { Rocket, LayoutGrid, X, Plus, Save, Terminal as TerminalIcon, Loader2 } from "lucide-react";
+import { Rocket, LayoutGrid, X, Plus, Save, Terminal as TerminalIcon, Loader2, FolderOpen } from "lucide-react";
 import { ThreadGuardianIndicator } from "@sarge/chat";
 
 // Clear old builder chat messages on load (one-time cleanup)
@@ -630,6 +630,30 @@ Please provide the complete modified version of this component. Make only the re
           className="h-full flex-shrink-0 flex-grow-0 flex flex-col border-r border-zinc-200 dark:border-zinc-800 overflow-hidden"
           style={{ width: `${chatPanelWidth}px`, minWidth: '300px' }}
         >
+          {/* New / Open Project — centered above chat */}
+          <div className="flex-shrink-0 flex items-center justify-center gap-2 px-3 py-2 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60">
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent("builder:new-project"))}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-500 shadow-sm transition-colors"
+            >
+              <Plus className="h-4 w-4" />
+              New Project
+            </button>
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent("builder:open-project"))}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-500 shadow-sm transition-colors"
+            >
+              <FolderOpen className="h-4 w-4" />
+              Open Project
+            </button>
+            {projectName && (
+              <span className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-400/30 max-w-[150px]" title={projectPath || ""}>
+                <FolderOpen className="h-3 w-3 flex-shrink-0" />
+                <span className="truncate">{projectName}</span>
+              </span>
+            )}
+          </div>
+
           {/* Model selector at top of chat column */}
           <BuilderModelBar
             selectedModel={selectedModel}
@@ -660,10 +684,10 @@ Please provide the complete modified version of this component. Make only the re
           </div>
 
           {/* Bottom bar — New / Save / Term */}
-          <div className="flex-shrink-0 flex items-center gap-1 px-2 py-1.5 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900">
+          <div className="flex-shrink-0 flex items-center justify-center gap-1 px-2 py-1.5 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900">
             <button
               onClick={handleNewBuild}
-              className="flex items-center gap-1 flex-1 text-[10px] font-medium transition-colors rounded px-2 py-1 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/30 border border-purple-300 dark:border-purple-700"
+              className="flex items-center gap-1 text-[10px] font-medium transition-colors rounded px-2 py-1 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/30 border border-purple-300 dark:border-purple-700"
               title="New Build — clears chat, artifact, and project"
             >
               <Plus className="h-3 w-3" />
@@ -674,7 +698,7 @@ Please provide the complete modified version of this component. Make only the re
               <button
                 onClick={handleSaveProgress}
                 disabled={isSavingProgress}
-                className={`flex items-center gap-1 flex-1 text-[10px] font-medium transition-colors rounded px-2 py-1 ${
+                className={`flex items-center gap-1 text-[10px] font-medium transition-colors rounded px-2 py-1 ${
                   saveSuccess
                     ? "text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30"
                     : "text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/30"
@@ -688,7 +712,7 @@ Please provide the complete modified version of this component. Make only the re
 
             <button
               onClick={handleTerminalToggle}
-              className={`flex items-center gap-1 flex-1 text-[10px] font-medium transition-colors rounded px-2 py-1 ${
+              className={`flex items-center gap-1 text-[10px] font-medium transition-colors rounded px-2 py-1 ${
                 terminalOpen
                   ? "text-cyan-600 dark:text-cyan-400 bg-cyan-100 dark:bg-cyan-900/30"
                   : "text-zinc-500 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"

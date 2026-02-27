@@ -827,7 +827,7 @@ function ArtifactPanelInner({
       </div>
 
       {/* Toolbar */}
-      <div className="h-10 flex-shrink-0 flex items-center justify-between px-3 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/80">
+      <div className="relative h-10 flex-shrink-0 flex items-center justify-center px-3 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/80">
         <div className="flex items-center gap-1">
           {/* Export for Client (SargeBuild) */}
           <Button
@@ -915,9 +915,9 @@ function ArtifactPanelInner({
           </Button>
         </div>
 
-        {/* Code line count - uses memoized value */}
+        {/* Code line count - absolute so it doesn't affect centering */}
         {memoizedCode && (
-          <span className="text-[10px] text-zinc-500">
+          <span className="absolute right-3 text-[10px] text-zinc-500">
             {codeLineCount} lines
           </span>
         )}

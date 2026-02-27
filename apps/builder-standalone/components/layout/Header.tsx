@@ -5,7 +5,6 @@ import {
   Sun,
   Settings,
   XCircle,
-  ShieldCheck,
   Zap,
   Shield,
   ShieldOff,
@@ -14,7 +13,6 @@ import {
   Activity,
   Hammer,
   Wrench,
-  Swords,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
@@ -27,7 +25,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 
-type NavMode = "builder" | "chat" | "settings";
+type NavMode = "builder" | "chat";
 
 interface NavItem {
   id: NavMode;
@@ -56,15 +54,6 @@ const NAV_ITEMS: NavItem[] = [
     activeColor: "text-black dark:text-white",
     bgActive:
       "bg-blue-100 dark:bg-blue-900/50 border-blue-400 dark:border-blue-500",
-  },
-  {
-    id: "settings",
-    label: "Settings",
-    emoji: "⚙️",
-    href: "/settings",
-    activeColor: "text-black dark:text-white",
-    bgActive:
-      "bg-zinc-200 dark:bg-zinc-700/50 border-zinc-400 dark:border-zinc-500",
   },
 ];
 
@@ -107,7 +96,6 @@ export function Header() {
   };
 
   const getActiveMode = (): NavMode => {
-    if (pathname === "/settings") return "settings";
     if (pathname === "/chat") return "chat";
     return "builder";
   };
@@ -179,66 +167,43 @@ export function Header() {
         {/* Row 1: Main Title - Centered */}
         <div className="h-14 flex items-center justify-center bg-gradient-to-r from-slate-100 via-indigo-50 to-slate-100 dark:from-zinc-900 dark:via-indigo-950/20 dark:to-zinc-900 relative border-b border-slate-200 dark:border-zinc-800 shadow-sm">
           <div className="flex items-center gap-2.5 relative z-10">
-            {/* Shield icon - sleek and minimal */}
+            {/* Builder icon */}
             <div className="relative">
-              <ShieldCheck className="h-6 w-6 text-indigo-600 dark:text-indigo-400 drop-shadow-sm" />
+              <Hammer className="h-6 w-6 text-purple-600 dark:text-purple-400 drop-shadow-sm" />
               <Zap className="h-2.5 w-2.5 text-amber-500 dark:text-amber-400 absolute -right-0.5 -bottom-0.5 drop-shadow-[0_0_3px_rgba(245,158,11,0.8)]" />
             </div>
 
-            {/* Main title with emphasized first letters */}
+            {/* Standalone title — clearly identifies this as the Builder app */}
             <h1 className="text-base sm:text-lg md:text-xl font-semibold tracking-wide">
-              <span className="text-indigo-700 dark:text-indigo-400 font-black text-xl sm:text-2xl md:text-3xl">
-                S
+              <span className="text-purple-700 dark:text-purple-400 font-black text-xl sm:text-2xl md:text-3xl">
+                AI
               </span>
               <span className="text-slate-700 dark:text-slate-300">
-                ynthetic{" "}
+                {" "}
               </span>
-              <span className="text-indigo-700 dark:text-indigo-400 font-black text-xl sm:text-2xl md:text-3xl">
-                A
+              <span className="text-purple-700 dark:text-purple-400 font-black text-xl sm:text-2xl md:text-3xl">
+                Builder
               </span>
-              <span className="text-slate-700 dark:text-slate-300">
-                dversarial{" "}
-              </span>
-              <span className="text-indigo-700 dark:text-indigo-400 font-black text-xl sm:text-2xl md:text-3xl">
-                R
-              </span>
-              <span className="text-slate-700 dark:text-slate-300">
-                easoning{" "}
-              </span>
-              <span className="text-slate-600 dark:text-slate-400 font-semibold">
-                &amp;
-              </span>
-              <span className="text-slate-700 dark:text-slate-300"> </span>
-              <span className="text-indigo-700 dark:text-indigo-400 font-black text-xl sm:text-2xl md:text-3xl">
-                G
-              </span>
-              <span className="text-slate-700 dark:text-slate-300">
-                uarding{" "}
-              </span>
-              <span className="text-indigo-700 dark:text-indigo-400 font-black text-xl sm:text-2xl md:text-3xl">
-                E
-              </span>
-              <span className="text-slate-700 dark:text-slate-300">ngine</span>
-              <span className="text-slate-500 dark:text-slate-500 font-normal text-sm sm:text-base ml-2">
-                w/ AI Builder
+              <span className="text-slate-500 dark:text-slate-400 font-normal text-sm sm:text-base ml-2">
+                standalone · port 3101
               </span>
             </h1>
           </div>
         </div>
 
-        {/* Row 2: Navigation + Icons on same line */}
-        <div className="h-11 bg-gradient-to-r from-zinc-100 via-zinc-50 to-zinc-100 dark:from-zinc-900/80 dark:via-zinc-800/50 dark:to-zinc-900/80 flex items-center px-4 border-t border-zinc-200/50 dark:border-zinc-700/30">
-          {/* Navigation Items */}
-          <div className="flex items-center justify-start gap-0.5 min-w-0 overflow-x-auto scrollbar-hide">
+        {/* Row 2: Navigation centered + status icons right */}
+        <div className="h-11 bg-gradient-to-r from-zinc-100 via-zinc-50 to-zinc-100 dark:from-zinc-900/80 dark:via-zinc-800/50 dark:to-zinc-900/80 flex items-center px-4 border-t border-zinc-200/50 dark:border-zinc-700/30 relative">
+
+          {/* Center: Builder | Chat | Workbench */}
+          <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1">
             {NAV_ITEMS.map((item) => {
               const isActive = activeMode === item.id;
-
               return (
                 <Link
                   key={item.id}
                   href={item.href}
                   className={cn(
-                    "group flex flex-shrink-0 items-center gap-1.5 px-2.5 py-2 rounded-md text-sm font-black transition-all duration-200 border",
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-bold transition-all duration-200 border",
                     isActive
                       ? `${item.bgActive} ${item.activeColor} shadow-sm`
                       : "border-transparent text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200/80 dark:hover:bg-zinc-700/60"
@@ -250,18 +215,9 @@ export function Header() {
               );
             })}
 
-            {/* Builder mode badge */}
-            {activeMode === "builder" && (
-              <div className="flex items-center gap-1.5 ml-3 px-2.5 py-1 rounded-full bg-purple-500/20 border border-purple-500/40 text-purple-300">
-                <Hammer className="h-3.5 w-3.5" />
-                <span className="text-xs font-bold tracking-wide">
-                  BUILDER MODE
-                </span>
-              </div>
-            )}
-
-            {/* Workbench button — purple accent, wrench icon */}
+            {/* Workbench button */}
             <button
+              tabIndex={-1}
               onClick={() => {
                 if (!warRoomEnabled) {
                   setWarRoomEnabled(true);
@@ -269,35 +225,21 @@ export function Header() {
                 } else if (pathname !== "/chat") {
                   router.push("/chat");
                 }
-                // When already enabled + on /chat, do nothing — close from dashboard only
               }}
               className={cn(
-                "flex items-center gap-1.5 ml-3 px-2.5 py-1.5 rounded-md text-xs font-bold transition-all duration-300 border",
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-bold transition-all duration-300 border",
                 warRoomEnabled
-                  ? "bg-purple-600/30 border-purple-500/60 text-purple-300 ring-1 ring-purple-500/40 shadow-[0_0_12px_rgba(168,85,247,0.3)]"
+                  ? "bg-purple-600/30 border-purple-500/60 text-purple-300 ring-1 ring-purple-500/40"
                   : "border-transparent text-zinc-500 dark:text-zinc-400 hover:bg-purple-500/10 hover:text-purple-300 hover:border-purple-500/30"
               )}
-              title={warRoomEnabled ? "Go to Workbench" : "Open Workbench — multi-monitor broadcast"}
+              title={warRoomEnabled ? "Go to Workbench" : "Open Workbench"}
             >
-              <Wrench className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Workbench</span>
-            </button>
-
-            {/* Launch Build Arena button — 5-model simultaneous builder */}
-            <button
-              onClick={() => {
-                setWarRoomEnabled(true);
-                if (pathname !== "/chat") router.push("/chat");
-              }}
-              className="flex items-center gap-1.5 ml-1 px-2.5 py-1.5 rounded-md text-xs font-bold transition-all duration-300 border border-transparent text-zinc-500 dark:text-zinc-400 hover:bg-emerald-500/10 hover:text-emerald-400 hover:border-emerald-500/30"
-              title="Launch Build Arena — 5 models build simultaneously, pick the winner"
-            >
-              <Swords className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Build Arena</span>
+              <Wrench className="h-4 w-4" />
+              <span>Workbench</span>
             </button>
           </div>
 
-          {/* Spacer */}
+          {/* Spacer pushes right-side icons to the right */}
           <div className="flex-1" />
 
           {/* Right side: Status + Air-Gap + Theme + Settings */}

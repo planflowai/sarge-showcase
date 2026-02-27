@@ -14,7 +14,7 @@ import { providers } from "@sarge/core";
 import { getOllamaFriendlyName } from "@sarge/core";
 import { Button } from "@/components/ui/button";
 import { parseFileEditProposals, type FileEditProposal } from "@sarge/core";
-import { extractSummaryFromResponse } from "../lib/builderLogger";
+import { extractSummaryFromResponse } from "../../lib/builderLogger";
 import { hasEditBlocks } from "../lib/editBlockParser";
 
 interface BuilderMessageBubbleProps {

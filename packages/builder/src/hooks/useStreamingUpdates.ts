@@ -91,16 +91,30 @@ export function useStreamingUpdates({
   const loggingDataRef = useRef({ projectPath, projectName, selectedModel });
   loggingDataRef.current = { projectPath, projectName, selectedModel };
 
+  // Track which progress steps have been fired in this streaming session
+  // Using refs so they don't cause re-renders and reset correctly on stream end
+  const analyzeFiredRef = useRef(false);
+  const generateFiredRef = useRef(false);
+  const previewFiredRef = useRef(false);
+
   // Extract code from streaming message and send to preview
   useEffect(() => {
     const streamingMessage = messages.find(m => m.isStreaming && m.role === 'assistant');
 
     if (streamingMessage && streamingMessage.content) {
-      // Update progress steps based on streaming content
-      // "analyze" step is already started in BuilderChat before sendMessage()
-      // First chunk arriving → advance to "generate"
-      if (streamingMessage.content.length > 0 && progressIsVisible) {
-        startStep("generate", "Receiving code...");
+      // PROGRESS STEP 1: First token arrives → "Analyzing request..."
+      if (!analyzeFiredRef.current && streamingMessage.content.length > 0 && progressIsVisible) {
+        analyzeFiredRef.current = true;
+        startStep("analyze", "Analyzing request...");
+      }
+
+      // PROGRESS STEP 2: Code fence or FILE: marker detected → "Generating code..."
+      const hasCodeMarker =
+        streamingMessage.content.includes("```") ||
+        /\bFILE:/m.test(streamingMessage.content);
+      if (!generateFiredRef.current && hasCodeMarker && progressIsVisible) {
+        generateFiredRef.current = true;
+        startStep("generate", "Generating code...");
       }
 
       // Progressive edit block application: if we detect EDIT pattern and have existing code
@@ -113,9 +127,10 @@ export function useStreamingUpdates({
             lastStreamingCodeRef.current = modifiedCode;
             onStreamingUpdate?.(modifiedCode, true);
 
-            // Update progress - building preview
-            if (progressIsVisible) {
-              startStep("preview", "Rendering live preview...");
+            // PROGRESS STEP 3: First code extraction → "Building preview..."
+            if (!previewFiredRef.current && progressIsVisible) {
+              previewFiredRef.current = true;
+              startStep("preview", "Building preview...");
             }
           }
         }
@@ -127,13 +142,18 @@ export function useStreamingUpdates({
           lastStreamingCodeRef.current = code;
           onStreamingUpdate?.(code, true);
 
-          // Update progress - building preview
-          if (progressIsVisible) {
-            startStep("preview", "Rendering live preview...");
+          // PROGRESS STEP 3: First code extraction → "Building preview..."
+          if (!previewFiredRef.current && progressIsVisible) {
+            previewFiredRef.current = true;
+            startStep("preview", "Building preview...");
           }
         }
       }
     } else if (!sending && lastStreamingCodeRef.current) {
+      // Reset per-stream firing flags for next generation
+      analyzeFiredRef.current = false;
+      generateFiredRef.current = false;
+      previewFiredRef.current = false;
       // STREAMING ENDED — Process final code, edits, and log
       const lastAssistantMessage = [...messages].reverse().find(
         m => m.role === 'assistant' && !m.isStreaming

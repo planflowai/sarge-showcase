@@ -83,13 +83,20 @@ const AI_TEMPLATES = [
 
 type PopoverId = "files" | "templates" | "prompts" | "helpers" | "components" | "router" | "changes";
 
-const TOOLBAR_ITEMS: { id: PopoverId; icon: React.ElementType; label: string }[] = [
-  { id: "files",      icon: FolderOpen,     label: "Files"      },
-  { id: "templates",  icon: LayoutTemplate, label: "Templates"  },
-  { id: "prompts",    icon: BookOpen,       label: "Prompts"    },
-  { id: "helpers",    icon: Cpu,            label: "Helpers"    },
-  { id: "components", icon: Puzzle,         label: "Components" },
-  { id: "router",     icon: Layers,         label: "Router"     },
+const TOOLBAR_ITEMS: {
+  id: PopoverId;
+  icon: React.ElementType;
+  label: string;
+  color: string;       // icon + text color
+  hover: string;       // hover bg + text
+  active: string;      // active bg + border + text
+}[] = [
+  { id: "files",      icon: FolderOpen,     label: "Files",      color: "text-amber-500 dark:text-amber-400",   hover: "hover:bg-amber-500/10 hover:text-amber-600 dark:hover:text-amber-300",   active: "bg-amber-500/15 border-amber-400/50 text-amber-700 dark:text-amber-300"   },
+  { id: "templates",  icon: LayoutTemplate, label: "Templates",  color: "text-purple-500 dark:text-purple-400", hover: "hover:bg-purple-500/10 hover:text-purple-600 dark:hover:text-purple-300", active: "bg-purple-500/15 border-purple-400/50 text-purple-700 dark:text-purple-300" },
+  { id: "prompts",    icon: BookOpen,       label: "Prompts",    color: "text-blue-500 dark:text-blue-400",     hover: "hover:bg-blue-500/10 hover:text-blue-600 dark:hover:text-blue-300",     active: "bg-blue-500/15 border-blue-400/50 text-blue-700 dark:text-blue-300"     },
+  { id: "helpers",    icon: Cpu,            label: "Helpers",    color: "text-cyan-500 dark:text-cyan-400",     hover: "hover:bg-cyan-500/10 hover:text-cyan-600 dark:hover:text-cyan-300",     active: "bg-cyan-500/15 border-cyan-400/50 text-cyan-700 dark:text-cyan-300"     },
+  { id: "components", icon: Puzzle,         label: "Components", color: "text-emerald-500 dark:text-emerald-400", hover: "hover:bg-emerald-500/10 hover:text-emerald-600 dark:hover:text-emerald-300", active: "bg-emerald-500/15 border-emerald-400/50 text-emerald-700 dark:text-emerald-300" },
+  { id: "router",     icon: Layers,         label: "Router",     color: "text-rose-500 dark:text-rose-400",     hover: "hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-300",     active: "bg-rose-500/15 border-rose-400/50 text-rose-700 dark:text-rose-300"     },
 ];
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -141,6 +148,21 @@ export default function BuilderSidebar({
   const [tooltipY, setTooltipY] = useState(0);
   const [selectedAiTemplate, setSelectedAiTemplate] = useState<(typeof AI_TEMPLATES)[0] | null>(null);
 
+  // Open Project modal state
+  const [showOpenModal, setShowOpenModal] = useState(false);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [isDraggingOverNew, setIsDraggingOverNew] = useState(false);
+  const [recentPaths, setRecentPaths] = useState<string[]>(() => {
+    if (typeof window !== "undefined") {
+      try { return JSON.parse(localStorage.getItem("builder-recent-paths") || "[]"); }
+      catch { return []; }
+    }
+    return [];
+  });
+
+  // New Project modal state
+  const [showNewModal, setShowNewModal] = useState(false);
+
   // Toolbar popover state
   const [activePopover, setActivePopover] = useState<PopoverId | null>(null);
   const [popoverRect, setPopoverRect] = useState<DOMRect | null>(null);
@@ -182,6 +204,57 @@ export default function BuilderSidebar({
     return () => document.removeEventListener("mousedown", handleClick);
   }, [activePopover]);
 
+  // Escape key — close modals
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setShowOpenModal(false);
+        setShowNewModal(false);
+      }
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // Custom events — let BuilderPage buttons trigger these modals
+  useEffect(() => {
+    const openHandler = () => { setPathInput(""); setShowOpenModal(true); setActivePopover(null); };
+    const newHandler = () => { setSelectedTemplate(null); setNewProjectPath(""); setShowNewModal(true); setActivePopover(null); };
+    window.addEventListener("builder:open-project", openHandler);
+    window.addEventListener("builder:new-project", newHandler);
+    return () => {
+      window.removeEventListener("builder:open-project", openHandler);
+      window.removeEventListener("builder:new-project", newHandler);
+    };
+  }, []);
+
+  // Save a path to recents list
+  const addToRecents = useCallback((path: string) => {
+    setRecentPaths((prev) => {
+      const updated = [path, ...prev.filter((p) => p !== path)].slice(0, 8);
+      localStorage.setItem("builder-recent-paths", JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
+  // Extract folder path from drag event (Windows Explorer → Chrome gives path in text/plain)
+  const extractDropPath = useCallback((e: React.DragEvent): string => {
+    // text/plain often has the Windows path when dragging from Explorer
+    const text = e.dataTransfer.getData("text/plain");
+    if (text && (text.match(/^[A-Za-z]:\\/) || text.startsWith("/"))) {
+      return text.trim();
+    }
+    // file:// URI fallback
+    const uriList = e.dataTransfer.getData("text/uri-list");
+    if (uriList) {
+      const firstUri = uriList.split("\n")[0].trim();
+      if (firstUri.startsWith("file:///")) {
+        return decodeURIComponent(firstUri.slice(8)).replace(/\//g, "\\");
+      }
+    }
+    return "";
+  }, []);
+
   // Toolbar button click — toggle popover with fixed positioning
   const handleToolbarClick = (id: PopoverId, e: React.MouseEvent<HTMLButtonElement>) => {
     if (activePopover === id) {
@@ -197,6 +270,21 @@ export default function BuilderSidebar({
       setSelectedTemplate(null);
       setSelectedAiTemplate(null);
     }
+  };
+
+  // Quick-access: open New Project modal
+  const handleNewProjectQuick = () => {
+    setSelectedTemplate(null);
+    setNewProjectPath("");
+    setShowNewModal(true);
+    setActivePopover(null);
+  };
+
+  // Quick-access: open Open Project modal
+  const handleOpenProjectQuick = () => {
+    setPathInput("");
+    setShowOpenModal(true);
+    setActivePopover(null);
   };
 
   // ─── File operations ────────────────────────────────────────────────────────
@@ -216,6 +304,8 @@ export default function BuilderSidebar({
         setShowPathInput(false);
         setPathInput("");
         setActivePopover(null);
+        setShowOpenModal(false);
+        addToRecents(folderPath.trim());
       } else {
         alert(`Failed to open project: ${data.error}`);
       }
@@ -224,7 +314,7 @@ export default function BuilderSidebar({
     } finally {
       setIsLoading(false);
     }
-  }, [setProject]);
+  }, [setProject, addToRecents]);
 
   const handleRefresh = useCallback(async () => {
     if (!projectPath) return;
@@ -271,6 +361,7 @@ export default function BuilderSidebar({
       if (data.success) {
         await handleOpenProject(data.projectPath);
         setShowNewProjectInput(false);
+        setShowNewModal(false);
         setSelectedTemplate(null);
         setNewProjectPath("");
       } else {
@@ -398,7 +489,8 @@ export default function BuilderSidebar({
                       }} />
                     ))}
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => setShowPathInput(true)}
+                  <Button variant="outline" size="sm"
+                    onClick={() => { setShowOpenModal(true); setActivePopover(null); }}
                     className="w-full h-7 text-xs gap-1">
                     <FolderPlus className="h-3 w-3" /> Open Existing
                   </Button>
@@ -650,64 +742,57 @@ export default function BuilderSidebar({
     <>
       <div
         ref={toolbarRef}
-        className="relative flex-shrink-0 flex flex-row items-center gap-0.5 h-10 px-2 bg-zinc-50 dark:bg-zinc-900/80 border-b border-zinc-200 dark:border-zinc-800"
+        className="relative flex-shrink-0 flex flex-row items-center h-12 px-3 bg-zinc-50 dark:bg-zinc-900/80 border-b border-zinc-200 dark:border-zinc-800"
       >
-        {/* Toolbar cards */}
-        {TOOLBAR_ITEMS.map((item) => {
-          const Icon = item.icon;
-          const isActive = activePopover === item.id;
-          return (
+        {/* CENTER — colored, bigger toolbar items */}
+        <div className="flex-1 flex items-center justify-center gap-1">
+          {TOOLBAR_ITEMS.map((item) => {
+            const Icon = item.icon;
+            const isActive = activePopover === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={(e) => handleToolbarClick(item.id, e)}
+                className={cn(
+                  "flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-semibold transition-all border",
+                  isActive
+                    ? item.active
+                    : cn("border-transparent", item.color, item.hover)
+                )}
+              >
+                <Icon className="h-4 w-4" />
+                <span>{item.label}</span>
+                {/* File badge */}
+                {item.id === "files" && projectName && (
+                  <span className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" />
+                )}
+              </button>
+            );
+          })}
+
+          {/* Changes button (conditional) */}
+          {changes.length > 0 && (
             <button
-              key={item.id}
-              onClick={(e) => handleToolbarClick(item.id, e)}
+              onClick={(e) => handleToolbarClick("changes", e)}
               className={cn(
-                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors border",
-                isActive
-                  ? "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-400/40"
-                  : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 border-transparent"
+                "flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-semibold transition-all border",
+                activePopover === "changes"
+                  ? "bg-orange-500/15 border-orange-400/50 text-orange-700 dark:text-orange-300"
+                  : "border-transparent text-orange-500 dark:text-orange-400 hover:bg-orange-500/10 hover:text-orange-600 dark:hover:text-orange-300"
               )}
             >
-              <Icon className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">{item.label}</span>
-              {/* File badge - show open project indicator */}
-              {item.id === "files" && projectName && (
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />
-              )}
-              {/* Changes badge */}
-              {item.id === "changes" && changes.length > 0 && (
-                <span className="flex-shrink-0 px-1 py-0 text-[8px] font-bold bg-blue-500/20 text-blue-500 dark:text-blue-400 rounded-full">
-                  {changes.length}
-                </span>
-              )}
+              <History className="h-4 w-4" />
+              <span>Changes</span>
+              <span className="px-1.5 py-0.5 text-[9px] font-bold bg-orange-500/20 text-orange-600 dark:text-orange-400 rounded-full">
+                {changes.length}
+              </span>
             </button>
-          );
-        })}
+          )}
+        </div>
 
-        {/* Changes button (conditional) */}
-        {changes.length > 0 && (
-          <button
-            onClick={(e) => handleToolbarClick("changes", e)}
-            className={cn(
-              "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors border",
-              activePopover === "changes"
-                ? "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-400/40"
-                : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 border-transparent"
-            )}
-          >
-            <History className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Changes</span>
-            <span className="px-1 py-0 text-[8px] font-bold bg-blue-500/20 text-blue-500 dark:text-blue-400 rounded-full">
-              {changes.length}
-            </span>
-          </button>
-        )}
-
-        {/* Spacer */}
-        <div className="flex-1" />
-
-        {/* AI mode indicator */}
+        {/* RIGHT — AI mode indicator */}
         <span className={cn(
-          "flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-medium",
+          "flex-shrink-0 flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-medium",
           executionMode === "local" && "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400",
           executionMode === "cloud" && "bg-violet-500/20 text-violet-600 dark:text-violet-400",
           executionMode === "hybrid" && "bg-amber-500/20 text-amber-600 dark:text-amber-400"
@@ -780,6 +865,223 @@ export default function BuilderSidebar({
         onClose={() => setShowGallery(false)}
         onSelectPrompt={(prompt) => { onPromptSelect?.(prompt); setActivePopover(null); }}
       />
+
+      {/* ─── Open Project Modal ─────────────────────────────────────────────── */}
+      {showOpenModal && (
+        <div
+          className="fixed inset-0 z-[500] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onMouseDown={(e) => { if (e.target === e.currentTarget) setShowOpenModal(false); }}
+        >
+          <div className="bg-zinc-900 rounded-2xl shadow-2xl border border-zinc-700 w-[560px] max-w-[95vw] overflow-hidden">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-zinc-800 flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-bold text-white">Open Project</h2>
+                <p className="text-xs text-zinc-500 mt-0.5">Load a folder from your computer</p>
+              </div>
+              <button onClick={() => setShowOpenModal(false)}
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5">
+              {/* Drag & Drop Zone */}
+              <div
+                onDragOver={(e) => { e.preventDefault(); setIsDraggingOver(true); }}
+                onDragEnter={(e) => { e.preventDefault(); setIsDraggingOver(true); }}
+                onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setIsDraggingOver(false); }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setIsDraggingOver(false);
+                  const path = extractDropPath(e);
+                  if (path) {
+                    setPathInput(path);
+                    handleOpenProject(path);
+                  }
+                }}
+                className={cn(
+                  "rounded-xl border-2 border-dashed h-36 flex flex-col items-center justify-center cursor-default transition-all duration-200",
+                  isDraggingOver
+                    ? "border-indigo-400 bg-indigo-500/15 scale-[1.01]"
+                    : "border-zinc-700 hover:border-zinc-500 bg-zinc-800/40"
+                )}
+              >
+                <FolderOpen className={cn("h-12 w-12 mb-2 transition-colors", isDraggingOver ? "text-indigo-400" : "text-zinc-500")} />
+                <p className={cn("text-sm font-semibold transition-colors", isDraggingOver ? "text-indigo-300" : "text-zinc-400")}>
+                  {isDraggingOver ? "Release to open folder" : "Drop a folder here"}
+                </p>
+                <p className="text-xs text-zinc-600 mt-1">Drag from Windows Explorer or Finder</p>
+              </div>
+
+              {/* Recent Folders */}
+              {recentPaths.length > 0 && (
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider font-semibold text-zinc-500 mb-2">Recent Folders</p>
+                  <div className="space-y-1">
+                    {recentPaths.slice(0, 6).map((path) => (
+                      <button
+                        key={path}
+                        onClick={() => handleOpenProject(path)}
+                        disabled={isLoading}
+                        className="w-full text-left px-3 py-2.5 rounded-lg text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors flex items-center gap-2.5 group"
+                      >
+                        <FolderOpen className="h-4 w-4 flex-shrink-0 text-amber-500 group-hover:text-amber-400" />
+                        <span className="truncate flex-1">{path}</span>
+                        <ChevronRight className="h-3.5 w-3.5 flex-shrink-0 text-zinc-600 group-hover:text-zinc-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Manual path input */}
+              <div>
+                <p className="text-[10px] uppercase tracking-wider font-semibold text-zinc-500 mb-2">
+                  {recentPaths.length > 0 ? "Or enter path manually" : "Enter folder path"}
+                </p>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={pathInput}
+                    onChange={(e) => setPathInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter" && pathInput.trim()) handleOpenProject(pathInput); }}
+                    placeholder="e.g. L:\projects\my-site or /home/user/project"
+                    className="flex-1 px-3 py-2.5 text-sm rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30"
+                    autoFocus={recentPaths.length === 0}
+                  />
+                  <button
+                    onClick={() => pathInput.trim() && handleOpenProject(pathInput)}
+                    disabled={!pathInput.trim() || isLoading}
+                    className="px-4 py-2.5 rounded-lg text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white transition-colors flex items-center gap-1.5"
+                  >
+                    {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><FolderOpen className="h-4 w-4" /> Open</>}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── New Project Modal ──────────────────────────────────────────────── */}
+      {showNewModal && (
+        <div
+          className="fixed inset-0 z-[500] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onMouseDown={(e) => { if (e.target === e.currentTarget) setShowNewModal(false); }}
+        >
+          <div className="bg-zinc-900 rounded-2xl shadow-2xl border border-zinc-700 w-[640px] max-w-[95vw] overflow-hidden">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-zinc-800 flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-bold text-white">New Project</h2>
+                <p className="text-xs text-zinc-500 mt-0.5">Choose a template to get started</p>
+              </div>
+              <button onClick={() => { setShowNewModal(false); setSelectedTemplate(null); setNewProjectPath(""); }}
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              {!selectedTemplate ? (
+                /* Step 1 — Pick a template */
+                <div className="grid grid-cols-3 gap-3">
+                  {PROJECT_TEMPLATES.map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => setSelectedTemplate(t)}
+                      className="flex flex-col items-start gap-2 p-4 rounded-xl border border-zinc-700 bg-zinc-800/50 hover:border-indigo-500 hover:bg-indigo-900/20 transition-all text-left group"
+                    >
+                      <span className="text-3xl group-hover:scale-110 transition-transform">{t.icon}</span>
+                      <span className="text-sm font-bold text-zinc-200">{t.name}</span>
+                      <span className="text-[10px] text-zinc-500 leading-tight">{t.description}</span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                /* Step 2 — Pick where to create it */
+                <div className="space-y-5">
+                  <button onClick={() => setSelectedTemplate(null)}
+                    className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
+                    <ChevronRight className="h-3.5 w-3.5 rotate-180" />
+                    Back to templates
+                  </button>
+
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-zinc-800 border border-zinc-700">
+                    <span className="text-2xl">{selectedTemplate.icon}</span>
+                    <div>
+                      <p className="text-sm font-bold text-zinc-200">{selectedTemplate.name}</p>
+                      <p className="text-xs text-zinc-500">{selectedTemplate.description}</p>
+                    </div>
+                  </div>
+
+                  <p className="text-sm font-semibold text-zinc-300">Where should the project be created?</p>
+
+                  {/* Drag zone for parent folder */}
+                  <div
+                    onDragOver={(e) => { e.preventDefault(); setIsDraggingOverNew(true); }}
+                    onDragEnter={(e) => { e.preventDefault(); setIsDraggingOverNew(true); }}
+                    onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setIsDraggingOverNew(false); }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setIsDraggingOverNew(false);
+                      const path = extractDropPath(e);
+                      if (path) setNewProjectPath(path);
+                    }}
+                    className={cn(
+                      "rounded-xl border-2 border-dashed h-24 flex flex-col items-center justify-center cursor-default transition-all",
+                      isDraggingOverNew
+                        ? "border-emerald-400 bg-emerald-500/10"
+                        : "border-zinc-700 hover:border-zinc-500 bg-zinc-800/40"
+                    )}
+                  >
+                    <FolderPlus className={cn("h-8 w-8 mb-1 transition-colors", isDraggingOverNew ? "text-emerald-400" : "text-zinc-600")} />
+                    <p className={cn("text-xs font-medium transition-colors", isDraggingOverNew ? "text-emerald-300" : "text-zinc-500")}>
+                      {isDraggingOverNew ? "Drop parent folder" : "Drop a parent folder here"}
+                    </p>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newProjectPath}
+                      onChange={(e) => setNewProjectPath(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter" && newProjectPath.trim() && selectedTemplate) handleCreateFromTemplate(selectedTemplate, newProjectPath); }}
+                      placeholder="e.g. L:\projects\my-new-site"
+                      className="flex-1 px-3 py-2.5 text-sm rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30"
+                      autoFocus
+                    />
+                    <button
+                      onClick={() => selectedTemplate && newProjectPath.trim() && handleCreateFromTemplate(selectedTemplate, newProjectPath)}
+                      disabled={!newProjectPath.trim() || isCreatingProject}
+                      className="px-4 py-2.5 rounded-lg text-sm font-semibold bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white transition-colors flex items-center gap-1.5"
+                    >
+                      {isCreatingProject ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Plus className="h-4 w-4" /> Create</>}
+                    </button>
+                  </div>
+
+                  {/* Recent paths as quick picks */}
+                  {recentPaths.length > 0 && (
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wider font-semibold text-zinc-500 mb-1.5">Recent locations</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {recentPaths.slice(0, 4).map((p) => (
+                          <button key={p} onClick={() => setNewProjectPath(p)}
+                            className="px-2 py-1 rounded-md text-[10px] bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200 border border-zinc-700 transition-colors truncate max-w-[200px]"
+                            title={p}>
+                            {p.split(/[/\\]/).pop() || p}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

@@ -17,6 +17,90 @@ import { parseFileEditProposals, type FileEditProposal } from "@sarge/core";
 import { extractSummaryFromResponse } from "../lib/builderLogger";
 import { hasEditBlocks } from "../lib/editBlockParser";
 
+/**
+ * LiveStreamingContent: Renders streaming AI response in real-time
+ *
+ * Shows text before the code fence as plain text, then renders a live growing
+ * code block with a pulsing "LIVE" indicator while code streams in.
+ * Used ONLY when message.isStreaming === true — replaces ReactMarkdown which
+ * struggles with partial/incomplete markdown.
+ */
+function LiveStreamingContent({ content }: { content: string }) {
+  // Find first code fence
+  const fenceIdx = content.indexOf("```");
+
+  if (fenceIdx === -1) {
+    // No code fence yet — pure text streaming
+    return (
+      <div className="text-sm leading-relaxed whitespace-pre-wrap text-zinc-200">
+        {content || " "}
+        <span className="inline-block w-1.5 h-4 bg-indigo-400 animate-pulse ml-0.5 align-text-bottom rounded-sm" />
+      </div>
+    );
+  }
+
+  const textBefore = content.slice(0, fenceIdx).trim();
+  const rest = content.slice(fenceIdx);
+
+  // Parse opening fence: ```lang\n
+  const openFenceMatch = rest.match(/^```(\w*)?\n?/);
+  const lang = openFenceMatch?.[1] || "html";
+  const afterOpenFence = openFenceMatch ? rest.slice(openFenceMatch[0].length) : rest.slice(3);
+
+  // Check for closing fence
+  const closingFenceIdx = afterOpenFence.indexOf("```");
+  const isComplete = closingFenceIdx !== -1;
+  const codeText = isComplete ? afterOpenFence.slice(0, closingFenceIdx) : afterOpenFence;
+  const textAfter = isComplete ? afterOpenFence.slice(closingFenceIdx + 3).trim() : "";
+
+  const lineCount = codeText ? codeText.split("\n").length : 0;
+
+  return (
+    <div className="text-sm leading-relaxed space-y-2">
+      {textBefore && (
+        <p className="whitespace-pre-wrap text-zinc-200">{textBefore}</p>
+      )}
+
+      {/* Live code block */}
+      <div className="rounded-md overflow-hidden border border-zinc-700 bg-zinc-950">
+        {/* Header */}
+        <div className="flex items-center justify-between px-3 py-1.5 bg-zinc-900 border-b border-zinc-700">
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-mono font-semibold text-zinc-300 uppercase">
+              {lang}
+            </span>
+            {lineCount > 0 && (
+              <span className="text-[10px] text-zinc-500">{lineCount} lines</span>
+            )}
+          </div>
+          {!isComplete ? (
+            <div className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-[10px] font-semibold text-emerald-400 tracking-wide">
+                LIVE
+              </span>
+            </div>
+          ) : (
+            <span className="text-[10px] text-emerald-500 font-medium">✓ Generated</span>
+          )}
+        </div>
+
+        {/* Scrollable code — capped at 300px so it doesn't take over the chat */}
+        <pre className="p-3 overflow-x-auto overflow-y-auto max-h-72 text-xs leading-relaxed font-mono text-zinc-200">
+          <code>{codeText}</code>
+          {!isComplete && (
+            <span className="inline-block w-1.5 h-3.5 bg-emerald-400 animate-pulse ml-0.5 align-text-bottom rounded-sm" />
+          )}
+        </pre>
+      </div>
+
+      {textAfter && (
+        <p className="whitespace-pre-wrap text-zinc-200">{textAfter}</p>
+      )}
+    </div>
+  );
+}
+
 interface BuilderMessageBubbleProps {
   message: BuilderMessage;
   onOpenInEditor?: (code: string, language?: string) => void;
@@ -355,6 +439,10 @@ export default function BuilderMessageBubble({
               content={message.content}
               isStreaming={message.isStreaming || false}
             />
+          ) : message.isStreaming ? (
+            // Live streaming view: show raw text + growing code block in real-time
+            // Bypasses ReactMarkdown (which breaks on partial/incomplete markdown)
+            <LiveStreamingContent content={message.content} />
           ) : (
             <div className="prose prose-sm prose-invert max-w-none">
               <ReactMarkdown components={markdownComponents}>{message.content}</ReactMarkdown>

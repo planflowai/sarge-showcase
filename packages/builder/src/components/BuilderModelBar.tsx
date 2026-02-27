@@ -82,7 +82,7 @@ export default function BuilderModelBar({
   };
 
   return (
-    <div className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/70">
+    <div className="flex-shrink-0 flex items-center justify-center gap-1.5 px-3 py-1.5 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/70">
       {/* Cloud provider */}
       <select
         value={cloudProviders.some((p) => p.id === selectedProvider) ? selectedProvider : ""}
@@ -110,7 +110,7 @@ export default function BuilderModelBar({
       </select>
 
       {/* Model dropdown */}
-      <div className="flex-1 min-w-0">
+      <div className="w-40 min-w-0">
         {selectedProvider === "ollama" ? (
           ollamaLoading ? (
             <span className="text-[10px] text-zinc-500">Loading…</span>
