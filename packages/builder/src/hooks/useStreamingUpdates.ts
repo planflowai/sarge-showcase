@@ -97,11 +97,10 @@ export function useStreamingUpdates({
 
     if (streamingMessage && streamingMessage.content) {
       // Update progress steps based on streaming content
+      // "analyze" step is already started in BuilderChat before sendMessage()
+      // First chunk arriving → advance to "generate"
       if (streamingMessage.content.length > 0 && progressIsVisible) {
-        startStep("analyze", "Processing your request...");
-      }
-      if (streamingMessage.content.length > 100 && progressIsVisible) {
-        startStep("generate", `${streamingMessage.content.length} chars generated...`);
+        startStep("generate", "Receiving code...");
       }
 
       // Progressive edit block application: if we detect EDIT pattern and have existing code

@@ -136,7 +136,7 @@ export default function DeployPanel() {
             </div>
 
             <div className="text-[10px] text-zinc-400 dark:text-zinc-500 space-y-1">
-              <p>Requires: <code className="bg-zinc-200 dark:bg-zinc-800 px-1 rounded">gh</code>, <code className="bg-zinc-200 dark:bg-zinc-800 px-1 rounded">wrangler</code>, <code className="bg-zinc-200 dark:bg-zinc-800 px-1 rounded">vercel</code>, <code className="bg-zinc-200 dark:bg-zinc-800 px-1 rounded">netlify</code> CLIs installed and logged in.</p>
+              <p>Requires: <code className="bg-zinc-200 dark:bg-zinc-800 px-1 rounded">GITHUB_TOKEN</code> in .env.local, <code className="bg-zinc-200 dark:bg-zinc-800 px-1 rounded">wrangler</code>, <code className="bg-zinc-200 dark:bg-zinc-800 px-1 rounded">vercel</code>, <code className="bg-zinc-200 dark:bg-zinc-800 px-1 rounded">netlify</code> CLIs installed and logged in.</p>
             </div>
 
             <button
@@ -310,8 +310,8 @@ export default function DeployPanel() {
             Prerequisites
           </p>
           <p>
-            <code className="bg-zinc-200 dark:bg-zinc-800 px-1 rounded">gh</code>{" "}
-            — GitHub CLI, logged in (<code>gh auth login</code>)
+            <code className="bg-zinc-200 dark:bg-zinc-800 px-1 rounded">GITHUB_TOKEN</code>{" "}
+            — Personal access token in <code>.env.local</code> with <code>repo</code> scope
           </p>
           <p>
             <code className="bg-zinc-200 dark:bg-zinc-800 px-1 rounded">wrangler</code>{" "}

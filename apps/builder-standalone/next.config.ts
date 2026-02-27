@@ -8,6 +8,7 @@ dotenv.config({ path: path.resolve(__dirname, "../../.env.local") });
 const emptyStub = path.resolve(__dirname, "lib/stubs/empty.ts");
 
 const nextConfig: NextConfig = {
+  devIndicators: false,
   transpilePackages: ["@sarge/core", "@sarge/chat", "@sarge/builder"],
   async rewrites() {
     return [

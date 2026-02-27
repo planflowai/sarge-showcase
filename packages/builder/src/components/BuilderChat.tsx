@@ -437,6 +437,9 @@ export default function BuilderChat({
       systemPrompt += '\n\n' + `PRIORITY: When building a project, generate the main entry point file FIRST (index.html, main.jsx, app.tsx, etc). This allows the preview to load immediately while you generate supporting files. Generate entry point as your FIRST FILE: block, then other files follow.`;
     }
 
+    // Context is built — advance progress past "Reading context..."
+    progress.startStep("analyze", "Sending to model...");
+
     // Pass both: display message (what user typed) and API prompt (with injected context)
     await sendMessage(userMessage, finalPrompt, selectedProvider, selectedModel, systemPrompt, imagesToSend.length > 0 ? imagesToSend : undefined);
   };
