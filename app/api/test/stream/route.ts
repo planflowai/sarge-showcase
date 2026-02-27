@@ -123,18 +123,38 @@ export async function POST(request: NextRequest) {
         body: JSON.stringify({ model, messages: ollamaMessages, stream: true }),
       });
 
-      if (!res.ok) {
+      if (!res.ok || !res.body) {
         const errText = await res.text().catch(() => '');
         return NextResponse.json({ error: `Ollama error (${res.status}): ${errText || res.statusText}. Make sure Ollama is running and the model "${model}" is available.` }, { status: 500 });
       }
 
-      // Forward the stream
-      return new Response(res.body, {
-        headers: {
-          'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache',
-          'Connection': 'keep-alive',
-        },
+      // Normalize Ollama NDJSON → same {"message":{"content":"..."}} format as cloud handlers.
+      // Piping through a TransformStream ensures the ReadableStream is Web Streams API
+      // compatible when forwarded through Next.js rewrite proxies.
+      const ollamaTransform = new TransformStream({
+        transform(chunk, controller) {
+          const text = new TextDecoder().decode(chunk);
+          for (const line of text.split('\n')) {
+            const trimmed = line.trim();
+            if (!trimmed) continue;
+            try {
+              const data = JSON.parse(trimmed);
+              const content = data?.message?.content;
+              if (content) {
+                controller.enqueue(new TextEncoder().encode(
+                  JSON.stringify({ message: { content } }) + '\n'
+                ));
+              }
+            } catch {
+              // Forward raw line if not valid JSON
+              controller.enqueue(new TextEncoder().encode(trimmed + '\n'));
+            }
+          }
+        }
+      });
+
+      return new Response(res.body.pipeThrough(ollamaTransform), {
+        headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' },
       });
     } catch (fetchError: any) {
       return NextResponse.json({

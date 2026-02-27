@@ -30,7 +30,7 @@ export function Sidebar() {
   const showingTestMode = useTestModeStore((s) => s.showingTestMode);
   const testModeHidden = useTestModeStore((s) => s.testModeHidden);
   const showingForensicLog = useForensicLogStore((s) => s.showingForensicLog);
-  const parallelEnabled = useParallelChatStore((s) => s.parallelEnabled);
+  const parallelEnabled = useParallelChatStore((s) => s.enabled);
   const warRoomEnabled = useWarRoomStore((s) => s.enabled);
   const mainSidebarCollapsed = useUIStore((s) => s.mainSidebarCollapsed);
   const toggleMainSidebar = useUIStore((s) => s.toggleMainSidebar);

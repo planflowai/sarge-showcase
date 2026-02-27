@@ -499,9 +499,8 @@ export function ChatView({ conversationId }: ChatViewProps) {
         : attachmentBlock;
     }
 
-    // Inject export context - inform AI about document export capability
-    const exportContext = `[EXPORT CAPABILITY - AUTO INJECTED]
-This chat application has built-in document export! When the user asks to "create a powerpoint", "export as pdf", "make an excel spreadsheet", etc.:
+    // Export context — injected as system prompt so it never appears in chat UI
+    const exportSystemPrompt = `This chat application has built-in document export. When the user asks to "create a powerpoint", "export as pdf", "make an excel spreadsheet", etc.:
 1. Help them develop the content/ideas (provide outline, structure, ideas, etc.)
 2. At the end, remind them they can use these commands to download actual files:
    - "create the powerpoint" → downloads .pptx
@@ -510,15 +509,13 @@ This chat application has built-in document export! When the user asks to "creat
    - "create a word doc" → downloads .docx
    - "export as csv" → downloads .csv
    - "make a zip" → downloads .zip
-3. Example response: "...and here's your 5-slide outline! Ready to export? Type 'create the powerpoint' and it will generate a real PowerPoint file!"
-[END EXPORT CAPABILITY]\n\n`;
+3. Example response: "...and here's your 5-slide outline! Ready to export? Type 'create the powerpoint' and it will generate a real PowerPoint file!"`;
 
-    const finalContentWithContext = `${exportContext}${finalContent}`;
-
-    await sendMessage(conversationId, finalContentWithContext, currentProvider, currentModel, {
+    await sendMessage(conversationId, finalContent, currentProvider, currentModel, {
       summarizeForCloud,
       sanitizeForCloud,
       vaultAttachments: vaultAttachmentInfo,
+      systemPrompt: exportSystemPrompt,
     });
   };
 
