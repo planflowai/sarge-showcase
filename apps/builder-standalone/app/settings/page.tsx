@@ -491,7 +491,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="flex h-screen gap-0">
+    <div className="flex h-full gap-0">
       {/* Left nav */}
       <nav className="w-64 flex-shrink-0 px-6 py-6 border-r border-zinc-200 dark:border-zinc-800 overflow-y-auto">
         <div className="mb-6 flex items-center gap-3">
