@@ -24,7 +24,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
-type NavMode = "builder" | "settings";
+type NavMode = "builder" | "chat" | "settings";
 
 interface NavItem {
   id: NavMode;
@@ -44,6 +44,15 @@ const NAV_ITEMS: NavItem[] = [
     activeColor: "text-black dark:text-white",
     bgActive:
       "bg-purple-100 dark:bg-purple-900/50 border-purple-400 dark:border-purple-500",
+  },
+  {
+    id: "chat",
+    label: "Chat",
+    emoji: "💬",
+    href: "/chat",
+    activeColor: "text-black dark:text-white",
+    bgActive:
+      "bg-blue-100 dark:bg-blue-900/50 border-blue-400 dark:border-blue-500",
   },
   {
     id: "settings",
@@ -91,6 +100,7 @@ export function Header() {
 
   const getActiveMode = (): NavMode => {
     if (pathname === "/settings") return "settings";
+    if (pathname === "/chat") return "chat";
     return "builder";
   };
 

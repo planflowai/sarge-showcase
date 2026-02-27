@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from "react";
 import BuilderPage from "@sarge/builder/components/BuilderPage";
-import ChatDrawer from "../components/ChatDrawer";
 import { ErrorBoundary } from "../components/ui/error-boundary";
 import { JuryToast } from "@sarge/core";
 import { useConversationStore } from "@sarge/chat/index.client";
@@ -35,7 +34,6 @@ export default function Home() {
       <ErrorBoundary fallbackTitle="Builder Error">
         <BuilderPage />
       </ErrorBoundary>
-      <ChatDrawer />
       <JuryToast />
     </div>
   );
