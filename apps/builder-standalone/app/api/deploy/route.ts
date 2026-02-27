@@ -44,7 +44,7 @@ async function checkCli(
   cwd: string
 ): Promise<{ ok: boolean; version: string }> {
   try {
-    const { stdout, code } = await runCommand(`${name} --version`, cwd, 10_000);
+    const { stdout, code } = await runCommand(`${name} --version`, cwd, 30_000);
     return { ok: code === 0 && stdout.length > 0, version: stdout.split("\n")[0] };
   } catch {
     return { ok: false, version: "" };
@@ -215,38 +215,55 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // 6. Vercel — link project (skip if CLI not installed)
+      // 6. Vercel — deploy project (skip if CLI not installed)
       let vercelUrl = "";
       if (vercel.ok) {
-        const vercelResult = await runCommand("npx vercel link --yes", projectPath);
-        if (vercelResult.code === 0 || vercelResult.stderr.includes("already linked")) {
-          const vercelProjectFile = path.join(projectPath, ".vercel", "project.json");
-          if (fs.existsSync(vercelProjectFile)) {
-            try {
-              const vercelProject = JSON.parse(fs.readFileSync(vercelProjectFile, "utf-8"));
-              if (vercelProject.projectId) {
-                vercelUrl = `https://vercel.com/~/projects/${vercelProject.projectId}`;
-              }
-            } catch { /* ignore */ }
-          }
-          if (!vercelUrl) vercelUrl = `https://vercel.com (linked — check dashboard)`;
+        // Link first (non-interactive)
+        await runCommand("npx vercel link --yes", projectPath);
+        // Deploy to production — captures the live URL
+        const vercelDeploy = await runCommand("npx vercel --prod --yes", projectPath, 120_000);
+        if (vercelDeploy.code === 0) {
+          // Output contains the deployment URL on a line like "https://project-xyz.vercel.app"
+          const urlMatch = vercelDeploy.stdout.match(/https:\/\/[^\s]+\.vercel\.app/);
+          vercelUrl = urlMatch ? urlMatch[0] : "";
+        }
+        // Fallback: construct from project name (standard Vercel pattern)
+        if (!vercelUrl) {
+          const safeName = projectName.replace(/_/g, "-").toLowerCase();
+          vercelUrl = `https://${safeName}.vercel.app`;
         }
       }
 
-      // 7. Netlify — create site and link (skip if CLI not installed)
+      // 7. Netlify — create site and deploy (skip if CLI not installed)
       let netlifyUrl = "";
       if (netlify.ok) {
-        const netlifyResult = await runCommand(
-          `npx netlify sites:create --name "${projectName}" --account-slug ""`,
-          projectPath
+        // Get the account slug for sites:create
+        const acctResult = await runCommand(
+          `npx netlify api listAccountsForUser --data '{}'`,
+          projectPath, 15_000
         );
+        let acctSlug = "";
+        try {
+          const accts = JSON.parse(acctResult.stdout);
+          if (Array.isArray(accts) && accts.length > 0) acctSlug = accts[0].slug;
+        } catch { /* ignore */ }
+
+        // Create site with proper account slug
+        const safeName = projectName.replace(/_/g, "-").toLowerCase();
+        const createCmd = acctSlug
+          ? `npx netlify sites:create --name "${safeName}" --account-slug "${acctSlug}"`
+          : `npx netlify sites:create --name "${safeName}"`;
+        const netlifyResult = await runCommand(createCmd, projectPath);
+
         if (netlifyResult.code === 0) {
           netlifyUrl = netlifyResult.stdout.match(/https:\/\/[^\s]+\.netlify\.app/)?.[0] || "";
+          // Link the site
           await runCommand("npx netlify link", projectPath);
         } else if (netlifyResult.stderr.includes("already exists") || netlifyResult.stdout.includes("already exists")) {
-          const linkResult = await runCommand("npx netlify link", projectPath);
-          netlifyUrl = linkResult.stdout.match(/https:\/\/[^\s]+\.netlify\.app/)?.[0] || "https://netlify.com (linked)";
+          netlifyUrl = `https://${safeName}.netlify.app`;
         }
+        // Fallback URL
+        if (!netlifyUrl) netlifyUrl = `https://${safeName}.netlify.app`;
       }
 
       // 8. Cloudflare Pages — create project (skip if CLI not installed)
