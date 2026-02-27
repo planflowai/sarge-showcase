@@ -722,7 +722,7 @@ function ArtifactPanelInner({
         )}
 
         {activeTab === "preview" && (
-          <div className="h-full w-full bg-white" style={{ backgroundColor: '#fff' }}>
+          <div className="h-full w-full bg-white dark:bg-zinc-900">
             {/* Dev server mode — point iframe directly at localhost */}
             {devPreviewMode === 'localhost' && devServerRunning && !isStreaming ? (
               <iframe
@@ -731,7 +731,7 @@ function ArtifactPanelInner({
                 sandbox="allow-scripts allow-same-origin"
                 className="w-full h-full border-0"
                 title="Dev Server Preview (localhost:3000)"
-                style={{ backgroundColor: 'white', display: 'block', minHeight: '100%' }}
+                style={{ display: 'block', minHeight: '100%' }}
               />
             ) : previewError ? (
               <div className="flex items-center gap-2 p-4 text-red-500">
@@ -749,7 +749,6 @@ function ArtifactPanelInner({
                 className="w-full h-full border-0"
                 title="Preview"
                 style={{
-                  backgroundColor: 'white',
                   display: 'block',
                   minHeight: '100%',
                   opacity: isFading ? 0.3 : 1,
@@ -766,7 +765,6 @@ function ArtifactPanelInner({
                 className="w-full h-full border-0"
                 title="Preview"
                 style={{
-                  backgroundColor: 'white',
                   display: 'block',
                   minHeight: '100%',
                   // Smooth opacity for non-streaming updates only

@@ -15,7 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { useDeployStore } from "@/lib/stores/deployStore";
-import { useBuilderStore } from "@sarge/core";
+import { useBuilderStore } from "@sarge/builder/stores/builderStore";
 import { useUIStore } from "@sarge/core";
 
 export default function DeployPanel() {
