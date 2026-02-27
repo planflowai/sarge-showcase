@@ -21,6 +21,7 @@ import {
   useAirGapStore,
 } from "@sarge/core";
 import { useWarRoomStore } from "@/lib/stores/warRoomStore";
+import { useWorkbenchStore } from "@/lib/stores/workbenchStore";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -66,9 +67,13 @@ export function Header() {
   const theme = useSettingsStore((s) => s.theme);
   const setTheme = useSettingsStore((s) => s.setTheme);
 
-  // Workbench (War Room)
+  // Workbench (War Room — chat standalone)
   const warRoomEnabled = useWarRoomStore((s) => s.enabled);
   const setWarRoomEnabled = useWarRoomStore((s) => s.setEnabled);
+
+  // Workbench (Builder Command Center)
+  const workbenchActive = useWorkbenchStore((s) => s.active);
+  const setWorkbenchActive = useWorkbenchStore((s) => s.setActive);
 
   // Air-gap mode
   const airGapEnabled = useAirGapStore((s) => s.airGapEnabled);
@@ -215,24 +220,24 @@ export function Header() {
               );
             })}
 
-            {/* Workbench button */}
+            {/* Workbench button — toggles builder command center */}
             <button
               tabIndex={-1}
               onClick={() => {
-                if (!warRoomEnabled) {
-                  setWarRoomEnabled(true);
-                  if (pathname !== "/chat") router.push("/chat");
-                } else if (pathname !== "/chat") {
-                  router.push("/chat");
+                if (pathname === "/") {
+                  setWorkbenchActive(!workbenchActive);
+                } else {
+                  setWorkbenchActive(true);
+                  router.push("/");
                 }
               }}
               className={cn(
                 "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-bold transition-all duration-300 border",
-                warRoomEnabled
+                workbenchActive
                   ? "bg-purple-600/30 border-purple-500/60 text-purple-300 ring-1 ring-purple-500/40"
                   : "border-transparent text-zinc-500 dark:text-zinc-400 hover:bg-purple-500/10 hover:text-purple-300 hover:border-purple-500/30"
               )}
-              title={warRoomEnabled ? "Go to Workbench" : "Open Workbench"}
+              title={workbenchActive ? "Close Workbench" : "Open 5-Monitor Workbench"}
             >
               <Wrench className="h-4 w-4" />
               <span>Workbench</span>
