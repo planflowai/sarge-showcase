@@ -225,14 +225,20 @@ export default function BuilderMessageBubble({
     code({ className, children, ...props }) {
       const match = /language-(\w+)/.exec(className || "");
       const codeString = String(children).replace(/\n$/, "");
+      // Multi-line code blocks → send to artifact panel, show one-line summary in chat
       if (match || codeString.includes("\n")) {
+        const lang = match?.[1] || "html";
+        // Auto-open in editor/preview
+        if (onOpenInEditor) onOpenInEditor(codeString, lang);
+        if (onOpenPreview) onOpenPreview(codeString);
+        // Show a minimal inline reference instead of a card
+        const lineCount = codeString.split("\n").length;
         return (
-          <ArtifactCard
-            code={codeString}
-            language={match?.[1]}
-            onOpenCode={() => onOpenInEditor?.(codeString, match?.[1])}
-            onOpenPreview={() => onOpenPreview?.(codeString)}
-          />
+          <div className="flex items-center gap-2 py-1 my-1 text-xs border-l-2 border-zinc-600 pl-3">
+            <span className="text-zinc-400 font-mono">{lang}</span>
+            <span className="text-emerald-500">+{lineCount} lines</span>
+            <span className="text-zinc-500">→ preview</span>
+          </div>
         );
       }
       return (
