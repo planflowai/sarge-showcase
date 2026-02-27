@@ -1,5 +1,12 @@
 import { create } from "zustand";
 
+interface PushResult {
+  success: boolean;
+  commitHash: string;
+  message: string;          // "Pushed successfully" or "No changes to commit"
+  timestamp: string;        // ISO string
+}
+
 interface DeployState {
   projectName: string;
   githubUrl: string | null;
@@ -7,7 +14,7 @@ interface DeployState {
   vercelUrl: string | null;
   netlifyUrl: string | null;
   isDeploying: boolean;
-  lastPush: string | null;
+  lastPush: PushResult | null;
   error: string | null;
 
   initProject: (name: string, projectPath: string) => Promise<void>;
@@ -64,9 +71,15 @@ export const useDeployStore = create<DeployState>()((set) => ({
         set({ isDeploying: false, error: data.error || "Push failed" });
         return;
       }
+      const noChanges = data.message === "No changes to commit";
       set({
         isDeploying: false,
-        lastPush: data.commitHash || new Date().toISOString(),
+        lastPush: {
+          success: true,
+          commitHash: data.commitHash || "",
+          message: noChanges ? "No changes to push" : "Pushed successfully",
+          timestamp: new Date().toISOString(),
+        },
       });
     } catch (err: any) {
       set({ isDeploying: false, error: err.message || "Network error" });

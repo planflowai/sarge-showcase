@@ -13,6 +13,7 @@ import {
   ExternalLink,
   FolderOpen,
   X,
+  Info,
 } from "lucide-react";
 import { useDeployStore } from "@/lib/stores/deployStore";
 import { useUIStore } from "@sarge/core";
@@ -39,31 +40,29 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
     reset,
   } = useDeployStore();
 
-  const [pushSuccess, setPushSuccess] = useState(false);
   const isInitialized = !!(githubUrl || cloudflareUrl || vercelUrl || netlifyUrl);
 
   // Reset deploy state when project changes
   useEffect(() => {
     reset();
-    setPushSuccess(false);
   }, [projectPath, reset]);
-
-  // Clear push success after 3s
-  useEffect(() => {
-    if (pushSuccess) {
-      const t = setTimeout(() => setPushSuccess(false), 3000);
-      return () => clearTimeout(t);
-    }
-  }, [pushSuccess]);
 
   const handleInit = async () => {
     if (!projectName || !projectPath) return;
     await initProject(projectName, projectPath);
     const state = useDeployStore.getState();
     if (state.error) {
-      showToast({ message: `Deploy init failed: ${state.error}`, type: "error" });
+      showToast({ message: `Deploy failed: ${state.error}`, type: "error" });
     } else {
-      showToast({ message: "GitHub, Cloudflare Pages, Vercel, Netlify connected", type: "success" });
+      const connected: string[] = [];
+      if (state.githubUrl) connected.push("GitHub");
+      if (state.vercelUrl) connected.push("Vercel");
+      if (state.netlifyUrl) connected.push("Netlify");
+      if (state.cloudflareUrl) connected.push("Cloudflare");
+      showToast({
+        message: `Connected: ${connected.join(", ")}`,
+        type: "success",
+      });
     }
   };
 
@@ -73,13 +72,8 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
     const state = useDeployStore.getState();
     if (state.error) {
       showToast({ message: `Push failed: ${state.error}`, type: "error" });
-    } else {
-      setPushSuccess(true);
-      showToast({
-        message: `Pushed ${state.lastPush || "successfully"}`,
-        type: "success",
-      });
     }
+    // Success feedback is shown inline — no toast needed
   };
 
   const handleExport = async () => {
@@ -129,16 +123,22 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
           <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 p-6 space-y-4">
             <div className="space-y-1">
               <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                Connect Services
+                Connect to GitHub
               </h3>
               <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                Creates a private GitHub repo, links Cloudflare Pages, Vercel,
-                and Netlify for auto-deploy on push.
+                Creates a private GitHub repo and pushes your project.
+                If you have Vercel, Netlify, or Cloudflare CLIs installed,
+                those will be linked automatically too.
               </p>
             </div>
 
-            <div className="text-[10px] text-zinc-400 dark:text-zinc-500 space-y-1">
-              <p>Requires: <code className="bg-zinc-200 dark:bg-zinc-800 px-1 rounded">GITHUB_TOKEN</code> in .env.local, <code className="bg-zinc-200 dark:bg-zinc-800 px-1 rounded">wrangler</code>, <code className="bg-zinc-200 dark:bg-zinc-800 px-1 rounded">vercel</code>, <code className="bg-zinc-200 dark:bg-zinc-800 px-1 rounded">netlify</code> CLIs installed and logged in.</p>
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50">
+              <Info className="h-3.5 w-3.5 text-blue-500 flex-shrink-0 mt-0.5" />
+              <p className="text-[11px] text-blue-700 dark:text-blue-400">
+                Requires <code className="bg-blue-100 dark:bg-blue-900/40 px-1 rounded font-bold">GITHUB_TOKEN</code> in{" "}
+                <code className="bg-blue-100 dark:bg-blue-900/40 px-1 rounded">.env.local</code> with{" "}
+                <code className="bg-blue-100 dark:bg-blue-900/40 px-1 rounded">repo</code> scope.
+              </p>
             </div>
 
             <button
@@ -156,68 +156,93 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
           </div>
         ) : (
           <>
-            {/* ═══ Service Links ═══ */}
+            {/* ═══ Your Links ═══ */}
             <div className="space-y-3">
               <h3 className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                Connected Services
+                Your Links
               </h3>
 
-              {/* Cloudflare Pages — PRIMARY */}
+              {/* GitHub — always first */}
+              {githubUrl && (
+                <a
+                  href={githubUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors border border-zinc-200 dark:border-zinc-700"
+                >
+                  <Github className="h-5 w-5 text-zinc-900 dark:text-white flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-bold text-zinc-900 dark:text-zinc-100">GitHub Repo</div>
+                    <div className="text-[11px] text-zinc-500 dark:text-zinc-400 truncate">
+                      {githubUrl.replace("https://github.com/", "")}
+                    </div>
+                  </div>
+                  <ExternalLink className="h-4 w-4 text-zinc-400 flex-shrink-0" />
+                </a>
+              )}
+
+              {/* Cloudflare Pages */}
               {cloudflareUrl && (
                 <a
                   href={cloudflareUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm font-bold bg-orange-500 text-white hover:bg-orange-400 transition-colors shadow-lg shadow-orange-500/20"
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm bg-orange-50 dark:bg-orange-900/20 hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors border border-orange-200 dark:border-orange-800/50"
                 >
-                  <Globe className="h-5 w-5" />
-                  <div className="flex-1">
-                    <div>Cloudflare Pages</div>
-                    <div className="text-[10px] font-normal opacity-80">Free unlimited bandwidth &middot; Commercial use</div>
+                  <Globe className="h-5 w-5 text-orange-500 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-bold text-zinc-900 dark:text-zinc-100">Cloudflare Pages</div>
+                    <div className="text-[11px] text-orange-600 dark:text-orange-400 truncate">{cloudflareUrl}</div>
                   </div>
-                  <ExternalLink className="h-4 w-4 opacity-60" />
+                  <ExternalLink className="h-4 w-4 text-zinc-400 flex-shrink-0" />
                 </a>
               )}
 
-              {/* Secondary links */}
-              <div className="flex flex-wrap gap-2">
-                {githubUrl && (
-                  <a
-                    href={githubUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:opacity-80 transition-opacity"
-                  >
-                    <Github className="h-3.5 w-3.5" />
-                    GitHub
-                    <ExternalLink className="h-3 w-3 opacity-60" />
-                  </a>
-                )}
-                {vercelUrl && (
-                  <a
-                    href={vercelUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-black dark:bg-white text-white dark:text-black hover:opacity-80 transition-opacity"
-                  >
-                    <Globe className="h-3.5 w-3.5" />
-                    Vercel
-                    <ExternalLink className="h-3 w-3 opacity-60" />
-                  </a>
-                )}
-                {netlifyUrl && (
-                  <a
-                    href={netlifyUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-teal-600 text-white hover:opacity-80 transition-opacity"
-                  >
-                    <Globe className="h-3.5 w-3.5" />
-                    Netlify
-                    <ExternalLink className="h-3 w-3 opacity-60" />
-                  </a>
-                )}
-              </div>
+              {/* Vercel */}
+              {vercelUrl && (
+                <a
+                  href={vercelUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm bg-zinc-50 dark:bg-zinc-800/50 hover:bg-zinc-100 dark:hover:bg-zinc-700/50 transition-colors border border-zinc-200 dark:border-zinc-700"
+                >
+                  <Globe className="h-5 w-5 text-zinc-900 dark:text-white flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-bold text-zinc-900 dark:text-zinc-100">Vercel</div>
+                    <div className="text-[11px] text-zinc-500 dark:text-zinc-400 truncate">{vercelUrl}</div>
+                  </div>
+                  <ExternalLink className="h-4 w-4 text-zinc-400 flex-shrink-0" />
+                </a>
+              )}
+
+              {/* Netlify */}
+              {netlifyUrl && (
+                <a
+                  href={netlifyUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm bg-teal-50 dark:bg-teal-900/20 hover:bg-teal-100 dark:hover:bg-teal-900/30 transition-colors border border-teal-200 dark:border-teal-800/50"
+                >
+                  <Globe className="h-5 w-5 text-teal-500 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-bold text-zinc-900 dark:text-zinc-100">Netlify</div>
+                    <div className="text-[11px] text-teal-600 dark:text-teal-400 truncate">{netlifyUrl}</div>
+                  </div>
+                  <ExternalLink className="h-4 w-4 text-zinc-400 flex-shrink-0" />
+                </a>
+              )}
+
+              {/* No optional services connected */}
+              {!cloudflareUrl && !vercelUrl && !netlifyUrl && (
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700">
+                  <Info className="h-3.5 w-3.5 text-zinc-400 flex-shrink-0 mt-0.5" />
+                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                    Install <code className="bg-zinc-200 dark:bg-zinc-700 px-1 rounded">vercel</code>,{" "}
+                    <code className="bg-zinc-200 dark:bg-zinc-700 px-1 rounded">netlify-cli</code>, or{" "}
+                    <code className="bg-zinc-200 dark:bg-zinc-700 px-1 rounded">wrangler</code> to auto-link hosting on next init.
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* ═══ Push ═══ */}
@@ -227,37 +252,112 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
                   Push Changes
                 </h3>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  Commits and pushes all current files. Cloudflare Pages,
-                  Vercel, and Netlify auto-deploy from the push.
+                  Commits and pushes all current files to GitHub.
+                  {(cloudflareUrl || vercelUrl || netlifyUrl) &&
+                    " Connected services auto-deploy from the push."}
                 </p>
               </div>
 
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={handlePush}
-                  disabled={isDeploying}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition-colors disabled:opacity-50 disabled:pointer-events-none"
-                >
-                  {isDeploying ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : pushSuccess ? (
-                    <Check className="h-4 w-4" />
-                  ) : (
-                    <Send className="h-4 w-4" />
-                  )}
-                  {isDeploying
-                    ? "Pushing..."
-                    : pushSuccess
-                      ? "Deployed"
-                      : "Push"}
-                </button>
-
-                {lastPush && (
-                  <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono">
-                    Last: {lastPush}
-                  </span>
+              <button
+                onClick={handlePush}
+                disabled={isDeploying}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition-colors disabled:opacity-50 disabled:pointer-events-none"
+              >
+                {isDeploying ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
                 )}
-              </div>
+                {isDeploying ? "Pushing..." : "Push"}
+              </button>
+
+              {/* ═══ Push Result — persistent, clear feedback ═══ */}
+              {lastPush && (
+                <div
+                  className={`flex items-start gap-2 p-3 rounded-lg border ${
+                    lastPush.message === "No changes to push"
+                      ? "bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700"
+                      : "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800/50"
+                  }`}
+                >
+                  <Check
+                    className={`h-4 w-4 flex-shrink-0 mt-0.5 ${
+                      lastPush.message === "No changes to push"
+                        ? "text-zinc-400"
+                        : "text-emerald-500"
+                    }`}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p
+                      className={`text-xs font-bold ${
+                        lastPush.message === "No changes to push"
+                          ? "text-zinc-600 dark:text-zinc-300"
+                          : "text-emerald-700 dark:text-emerald-400"
+                      }`}
+                    >
+                      {lastPush.message}
+                    </p>
+                    <div className="flex items-center gap-3 mt-1 text-[10px] text-zinc-500 dark:text-zinc-400">
+                      {lastPush.commitHash && (
+                        <span className="font-mono">
+                          Commit: {lastPush.commitHash}
+                        </span>
+                      )}
+                      <span>
+                        {new Date(lastPush.timestamp).toLocaleTimeString()}
+                      </span>
+                    </div>
+                    {/* Quick links to verify */}
+                    {lastPush.message !== "No changes to push" && githubUrl && (
+                      <div className="flex items-center gap-2 mt-2">
+                        <a
+                          href={githubUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
+                        >
+                          <Github className="h-3 w-3" />
+                          Verify on GitHub
+                          <ExternalLink className="h-2.5 w-2.5" />
+                        </a>
+                        {cloudflareUrl && (
+                          <a
+                            href={cloudflareUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[10px] font-bold text-orange-600 dark:text-orange-400 hover:underline"
+                          >
+                            Cloudflare
+                            <ExternalLink className="h-2.5 w-2.5" />
+                          </a>
+                        )}
+                        {vercelUrl && (
+                          <a
+                            href={vercelUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[10px] font-bold text-zinc-600 dark:text-zinc-400 hover:underline"
+                          >
+                            Vercel
+                            <ExternalLink className="h-2.5 w-2.5" />
+                          </a>
+                        )}
+                        {netlifyUrl && (
+                          <a
+                            href={netlifyUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[10px] font-bold text-teal-600 dark:text-teal-400 hover:underline"
+                          >
+                            Netlify
+                            <ExternalLink className="h-2.5 w-2.5" />
+                          </a>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* ═══ Export ═══ */}
@@ -293,7 +393,10 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
           <div className="flex items-start gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50">
             <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-red-700 dark:text-red-400 whitespace-pre-wrap break-words">
+              <p className="text-xs font-bold text-red-700 dark:text-red-400">
+                Something went wrong
+              </p>
+              <p className="text-xs text-red-600 dark:text-red-400/80 whitespace-pre-wrap break-words mt-1">
                 {error}
               </p>
             </div>
@@ -305,29 +408,6 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
             </button>
           </div>
         )}
-
-        {/* ═══ Prerequisites ═══ */}
-        <div className="text-[10px] text-zinc-400 dark:text-zinc-500 space-y-1 pt-2 border-t border-zinc-200 dark:border-zinc-800">
-          <p className="font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-            Prerequisites
-          </p>
-          <p>
-            <code className="bg-zinc-200 dark:bg-zinc-800 px-1 rounded">GITHUB_TOKEN</code>{" "}
-            — Personal access token in <code>.env.local</code> with <code>repo</code> scope
-          </p>
-          <p>
-            <code className="bg-zinc-200 dark:bg-zinc-800 px-1 rounded">wrangler</code>{" "}
-            — Cloudflare CLI, logged in (<code>wrangler login</code>)
-          </p>
-          <p>
-            <code className="bg-zinc-200 dark:bg-zinc-800 px-1 rounded">vercel</code>{" "}
-            — Vercel CLI, logged in (<code>vercel login</code>)
-          </p>
-          <p>
-            <code className="bg-zinc-200 dark:bg-zinc-800 px-1 rounded">netlify</code>{" "}
-            — Netlify CLI, logged in (<code>netlify login</code>)
-          </p>
-        </div>
       </div>
     </div>
   );
