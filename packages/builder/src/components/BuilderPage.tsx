@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import BuilderSidebar from "./BuilderSidebar";
+import BuilderModelBar from "./BuilderModelBar";
 import BuilderChat from "./BuilderChat";
 // BuilderProgress removed — redundant with ProgressCards in chat
 import SessionActivity from "./SessionActivity";
@@ -14,7 +15,7 @@ import { useBuilderDocumentStore } from "../stores/builderDocumentStore";
 import { flattenFileTree } from "@sarge/core";
 import { applyEditBlocks, type EditBlock, getDiffSummary } from "../lib/editBlockParser";
 import { useWorkspaceStore, launchWorkspace, recallWorkspace } from "../stores/workspaceStore";
-import { Rocket, LayoutGrid, X } from "lucide-react";
+import { Rocket, LayoutGrid, X, Plus, Save, Terminal as TerminalIcon, Loader2 } from "lucide-react";
 import { ThreadGuardianIndicator } from "@sarge/chat";
 
 // Clear old builder chat messages on load (one-time cleanup)
@@ -98,6 +99,10 @@ export default function BuilderPage({ deployContent }: { deployContent?: React.R
 
   // Builder store for file and project state
   const { updateCurrentContent, projectPath, projectName, fileTree, setFileTree, clearProject, isDirty, markClean, autoApply } = useBuilderStore();
+
+  // Save progress state (formerly in BuilderSidebar footer)
+  const [isSavingProgress, setIsSavingProgress] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Document store for project management (multi-file projects)
   const { currentProject: docProject, hydrated: docHydrated, hydrate: hydrateDocuments } = useBuilderDocumentStore();
@@ -232,47 +237,11 @@ export default function BuilderPage({ deployContent }: { deployContent?: React.R
   // Get sending state from chat store for progress indicator
   const sending = useBuilderChatStore((state) => state.sending);
 
-  // Refs for debugging layout
-  const sidebarRef = useRef<HTMLDivElement>(null);
+  // Refs for layout debugging
   const chatRef = useRef<HTMLDivElement>(null);
   const artifactRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Debug layout on mount
-  useEffect(() => {
-    const logLayout = () => {
-      console.log('[BuilderPage] Layout debug:');
-      if (containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect();
-        console.log('  Container:', { width: rect.width, height: rect.height });
-      }
-      if (sidebarRef.current) {
-        const rect = sidebarRef.current.getBoundingClientRect();
-        console.log('  Sidebar:', { width: rect.width, height: rect.height });
-      }
-      if (chatRef.current) {
-        const rect = chatRef.current.getBoundingClientRect();
-        console.log('  Chat:', { width: rect.width, height: rect.height });
-      }
-      if (artifactRef.current) {
-        const rect = artifactRef.current.getBoundingClientRect();
-        const styles = window.getComputedStyle(artifactRef.current);
-        console.log('  Artifact Panel:', {
-          width: rect.width,
-          height: rect.height,
-          display: styles.display,
-          visibility: styles.visibility,
-          flex: styles.flex,
-          minWidth: styles.minWidth
-        });
-      }
-    };
-
-    // Log immediately and after a short delay
-    logLayout();
-    const timer = setTimeout(logLayout, 500);
-    return () => clearTimeout(timer);
-  }, []);
 
   // Save chat panel width to localStorage
   useEffect(() => {
@@ -457,6 +426,37 @@ export default function BuilderPage({ deployContent }: { deployContent?: React.R
     console.log('[BuilderPage] Started new build - cleared chat, artifact, and project');
   }, [isDirty, markClean, clearMessages, clearArtifact, clearProject]);
 
+  // Save progress to BUILDER_LOG.md
+  const handleSaveProgress = useCallback(async () => {
+    if (!projectPath || !projectName) return;
+    setIsSavingProgress(true);
+    setSaveSuccess(false);
+    try {
+      const res = await fetch('/api/builder/update-log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectPath,
+          projectName,
+          action: 'summary',
+          sessionSummary: {
+            recentChanges: [],
+            currentState: `Working on ${projectName}.`,
+            nextSteps: ['Review recent changes', 'Continue development', 'Test functionality'],
+          },
+        }),
+      });
+      if (res.ok) {
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 2000);
+      }
+    } catch (err) {
+      console.error('[BuilderPage] Failed to save progress:', err);
+    } finally {
+      setIsSavingProgress(false);
+    }
+  }, [projectPath, projectName]);
+
   // Handle inserting a component from the library
   const handleInsertComponent = useCallback((code: string, componentId: string) => {
     // Append the component code to the current artifact
@@ -506,15 +506,12 @@ Please provide the complete modified version of this component. Make only the re
     document.body.style.cursor = 'col-resize';
     document.body.style.userSelect = 'none';
 
-    const sidebarWidth = 320; // Fixed sidebar width
-
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizing.current) return;
-      // Chat width = mouse position minus sidebar width
-      const newChatWidth = e.clientX - sidebarWidth;
-      // Clamp between 300px and 60% of available space (leave room for artifact)
-      const availableWidth = window.innerWidth - sidebarWidth;
-      const maxChatWidth = availableWidth * 0.6;
+      // Chat width = mouse X position from left edge (no sidebar offset)
+      const newChatWidth = e.clientX;
+      // Clamp between 300px and 60% of screen width (leave room for artifact)
+      const maxChatWidth = window.innerWidth * 0.6;
       const clampedWidth = Math.max(300, Math.min(maxChatWidth, newChatWidth));
       setChatPanelWidth(clampedWidth);
     };
@@ -600,12 +597,9 @@ Please provide the complete modified version of this component. Make only the re
 
   return (
     <div className="relative flex flex-col h-full w-full bg-zinc-50 dark:bg-zinc-950">
-      {/* Top bar - Thread Guardian + Launch Workspace - fixed position to always show */}
+      {/* Floating top-right: Thread Guardian + Launch Workspace */}
       <div className="fixed top-4 right-4 z-[100] flex items-center gap-3">
-        {/* Thread Guardian Indicator */}
         <ThreadGuardianIndicator conversationId="builder-chat" />
-
-        {/* Launch Workspace Button */}
         <button
           onClick={launchWorkspace}
           className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-lg shadow-lg transition-all text-sm font-medium"
@@ -616,54 +610,96 @@ Please provide the complete modified version of this component. Make only the re
         </button>
       </div>
 
-      {/* Main content area */}
-      <div ref={containerRef} className="flex flex-row flex-1 min-h-0 w-full overflow-hidden">
-        {/* Sidebar - 320px fixed width (fits 2x2 template grid, scrollable) */}
-        <div
-          ref={sidebarRef}
-          className="w-[320px] h-full flex-shrink-0 flex-grow-0 border-r border-zinc-200 dark:border-zinc-800 overflow-y-auto"
-        >
-          <BuilderSidebar
-            selectedModel={selectedModel}
-            selectedProvider={selectedProvider}
-            onModelSelect={handleModelSelect}
-            onFileOpen={handleFileOpen}
-            onNewFile={handleNewFile}
-            terminalOpen={terminalOpen}
-            onTerminalToggle={handleTerminalToggle}
-            onScrollToMessage={handleScrollToMessage}
-            onPromptSelect={handlePromptSelect}
-            onInsertComponent={handleInsertComponent}
-            onUseComponentAsBase={handleUseComponentAsBase}
-            onInsertComponentWithAI={handleInsertComponentWithAI}
-            onNewBuild={handleNewBuild}
-          />
-        </div>
+      {/* Horizontal toolbar ribbon — full width, below header */}
+      <BuilderSidebar
+        onFileOpen={handleFileOpen}
+        onNewFile={handleNewFile}
+        onScrollToMessage={handleScrollToMessage}
+        onPromptSelect={handlePromptSelect}
+        onInsertComponent={handleInsertComponent}
+        onUseComponentAsBase={handleUseComponentAsBase}
+        onInsertComponentWithAI={handleInsertComponentWithAI}
+      />
 
-        {/* Chat area - wider (480px) to fit controls better */}
+      {/* Main content area — chat column + resize + artifact panel */}
+      <div ref={containerRef} className="flex flex-row flex-1 min-h-0 w-full overflow-hidden">
+
+        {/* Chat column — full left column, no sidebar competing */}
         <div
           ref={chatRef}
           className="h-full flex-shrink-0 flex-grow-0 flex flex-col border-r border-zinc-200 dark:border-zinc-800 overflow-hidden"
           style={{ width: `${chatPanelWidth}px`, minWidth: '300px' }}
         >
-          <BuilderChat
+          {/* Model selector at top of chat column */}
+          <BuilderModelBar
             selectedModel={selectedModel}
             selectedProvider={selectedProvider}
-            onOpenInEditor={handleOpenInEditor}
-            onOpenPreview={handleOpenPreview}
-            artifactCode={artifactCode}
-            onStreamingUpdate={handleStreamingUpdate}
-            projectPath={projectPath}
-            projectName={projectName}
-            projectFileTree={projectFileTree}
-            builderLogContent={builderLogContent}
-            onViewDiff={handleViewDiff}
-            pendingPrompt={pendingPrompt}
-            onPendingPromptConsumed={handlePendingPromptConsumed}
-            onPromptSent={handlePromptSent}
-            onRefreshFileTree={handleRefreshFileTree}
-            autoApply={autoApply}
+            onModelSelect={handleModelSelect}
           />
+
+          {/* Chat messages + input */}
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <BuilderChat
+              selectedModel={selectedModel}
+              selectedProvider={selectedProvider}
+              onOpenInEditor={handleOpenInEditor}
+              onOpenPreview={handleOpenPreview}
+              artifactCode={artifactCode}
+              onStreamingUpdate={handleStreamingUpdate}
+              projectPath={projectPath}
+              projectName={projectName}
+              projectFileTree={projectFileTree}
+              builderLogContent={builderLogContent}
+              onViewDiff={handleViewDiff}
+              pendingPrompt={pendingPrompt}
+              onPendingPromptConsumed={handlePendingPromptConsumed}
+              onPromptSent={handlePromptSent}
+              onRefreshFileTree={handleRefreshFileTree}
+              autoApply={autoApply}
+            />
+          </div>
+
+          {/* Bottom bar — New / Save / Term */}
+          <div className="flex-shrink-0 flex items-center gap-1 px-2 py-1.5 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900">
+            <button
+              onClick={handleNewBuild}
+              className="flex items-center gap-1 flex-1 text-[10px] font-medium transition-colors rounded px-2 py-1 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/30 border border-purple-300 dark:border-purple-700"
+              title="New Build — clears chat, artifact, and project"
+            >
+              <Plus className="h-3 w-3" />
+              <span>New</span>
+            </button>
+
+            {projectPath && (
+              <button
+                onClick={handleSaveProgress}
+                disabled={isSavingProgress}
+                className={`flex items-center gap-1 flex-1 text-[10px] font-medium transition-colors rounded px-2 py-1 ${
+                  saveSuccess
+                    ? "text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30"
+                    : "text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/30"
+                }`}
+                title={saveSuccess ? "Progress Saved!" : "Save Progress to BUILDER_LOG.md"}
+              >
+                {isSavingProgress ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
+                <span>{saveSuccess ? "Saved" : "Save"}</span>
+              </button>
+            )}
+
+            <button
+              onClick={handleTerminalToggle}
+              className={`flex items-center gap-1 flex-1 text-[10px] font-medium transition-colors rounded px-2 py-1 ${
+                terminalOpen
+                  ? "text-cyan-600 dark:text-cyan-400 bg-cyan-100 dark:bg-cyan-900/30"
+                  : "text-zinc-500 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+              }`}
+              title="Toggle Terminal"
+            >
+              <TerminalIcon className="h-3 w-3" />
+              <span>Term</span>
+              {terminalOpen && <span className="text-[8px] font-bold">●</span>}
+            </button>
+          </div>
         </div>
 
         {/* Resize handle */}
@@ -672,20 +708,18 @@ Please provide the complete modified version of this component. Make only the re
           onMouseDown={handleResizeStart}
         />
 
-        {/* Artifact Panel - takes rest of screen, ALWAYS visible */}
+        {/* Artifact Panel — takes rest of screen, ALWAYS visible */}
         <div
           ref={artifactRef}
           className="flex-1 flex-shrink-0 h-full flex flex-col bg-white dark:bg-zinc-900 overflow-hidden"
           style={{ minWidth: '400px' }}
         >
-          {/* Session Activity - shows when NOT generating and there's activity */}
           {!sending && !isStreaming && (
             <SessionActivity
               onScrollToMessage={handleScrollToMessage}
               className="border-b border-zinc-200 dark:border-zinc-800"
             />
           )}
-
           <ArtifactPanel
             code={previewCode}
             onCodeChange={handleCodeChange}
@@ -703,7 +737,7 @@ Please provide the complete modified version of this component. Make only the re
         </div>
       </div>
 
-      {/* Terminal - at bottom, hidden by default */}
+      {/* Terminal — at bottom, hidden by default */}
       <BuilderTerminal
         isOpen={terminalOpen}
         onClose={() => setTerminalOpen(false)}

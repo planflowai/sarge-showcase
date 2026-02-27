@@ -14,6 +14,7 @@ import {
   Activity,
   Hammer,
   Wrench,
+  Swords,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
@@ -280,6 +281,19 @@ export function Header() {
             >
               <Wrench className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Workbench</span>
+            </button>
+
+            {/* Launch Build Arena button — 5-model simultaneous builder */}
+            <button
+              onClick={() => {
+                setWarRoomEnabled(true);
+                if (pathname !== "/chat") router.push("/chat");
+              }}
+              className="flex items-center gap-1.5 ml-1 px-2.5 py-1.5 rounded-md text-xs font-bold transition-all duration-300 border border-transparent text-zinc-500 dark:text-zinc-400 hover:bg-emerald-500/10 hover:text-emerald-400 hover:border-emerald-500/30"
+              title="Launch Build Arena — 5 models build simultaneously, pick the winner"
+            >
+              <Swords className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Build Arena</span>
             </button>
           </div>
 
