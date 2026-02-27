@@ -77,6 +77,62 @@ const AI_TEMPLATES = [
     details: "Creates a full professional website with nav, hero, about, services, portfolio, testimonials, and contact.",
     prompt: "Build a complete professional website with sticky navigation, hero section with CTA, about section, services grid, portfolio gallery with lightbox, testimonials carousel, and contact form. Tailwind CSS, smooth scroll, fully mobile responsive. Single HTML file.",
   },
+  {
+    id: "todo-app",
+    label: "Todo App",
+    icon: "✅",
+    description: "Task manager with local storage",
+    details: "Builds a fully functional todo/task management app with add, complete, delete, filter, and persistent localStorage.",
+    prompt: "Build a polished todo app with task creation, completion toggle, delete, priority levels, and category filters. Persist data in localStorage. Dark theme with smooth animations. Single HTML file with Tailwind CSS.",
+  },
+  {
+    id: "calculator",
+    label: "Calculator",
+    icon: "🔢",
+    description: "Scientific calculator app",
+    details: "Creates a sleek calculator with standard and scientific modes, history log, and keyboard support.",
+    prompt: "Build a scientific calculator with standard and scientific modes (sin, cos, tan, log, sqrt, powers). Include a calculation history panel, keyboard input support, and a dark OLED-style theme. Single HTML file.",
+  },
+  {
+    id: "admin-dashboard",
+    label: "Admin Panel",
+    icon: "🖥️",
+    description: "Admin dashboard with charts",
+    details: "Creates a full admin dashboard with stat cards, charts, tables, and sidebar navigation.",
+    prompt: "Build a dark-themed admin dashboard with: sidebar navigation, stat cards (revenue, users, orders, growth), a line chart and bar chart using Chart.js CDN, a recent orders table with status badges, and top performing items list. Single HTML file.",
+  },
+  {
+    id: "kanban",
+    label: "Kanban Board",
+    icon: "📋",
+    description: "Drag-and-drop project board",
+    details: "Creates a Kanban board with drag-and-drop columns (To Do, In Progress, Done), card management, and task details.",
+    prompt: "Build a Kanban board with drag-and-drop support, three columns (Backlog, In Progress, Done), add/delete cards, card priority colors, task count per column. Dark minimal theme. Single HTML file.",
+  },
+  {
+    id: "saas-landing",
+    label: "SaaS Landing",
+    icon: "🌟",
+    description: "SaaS product landing page",
+    details: "Creates a high-converting SaaS landing page with hero, features, pricing tiers, testimonials, and FAQ.",
+    prompt: "Build a high-converting SaaS landing page with: animated hero with email capture, 6-feature grid with icons, 3-tier pricing table (Free/Pro/Enterprise) with feature comparison, social proof testimonials, FAQ accordion, and CTA footer. Modern purple/indigo gradient theme. Single HTML file.",
+  },
+  {
+    id: "ecommerce-store",
+    label: "E-Commerce",
+    icon: "🛒",
+    description: "Product store with shopping cart",
+    details: "Creates a product grid, detail modal, and fully functional shopping cart with localStorage persistence.",
+    prompt: "Build an e-commerce product page with a responsive product grid (12 items), product detail modal with image, description, size selector and add-to-cart, a slide-out shopping cart sidebar with quantity controls and total, and checkout button. localStorage cart persistence. Single HTML file.",
+  },
+  {
+    id: "notes-app",
+    label: "Notes App",
+    icon: "📝",
+    description: "Markdown notes with local storage",
+    details: "Builds a notes app with markdown rendering, tag system, search, and persistent localStorage.",
+    prompt: "Build a markdown notes app with a sidebar listing notes (title + preview), markdown rendering in the editor, tags/categories, full-text search, and localStorage persistence. Split-pane layout: list left, editor right. Dark theme. Single HTML file.",
+  },
 ];
 
 // ─── Toolbar item definitions ────────────────────────────────────────────────
@@ -722,7 +778,7 @@ export default function BuilderSidebar({
       // ── Prompts popover ──────────────────────────────────────────────────────
       case "prompts":
         return (
-          <div className="w-72 flex flex-col max-h-[70vh]">
+          <div className="w-96 flex flex-col max-h-[75vh]">
             <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-200 dark:border-zinc-700">
               <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Prompt Library</span>
               <button onClick={() => setShowGallery(true)}
@@ -730,55 +786,59 @@ export default function BuilderSidebar({
                 <Grid3X3 className="h-2.5 w-2.5" /> Browse All
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto px-1 py-1.5">
+            <div className="flex-1 overflow-y-auto px-2 py-2 space-y-1">
               {PROMPT_CATEGORIES.map((category) => {
                 const prompts = getPromptsByCategory(category.id);
                 const isExpanded = expandedCategories.has(category.id);
                 if (category.id === "custom" && prompts.length === 0) return null;
                 return (
                   <div key={category.id} className="mb-1">
+                    {/* Category header */}
                     <button onClick={() => toggleCategory(category.id)}
-                      className="w-full flex items-center gap-1.5 px-2 py-1 text-left hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded transition-colors group">
+                      className="w-full flex items-center gap-1.5 px-2 py-1.5 text-left hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors">
                       {isExpanded
                         ? <ChevronDown className="h-2.5 w-2.5 text-zinc-400" />
                         : <ChevronRight className="h-2.5 w-2.5 text-zinc-400" />}
                       <span className="w-5 h-5 flex items-center justify-center rounded text-xs"
                         style={{ backgroundColor: `${category.color}20` }}>{category.icon}</span>
-                      <span className="text-[10px] font-medium text-zinc-600 dark:text-zinc-400">{category.name}</span>
-                      <span className="text-[9px] text-zinc-400 ml-auto">{prompts.length}</span>
+                      <span className="text-[10px] font-semibold text-zinc-600 dark:text-zinc-400">{category.name}</span>
+                      <span className="text-[9px] text-zinc-400 ml-auto bg-zinc-200 dark:bg-zinc-700 px-1.5 rounded-full">{prompts.length}</span>
                     </button>
                     {isExpanded && prompts.length > 0 && (
-                      <div className="ml-4 space-y-0.5 mt-0.5">
+                      <div className="space-y-1.5 mt-1 ml-1 mr-1">
                         {prompts.map((prompt) => (
-                          <div key={prompt.id} className="group relative flex items-center gap-1"
-                            onMouseEnter={(e) => {
-                              const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                              setTooltipY(Math.max(8, Math.min(rect.top + rect.height / 2, window.innerHeight - 200)));
-                              setHoveredPrompt(prompt);
-                            }}
-                            onMouseLeave={() => setHoveredPrompt(null)}>
-                            <button onClick={() => handlePromptClick(prompt)}
-                              className={cn(
-                                "flex-1 text-left px-2 py-1.5 text-[10px] rounded truncate transition-all",
-                                "text-zinc-600 dark:text-zinc-400 hover:text-indigo-600 dark:hover:text-indigo-400",
-                                "border border-transparent hover:border-indigo-500/30 hover:bg-gradient-to-r hover:from-indigo-500/10 hover:to-purple-500/10"
-                              )}>
-                              <span className="flex items-center gap-1.5">
-                                {prompt.title}
-                                {prompt.complexity && (
-                                  <span className={cn("px-1 py-0 text-[7px] rounded", getComplexityColor(prompt.complexity))}>
-                                    {prompt.complexity === "simple" ? "S" : prompt.complexity === "medium" ? "M" : "C"}
-                                  </span>
+                          <div key={prompt.id}
+                            className="p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-700/60 bg-zinc-50 dark:bg-zinc-800/40 hover:border-indigo-400/50 dark:hover:border-indigo-500/40 hover:bg-indigo-50/30 dark:hover:bg-indigo-900/10 transition-all group">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5 mb-1">
+                                  <span className="text-[11px] font-semibold text-zinc-700 dark:text-zinc-200 truncate">{prompt.title}</span>
+                                  {prompt.complexity && (
+                                    <span className={cn("px-1.5 py-0 text-[7px] font-bold rounded-full flex-shrink-0", getComplexityColor(prompt.complexity))}>
+                                      {prompt.complexity === "simple" ? "EASY" : prompt.complexity === "medium" ? "MED" : "ADV"}
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-[10px] text-zinc-500 line-clamp-2 leading-tight">
+                                  {prompt.previewHint || prompt.prompt.slice(0, 90)}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-1 flex-shrink-0 mt-0.5">
+                                {prompt.isCustom && (
+                                  <button onClick={(e) => { e.stopPropagation(); removeCustomPrompt(prompt.id); }}
+                                    className="p-1 text-zinc-400 hover:text-red-500 transition-colors rounded"
+                                    title="Delete prompt">
+                                    <Trash2 className="h-3 w-3" />
+                                  </button>
                                 )}
-                              </span>
-                            </button>
-                            {prompt.isCustom && (
-                              <button onClick={() => removeCustomPrompt(prompt.id)}
-                                className="p-0.5 text-zinc-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                                title="Delete prompt">
-                                <Trash2 className="h-2.5 w-2.5" />
-                              </button>
-                            )}
+                                <button
+                                  onClick={() => handlePromptClick(prompt)}
+                                  className="px-2.5 py-1 rounded-md text-[10px] font-bold bg-indigo-600 hover:bg-indigo-500 text-white transition-colors whitespace-nowrap"
+                                >
+                                  Use →
+                                </button>
+                              </div>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -793,10 +853,24 @@ export default function BuilderSidebar({
       // ── AI Helpers popover ───────────────────────────────────────────────────
       case "helpers":
         return (
-          <div className="w-72 max-h-[70vh] overflow-y-auto">
-            <div className="px-3 py-2 border-b border-zinc-200 dark:border-zinc-700">
+          <div className="w-80 max-h-[70vh] overflow-y-auto">
+            <div className="px-3 py-2.5 border-b border-zinc-200 dark:border-zinc-700">
               <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">AI Helpers</span>
-              <p className="text-[10px] text-zinc-500 mt-0.5">Add reviewers, judges, and debaters</p>
+              <p className="text-[10px] text-zinc-500 mt-0.5">Autonomous agents that analyze your code in parallel</p>
+              <div className="mt-2 space-y-1">
+                <div className="flex items-start gap-2">
+                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/15 text-blue-500 dark:text-blue-400 font-bold flex-shrink-0 mt-0.5">Reviewer</span>
+                  <span className="text-[9px] text-zinc-500">Finds bugs, security issues, and performance improvements</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 font-bold flex-shrink-0 mt-0.5">Judge</span>
+                  <span className="text-[9px] text-zinc-500">Rates code quality 1–10 with detailed reasoning</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-600 dark:text-purple-400 font-bold flex-shrink-0 mt-0.5">Debater</span>
+                  <span className="text-[9px] text-zinc-500">Argues for alternative approaches or architecture choices</span>
+                </div>
+              </div>
             </div>
             <div className="p-2">
               <AICapabilitiesPanel />

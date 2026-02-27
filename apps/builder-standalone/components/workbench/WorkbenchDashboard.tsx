@@ -36,11 +36,28 @@ export default function WorkbenchDashboard() {
 
   // ─── Effects ────────────────────────────────────────────────────────────────
 
-  // Pre-cache screen layout on mount
+  // Pre-cache screen layout on mount + position main window on Monitor 4
   useEffect(() => {
     checkWindowManagement().then((s) => {
       if (s === "granted" || s === "prompt") prefetchScreens();
     });
+
+    // Attempt to move this window to Monitor 4 (0-indexed: screens[3])
+    const positionOnMonitor4 = async () => {
+      try {
+        if (!("getScreenDetails" in window)) return;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const details = await (window as any).getScreenDetails();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const screens = details.screens as any[];
+        if (screens.length >= 4) {
+          const mon4 = screens[3];
+          window.moveTo(mon4.left, mon4.top);
+          window.resizeTo(mon4.width, mon4.height);
+        }
+      } catch { /* permission denied or API unsupported — silent fail */ }
+    };
+    positionOnMonitor4();
   }, []);
 
   // Poll open window count
@@ -164,22 +181,22 @@ export default function WorkbenchDashboard() {
         </div>
 
         <div className="flex items-center gap-2">
-          {workspaceOn ? (
-            <button
-              onClick={handleRecallAll}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold bg-red-500/8 hover:bg-red-500/15 text-red-400 border border-red-500/15 transition-all"
-            >
-              <MonitorOff className="h-3.5 w-3.5" /> Recall All
-            </button>
-          ) : (
-            <button
-              onClick={handleLaunchAll}
-              disabled={launching}
-              className="flex items-center gap-1.5 px-4 py-1.5 rounded-md text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white transition-all disabled:opacity-40"
-            >
-              <Rocket className="h-3.5 w-3.5" /> Launch All
-            </button>
-          )}
+          <button
+            onClick={handleLaunchAll}
+            disabled={launching || workspaceOn}
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-md text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white transition-all disabled:opacity-40"
+            title={workspaceOn ? "Already launched" : "Open all monitor popouts"}
+          >
+            <Rocket className="h-3.5 w-3.5" /> Launch All
+          </button>
+          <button
+            onClick={handleRecallAll}
+            disabled={!workspaceOn}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold bg-red-500/8 hover:bg-red-500/15 text-red-400 border border-red-500/15 transition-all disabled:opacity-40"
+            title={!workspaceOn ? "No windows open" : "Close all monitor popouts"}
+          >
+            <MonitorOff className="h-3.5 w-3.5" /> Recall All
+          </button>
           <button
             onClick={handleExit}
             className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[10px] font-bold text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 border border-zinc-700/30 transition-all"
@@ -220,7 +237,7 @@ export default function WorkbenchDashboard() {
 
           {/* Center: MON 4 placeholder */}
           <div className="flex flex-col items-center justify-center rounded-xl border border-zinc-800/40 bg-zinc-900/20"
-               style={{ minHeight: "200px" }}>
+               style={{ minHeight: "360px", minWidth: "360px" }}>
             <div className="w-10 h-10 rounded-xl border-2 border-zinc-700/40 flex items-center justify-center text-lg font-black text-zinc-600 mb-2">
               4
             </div>

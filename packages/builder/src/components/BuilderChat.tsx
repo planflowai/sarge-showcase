@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback, useState } from "react";
-import { Send, X, StopCircle, Paperclip, CheckCircle, Bookmark, Database, ImageIcon, MessageSquare, Hammer, Pencil, RefreshCw, Bot, Check, Image as ImageLucide } from "lucide-react";
+import { Send, X, StopCircle, Paperclip, CheckCircle, Bookmark, Database, ImageIcon, MessageSquare, Hammer, Pencil, RefreshCw, Bot, Check, Image as ImageLucide, Trash2, ClipboardCopy } from "lucide-react";
 import { type Attachment, readFileAsAttachment, formatFileSize } from "../lib/utils/attachments";
 import { useBuilderChatStore } from "../stores/builderChatStore";
 import { useChangesStore } from "../stores/changesStore";
@@ -81,6 +81,7 @@ export default function BuilderChat({
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [imagePrompt, setImagePrompt] = useState("");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [copyFeedback, setCopyFeedback] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -467,6 +468,19 @@ export default function BuilderChat({
   // Check if provider supports image generation
   const supportsImageGen = ["openai", "xai", "google"].includes(selectedProvider);
 
+  // Copy last AI response to clipboard
+  const handleCopyLastResponse = useCallback(async () => {
+    const lastAi = [...messages].reverse().find(m => m.role === 'assistant' && !m.isStreaming);
+    if (!lastAi) return;
+    try {
+      await navigator.clipboard.writeText(lastAi.content);
+      setCopyFeedback(true);
+      setTimeout(() => setCopyFeedback(false), 2000);
+    } catch {
+      // Fallback: prompt user
+    }
+  }, [messages]);
+
   const noModel = !selectedModel;
 
   return (
@@ -689,8 +703,42 @@ export default function BuilderChat({
 
           {/* Action buttons - centered layout */}
           <div className="flex flex-wrap items-center justify-center gap-2">
-            {/* Left group: Vault + Attach + Image */}
+            {/* Left group: Clear + Copy + Vault + Attach + Image */}
             <div className="flex items-center gap-1.5">
+              {/* Clear chat button — visible icon, only when messages exist */}
+              {messages.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearMessages}
+                  disabled={sending}
+                  className="h-8 w-8 p-0 text-zinc-500 hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                  title="Clear chat"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              )}
+
+              {/* Copy last response button */}
+              {messages.some(m => m.role === 'assistant') && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCopyLastResponse}
+                  disabled={sending}
+                  className={cn(
+                    "h-8 px-2 gap-1 transition-colors",
+                    copyFeedback
+                      ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
+                      : "text-zinc-500 hover:text-blue-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                  )}
+                  title="Copy last AI response to clipboard"
+                >
+                  <ClipboardCopy className="h-3.5 w-3.5" />
+                  {copyFeedback && <span className="text-[10px] font-medium">Copied!</span>}
+                </Button>
+              )}
+
               {/* Knowledge Vault button */}
               <Button
                 variant="ghost"
@@ -888,20 +936,6 @@ export default function BuilderChat({
             )}
           </div>
 
-          {/* Clear chat button */}
-          {messages.length > 0 && (
-            <div className="flex justify-center mt-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearMessages}
-                disabled={sending}
-                className="h-6 gap-1 px-2 text-[10px] text-zinc-500 hover:text-red-400 disabled:opacity-50"
-              >
-                <X className="h-3 w-3" /> Clear chat
-              </Button>
-            </div>
-          )}
         </div>
       </div>
 

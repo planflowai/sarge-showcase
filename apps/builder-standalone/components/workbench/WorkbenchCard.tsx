@@ -111,11 +111,11 @@ function WorkbenchProgress({ status, color }: { status: WorkbenchStatus; color: 
 
 function LiveThumbnail({ html, status, color }: { html: string; status: WorkbenchStatus; color: string }) {
   // Scale a 1280×800 iframe to fill the card preview area
-  // Container: full card width × 158px tall
-  // iframe: 1280×800 → scaled by 0.2 = 256×160px
+  // Container: full card width × 200px tall
+  // iframe: 1280×800 → scaled by 0.25 = 320×200px
   const IFRAME_W = 1280;
   const IFRAME_H = 800;
-  const SCALE = 0.2;
+  const SCALE = 0.25;
 
   return (
     <div
@@ -195,7 +195,7 @@ export default function WorkbenchCard({
   return (
     <div
       className="flex flex-col rounded-xl border transition-all cursor-pointer"
-      style={{ borderColor, backgroundColor: "#0c0c0f", boxShadow: glowShadow }}
+      style={{ borderColor, backgroundColor: "#0c0c0f", boxShadow: glowShadow, minWidth: "360px", minHeight: "360px" }}
       onClick={() => toggleSelected(slot.slot)}
       title={slot.selected ? "Click to deselect from broadcast" : "Click to select for broadcast"}
     >

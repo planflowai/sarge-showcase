@@ -11,7 +11,6 @@ import {
   Star,
   Clock,
   Sparkles,
-  ExternalLink,
 } from "lucide-react";
 import { cn } from "@sarge/core";
 import {
@@ -20,7 +19,6 @@ import {
   type ComponentCategory,
   type LibraryComponent,
 } from "../stores/componentLibraryStore";
-import Link from "next/link";
 
 interface ComponentLibrarySectionProps {
   onInsertComponent: (code: string, componentId: string) => void;
@@ -272,16 +270,6 @@ export default function ComponentLibrarySection({
         )}
       </div>
 
-      {/* Footer link to full library */}
-      <div className="px-2 py-2 border-t border-zinc-200 dark:border-zinc-700">
-        <Link
-          href="/component-library"
-          className="flex items-center justify-center gap-1.5 text-[10px] text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200"
-        >
-          <ExternalLink className="h-3 w-3" />
-          Open Full Library
-        </Link>
-      </div>
     </div>
   );
 }
