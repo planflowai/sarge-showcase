@@ -210,6 +210,31 @@ export async function POST(request: NextRequest) {
       const ghLogin = ghUser.login as string;
       const ghEmail = (ghUser.email as string) || `${ghLogin}@users.noreply.github.com`;
 
+      // 2b. Create hosting config files if they don't exist
+      // vercel.json — tells Vercel to serve static files with SPA fallback
+      const vercelJsonPath = path.join(projectPath, "vercel.json");
+      if (!fs.existsSync(vercelJsonPath)) {
+        fs.writeFileSync(vercelJsonPath, JSON.stringify(
+          { rewrites: [{ source: "/(.*)", destination: "/index.html" }] },
+          null, 2
+        ), "utf-8");
+      }
+      // _redirects — tells Netlify to serve index.html for all routes (SPA)
+      const redirectsPath = path.join(projectPath, "_redirects");
+      if (!fs.existsSync(redirectsPath)) {
+        fs.writeFileSync(redirectsPath, "/*    /index.html   200\n", "utf-8");
+      }
+      // .gitignore — exclude deploy tool folders
+      const gitignorePath = path.join(projectPath, ".gitignore");
+      if (!fs.existsSync(gitignorePath)) {
+        fs.writeFileSync(gitignorePath, ".vercel\n.netlify\n.wrangler\nnode_modules\nexport.zip\n", "utf-8");
+      }
+      // .netlifyignore — prevent uploading deploy metadata folders
+      const netlifyIgnorePath = path.join(projectPath, ".netlifyignore");
+      if (!fs.existsSync(netlifyIgnorePath)) {
+        fs.writeFileSync(netlifyIgnorePath, ".git\n.vercel\n.wrangler\nnode_modules\nexport.zip\nBUILDER_LOG.md\n", "utf-8");
+      }
+
       // 3. Git init (skip if already a repo)
       const gitDir = path.join(projectPath, ".git");
       if (!fs.existsSync(gitDir)) {
