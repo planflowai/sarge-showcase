@@ -152,6 +152,8 @@ export default function BuilderSidebar({
   const [showOpenModal, setShowOpenModal] = useState(false);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [isDraggingOverNew, setIsDraggingOverNew] = useState(false);
+  const [dropFailed, setDropFailed] = useState(false); // true when drop occurred but path couldn't be extracted
+  const [isBrowsing, setIsBrowsing] = useState(false); // true while native folder picker is open
   const [recentPaths, setRecentPaths] = useState<string[]>(() => {
     if (typeof window !== "undefined") {
       try { return JSON.parse(localStorage.getItem("builder-recent-paths") || "[]"); }
@@ -283,6 +285,7 @@ export default function BuilderSidebar({
   // Quick-access: open Open Project modal
   const handleOpenProjectQuick = () => {
     setPathInput("");
+    setDropFailed(false);
     setShowOpenModal(true);
     setActivePopover(null);
   };
@@ -315,6 +318,28 @@ export default function BuilderSidebar({
       setIsLoading(false);
     }
   }, [setProject, addToRecents]);
+
+  // Open native OS folder picker via backend API.
+  // Necessary because Chrome blocks reading file paths from drag-and-drop events.
+  const handleBrowseFolder = useCallback(async () => {
+    setIsBrowsing(true);
+    setDropFailed(false);
+    try {
+      const res = await fetch('/api/builder/browse-folder', { method: 'POST' });
+      const data = await res.json();
+      if (data.cancelled) return; // User dismissed the dialog — do nothing
+      if (data.path) {
+        setPathInput(data.path);
+        await handleOpenProject(data.path);
+      } else if (data.error) {
+        alert(`Browse failed: ${data.error}`);
+      }
+    } catch {
+      alert('Could not open folder picker. Try typing the path manually.');
+    } finally {
+      setIsBrowsing(false);
+    }
+  }, [handleOpenProject]);
 
   const handleRefresh = useCallback(async () => {
     if (!projectPath) return;
@@ -886,32 +911,62 @@ export default function BuilderSidebar({
             </div>
 
             <div className="p-6 space-y-5">
-              {/* Drag & Drop Zone */}
+              {/* Primary action: Browse button (native OS picker — always reliable) */}
+              <button
+                onClick={handleBrowseFolder}
+                disabled={isBrowsing || isLoading}
+                className="w-full flex items-center justify-center gap-3 px-5 py-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-sm transition-colors"
+              >
+                {isBrowsing ? (
+                  <><Loader2 className="h-5 w-5 animate-spin" /> Opening folder picker...</>
+                ) : (
+                  <><FolderOpen className="h-5 w-5" /> Browse for Folder</>
+                )}
+              </button>
+
+              {/* Drag & Drop Zone — visual affordance; path extraction works when browser allows it */}
               <div
-                onDragOver={(e) => { e.preventDefault(); setIsDraggingOver(true); }}
+                onDragOver={(e) => { e.preventDefault(); setIsDraggingOver(true); setDropFailed(false); }}
                 onDragEnter={(e) => { e.preventDefault(); setIsDraggingOver(true); }}
                 onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setIsDraggingOver(false); }}
                 onDrop={(e) => {
                   e.preventDefault();
                   setIsDraggingOver(false);
-                  const path = extractDropPath(e);
-                  if (path) {
-                    setPathInput(path);
-                    handleOpenProject(path);
+                  const droppedPath = extractDropPath(e);
+                  if (droppedPath) {
+                    setDropFailed(false);
+                    setPathInput(droppedPath);
+                    handleOpenProject(droppedPath);
+                  } else {
+                    // Chrome blocks reading paths from file system drags — show fallback
+                    setDropFailed(true);
                   }
                 }}
                 className={cn(
-                  "rounded-xl border-2 border-dashed h-36 flex flex-col items-center justify-center cursor-default transition-all duration-200",
+                  "rounded-xl border-2 border-dashed h-28 flex flex-col items-center justify-center cursor-default transition-all duration-200",
                   isDraggingOver
                     ? "border-indigo-400 bg-indigo-500/15 scale-[1.01]"
-                    : "border-zinc-700 hover:border-zinc-500 bg-zinc-800/40"
+                    : dropFailed
+                    ? "border-amber-500/60 bg-amber-500/5"
+                    : "border-zinc-700 hover:border-zinc-600 bg-zinc-800/40"
                 )}
               >
-                <FolderOpen className={cn("h-12 w-12 mb-2 transition-colors", isDraggingOver ? "text-indigo-400" : "text-zinc-500")} />
-                <p className={cn("text-sm font-semibold transition-colors", isDraggingOver ? "text-indigo-300" : "text-zinc-400")}>
-                  {isDraggingOver ? "Release to open folder" : "Drop a folder here"}
-                </p>
-                <p className="text-xs text-zinc-600 mt-1">Drag from Windows Explorer or Finder</p>
+                {dropFailed ? (
+                  <>
+                    <p className="text-sm font-semibold text-amber-400">Browser blocked the path</p>
+                    <p className="text-xs text-zinc-500 mt-1 text-center px-6">
+                      Chrome can't read folder paths from drag-and-drop.
+                      Use the Browse button above or paste the path below.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <FolderOpen className={cn("h-8 w-8 mb-1.5 transition-colors", isDraggingOver ? "text-indigo-400" : "text-zinc-600")} />
+                    <p className={cn("text-xs font-medium transition-colors", isDraggingOver ? "text-indigo-300" : "text-zinc-500")}>
+                      {isDraggingOver ? "Release to open folder" : "or drag a folder here"}
+                    </p>
+                  </>
+                )}
               </div>
 
               {/* Recent Folders */}
@@ -938,17 +993,22 @@ export default function BuilderSidebar({
               {/* Manual path input */}
               <div>
                 <p className="text-[10px] uppercase tracking-wider font-semibold text-zinc-500 mb-2">
-                  {recentPaths.length > 0 ? "Or enter path manually" : "Enter folder path"}
+                  Or paste / type a path
                 </p>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={pathInput}
-                    onChange={(e) => setPathInput(e.target.value)}
+                    onChange={(e) => { setPathInput(e.target.value); setDropFailed(false); }}
                     onKeyDown={(e) => { if (e.key === "Enter" && pathInput.trim()) handleOpenProject(pathInput); }}
-                    placeholder="e.g. L:\projects\my-site or /home/user/project"
-                    className="flex-1 px-3 py-2.5 text-sm rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30"
-                    autoFocus={recentPaths.length === 0}
+                    placeholder="e.g. L:\projects\my-site"
+                    className={cn(
+                      "flex-1 px-3 py-2.5 text-sm rounded-lg bg-zinc-800 border text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-1",
+                      dropFailed
+                        ? "border-amber-500/60 focus:border-amber-400 focus:ring-amber-500/30"
+                        : "border-zinc-700 focus:border-indigo-500 focus:ring-indigo-500/30"
+                    )}
+                    autoFocus={dropFailed || recentPaths.length === 0}
                   />
                   <button
                     onClick={() => pathInput.trim() && handleOpenProject(pathInput)}
