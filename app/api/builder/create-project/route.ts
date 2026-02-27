@@ -7,9 +7,11 @@ import {
   logForensicEvent,
 } from '@/lib/security/pathValidator';
 
+// All AI Builder projects live here by default.
+// Override with BUILDER_PROJECTS_DIR env var if needed.
 const BUILDER_PROJECTS_DIR =
   process.env.BUILDER_PROJECTS_DIR ||
-  (process.platform === 'win32' ? 'L:/ai_builder/projects' : '/ai_builder/projects');
+  (process.platform === 'win32' ? 'L:/AI_MASTER_BUILDS' : '/AI_MASTER_BUILDS');
 
 // Default starter template for when no matching template is found
 const DEFAULT_STARTER: ProjectTemplate = {
