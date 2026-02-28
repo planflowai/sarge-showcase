@@ -251,9 +251,13 @@ export function MessageBubble({
           className={cn(
             "rounded-lg px-5 py-4 overflow-hidden break-words",
             isUser
-              ? "bg-orange-700 text-white max-w-[85%]"
+              ? "bg-zinc-200 dark:bg-zinc-700 text-zinc-800 dark:text-zinc-200 max-w-[85%]"
               : "bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 w-full"
           )}
+          style={!isUser && parallelMode && providerConfig?.color ? {
+            backgroundColor: `${providerConfig.color}18`,
+            borderLeft: `3px solid ${providerConfig.color}`,
+          } : undefined}
         >
           {/* Images if present - show thumbnails */}
           {(message.imageUrl || (message.imageUrls && message.imageUrls.length > 0)) && (
