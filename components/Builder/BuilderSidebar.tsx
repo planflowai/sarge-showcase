@@ -161,6 +161,18 @@ export default function BuilderSidebar({ selectedModel, selectedProvider, onMode
       });
   }, [selectedProvider, isLocalProvider, selectedModel, onModelSelect]);
 
+  // Listen for custom events from BuilderPage top-right buttons
+  useEffect(() => {
+    const openHandler = () => setShowPathInput(true);
+    const newHandler = () => setShowTemplateDropdown(true);
+    window.addEventListener("builder:open-project", openHandler);
+    window.addEventListener("builder:new-project", newHandler);
+    return () => {
+      window.removeEventListener("builder:open-project", openHandler);
+      window.removeEventListener("builder:new-project", newHandler);
+    };
+  }, []);
+
   // Get providers that have builder models
   // Always show ALL cloud providers - they all have models auto-tagged as builders
   const providersWithBuilderModels = useMemo(() => {

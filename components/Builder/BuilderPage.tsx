@@ -14,7 +14,7 @@ import { useBuilderDocumentStore } from "@/lib/stores/builderDocumentStore";
 import { flattenFileTree } from "@/lib/contextInjector";
 import { applyEditBlocks, type EditBlock, getDiffSummary } from "@/lib/editBlockParser";
 import { useWorkspaceStore, launchWorkspace, recallWorkspace } from "@/lib/stores/workspaceStore";
-import { Rocket, LayoutGrid, X } from "lucide-react";
+import { Rocket, LayoutGrid, X, FolderPlus, FolderOpen as FolderOpenIcon } from "lucide-react";
 import ThreadGuardianIndicator from "@/components/chat/ThreadGuardianIndicator";
 
 /**
@@ -613,6 +613,26 @@ Please provide the complete modified version of this component. Make only the re
         >
           <Rocket className="w-4 h-4" />
           Launch Workspace
+        </button>
+
+        {/* New Project */}
+        <button
+          onClick={() => window.dispatchEvent(new CustomEvent("builder:new-project"))}
+          className="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg shadow-lg transition-all text-sm font-medium"
+          title="New Project"
+        >
+          <FolderPlus className="w-4 h-4" />
+          New
+        </button>
+
+        {/* Open Project */}
+        <button
+          onClick={() => window.dispatchEvent(new CustomEvent("builder:open-project"))}
+          className="flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg shadow-lg transition-all text-sm font-medium"
+          title="Open Project"
+        >
+          <FolderOpenIcon className="w-4 h-4" />
+          Open
         </button>
       </div>
 

@@ -14,8 +14,8 @@ import { useArtifactStore } from "../stores/artifactStore";
 import { useBuilderDocumentStore } from "../stores/builderDocumentStore";
 import { flattenFileTree } from "@sarge/core";
 import { applyEditBlocks, type EditBlock, getDiffSummary } from "../lib/editBlockParser";
-import { useWorkspaceStore, recallWorkspace } from "../stores/workspaceStore";
-import { LayoutGrid, X, Plus, Save, Terminal as TerminalIcon, Loader2, FolderOpen } from "lucide-react";
+import { useWorkspaceStore, launchWorkspace, recallWorkspace } from "../stores/workspaceStore";
+import { LayoutGrid, X, Plus, Save, Terminal as TerminalIcon, Loader2, FolderOpen, Rocket, FolderPlus } from "lucide-react";
 import { ThreadGuardianIndicator } from "@sarge/chat";
 
 /**
@@ -598,9 +598,36 @@ Please provide the complete modified version of this component. Make only the re
 
   return (
     <div className="relative flex flex-col h-full w-full bg-zinc-50 dark:bg-zinc-950">
-      {/* Thread Guardian — fixed top right */}
-      <div className="fixed top-4 right-4 z-[100]">
+      {/* Top bar — Thread Guardian + Launch Workspace + New/Open Project — fixed top right */}
+      <div className="fixed top-4 right-4 z-[100] flex items-center gap-2">
         <ThreadGuardianIndicator conversationId="builder-chat" />
+
+        <button
+          onClick={launchWorkspace}
+          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-lg shadow-lg transition-all text-sm font-medium"
+          title="Launch multi-window workspace across your monitors"
+        >
+          <Rocket className="w-4 h-4" />
+          Launch Workspace
+        </button>
+
+        <button
+          onClick={() => window.dispatchEvent(new CustomEvent("builder:new-project"))}
+          className="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg shadow-lg transition-all text-sm font-medium"
+          title="New Project"
+        >
+          <FolderPlus className="w-4 h-4" />
+          New
+        </button>
+
+        <button
+          onClick={() => window.dispatchEvent(new CustomEvent("builder:open-project"))}
+          className="flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg shadow-lg transition-all text-sm font-medium"
+          title="Open Project"
+        >
+          <FolderOpen className="w-4 h-4" />
+          Open
+        </button>
       </div>
 
       {/* Horizontal toolbar ribbon — full width, below header */}
