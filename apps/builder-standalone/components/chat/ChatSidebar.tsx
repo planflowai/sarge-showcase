@@ -46,7 +46,7 @@ export function ChatSidebar() {
 
   // ── Expanded ─────────────────────────────────────────────────────────────────
   return (
-    <aside className="flex-shrink-0 w-64 flex flex-col border-r border-zinc-800 bg-zinc-900">
+    <aside className="flex-shrink-0 w-[280px] flex flex-col border-r border-zinc-800 bg-zinc-900">
 
       {/* Header row */}
       <div className="flex items-center justify-between px-3 py-3 border-b border-zinc-800/60 flex-shrink-0">

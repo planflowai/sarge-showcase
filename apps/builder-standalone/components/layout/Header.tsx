@@ -203,6 +203,23 @@ export function Header() {
         {/* Row 2: Navigation centered + status icons right */}
         <div className="h-11 bg-gradient-to-r from-zinc-100 via-zinc-50 to-zinc-100 dark:from-zinc-900/80 dark:via-zinc-800/50 dark:to-zinc-900/80 flex items-center px-4 border-t border-zinc-200/50 dark:border-zinc-700/30 relative">
 
+          {/* Left: Launch Workspace — only on builder page */}
+          {pathname === "/" && (
+            <button
+              onClick={() => setWorkbenchActive(!workbenchActive)}
+              title={workbenchActive ? "Exit Workspace" : "Launch multi-model workspace"}
+              className={cn(
+                "flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-black transition-all duration-300 border-2 z-10 hover:scale-105 active:scale-95",
+                workbenchActive
+                  ? "bg-purple-600/40 border-purple-400/70 text-purple-200 shadow-[0_0_18px_rgba(168,85,247,0.4)]"
+                  : "bg-purple-600/20 border-purple-500/50 text-purple-300 hover:bg-purple-600/35 hover:border-purple-400/70 hover:text-purple-100 hover:shadow-[0_0_16px_rgba(168,85,247,0.35)]"
+              )}
+            >
+              <Wrench className="h-4 w-4" />
+              <span>{workbenchActive ? "Exit Workspace" : "🚀 Launch Workspace"}</span>
+            </button>
+          )}
+
           {/* Center: Builder | Chat */}
           <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1">
             {NAV_ITEMS.map((item) => {
