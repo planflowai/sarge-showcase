@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
           if (ns.siteId) {
             // Try to get the actual site URL from sites:list
             const listResult = await runCommand(
-              `npx netlify sites:list --json`,
+              `npx --yes netlify sites:list --json`,
               projectPath, 30_000
             );
             try {
@@ -202,9 +202,9 @@ export async function POST(request: NextRequest) {
 
       // Check which optional CLIs are available (none are required — GitHub uses API)
       const [wrangler, vercel, netlify] = await Promise.all([
-        checkCli("npx wrangler", projectPath),
-        checkCli("npx vercel", projectPath),
-        checkCli("npx netlify", projectPath),
+        checkCli("npx --yes wrangler", projectPath),
+        checkCli("npx --yes vercel", projectPath),
+        checkCli("npx --yes netlify", projectPath),
       ]);
 
       // 2. Fetch GitHub user info (needed for git config + repo creation)
@@ -336,9 +336,9 @@ export async function POST(request: NextRequest) {
       let vercelUrl = "";
       if (vercel.ok) {
         // Link first (non-interactive)
-        await runCommand("npx vercel link --yes", projectPath);
+        await runCommand("npx --yes vercel link --yes", projectPath);
         // Deploy to production — captures the live URL
-        const vercelDeploy = await runCommand("npx vercel --prod --yes", projectPath, 120_000);
+        const vercelDeploy = await runCommand("npx --yes vercel --prod --yes", projectPath, 120_000);
         if (vercelDeploy.code === 0) {
           // Output has multiple URLs — grab the last .vercel.app one (the aliased production URL)
           const allUrls = vercelDeploy.stdout.match(/https:\/\/[^\s]+\.vercel\.app/g);
@@ -376,7 +376,7 @@ export async function POST(request: NextRequest) {
         if (!siteId) {
           // Get account slug dynamically
           const acctResult = await runCommand(
-            `npx netlify api listAccountsForUser --data '{}'`,
+            `npx --yes netlify api listAccountsForUser --data '{}'`,
             projectPath, 15_000
           );
           let acctSlug = "";
@@ -388,7 +388,7 @@ export async function POST(request: NextRequest) {
           // Try creating site with preferred name
           const acctFlag = acctSlug ? ` --account-slug "${acctSlug}"` : "";
           const createResult = await runCommand(
-            `npx netlify sites:create --name "${safeName}"${acctFlag}`,
+            `npx --yes netlify sites:create --name "${safeName}"${acctFlag}`,
             projectPath, 30_000
           );
           if (createResult.code === 0) {
@@ -397,7 +397,7 @@ export async function POST(request: NextRequest) {
           } else {
             // Name taken — check if we already own a site with this name from earlier
             const listResult = await runCommand(
-              `npx netlify sites:list --json`,
+              `npx --yes netlify sites:list --json`,
               projectPath, 30_000
             );
             try {
@@ -416,10 +416,10 @@ export async function POST(request: NextRequest) {
         // Link and deploy if we have a site
         if (siteId) {
           // Link by ID (non-interactive, always works)
-          await runCommand(`npx netlify link --id "${siteId}"`, projectPath, 15_000);
+          await runCommand(`npx --yes netlify link --id "${siteId}"`, projectPath, 15_000);
           // Deploy files
           const deployResult = await runCommand(
-            `npx netlify deploy --prod --dir "."`,
+            `npx --yes netlify deploy --prod --dir "."`,
             projectPath, 120_000
           );
           // Parse production URL from deploy output
@@ -441,12 +441,12 @@ export async function POST(request: NextRequest) {
         const safeCfName = projectName.replace(/_/g, "-").toLowerCase();
         // Create project (ignore "already exists" errors)
         await runCommand(
-          `npx wrangler pages project create "${safeCfName}" --production-branch main`,
+          `npx --yes wrangler pages project create "${safeCfName}" --production-branch main`,
           projectPath
         );
         // Deploy files to Cloudflare Pages
         const cfDeploy = await runCommand(
-          `npx wrangler pages deploy "." --project-name="${safeCfName}"`,
+          `npx --yes wrangler pages deploy "." --project-name="${safeCfName}"`,
           projectPath, 120_000
         );
         if (cfDeploy.code === 0) {
@@ -531,7 +531,7 @@ export async function POST(request: NextRequest) {
         const vercelProjectFile = path.join(projectPath, ".vercel", "project.json");
         if (fs.existsSync(vercelProjectFile)) {
           redeployTasks.push(
-            runCommand("npx vercel --prod --yes", projectPath, 120_000).then((r) => {
+            runCommand("npx --yes vercel --prod --yes", projectPath, 120_000).then((r) => {
               if (r.code === 0) {
                 deployResults.vercel = "success";
                 const allUrls = r.stdout.match(/https:\/\/[^\s]+\.vercel\.app/g);
@@ -554,7 +554,7 @@ export async function POST(request: NextRequest) {
         const netlifyStateFile = path.join(projectPath, ".netlify", "state.json");
         if (fs.existsSync(netlifyStateFile)) {
           redeployTasks.push(
-            runCommand('npx netlify deploy --prod --dir "."', projectPath, 120_000).then((r) => {
+            runCommand('npx --yes netlify deploy --prod --dir "."', projectPath, 120_000).then((r) => {
               deployResults.netlify = r.code === 0 ? "success" : "failed";
             }).catch(() => { deployResults.netlify = "failed"; })
           );
@@ -581,7 +581,7 @@ export async function POST(request: NextRequest) {
             }
             redeployTasks.push(
               runCommand(
-                `npx wrangler pages deploy "." --project-name="${cfNameMatch[1]}"`,
+                `npx --yes wrangler pages deploy "." --project-name="${cfNameMatch[1]}"`,
                 projectPath, 120_000
               ).then((r) => {
                 deployResults.cloudflare = r.code === 0 ? "success" : "failed";
