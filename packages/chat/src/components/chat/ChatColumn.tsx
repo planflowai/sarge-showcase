@@ -188,29 +188,41 @@ export function ChatColumn({
 
   return (
     <div className="flex flex-col h-full border-r border-zinc-200 dark:border-zinc-800 last:border-r-0 bg-white dark:bg-zinc-900">
-      {/* Column Header — provider icons + model name */}
+      {/* Column Header — model name top centered, provider buttons + role one row */}
       <div className="border-b border-zinc-200 dark:border-zinc-800 bg-gray-50/80 dark:bg-zinc-900/80">
-        {/* Provider group buttons */}
-        <div className="flex items-center gap-1 px-2 pt-2 pb-1">
+        {/* Model name — top, centered, big and bold */}
+        <div className="flex items-center justify-center px-3 pt-2 pb-1">
+          <span className={cn(
+            "text-base font-black truncate",
+            activeGroup === "cloud" ? "text-cyan-400" :
+            activeGroup === "ollama" ? "text-amber-400" :
+            activeGroup === "lmstudio" ? "text-emerald-400" :
+            "text-zinc-500"
+          )}>
+            {column.model ? modelDisplayName : "Select a model"}
+          </span>
+        </div>
+
+        {/* Provider buttons + role — one row, stretched */}
+        <div className="flex items-center gap-1 px-2 pb-2">
           {PROVIDER_GROUPS.map(group => {
             const Icon = group.icon;
             const isActive = activeGroup === group.id;
             const isHF = group.id === "huggingface";
 
             if (isHF) {
-              // Hugging Face — coming soon, no dropdown
               return (
                 <button
                   key={group.id}
                   disabled
                   className={cn(
-                    "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold border transition-all opacity-40 cursor-not-allowed",
+                    "flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-bold border transition-all opacity-40 cursor-not-allowed",
                     "border-zinc-300 dark:border-zinc-700 text-zinc-500"
                   )}
                   title="Hugging Face — Coming Soon"
                 >
                   <Icon className={cn("h-4 w-4", group.color)} />
-                  <span className="hidden xl:inline">{group.label}</span>
+                  <span>{group.label}</span>
                 </button>
               );
             }
@@ -220,14 +232,14 @@ export function ChatColumn({
                 <DropdownMenuTrigger asChild>
                   <button
                     className={cn(
-                      "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold border transition-all",
+                      "flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-bold border transition-all",
                       isActive
                         ? `${group.bgActive} border`
                         : `border-transparent text-zinc-500 dark:text-zinc-400 ${group.bgHover}`
                     )}
                   >
                     <Icon className={cn("h-4 w-4", group.color)} />
-                    <span className="hidden xl:inline">{group.label}</span>
+                    <span>{group.label}</span>
                     <ChevronDown className="h-3 w-3 opacity-50" />
                   </button>
                 </DropdownMenuTrigger>
@@ -322,51 +334,20 @@ export function ChatColumn({
             );
           })}
 
-          {/* Clear button — far right */}
-          <button
-            onClick={onClear}
-            className="p-1.5 rounded-lg text-zinc-400 hover:text-red-400 hover:bg-red-500/10 transition-colors flex-shrink-0 ml-auto"
-            title="Clear conversation"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
-        </div>
-
-        {/* Active model name + role */}
-        <div className="flex items-center gap-2 px-3 pb-2">
-          {/* Model name — big and bold */}
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            {providerConfig && (
-              <span
-                className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                style={{ backgroundColor: providerConfig.color }}
-              />
-            )}
-            <span className={cn(
-              "text-sm font-bold truncate",
-              activeGroup === "cloud" ? "text-cyan-400" :
-              activeGroup === "ollama" ? "text-amber-400" :
-              activeGroup === "lmstudio" ? "text-emerald-400" :
-              "text-zinc-500"
-            )}>
-              {column.model ? modelDisplayName : "Select a model"}
-            </span>
-          </div>
-
-          {/* Role pill */}
+          {/* Role pill — wider, bolder */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 className={cn(
-                  "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold border transition-all truncate",
+                  "flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black border transition-all truncate",
                   currentRole
                     ? "border-indigo-500/50 text-indigo-400 bg-indigo-500/10"
                     : "border-zinc-300 dark:border-zinc-700 text-zinc-500 bg-gray-200 dark:bg-zinc-800"
                 )}
               >
-                <Shield className="h-3 w-3 flex-shrink-0" />
+                <Shield className="h-4 w-4 flex-shrink-0" />
                 <span className="truncate">{currentRole ? currentRole.name : "Role"}</span>
-                <ChevronDown className="h-2.5 w-2.5 opacity-50 flex-shrink-0" />
+                <ChevronDown className="h-3 w-3 opacity-50 flex-shrink-0" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
