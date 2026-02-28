@@ -242,6 +242,12 @@ export async function POST(request: NextRequest) {
       if (!fs.existsSync(netlifyIgnorePath)) {
         fs.writeFileSync(netlifyIgnorePath, ".git\n.vercel\n.wrangler\nnode_modules\nexport.zip\nBUILDER_LOG.md\n", "utf-8");
       }
+      // .cfignore — prevent Cloudflare Pages from uploading .git/ and metadata,
+      // and skip _redirects (Netlify-only, causes redirect loop on Cloudflare)
+      const cfIgnorePath = path.join(projectPath, ".cfignore");
+      if (!fs.existsSync(cfIgnorePath)) {
+        fs.writeFileSync(cfIgnorePath, ".git\n.vercel\n.netlify\n.wrangler\nnode_modules\nexport.zip\nBUILDER_LOG.md\n_redirects\n_headers\n.netlifyignore\n", "utf-8");
+      }
 
       // 3. Git init (skip if already a repo)
       const gitDir = path.join(projectPath, ".git");
