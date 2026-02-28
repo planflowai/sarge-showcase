@@ -240,9 +240,9 @@ export default function WorkbenchDashboard() {
       </div>
 
       {/* ── Monitor Grid ── */}
-      <div className="flex-1 min-h-0 p-4 flex flex-col gap-3">
+      <div className="flex-1 min-h-0 p-4 flex flex-col gap-3 overflow-hidden">
         {/* Row 1: Mon5 | Mon1 | Mon3 */}
-        <div className="flex-1 min-h-0 grid grid-cols-3 gap-3">
+        <div className="flex-1 min-h-0 grid grid-cols-3 gap-3 overflow-hidden">
           {[s1, s2, s3].map((slot, i) => slot && (
             <WorkbenchCard
               key={slot.slot}
@@ -256,7 +256,7 @@ export default function WorkbenchDashboard() {
         </div>
 
         {/* Row 2: Mon6 | [MON 4 = THIS SCREEN] | Mon2 */}
-        <div className="flex-1 min-h-0 grid grid-cols-3 gap-3">
+        <div className="flex-1 min-h-0 grid grid-cols-3 gap-3 overflow-hidden">
           {/* Slot 4 = Mon6 */}
           {s4 && (
             <WorkbenchCard
