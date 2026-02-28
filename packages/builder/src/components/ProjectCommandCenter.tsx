@@ -4,7 +4,7 @@ import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import {
   X, Plus, Search, FolderOpen, Loader2, Trash2, Check, RefreshCw,
   Send, ExternalLink, MoreHorizontal, Pencil, Download,
-  ArrowUpDown, Github, Globe, Cloud, ChevronDown,
+  ArrowUpDown, Github, Globe, Cloud, ChevronDown, Minus, Link,
 } from "lucide-react";
 import { useProjectCommandStore, type HubProjectExtended, type DeployTarget } from "../stores/projectCommandStore";
 import { useBuilderStore } from "../stores/builderStore";
@@ -272,27 +272,29 @@ function ProjectCard({
                 "flex items-center gap-2.5 px-3 py-2.5 rounded-lg border transition-colors",
                 isConnected
                   ? "bg-emerald-950/30 border-emerald-800/50"
-                  : "bg-zinc-800/40 border-zinc-700/50"
+                  : "bg-zinc-800/40 border-zinc-700/30"
               )}
             >
               <Icon className={cn("h-4 w-4 flex-shrink-0", isConnected ? "text-emerald-400" : "text-zinc-600")} />
               <div className="flex-1 min-w-0">
                 <span className={cn("text-xs font-bold", isConnected ? "text-zinc-200" : "text-zinc-500")}>{label}</span>
-                {url && (
+                {isConnected ? (
                   <a
-                    href={url}
+                    href={url!}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="block text-[10px] text-indigo-400 hover:underline truncate"
                   >
-                    {url.replace(/https?:\/\/(www\.)?/, "").slice(0, 40)}
+                    {url!.replace(/https?:\/\/(www\.)?/, "").slice(0, 40)}
                   </a>
+                ) : (
+                  <span className="text-[10px] text-zinc-600">Not linked</span>
                 )}
               </div>
               {isConnected ? (
                 <Check className="h-4 w-4 text-emerald-500 flex-shrink-0" />
               ) : (
-                <X className="h-3.5 w-3.5 text-zinc-600 flex-shrink-0" />
+                <Link className="h-3.5 w-3.5 text-zinc-600 flex-shrink-0" />
               )}
             </div>
           );

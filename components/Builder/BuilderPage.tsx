@@ -566,6 +566,7 @@ Please provide the complete modified version of this component. Make only the re
           lastPrompt={lastPrompt}
           projectName={activeProjectName}
           deployContent={deployContent}
+          generationStartTime={generationStartTime}
         />
       </div>
     );
@@ -737,6 +738,7 @@ Please provide the complete modified version of this component. Make only the re
             lastPrompt={lastPrompt}
             projectName={activeProjectName}
             deployContent={deployContent}
+            generationStartTime={generationStartTime}
           />
         </div>
       </div>

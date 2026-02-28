@@ -13,6 +13,7 @@ import { useArtifactStore } from "@/lib/stores/artifactStore";
 import { useBuilderStore } from "@/lib/stores/builderStore";
 import { useAirGapStore } from "@/lib/stores/airGapStore";
 import BuilderDiffEditor from "./BuilderDiffEditor";
+import BuilderProgress from "./BuilderProgress";
 import SaveToLibraryDialog from "./SaveToLibraryDialog";
 
 export interface DiffViewState {
@@ -36,11 +37,26 @@ interface ArtifactPanelProps {
   lastPrompt?: string; // The prompt that generated the current code
   projectName?: string | null; // If set, use API-based preview with CSS/JS inlining
   deployContent?: React.ReactNode; // Optional deploy panel content
+  generationStartTime?: number | null; // When streaming started (for elapsed timer)
 }
 
 // Check if HTML code is complete (has closing </html> tag)
 function isHtmlComplete(code: string): boolean {
   return /<\/html>/i.test(code);
+}
+
+/** Live elapsed-time counter for the streaming progress overlay */
+function StreamingTimer({ startTime }: { startTime: number }) {
+  const [elapsed, setElapsed] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setElapsed(Math.floor((Date.now() - startTime) / 1000));
+    }, 200);
+    return () => clearInterval(interval);
+  }, [startTime]);
+  return (
+    <span className="text-[10px] text-zinc-400 font-mono">{elapsed}s</span>
+  );
 }
 
 /** Inline Deploy Panel — export/download options + deployment guidance */
@@ -142,6 +158,7 @@ function ArtifactPanelInner({
   lastPrompt = "",
   projectName = null,
   deployContent,
+  generationStartTime = null,
 }: ArtifactPanelProps) {
   const [previewContent, setPreviewContent] = useState<string>("");
   const [previewError, setPreviewError] = useState<string | null>(null);
@@ -806,7 +823,27 @@ function ArtifactPanelInner({
         )}
 
         {activeTab === "preview" && (
-          <div className="h-full w-full bg-white dark:bg-zinc-900">
+          <div className="h-full w-full bg-white dark:bg-zinc-900 relative">
+            {/* Streaming progress overlay — shows at top of preview during generation */}
+            {isStreaming && (previewContent || previewUrl) && code && code.trim().length > 0 && (
+              <div className="absolute top-0 left-0 right-0 z-10">
+                <div className="h-1 bg-zinc-200 dark:bg-zinc-800">
+                  <div className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 animate-pulse" style={{ width: '60%' }} />
+                </div>
+                <div className="flex items-center gap-3 px-3 py-1.5 bg-zinc-900/80 backdrop-blur-sm border-b border-zinc-700/50">
+                  <span className="flex h-2 w-2 relative">
+                    <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                  </span>
+                  <span className="text-[11px] font-medium text-emerald-400">Building...</span>
+                  <span className="text-[10px] text-zinc-400 font-mono">{code.length.toLocaleString()} chars</span>
+                  {generationStartTime && (
+                    <StreamingTimer startTime={generationStartTime} />
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Dev server mode — point iframe directly at localhost */}
             {devPreviewMode === 'localhost' && devServerRunning && !isStreaming ? (
               <iframe
@@ -855,6 +892,14 @@ function ArtifactPanelInner({
                   opacity: isFading ? 0.3 : 1,
                   transition: 'opacity 0.1s ease-in-out',
                 }}
+              />
+            ) : isStreaming ? (
+              // Streaming but no preview content yet — show rich progress panel
+              <BuilderProgress
+                isGenerating={true}
+                hasCode={code.length > 0}
+                codeLength={code.length}
+                startTime={generationStartTime || undefined}
               />
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-zinc-400 dark:text-zinc-500">
@@ -1046,7 +1091,8 @@ const ArtifactPanel = memo(ArtifactPanelInner, (prevProps, nextProps) => {
     prevProps.isStreaming === nextProps.isStreaming &&
     prevProps.projectName === nextProps.projectName &&
     prevProps.diffView === nextProps.diffView &&
-    prevProps.lastPrompt === nextProps.lastPrompt
+    prevProps.lastPrompt === nextProps.lastPrompt &&
+    prevProps.generationStartTime === nextProps.generationStartTime
   );
 });
 

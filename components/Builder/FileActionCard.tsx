@@ -143,22 +143,22 @@ export default function FileActionCard({
         )}
 
         {status === "applying" && (
-          <div className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          <div className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
+            <Loader2 className="h-4 w-4 animate-spin" />
             <span>Writing to disk...</span>
           </div>
         )}
 
         {status === "applied" && (
-          <div className="flex items-center gap-2 text-xs text-green-600 dark:text-green-400">
-            <CheckCircle className="h-3.5 w-3.5" />
-            <span>Changes applied to {fileName}</span>
+          <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+            <CheckCircle className="h-4 w-4" />
+            <span>Done — applied to {fileName}</span>
           </div>
         )}
 
         {status === "rejected" && (
-          <div className="flex items-center gap-2 text-xs text-zinc-500">
-            <XCircle className="h-3.5 w-3.5" />
+          <div className="flex items-center gap-2 text-sm text-zinc-500">
+            <XCircle className="h-4 w-4" />
             <span>Changes rejected</span>
           </div>
         )}

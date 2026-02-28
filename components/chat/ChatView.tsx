@@ -22,7 +22,6 @@ import { DebateView } from "@/components/debate/DebateView";
 import { TestModeView } from "@/components/test/TestModeView";
 import { ForensicLogView } from "@/components/forensic/ForensicLogView";
 import { useForensicLogStore } from "@/lib/stores/forensicLogStore";
-import { useAIModeStore } from "@/lib/stores/aiModeStore";
 import { exportChatToPDF } from "@/lib/export/pdf";
 import { exportChatToCSV } from "@/lib/export/csv";
 import { detectExportIntent, formatLabels, type ExportFormat } from "@/lib/export/exportDetector";
@@ -114,9 +113,6 @@ export function ChatView({ conversationId }: ChatViewProps) {
   const openForensicLog = useForensicLogStore((s) => s.openForensicLog);
   const showToast = useUIStore((s) => s.showToast);
   const setPendingPrompt = useBuilderPromptStore((s) => s.setPendingPrompt);
-  const aiModeDisplayName = useAIModeStore((s) => s.getDisplayName);
-  const activePresetId = useAIModeStore((s) => s.activePresetId);
-  const executionMode = useAIModeStore((s) => s.executionMode);
   const [voiceError, setVoiceError] = useState<string | null>(null);
   const [commandFeedback, setCommandFeedback] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -536,20 +532,13 @@ export function ChatView({ conversationId }: ChatViewProps) {
           {/* Thread Guardian Indicator */}
           <ThreadGuardianIndicator conversationId={conversationId} />
 
-          {/* AI Mode Quick Toggle */}
+          {/* Settings shortcut */}
           <button
             onClick={() => router.push("/settings")}
-            className={cn(
-              "flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-medium transition-all",
-              "hover:ring-1 hover:ring-zinc-600",
-              executionMode === "local" && "bg-emerald-500/20 text-emerald-400",
-              executionMode === "cloud" && "bg-violet-500/20 text-violet-400",
-              executionMode === "hybrid" && "bg-amber-500/20 text-amber-400"
-            )}
-            title="AI Orchestration Mode - Click to configure"
+            className="p-1.5 text-zinc-400 hover:text-zinc-300 rounded-lg transition-colors hover:bg-zinc-800"
+            title="Settings"
           >
-            <Zap className="h-3 w-3" />
-            {aiModeDisplayName()}
+            <Zap className="h-4 w-4" />
           </button>
 
           {/* Current model indicator */}

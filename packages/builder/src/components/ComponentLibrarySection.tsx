@@ -150,14 +150,14 @@ export default function ComponentLibrarySection({
       </div>
 
       {/* Component list */}
-      <div className="max-h-64 overflow-y-auto px-1">
+      <div className="max-h-[60vh] overflow-y-auto px-2">
         {components.length === 0 ? (
-          <div className="px-2 py-4 text-center">
-            <Library className="h-8 w-8 text-zinc-300 dark:text-zinc-600 mx-auto mb-2" />
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+          <div className="px-4 py-8 text-center">
+            <Library className="h-10 w-10 text-zinc-300 dark:text-zinc-600 mx-auto mb-3" />
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">
               No components saved yet
             </p>
-            <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-1">
+            <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1">
               Generate code in Builder and click "Save to Library"
             </p>
           </div>
@@ -314,9 +314,9 @@ function ComponentCard({
         if (!showAIInput) onHover(false);
       }}
     >
-      <div className="flex items-center gap-2 px-2 py-1.5 cursor-pointer">
+      <div className="flex items-start gap-3 px-3 py-3 cursor-pointer">
         {/* Thumbnail or placeholder */}
-        <div className="w-8 h-6 rounded bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center flex-shrink-0 overflow-hidden">
+        <div className="w-12 h-10 rounded-lg bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center flex-shrink-0 overflow-hidden">
           {component.thumbnail ? (
             <img
               src={component.thumbnail}
@@ -324,27 +324,28 @@ function ComponentCard({
               className="w-full h-full object-cover"
             />
           ) : (
-            <Code2 className="h-3 w-3 text-zinc-400" />
+            <Code2 className="h-5 w-5 text-zinc-400" />
           )}
         </div>
 
         {/* Name and info */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1">
-            <span className="text-xs font-medium text-zinc-800 dark:text-zinc-200 truncate">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-zinc-800 dark:text-zinc-200 truncate">
               {component.name}
             </span>
             {component.isFavorite && (
-              <Star className="h-2.5 w-2.5 text-amber-500 flex-shrink-0" />
+              <Star className="h-3.5 w-3.5 text-amber-500 flex-shrink-0" />
             )}
           </div>
-          <div className="flex items-center gap-1">
-            <span className="text-[9px] text-zinc-400">
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 line-clamp-2">{component.description}</p>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400 font-medium">
               {component.language.toUpperCase()}
             </span>
             {component.prompt && (
-              <span title="AI Generated">
-                <Sparkles className="h-2 w-2 text-amber-400" />
+              <span title="AI Generated" className="flex items-center gap-0.5 text-[10px] text-amber-500">
+                <Sparkles className="h-3 w-3" /> AI
               </span>
             )}
           </div>
@@ -353,13 +354,13 @@ function ComponentCard({
 
       {/* Hover actions */}
       {(isHovered || showAIInput) && !showAIInput && (
-        <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
+        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
           <button
             onClick={(e) => {
               e.stopPropagation();
               onInsert();
             }}
-            className="px-1.5 py-0.5 text-[9px] font-medium rounded bg-indigo-600 text-white hover:bg-indigo-700"
+            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 text-white hover:bg-indigo-700"
             title="Insert into current artifact"
           >
             Insert
@@ -370,10 +371,10 @@ function ComponentCard({
                 e.stopPropagation();
                 setShowAIInput(true);
               }}
-              className="px-1.5 py-0.5 text-[9px] font-medium rounded bg-amber-500 text-white hover:bg-amber-600"
+              className="px-2 py-1.5 text-xs font-semibold rounded-lg bg-amber-500 text-white hover:bg-amber-600"
               title="Insert with AI modifications"
             >
-              <Sparkles className="h-2.5 w-2.5" />
+              <Sparkles className="h-3.5 w-3.5" />
             </button>
           )}
           <button
@@ -381,7 +382,7 @@ function ComponentCard({
               e.stopPropagation();
               onUseAsBase();
             }}
-            className="px-1.5 py-0.5 text-[9px] font-medium rounded bg-zinc-600 text-white hover:bg-zinc-700"
+            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-zinc-600 text-white hover:bg-zinc-700"
             title="Load as base for iteration"
           >
             Base

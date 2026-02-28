@@ -162,9 +162,9 @@ export default function BuilderProgress({
   const progressPercent = Math.round((completedSteps / steps.length) * 100);
 
   return (
-    <div className="bg-gradient-to-r from-zinc-50 to-zinc-100 dark:from-zinc-900/80 dark:to-zinc-900/50 border-b border-zinc-200 dark:border-zinc-800">
-      {/* Main progress bar */}
-      <div className="h-1 bg-zinc-200 dark:bg-zinc-800">
+    <div className="h-full flex flex-col bg-gradient-to-b from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-zinc-950">
+      {/* Main progress bar at top */}
+      <div className="h-1.5 bg-zinc-200 dark:bg-zinc-800 flex-shrink-0">
         <div
           className={cn(
             "h-full transition-all duration-300 ease-out",
@@ -176,126 +176,136 @@ export default function BuilderProgress({
         />
       </div>
 
-      <div className="px-4 py-4">
-        {/* Header row */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            {isGenerating ? (
-              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30">
-                <Loader2 className="h-5 w-5 text-indigo-600 dark:text-indigo-500 animate-spin" />
-              </div>
-            ) : (
-              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-green-100 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30">
-                <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-500" />
-              </div>
-            )}
-            <div>
-              <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                {isGenerating ? "Building Your Code" : "Build Complete"}
-              </h3>
-              <p className="text-xs text-zinc-600 dark:text-zinc-400">
-                {isGenerating
-                  ? `${progressPercent}% complete`
-                  : "All tasks finished successfully"
-                }
-              </p>
-            </div>
-          </div>
-
-          {/* Stats badges */}
-          <div className="flex items-center gap-2">
-            {elapsedTime > 0 && (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-zinc-200/80 dark:bg-zinc-800 text-xs text-zinc-700 dark:text-zinc-300">
-                <Clock className="h-3 w-3" />
-                <span className="font-mono">{elapsedTime}s</span>
-              </div>
-            )}
-            {codeLength > 0 && (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-zinc-200/80 dark:bg-zinc-800 text-xs text-zinc-700 dark:text-zinc-300">
-                <FileCode className="h-3 w-3" />
-                <span className="font-mono">{codeLength.toLocaleString()}</span>
-              </div>
-            )}
-            {isGenerating && charsPerSecond > 0 && (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-100 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 text-xs text-indigo-700 dark:text-indigo-400">
-                <Zap className="h-3 w-3" />
-                <span className="font-mono">{charsPerSecond}/s</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Steps grid - 2x2 layout */}
-        <div className="grid grid-cols-2 gap-3">
-          {steps.map((step) => (
-            <div
-              key={step.id}
-              className={cn(
-                "flex items-start gap-3 p-3 rounded-lg border transition-all duration-200",
-                step.status === "completed"
-                  ? "bg-green-50 dark:bg-green-500/5 border-green-200 dark:border-green-500/20"
-                  : step.status === "in_progress"
-                  ? "bg-indigo-50 dark:bg-indigo-500/5 border-indigo-200 dark:border-indigo-500/30 shadow-sm"
-                  : "bg-white dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700"
-              )}
-            >
-              {/* Step icon */}
-              <div
-                className={cn(
-                  "flex items-center justify-center w-8 h-8 rounded-lg flex-shrink-0",
-                  step.status === "completed"
-                    ? "bg-green-100 dark:bg-green-500/10 text-green-600 dark:text-green-500"
-                    : step.status === "in_progress"
-                    ? "bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-500"
-                    : "bg-zinc-100 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400"
-                )}
-              >
-                {step.status === "in_progress" ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : step.status === "completed" ? (
-                  <CheckCircle2 className="h-4 w-4" />
-                ) : (
-                  step.icon
-                )}
-              </div>
-
-              {/* Step content */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span
-                    className={cn(
-                      "text-sm font-medium",
-                      step.status === "completed"
-                        ? "text-green-700 dark:text-green-400"
-                        : step.status === "in_progress"
-                        ? "text-indigo-700 dark:text-indigo-400"
-                        : "text-zinc-600 dark:text-zinc-300"
-                    )}
-                  >
-                    {step.label}
-                  </span>
-                  {step.status === "in_progress" && (
-                    <span className="flex h-2 w-2 relative">
-                      <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-indigo-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
-                    </span>
-                  )}
+      {/* Centered content */}
+      <div className="flex-1 flex items-center justify-center px-8">
+        <div className="w-full max-w-lg">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              {isGenerating ? (
+                <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-100 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30">
+                  <Loader2 className="h-7 w-7 text-indigo-600 dark:text-indigo-500 animate-spin" />
                 </div>
-                <p
-                  className={cn(
-                    "text-xs mt-0.5 truncate",
-                    step.status === "completed"
-                      ? "text-green-600 dark:text-green-400/70"
-                      : step.status === "in_progress"
-                      ? "text-indigo-600 dark:text-indigo-400/70"
-                      : "text-zinc-500 dark:text-zinc-400"
-                  )}
-                >
-                  {step.description}
+              ) : (
+                <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-green-100 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30">
+                  <CheckCircle2 className="h-7 w-7 text-green-600 dark:text-green-500" />
+                </div>
+              )}
+              <div>
+                <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
+                  {isGenerating ? "Building Your Code" : "Build Complete"}
+                </h3>
+                <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                  {isGenerating
+                    ? codeLength === 0 ? "AI is analyzing your request..." : "Generating and rendering..."
+                    : "All tasks finished successfully"
+                  }
                 </p>
               </div>
             </div>
-          ))}
+          </div>
+
+          {/* Live stats row */}
+          <div className="flex items-center gap-3 mb-6">
+            {elapsedTime > 0 && (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-zinc-200/80 dark:bg-zinc-800 text-sm text-zinc-700 dark:text-zinc-300">
+                <Clock className="h-4 w-4" />
+                <span className="font-mono font-semibold">{elapsedTime}s</span>
+              </div>
+            )}
+            {codeLength > 0 && (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-zinc-200/80 dark:bg-zinc-800 text-sm text-zinc-700 dark:text-zinc-300">
+                <FileCode className="h-4 w-4" />
+                <span className="font-mono font-semibold">{codeLength.toLocaleString()} chars</span>
+                <span className="text-zinc-500 dark:text-zinc-500 text-xs">~{lineCount} lines</span>
+              </div>
+            )}
+            {isGenerating && charsPerSecond > 0 && (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-indigo-100 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 text-sm text-indigo-700 dark:text-indigo-400">
+                <Zap className="h-4 w-4" />
+                <span className="font-mono font-semibold">{charsPerSecond}/s</span>
+              </div>
+            )}
+            {isGenerating && elapsedTime === 0 && codeLength === 0 && (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-100 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 text-sm text-amber-700 dark:text-amber-400">
+                <Clock className="h-4 w-4 animate-pulse" />
+                <span className="font-medium">Waiting for model...</span>
+              </div>
+            )}
+          </div>
+
+          {/* Steps grid - 2x2 */}
+          <div className="grid grid-cols-2 gap-3">
+            {steps.map((step) => (
+              <div
+                key={step.id}
+                className={cn(
+                  "flex items-start gap-3 p-4 rounded-xl border transition-all duration-200",
+                  step.status === "completed"
+                    ? "bg-green-50 dark:bg-green-500/5 border-green-200 dark:border-green-500/20"
+                    : step.status === "in_progress"
+                    ? "bg-indigo-50 dark:bg-indigo-500/5 border-indigo-200 dark:border-indigo-500/30 shadow-sm"
+                    : "bg-white dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700"
+                )}
+              >
+                {/* Step icon */}
+                <div
+                  className={cn(
+                    "flex items-center justify-center w-9 h-9 rounded-lg flex-shrink-0",
+                    step.status === "completed"
+                      ? "bg-green-100 dark:bg-green-500/10 text-green-600 dark:text-green-500"
+                      : step.status === "in_progress"
+                      ? "bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-500"
+                      : "bg-zinc-100 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400"
+                  )}
+                >
+                  {step.status === "in_progress" ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : step.status === "completed" ? (
+                    <CheckCircle2 className="h-4 w-4" />
+                  ) : (
+                    step.icon
+                  )}
+                </div>
+
+                {/* Step content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={cn(
+                        "text-sm font-semibold",
+                        step.status === "completed"
+                          ? "text-green-700 dark:text-green-400"
+                          : step.status === "in_progress"
+                          ? "text-indigo-700 dark:text-indigo-400"
+                          : "text-zinc-600 dark:text-zinc-300"
+                      )}
+                    >
+                      {step.label}
+                    </span>
+                    {step.status === "in_progress" && (
+                      <span className="flex h-2 w-2 relative">
+                        <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-indigo-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500" />
+                      </span>
+                    )}
+                  </div>
+                  <p
+                    className={cn(
+                      "text-xs mt-1",
+                      step.status === "completed"
+                        ? "text-green-600 dark:text-green-400/70"
+                        : step.status === "in_progress"
+                        ? "text-indigo-600 dark:text-indigo-400/70"
+                        : "text-zinc-500 dark:text-zinc-400"
+                    )}
+                  >
+                    {step.description}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>

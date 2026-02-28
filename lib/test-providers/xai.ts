@@ -11,8 +11,14 @@ export class XAIProvider implements Provider {
 
   async fetchModels(): Promise<string[]> {
     return [
-      'grok-2',
-      'grok-2-mini',
+      'grok-4-0709',
+      'grok-code-fast-1',
+      'grok-4-fast-reasoning',
+      'grok-4-fast-non-reasoning',
+      'grok-4-1-fast-reasoning',
+      'grok-4-1-fast-non-reasoning',
+      'grok-3',
+      'grok-3-mini',
     ];
   }
 

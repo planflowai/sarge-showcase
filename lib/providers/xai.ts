@@ -10,7 +10,7 @@ export function createClient(apiKey: string) {
 }
 
 export function listModels() {
-  return ["grok-4", "grok-4-fast-reasoning", "grok-4-fast-non-reasoning", "grok-4-1-fast-reasoning", "grok-4-1-fast-non-reasoning"];
+  return ["grok-4-0709", "grok-code-fast-1", "grok-4-fast-reasoning", "grok-4-fast-non-reasoning", "grok-4-1-fast-reasoning", "grok-4-1-fast-non-reasoning", "grok-3", "grok-3-mini"];
 }
 
 // Extended types for xAI/Grok responses

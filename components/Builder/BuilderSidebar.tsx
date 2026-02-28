@@ -7,7 +7,6 @@ import { useBuilderStore, getLanguageFromPath } from "@/lib/stores/builderStore"
 import { useBuilderChatStore } from "@/lib/stores/builderChatStore";
 import { useChangesStore, type ChangeEntry } from "@/lib/stores/changesStore";
 import { usePromptLibraryStore, PROMPT_CATEGORIES, PREBUILT_PROMPTS, type Prompt, getComplexityColor, getOutputTypeLabel } from "@/lib/stores/promptLibraryStore";
-import { useAIModeStore } from "@/lib/stores/aiModeStore";
 import { PROJECT_TEMPLATES, type ProjectTemplate } from "@/lib/projectTemplates";
 import TemplateCard from "./TemplateCard";
 import PromptGallery from "./PromptGallery";
@@ -102,9 +101,6 @@ export default function BuilderSidebar({ selectedModel, selectedProvider, onMode
     getPromptsByCategory,
   } = usePromptLibraryStore();
 
-  // AI Mode store
-  const aiModeDisplayName = useAIModeStore((s) => s.getDisplayName);
-  const executionMode = useAIModeStore((s) => s.executionMode);
 
   // Hydrate stores on mount
   useEffect(() => {
@@ -388,20 +384,13 @@ export default function BuilderSidebar({ selectedModel, selectedProvider, onMode
           <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-600 dark:text-zinc-400">
             Builder
           </h2>
-          {/* AI Mode Quick Toggle */}
+          {/* Settings link */}
           <Link
             href="/settings"
-            className={cn(
-              "flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-medium transition-all",
-              "hover:ring-1 hover:ring-zinc-500",
-              executionMode === "local" && "bg-emerald-500/20 text-emerald-500 dark:text-emerald-400",
-              executionMode === "cloud" && "bg-violet-500/20 text-violet-500 dark:text-violet-400",
-              executionMode === "hybrid" && "bg-amber-500/20 text-amber-500 dark:text-amber-400"
-            )}
-            title="AI Orchestration Mode"
+            className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded-lg transition-colors hover:bg-zinc-200 dark:hover:bg-zinc-800"
+            title="Settings"
           >
-            <Zap className="h-2.5 w-2.5" />
-            {aiModeDisplayName()}
+            <Zap className="h-4 w-4" />
           </Link>
         </div>
       </div>

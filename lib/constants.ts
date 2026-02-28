@@ -15,9 +15,9 @@ export const EVENT_BUS_MAX_HISTORY = 100;
 
 // ── Streaming preview debounce ─────────────────────────────────────────────
 /** Minimum milliseconds between live-preview updates during streaming. */
-export const STREAMING_MIN_UPDATE_INTERVAL_MS = 100;
+export const STREAMING_MIN_UPDATE_INTERVAL_MS = 80;
 /** Minimum new characters accumulated before a live-preview update fires. */
-export const STREAMING_MIN_CONTENT_DELTA = 50;
+export const STREAMING_MIN_CONTENT_DELTA = 30;
 
 // ── Sidebar hidden routes ──────────────────────────────────────────────────
 /**

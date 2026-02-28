@@ -45,53 +45,59 @@ function FileLine({
   const fileName = edit.filePath.split("/").pop() || edit.filePath;
 
   return (
-    <div className="flex items-center gap-2 py-1 text-sm">
+    <div className="flex items-center gap-3 py-2 text-sm">
       {/* Status icon */}
       {status === "streaming" ? (
-        <Loader2 className="h-3.5 w-3.5 text-blue-400 animate-spin flex-shrink-0" />
+        <Loader2 className="h-5 w-5 text-blue-400 animate-spin flex-shrink-0" />
       ) : status === "applied" ? (
-        <Check className="h-3.5 w-3.5 text-emerald-400 flex-shrink-0" />
+        <Check className="h-5 w-5 text-emerald-400 flex-shrink-0" />
       ) : status === "rejected" ? (
-        <X className="h-3.5 w-3.5 text-red-400 flex-shrink-0" />
+        <X className="h-5 w-5 text-red-400 flex-shrink-0" />
       ) : edit.isNew ? (
-        <FilePlus className="h-3.5 w-3.5 text-emerald-400 flex-shrink-0" />
+        <FilePlus className="h-5 w-5 text-emerald-400 flex-shrink-0" />
       ) : (
-        <FileCode className="h-3.5 w-3.5 text-blue-400 flex-shrink-0" />
+        <FileCode className="h-5 w-5 text-blue-400 flex-shrink-0" />
       )}
 
       {/* File name */}
       <span className={cn(
-        "font-mono text-xs",
+        "font-mono text-sm",
         status === "rejected" ? "text-zinc-500 line-through" : "text-zinc-200"
       )}>
         {edit.isNew ? "Create" : "Edit"}: {fileName}
       </span>
 
       {/* Line count */}
-      <span className="text-[10px] text-emerald-500">+{edit.lineCount}</span>
+      <span className="text-xs text-emerald-500">+{edit.lineCount}</span>
 
       {/* Status label or actions */}
-      {status === "streaming" && (
-        <span className="text-[10px] text-blue-400 animate-pulse ml-auto">Writing...</span>
+      {status === "streaming" && isStreaming && (
+        <span className="text-sm text-blue-400 animate-pulse ml-auto">Writing...</span>
+      )}
+      {status === "streaming" && !isStreaming && (
+        <span className="text-sm text-emerald-400 flex items-center gap-1 ml-auto">
+          <Check className="h-4 w-4" />
+          Done
+        </span>
       )}
       {status === "applied" && (
-        <span className="text-[10px] text-emerald-400 ml-auto">Applied</span>
+        <span className="text-sm text-emerald-400 ml-auto">Applied</span>
       )}
       {status === "rejected" && (
-        <span className="text-[10px] text-red-400 ml-auto">Rejected</span>
+        <span className="text-sm text-red-400 ml-auto">Rejected</span>
       )}
       {status === "pending" && (
-        <span className="flex items-center gap-2 ml-auto">
+        <span className="flex items-center gap-3 ml-auto">
           <button
             onClick={handleApply}
             disabled={isApplying}
-            className="text-[10px] font-medium text-emerald-400 hover:text-emerald-300 disabled:opacity-50"
+            className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 disabled:opacity-50"
           >
             {isApplying ? "Applying..." : "Apply"}
           </button>
           <button
             onClick={onReject}
-            className="text-[10px] font-medium text-zinc-500 hover:text-red-400"
+            className="text-xs font-semibold text-zinc-500 hover:text-red-400"
           >
             Reject
           </button>

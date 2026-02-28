@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
-  FolderOpen, Plus, FolderPlus, RefreshCw, X, Sparkles, Zap, Star,
+  FolderOpen, Plus, FolderPlus, RefreshCw, X, Sparkles, Star,
   Rocket, Code2, Save, Loader2, History, FileEdit, FilePlus, FileX,
   Check, XCircle, ChevronDown, ChevronRight, BookOpen, Trash2,
   LayoutTemplate, Grid3X3, Layers, Cpu, Puzzle,
@@ -13,7 +13,6 @@ import {
   usePromptLibraryStore, PROMPT_CATEGORIES, PREBUILT_PROMPTS,
   type LibraryPrompt as Prompt, getComplexityColor, getOutputTypeLabel, cn,
 } from "@sarge/core";
-import { useAIModeStore } from "@sarge/core";
 import { PROJECT_TEMPLATES, type ProjectTemplate } from "../lib/projectTemplates";
 import TemplateCard from "./TemplateCard";
 import PromptGallery from "./PromptGallery";
@@ -148,12 +147,12 @@ const TOOLBAR_ITEMS: {
   hover: string;       // hover bg + text
   active: string;      // active bg + border + text
 }[] = [
-  { id: "files",      icon: FolderOpen,     label: "Files",      color: "text-amber-500 dark:text-amber-400",   hover: "hover:bg-amber-500/10 hover:text-amber-600 dark:hover:text-amber-300",   active: "bg-amber-500/15 border-amber-400/50 text-amber-700 dark:text-amber-300"   },
-  { id: "templates",  icon: LayoutTemplate, label: "Templates",  color: "text-purple-500 dark:text-purple-400", hover: "hover:bg-purple-500/10 hover:text-purple-600 dark:hover:text-purple-300", active: "bg-purple-500/15 border-purple-400/50 text-purple-700 dark:text-purple-300" },
-  { id: "prompts",    icon: BookOpen,       label: "Prompts",    color: "text-blue-500 dark:text-blue-400",     hover: "hover:bg-blue-500/10 hover:text-blue-600 dark:hover:text-blue-300",     active: "bg-blue-500/15 border-blue-400/50 text-blue-700 dark:text-blue-300"     },
-  { id: "helpers",    icon: Cpu,            label: "Helpers",    color: "text-cyan-500 dark:text-cyan-400",     hover: "hover:bg-cyan-500/10 hover:text-cyan-600 dark:hover:text-cyan-300",     active: "bg-cyan-500/15 border-cyan-400/50 text-cyan-700 dark:text-cyan-300"     },
-  { id: "components", icon: Puzzle,         label: "Components", color: "text-emerald-500 dark:text-emerald-400", hover: "hover:bg-emerald-500/10 hover:text-emerald-600 dark:hover:text-emerald-300", active: "bg-emerald-500/15 border-emerald-400/50 text-emerald-700 dark:text-emerald-300" },
-  { id: "router",     icon: Layers,         label: "Router",     color: "text-rose-500 dark:text-rose-400",     hover: "hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-300",     active: "bg-rose-500/15 border-rose-400/50 text-rose-700 dark:text-rose-300"     },
+  { id: "files",      icon: FolderOpen,     label: "Project",      color: "text-amber-500 dark:text-amber-400",   hover: "hover:bg-amber-500/10 hover:text-amber-600 dark:hover:text-amber-300",   active: "bg-amber-500/15 border-amber-400/50 text-amber-700 dark:text-amber-300"   },
+  { id: "templates",  icon: LayoutTemplate, label: "Quick Start",  color: "text-purple-500 dark:text-purple-400", hover: "hover:bg-purple-500/10 hover:text-purple-600 dark:hover:text-purple-300", active: "bg-purple-500/15 border-purple-400/50 text-purple-700 dark:text-purple-300" },
+  { id: "prompts",    icon: BookOpen,       label: "Commands",     color: "text-blue-500 dark:text-blue-400",     hover: "hover:bg-blue-500/10 hover:text-blue-600 dark:hover:text-blue-300",     active: "bg-blue-500/15 border-blue-400/50 text-blue-700 dark:text-blue-300"     },
+  { id: "helpers",    icon: Cpu,            label: "AI Team",      color: "text-cyan-500 dark:text-cyan-400",     hover: "hover:bg-cyan-500/10 hover:text-cyan-600 dark:hover:text-cyan-300",     active: "bg-cyan-500/15 border-cyan-400/50 text-cyan-700 dark:text-cyan-300"     },
+  { id: "components", icon: Puzzle,         label: "UI Parts",     color: "text-emerald-500 dark:text-emerald-400", hover: "hover:bg-emerald-500/10 hover:text-emerald-600 dark:hover:text-emerald-300", active: "bg-emerald-500/15 border-emerald-400/50 text-emerald-700 dark:text-emerald-300" },
+  { id: "router",     icon: Layers,         label: "AI Router",    color: "text-rose-500 dark:text-rose-400",     hover: "hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-300",     active: "bg-rose-500/15 border-rose-400/50 text-rose-700 dark:text-rose-300"     },
 ];
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -249,8 +248,6 @@ export default function BuilderSidebar({
     getPromptsByCategory,
   } = usePromptLibraryStore();
 
-  const aiModeDisplayName = useAIModeStore((s) => s.getDisplayName);
-  const executionMode = useAIModeStore((s) => s.executionMode);
 
   useEffect(() => {
     if (!builderHydrated) hydrateBuilder();
@@ -463,39 +460,42 @@ export default function BuilderSidebar({
       // ── Files popover ────────────────────────────────────────────────────────
       case "files":
         return (
-          <div className="w-[420px] flex flex-col max-h-[70vh]">
+          <div className="w-[600px] flex flex-col max-h-[80vh]">
             {/* Header */}
-            <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-200 dark:border-zinc-700">
-              <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">File Explorer</span>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-200 dark:border-zinc-700">
+              <div>
+                <span className="text-base font-bold text-zinc-800 dark:text-zinc-100">Project Files</span>
+                <p className="text-sm text-zinc-500 dark:text-zinc-400">Browse, create, and manage your project files</p>
+              </div>
               {projectPath && (
-                <div className="flex items-center gap-0.5">
+                <div className="flex items-center gap-1">
                   <button onClick={() => setShowPathInput(!showPathInput)} title="Open project"
-                    className="p-1 text-zinc-400 hover:text-amber-500 dark:hover:text-amber-400 rounded transition-colors">
-                    <FolderOpen className="h-3.5 w-3.5" />
+                    className="p-1.5 text-zinc-400 hover:text-amber-500 dark:hover:text-amber-400 rounded-lg transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-700">
+                    <FolderOpen className="h-4 w-4" />
                   </button>
                   <button onClick={handleNewFile} title="New file"
-                    className="p-1 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 rounded transition-colors">
-                    <Plus className="h-3.5 w-3.5" />
+                    className="p-1.5 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 rounded-lg transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-700">
+                    <Plus className="h-4 w-4" />
                   </button>
                   <button onClick={handleRefresh} disabled={isLoading} title="Refresh"
-                    className="p-1 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 rounded transition-colors">
-                    <RefreshCw className={cn("h-3.5 w-3.5", isLoading && "animate-spin")} />
+                    className="p-1.5 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 rounded-lg transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-700">
+                    <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
                   </button>
                   <button onClick={clearProject} title="Close project"
-                    className="p-1 text-zinc-400 hover:text-red-500 rounded transition-colors">
-                    <X className="h-3.5 w-3.5" />
+                    className="p-1.5 text-zinc-400 hover:text-red-500 rounded-lg transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-700">
+                    <X className="h-4 w-4" />
                   </button>
                 </div>
               )}
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto p-2">
+            <div className="flex-1 overflow-y-auto p-3">
               {projectPath ? (
                 <>
                   {/* Inline path input for switching projects */}
                   {showPathInput && (
-                    <div className="space-y-1.5 p-1 mb-2 border-b border-zinc-200 dark:border-zinc-700 pb-2">
+                    <div className="space-y-2 p-2 mb-3 border-b border-zinc-200 dark:border-zinc-700 pb-3">
                       <input
                         type="text"
                         value={pathInput}
@@ -505,31 +505,34 @@ export default function BuilderSidebar({
                           if (e.key === "Escape") setShowPathInput(false);
                         }}
                         placeholder="Enter folder path…"
-                        className="w-full px-2 py-1.5 text-xs rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400"
+                        className="w-full px-3 py-2 text-sm rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400"
                         autoFocus
                       />
-                      <div className="flex gap-1">
+                      <div className="flex gap-2">
                         <Button size="sm" onClick={() => handleOpenProject(pathInput)}
                           disabled={!pathInput.trim() || isLoading}
-                          className="flex-1 h-6 text-[10px] bg-indigo-600 hover:bg-indigo-700 text-white">
+                          className="flex-1 h-8 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg">
                           {isLoading ? "Loading…" : "Open"}
                         </Button>
                         <Button variant="ghost" size="sm" onClick={() => setShowPathInput(false)}
-                          className="h-6 text-[10px]">Cancel</Button>
+                          className="h-8 text-sm">Cancel</Button>
                       </div>
                     </div>
                   )}
-                  <div className="flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                    <FolderOpen className="h-4 w-4 text-amber-500" />
+                  <div className="flex items-center gap-2 px-3 py-2 text-sm font-semibold text-zinc-800 dark:text-zinc-200 mb-2 bg-amber-50 dark:bg-amber-500/10 rounded-xl border border-amber-200 dark:border-amber-500/20">
+                    <FolderOpen className="h-5 w-5 text-amber-500 flex-shrink-0" />
                     <span className="truncate">{projectName}</span>
                   </div>
                   {isLoading ? <SkeletonFileTree /> : <FileTree nodes={fileTree} onFileSelect={handleFileSelect} />}
                 </>
               ) : showNewProjectInput && selectedTemplate ? (
-                <div className="space-y-2 p-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">{selectedTemplate.icon}</span>
-                    <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">{selectedTemplate.name}</span>
+                <div className="space-y-3 p-2">
+                  <div className="flex items-center gap-3 p-3 bg-indigo-50 dark:bg-indigo-500/10 rounded-xl border border-indigo-200 dark:border-indigo-500/20">
+                    <span className="text-2xl">{selectedTemplate.icon}</span>
+                    <div>
+                      <span className="text-sm font-bold text-zinc-800 dark:text-zinc-200">{selectedTemplate.name}</span>
+                      <p className="text-xs text-zinc-500">Choose a location for your new project</p>
+                    </div>
                   </div>
                   <input
                     type="text"
@@ -540,21 +543,21 @@ export default function BuilderSidebar({
                       if (e.key === "Escape") { setShowNewProjectInput(false); setSelectedTemplate(null); }
                     }}
                     placeholder="Enter project path…"
-                    className="w-full px-2 py-1.5 text-xs rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400"
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400"
                     autoFocus
                   />
-                  <div className="flex gap-1">
+                  <div className="flex gap-2">
                     <Button size="sm" onClick={() => handleCreateFromTemplate(selectedTemplate, newProjectPath)}
                       disabled={!newProjectPath.trim() || isCreatingProject}
-                      className="flex-1 h-7 text-xs bg-indigo-600 hover:bg-indigo-700 text-white">
-                      {isCreatingProject ? "Creating…" : "Create"}
+                      className="flex-1 h-9 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg">
+                      {isCreatingProject ? "Creating…" : "Create Project"}
                     </Button>
                     <Button variant="ghost" size="sm" onClick={() => { setShowNewProjectInput(false); setSelectedTemplate(null); }}
-                      className="h-7 text-xs">Cancel</Button>
+                      className="h-9 text-sm">Cancel</Button>
                   </div>
                 </div>
               ) : showPathInput ? (
-                <div className="space-y-2 p-1">
+                <div className="space-y-3 p-2">
                   <input
                     type="text"
                     value={pathInput}
@@ -564,24 +567,24 @@ export default function BuilderSidebar({
                       if (e.key === "Escape") setShowPathInput(false);
                     }}
                     placeholder="Enter folder path…"
-                    className="w-full px-2 py-1.5 text-xs rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400"
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400"
                     autoFocus
                   />
-                  <div className="flex gap-1">
+                  <div className="flex gap-2">
                     <Button size="sm" onClick={() => handleOpenProject(pathInput)}
                       disabled={!pathInput.trim() || isLoading}
-                      className="flex-1 h-7 text-xs bg-indigo-600 hover:bg-indigo-700 text-white">
-                      {isLoading ? "Loading…" : "Open"}
+                      className="flex-1 h-9 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg">
+                      {isLoading ? "Loading…" : "Open Project"}
                     </Button>
                     <Button variant="ghost" size="sm" onClick={() => setShowPathInput(false)}
-                      className="h-7 text-xs">Cancel</Button>
+                      className="h-9 text-sm">Cancel</Button>
                   </div>
                 </div>
               ) : (
-                <div className="space-y-1.5 p-1">
+                <div className="space-y-3 p-2">
                   {/* New project template grid */}
-                  <p className="text-[9px] uppercase tracking-wider text-zinc-500 mb-2">New Project</p>
-                  <div className="grid grid-cols-2 gap-1.5 mb-2">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Start a New Project</p>
+                  <div className="grid grid-cols-2 gap-2">
                     {PROJECT_TEMPLATES.map((t) => (
                       <TemplateCard key={t.id} template={t} onClick={() => {
                         setSelectedTemplate(t);
@@ -591,12 +594,12 @@ export default function BuilderSidebar({
                   </div>
                   <Button variant="outline" size="sm"
                     onClick={() => { setShowOpenModal(true); setActivePopover(null); }}
-                    className="w-full h-7 text-xs gap-1">
-                    <FolderPlus className="h-3 w-3" /> Open Existing
+                    className="w-full h-9 text-sm gap-2 rounded-lg">
+                    <FolderPlus className="h-4 w-4" /> Open Existing Project
                   </Button>
                   <Button variant="ghost" size="sm" onClick={handleNewFile}
-                    className="w-full h-7 text-xs gap-1 text-zinc-500">
-                    <Plus className="h-3 w-3" /> New File
+                    className="w-full h-9 text-sm gap-2 text-zinc-500 rounded-lg">
+                    <Plus className="h-4 w-4" /> New Blank File
                   </Button>
                 </div>
               )}
@@ -604,54 +607,56 @@ export default function BuilderSidebar({
           </div>
         );
 
-      // ── AI Templates popover ─────────────────────────────────────────────────
+      // ── Quick Start / AI Templates popover ───────────────────────────────────
       case "templates":
         return (
-          <div className="w-[420px] flex flex-col max-h-[70vh]">
-            <div className="px-3 py-2 border-b border-zinc-200 dark:border-zinc-700">
-              <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">AI Templates</span>
-              <p className="text-[10px] text-zinc-500 mt-0.5">Click a template to preview — then inject into chat</p>
+          <div className="w-[640px] flex flex-col max-h-[80vh]">
+            <div className="px-5 py-4 border-b border-zinc-200 dark:border-zinc-700">
+              <h2 className="text-base font-bold text-zinc-900 dark:text-zinc-100">Quick Start Templates</h2>
+              <p className="text-sm text-zinc-500 mt-1">Pick a template and the AI builds it for you. Click one to see details, then hit &quot;Build This&quot;.</p>
             </div>
 
             {selectedAiTemplate ? (
               /* Detail view */
-              <div className="p-4 space-y-3">
+              <div className="p-6 space-y-4">
                 <button onClick={() => setSelectedAiTemplate(null)}
-                  className="flex items-center gap-1 text-[10px] text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300">
-                  <ChevronRight className="h-3 w-3 rotate-180" /> Back
+                  className="flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 font-medium">
+                  <ChevronRight className="h-4 w-4 rotate-180" /> Back to templates
                 </button>
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">{selectedAiTemplate.icon}</span>
+                <div className="flex items-center gap-4">
+                  <span className="text-4xl">{selectedAiTemplate.icon}</span>
                   <div>
-                    <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{selectedAiTemplate.label}</h3>
-                    <p className="text-[10px] text-zinc-500">{selectedAiTemplate.description}</p>
+                    <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">{selectedAiTemplate.label}</h3>
+                    <p className="text-sm text-zinc-500">{selectedAiTemplate.description}</p>
                   </div>
                 </div>
-                <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">{selectedAiTemplate.details}</p>
-                <div className="rounded-lg bg-zinc-100 dark:bg-zinc-800 p-2">
-                  <p className="text-[10px] text-zinc-500 mb-1 font-medium">Will inject:</p>
-                  <p className="text-[10px] text-zinc-600 dark:text-zinc-300 line-clamp-3">{selectedAiTemplate.prompt}</p>
+                <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">{selectedAiTemplate.details}</p>
+                <div className="rounded-xl bg-zinc-100 dark:bg-zinc-800 p-4">
+                  <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">What the AI will build:</p>
+                  <p className="text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed line-clamp-4">{selectedAiTemplate.prompt}</p>
                 </div>
                 <button
                   onClick={() => handleAiTemplateUse(selectedAiTemplate)}
-                  className="w-full flex items-center justify-center gap-2 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition-colors"
+                  className="w-full flex items-center justify-center gap-2 py-3 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl transition-colors"
                 >
-                  <Sparkles className="h-3.5 w-3.5" />
-                  Use Template
+                  <Sparkles className="h-4 w-4" />
+                  Build This
                 </button>
               </div>
             ) : (
-              /* Grid view */
-              <div className="p-3 grid grid-cols-2 gap-2 overflow-y-auto">
+              /* Grid view — big cards */
+              <div className="p-4 grid grid-cols-2 gap-3 overflow-y-auto">
                 {AI_TEMPLATES.map((t) => (
                   <button
                     key={t.id}
                     onClick={() => setSelectedAiTemplate(t)}
-                    className="flex flex-col items-start gap-1 p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 hover:border-indigo-400 dark:hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all text-left group"
+                    className="flex items-start gap-4 p-5 rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 hover:border-indigo-400 dark:hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all text-left group"
                   >
-                    <span className="text-xl group-hover:scale-110 transition-transform">{t.icon}</span>
-                    <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">{t.label}</span>
-                    <span className="text-[9px] text-zinc-500 leading-tight">{t.description}</span>
+                    <span className="text-3xl group-hover:scale-110 transition-transform flex-shrink-0 mt-0.5">{t.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-bold text-zinc-800 dark:text-zinc-200 block">{t.label}</span>
+                      <span className="text-xs text-zinc-500 leading-relaxed mt-1 block">{t.description}</span>
+                    </div>
                   </button>
                 ))}
               </div>
@@ -659,18 +664,21 @@ export default function BuilderSidebar({
           </div>
         );
 
-      // ── Prompts popover ──────────────────────────────────────────────────────
+      // ── Commands / Prompts popover ───────────────────────────────────────────
       case "prompts":
         return (
-          <div className="w-[480px] flex flex-col max-h-[75vh]">
-            <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-200 dark:border-zinc-700">
-              <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Prompt Library</span>
+          <div className="w-[600px] flex flex-col max-h-[80vh]">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-200 dark:border-zinc-700">
+              <div>
+                <h2 className="text-base font-bold text-zinc-900 dark:text-zinc-100">AI Commands</h2>
+                <p className="text-sm text-zinc-500 mt-0.5">Pre-written instructions for common tasks. Click &quot;Send&quot; to run one.</p>
+              </div>
               <button onClick={() => setShowGallery(true)}
-                className="flex items-center gap-1 px-2 py-0.5 text-[9px] font-medium text-indigo-500 hover:text-indigo-400 hover:bg-indigo-500/10 rounded transition-colors">
-                <Grid3X3 className="h-2.5 w-2.5" /> Browse All
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-500 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-colors">
+                <Grid3X3 className="h-3.5 w-3.5" /> Browse All
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto px-2 py-2 space-y-1">
+            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
               {PROMPT_CATEGORIES.map((category) => {
                 const prompts = getPromptsByCategory(category.id);
                 const isExpanded = expandedCategories.has(category.id);
@@ -679,47 +687,47 @@ export default function BuilderSidebar({
                   <div key={category.id} className="mb-1">
                     {/* Category header */}
                     <button onClick={() => toggleCategory(category.id)}
-                      className="w-full flex items-center gap-1.5 px-2 py-1.5 text-left hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors">
+                      className="w-full flex items-center gap-2 px-3 py-2.5 text-left hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors">
                       {isExpanded
-                        ? <ChevronDown className="h-2.5 w-2.5 text-zinc-400" />
-                        : <ChevronRight className="h-2.5 w-2.5 text-zinc-400" />}
-                      <span className="w-5 h-5 flex items-center justify-center rounded text-xs"
+                        ? <ChevronDown className="h-4 w-4 text-zinc-400" />
+                        : <ChevronRight className="h-4 w-4 text-zinc-400" />}
+                      <span className="w-7 h-7 flex items-center justify-center rounded-lg text-sm"
                         style={{ backgroundColor: `${category.color}20` }}>{category.icon}</span>
-                      <span className="text-[10px] font-semibold text-zinc-600 dark:text-zinc-400">{category.name}</span>
-                      <span className="text-[9px] text-zinc-400 ml-auto bg-zinc-200 dark:bg-zinc-700 px-1.5 rounded-full">{prompts.length}</span>
+                      <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">{category.name}</span>
+                      <span className="text-xs text-zinc-400 ml-auto bg-zinc-200 dark:bg-zinc-700 px-2 py-0.5 rounded-full font-medium">{prompts.length}</span>
                     </button>
                     {isExpanded && prompts.length > 0 && (
-                      <div className="space-y-1.5 mt-1 ml-1 mr-1">
+                      <div className="space-y-2 mt-2 ml-2 mr-2">
                         {prompts.map((prompt) => (
                           <div key={prompt.id}
-                            className="p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-700/60 bg-zinc-50 dark:bg-zinc-800/40 hover:border-indigo-400/50 dark:hover:border-indigo-500/40 hover:bg-indigo-50/30 dark:hover:bg-indigo-900/10 transition-all group">
-                            <div className="flex items-start justify-between gap-2">
+                            className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-700/60 bg-zinc-50 dark:bg-zinc-800/40 hover:border-indigo-400/50 dark:hover:border-indigo-500/40 hover:bg-indigo-50/30 dark:hover:bg-indigo-900/10 transition-all group">
+                            <div className="flex items-start justify-between gap-3">
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-1.5 mb-1">
-                                  <span className="text-[11px] font-semibold text-zinc-700 dark:text-zinc-200 truncate">{prompt.title}</span>
+                                <div className="flex items-center gap-2 mb-1.5">
+                                  <span className="text-sm font-bold text-zinc-800 dark:text-zinc-200">{prompt.title}</span>
                                   {prompt.complexity && (
-                                    <span className={cn("px-1.5 py-0 text-[7px] font-bold rounded-full flex-shrink-0", getComplexityColor(prompt.complexity))}>
+                                    <span className={cn("px-2 py-0.5 text-[9px] font-bold rounded-full flex-shrink-0", getComplexityColor(prompt.complexity))}>
                                       {prompt.complexity === "simple" ? "EASY" : prompt.complexity === "medium" ? "MED" : "ADV"}
                                     </span>
                                   )}
                                 </div>
-                                <p className="text-[10px] text-zinc-500 line-clamp-2 leading-tight">
-                                  {prompt.previewHint || prompt.prompt.slice(0, 90)}
+                                <p className="text-xs text-zinc-500 leading-relaxed">
+                                  {prompt.previewHint || prompt.prompt.slice(0, 120)}
                                 </p>
                               </div>
-                              <div className="flex items-center gap-1 flex-shrink-0 mt-0.5">
+                              <div className="flex items-center gap-2 flex-shrink-0 mt-0.5">
                                 {prompt.isCustom && (
                                   <button onClick={(e) => { e.stopPropagation(); removeCustomPrompt(prompt.id); }}
-                                    className="p-1 text-zinc-400 hover:text-red-500 transition-colors rounded"
+                                    className="p-1.5 text-zinc-400 hover:text-red-500 transition-colors rounded"
                                     title="Delete prompt">
-                                    <Trash2 className="h-3 w-3" />
+                                    <Trash2 className="h-4 w-4" />
                                   </button>
                                 )}
                                 <button
                                   onClick={() => handlePromptClick(prompt)}
-                                  className="px-2.5 py-1 rounded-md text-[10px] font-bold bg-indigo-600 hover:bg-indigo-500 text-white transition-colors whitespace-nowrap"
+                                  className="px-4 py-2 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white transition-colors whitespace-nowrap"
                                 >
-                                  Use →
+                                  Send
                                 </button>
                               </div>
                             </div>
@@ -734,42 +742,54 @@ export default function BuilderSidebar({
           </div>
         );
 
-      // ── AI Helpers popover ───────────────────────────────────────────────────
+      // ── AI Team / Helpers popover ────────────────────────────────────────────
       case "helpers":
         return (
-          <div className="w-[420px] max-h-[70vh] overflow-y-auto">
-            <div className="px-3 py-2.5 border-b border-zinc-200 dark:border-zinc-700">
-              <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">AI Helpers</span>
-              <p className="text-[10px] text-zinc-500 mt-0.5">Autonomous agents that analyze your code in parallel</p>
-              <div className="mt-2 space-y-1">
-                <div className="flex items-start gap-2">
-                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/15 text-blue-500 dark:text-blue-400 font-bold flex-shrink-0 mt-0.5">Reviewer</span>
-                  <span className="text-[9px] text-zinc-500">Finds bugs, security issues, and performance improvements</span>
+          <div className="w-[600px] max-h-[80vh] overflow-y-auto">
+            <div className="px-5 py-4 border-b border-zinc-200 dark:border-zinc-700">
+              <h2 className="text-base font-bold text-zinc-900 dark:text-zinc-100">Your AI Team</h2>
+              <p className="text-sm text-zinc-500 mt-1">Autonomous agents that review your code in parallel. They work behind the scenes while you build.</p>
+            </div>
+
+            {/* Role cards */}
+            <div className="px-4 pt-4 pb-2 grid grid-cols-3 gap-3">
+              <div className="p-4 rounded-2xl bg-blue-50 dark:bg-blue-500/5 border border-blue-200 dark:border-blue-500/20">
+                <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-500/10 flex items-center justify-center mb-3">
+                  <span className="text-lg">🔍</span>
                 </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 font-bold flex-shrink-0 mt-0.5">Judge</span>
-                  <span className="text-[9px] text-zinc-500">Rates code quality 1–10 with detailed reasoning</span>
+                <h3 className="text-sm font-bold text-blue-700 dark:text-blue-400">Reviewer</h3>
+                <p className="text-xs text-blue-600/70 dark:text-blue-400/60 mt-1 leading-relaxed">Finds bugs, security holes, and performance bottlenecks in your code.</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-500/5 border border-amber-200 dark:border-amber-500/20">
+                <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-500/10 flex items-center justify-center mb-3">
+                  <span className="text-lg">⚖️</span>
                 </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-600 dark:text-purple-400 font-bold flex-shrink-0 mt-0.5">Debater</span>
-                  <span className="text-[9px] text-zinc-500">Argues for alternative approaches or architecture choices</span>
+                <h3 className="text-sm font-bold text-amber-700 dark:text-amber-400">Judge</h3>
+                <p className="text-xs text-amber-600/70 dark:text-amber-400/60 mt-1 leading-relaxed">Rates your code quality 1-10 and explains exactly why.</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-purple-50 dark:bg-purple-500/5 border border-purple-200 dark:border-purple-500/20">
+                <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-500/10 flex items-center justify-center mb-3">
+                  <span className="text-lg">💬</span>
                 </div>
+                <h3 className="text-sm font-bold text-purple-700 dark:text-purple-400">Debater</h3>
+                <p className="text-xs text-purple-600/70 dark:text-purple-400/60 mt-1 leading-relaxed">Suggests alternative approaches you might not have considered.</p>
               </div>
             </div>
-            <div className="p-2">
+
+            <div className="px-4 pb-4">
               <AICapabilitiesPanel />
               <AIHelpersSection />
             </div>
           </div>
         );
 
-      // ── Components popover ───────────────────────────────────────────────────
+      // ── UI Parts / Components popover ────────────────────────────────────────
       case "components":
         return (
-          <div className="w-[420px] max-h-[70vh] overflow-y-auto">
-            <div className="px-3 py-2 border-b border-zinc-200 dark:border-zinc-700">
-              <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Component Library</span>
-              <p className="text-[10px] text-zinc-500 mt-0.5">Insert, use as base, or modify with AI</p>
+          <div className="w-[600px] max-h-[80vh] overflow-y-auto">
+            <div className="px-5 py-4 border-b border-zinc-200 dark:border-zinc-700">
+              <h2 className="text-base font-bold text-zinc-900 dark:text-zinc-100">Ready-Made UI Parts</h2>
+              <p className="text-sm text-zinc-500 mt-1">Pre-built components you can drop into your project. Insert as-is, use as a starting point, or tell the AI to customize it.</p>
             </div>
             <ComponentLibrarySection
               onInsertComponent={(code, id) => { onInsertComponent?.(code, id); setActivePopover(null); }}
@@ -781,67 +801,77 @@ export default function BuilderSidebar({
           </div>
         );
 
-      // ── Router / Flow popover ────────────────────────────────────────────────
+      // ── AI Router / Flow popover ───────────────────────────────────────────
       case "router":
         return (
-          <div className="w-[420px] max-h-[70vh] overflow-y-auto">
-            <div className="px-3 py-2 border-b border-zinc-200 dark:border-zinc-700">
-              <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Smart Router</span>
-              <p className="text-[10px] text-zinc-500 mt-0.5">AI routing decisions and capability flow</p>
+          <div className="w-[600px] max-h-[80vh] overflow-y-auto">
+            <div className="px-5 py-4 border-b border-zinc-200 dark:border-zinc-700">
+              <h2 className="text-base font-bold text-zinc-900 dark:text-zinc-100">AI Router</h2>
+              <p className="text-sm text-zinc-500 mt-1">Shows which AI model is handling your requests and how the system routes between local and cloud models.</p>
             </div>
-            <div className="p-2 space-y-2">
+            <div className="p-4 space-y-4">
               <RouterStatus />
-              <div className="border-t border-zinc-200 dark:border-zinc-700 pt-2">
-                <p className="text-[9px] uppercase tracking-wider text-zinc-500 mb-1.5 px-1">Flow</p>
+              <div className="border-t border-zinc-200 dark:border-zinc-700 pt-4">
+                <p className="text-xs uppercase tracking-wider font-bold text-zinc-500 mb-3">Capability Flow</p>
                 <DependencyGraph compact />
               </div>
             </div>
           </div>
         );
 
-      // ── Changes popover ──────────────────────────────────────────────────────
+      // ── Activity / Changes popover ─────────────────────────────────────────
       case "changes":
         return (
-          <div className="w-[420px] flex flex-col max-h-[70vh]">
-            <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-200 dark:border-zinc-700">
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Changes</span>
-                <span className="text-[9px] bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-400 px-1.5 rounded-full">
-                  {changes.length}
-                </span>
+          <div className="w-[560px] flex flex-col max-h-[80vh]">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-200 dark:border-zinc-700">
+              <div>
+                <h2 className="text-base font-bold text-zinc-900 dark:text-zinc-100">Session Activity</h2>
+                <p className="text-sm text-zinc-500 mt-0.5">Files created and modified during this session. Click to jump to the change in chat.</p>
               </div>
-              <button onClick={clearChanges}
-                className="p-1 text-zinc-400 hover:text-red-500 rounded transition-colors" title="Clear history">
-                <X className="h-3 w-3" />
-              </button>
+              <div className="flex items-center gap-2">
+                <span className="text-xs bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-400 px-2 py-0.5 rounded-full font-medium">
+                  {changes.length} changes
+                </span>
+                <button onClick={clearChanges}
+                  className="p-1.5 text-zinc-400 hover:text-red-500 rounded-lg transition-colors" title="Clear history">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             </div>
-            <div className="flex-1 overflow-y-auto p-1">
+            <div className="flex-1 overflow-y-auto p-3 space-y-1">
               {changes.map((change) => (
                 <button key={change.id} onClick={() => { onScrollToMessage?.(change.messageId); setActivePopover(null); }}
-                  className="w-full text-left px-2 py-1.5 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors group">
-                  <div className="flex items-center gap-1.5">
+                  className="w-full text-left px-4 py-3 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors group">
+                  <div className="flex items-center gap-3">
                     {change.status === "applied"
                       ? (change.action === "created"
-                        ? <FilePlus className="h-3 w-3 text-emerald-500 flex-shrink-0" />
-                        : <FileEdit className="h-3 w-3 text-blue-500 flex-shrink-0" />)
-                      : <FileX className="h-3 w-3 text-red-400 flex-shrink-0" />}
-                    <span className={cn(
-                      "text-[10px] font-medium truncate flex-1",
-                      change.status === "rejected" ? "text-zinc-400 line-through" : "text-zinc-700 dark:text-zinc-300"
-                    )}>
-                      {change.filePath.split("/").pop()}
-                    </span>
-                    {change.status === "applied"
-                      ? <Check className="h-2.5 w-2.5 text-emerald-500 flex-shrink-0 opacity-0 group-hover:opacity-100" />
-                      : <XCircle className="h-2.5 w-2.5 text-red-400 flex-shrink-0 opacity-0 group-hover:opacity-100" />}
-                  </div>
-                  <div className="flex items-center gap-1 mt-0.5">
-                    <span className="text-[9px] text-zinc-400 truncate flex-1">
-                      {change.summary.slice(0, 40)}{change.summary.length > 40 ? "…" : ""}
-                    </span>
-                    <span className="text-[8px] text-zinc-400 dark:text-zinc-600 flex-shrink-0">
-                      {new Date(change.timestamp).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
-                    </span>
+                        ? <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-500/10 flex items-center justify-center flex-shrink-0"><FilePlus className="h-4 w-4 text-emerald-500" /></div>
+                        : <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-500/10 flex items-center justify-center flex-shrink-0"><FileEdit className="h-4 w-4 text-blue-500" /></div>)
+                      : <div className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-500/10 flex items-center justify-center flex-shrink-0"><FileX className="h-4 w-4 text-red-400" /></div>}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className={cn(
+                          "text-sm font-semibold truncate",
+                          change.status === "rejected" ? "text-zinc-400 line-through" : "text-zinc-800 dark:text-zinc-200"
+                        )}>
+                          {change.filePath.split("/").pop()}
+                        </span>
+                        <span className={cn(
+                          "text-[10px] px-1.5 py-0.5 rounded-full font-medium flex-shrink-0",
+                          change.status === "applied"
+                            ? (change.action === "created" ? "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-blue-100 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400")
+                            : "bg-red-100 dark:bg-red-500/10 text-red-500"
+                        )}>
+                          {change.status === "applied" ? change.action : "rejected"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-xs text-zinc-500 truncate flex-1">{change.summary}</span>
+                        <span className="text-[10px] text-zinc-400 dark:text-zinc-600 flex-shrink-0">
+                          {new Date(change.timestamp).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </button>
               ))}
@@ -858,12 +888,13 @@ export default function BuilderSidebar({
 
   return (
     <>
+      {/* DESKTOP ONLY — 27" 2560x1440 minimum. No mobile breakpoints. */}
       <div
         ref={toolbarRef}
-        className="relative flex-shrink-0 flex flex-row items-center h-12 px-3 bg-zinc-50 dark:bg-zinc-900/80 border-b border-zinc-200 dark:border-zinc-800"
+        className="relative flex-shrink-0 flex flex-row items-center h-14 px-4 bg-zinc-50 dark:bg-zinc-900/80 border-b border-zinc-200 dark:border-zinc-800"
       >
         {/* CENTER — colored, bigger toolbar items */}
-        <div className="flex-1 flex items-center justify-center gap-1">
+        <div className="flex-1 flex items-center justify-center gap-2">
           {TOOLBAR_ITEMS.map((item) => {
             const Icon = item.icon;
             const isActive = activePopover === item.id;
@@ -872,52 +903,40 @@ export default function BuilderSidebar({
                 key={item.id}
                 onClick={(e) => handleToolbarClick(item.id, e)}
                 className={cn(
-                  "flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-semibold transition-all border",
+                  "flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all border",
                   isActive
                     ? item.active
                     : cn("border-transparent", item.color, item.hover)
                 )}
               >
-                <Icon className="h-4 w-4" />
+                <Icon className="h-5 w-5" />
                 <span>{item.label}</span>
                 {/* File badge */}
                 {item.id === "files" && projectName && (
-                  <span className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-400 flex-shrink-0" />
                 )}
               </button>
             );
           })}
 
-          {/* Changes button (conditional) */}
+          {/* Activity badge (collapsed — click to expand popover) */}
           {changes.length > 0 && (
             <button
               onClick={(e) => handleToolbarClick("changes", e)}
               className={cn(
-                "flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-semibold transition-all border",
+                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium transition-all",
                 activePopover === "changes"
-                  ? "bg-orange-500/15 border-orange-400/50 text-orange-700 dark:text-orange-300"
-                  : "border-transparent text-orange-500 dark:text-orange-400 hover:bg-orange-500/10 hover:text-orange-600 dark:hover:text-orange-300"
+                  ? "bg-orange-500/20 text-orange-600 dark:text-orange-300 ring-1 ring-orange-400/50"
+                  : "bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-orange-500/10 hover:text-orange-500"
               )}
+              title={`${changes.length} changes this session`}
             >
-              <History className="h-4 w-4" />
-              <span>Changes</span>
-              <span className="px-1.5 py-0.5 text-[9px] font-bold bg-orange-500/20 text-orange-600 dark:text-orange-400 rounded-full">
-                {changes.length}
-              </span>
+              <History className="h-3.5 w-3.5" />
+              <span>{changes.length}</span>
             </button>
           )}
         </div>
 
-        {/* RIGHT — AI mode indicator */}
-        <span className={cn(
-          "flex-shrink-0 flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-medium",
-          executionMode === "local" && "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400",
-          executionMode === "cloud" && "bg-violet-500/20 text-violet-600 dark:text-violet-400",
-          executionMode === "hybrid" && "bg-amber-500/20 text-amber-600 dark:text-amber-400"
-        )}>
-          <Zap className="h-2.5 w-2.5" />
-          <span className="hidden sm:inline">{aiModeDisplayName()}</span>
-        </span>
       </div>
 
       {/* Fixed-position popover overlay */}

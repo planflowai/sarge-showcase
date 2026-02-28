@@ -72,19 +72,19 @@ export default function EditCard({
       )}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2">
-        <div className="flex items-center gap-2 min-w-0 flex-1">
+      <div className="flex items-center justify-between px-4 py-3">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
           {/* Status indicator */}
           {status === "streaming" ? (
-            <Loader2 className="h-4 w-4 text-blue-400 animate-spin flex-shrink-0" />
+            <Loader2 className="h-5 w-5 text-blue-400 animate-spin flex-shrink-0" />
           ) : status === "applied" ? (
-            <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+            <Check className="h-5 w-5 text-emerald-400 flex-shrink-0" />
           ) : status === "rejected" ? (
-            <X className="h-4 w-4 text-red-400 flex-shrink-0" />
+            <X className="h-5 w-5 text-red-400 flex-shrink-0" />
           ) : isNew ? (
-            <FilePlus className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+            <FilePlus className="h-5 w-5 text-emerald-400 flex-shrink-0" />
           ) : (
-            <FileCode className="h-4 w-4 text-blue-400 flex-shrink-0" />
+            <FileCode className="h-5 w-5 text-blue-400 flex-shrink-0" />
           )}
 
           {/* File info */}
@@ -116,11 +116,11 @@ export default function EditCard({
         {/* Actions */}
         <div className="flex items-center gap-1.5 flex-shrink-0">
           {isStreaming ? (
-            <span className="text-[10px] text-blue-400 animate-pulse">Writing...</span>
-          ) : status === "pending" && (linesAdded > 0 || linesRemoved > 0) ? (
-            <span className="text-[10px] text-emerald-400 flex items-center gap-1">
-              <Check className="h-3 w-3" />
-              Complete
+            <span className="text-sm text-blue-400 animate-pulse">Writing...</span>
+          ) : status === "pending" || status === "streaming" ? (
+            <span className="text-sm text-emerald-400 flex items-center gap-1">
+              <Check className="h-4 w-4" />
+              Done
             </span>
           ) : null}
 
