@@ -42,6 +42,7 @@ interface BuilderChatProps {
   onPromptSent?: (prompt: string) => void;
   onRefreshFileTree?: () => Promise<void>;
   autoApply?: boolean;
+  webSearch?: boolean;
 }
 
 export default function BuilderChat({
@@ -61,6 +62,7 @@ export default function BuilderChat({
   onPromptSent,
   onRefreshFileTree,
   autoApply: autoApplyProp,
+  webSearch = false,
 }: BuilderChatProps) {
   const { messages, sending, hydrated, hydrate, sendMessage, generateImage, clearMessages, abortStream, prefilledInput, setPrefilledInput } = useBuilderChatStore();
   const addChange = useChangesStore(state => state.addChange);
@@ -443,7 +445,7 @@ export default function BuilderChat({
     // steps based on actual streaming content events.
 
     // Pass both: display message (what user typed) and API prompt (with injected context)
-    await sendMessage(userMessage, finalPrompt, selectedProvider, selectedModel, systemPrompt, imagesToSend.length > 0 ? imagesToSend : undefined);
+    await sendMessage(userMessage, finalPrompt, selectedProvider, selectedModel, systemPrompt, imagesToSend.length > 0 ? imagesToSend : undefined, webSearch);
 
     // Restore focus to textarea after send (disabled→enabled transition shifts focus to nav links)
     setTimeout(() => textareaRef.current?.focus(), 0);

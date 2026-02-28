@@ -70,23 +70,23 @@ export const providers: ProviderConfig[] = [
     supportsVoice: true,
     models: [
       {
-        id: "gpt-5.2",
-        name: "GPT-5.2",
+        id: "gpt-4.1",
+        name: "GPT-4.1",
         provider: "openai",
-        maxTokens: 16384,
+        maxTokens: 32768,
         temperature: 0.7,
         topP: 1,
-        contextWindow: 200000,
+        contextWindow: 1047576,
         isEnabled: true,
       },
       {
-        id: "gpt-5.1",
-        name: "GPT-5.1",
+        id: "gpt-4.1-mini",
+        name: "GPT-4.1 Mini",
         provider: "openai",
-        maxTokens: 16384,
+        maxTokens: 32768,
         temperature: 0.7,
         topP: 1,
-        contextWindow: 200000,
+        contextWindow: 1047576,
         isEnabled: true,
       },
       {
@@ -149,16 +149,6 @@ export const providers: ProviderConfig[] = [
     isEnabled: true,
     supportsVoice: true,
     models: [
-      {
-        id: "gemini-3.0-flash",
-        name: "Gemini 3.0 Flash",
-        provider: "google",
-        maxTokens: 8192,
-        temperature: 0.7,
-        topP: 1,
-        contextWindow: 1000000,
-        isEnabled: true,
-      },
       {
         id: "gemini-2.5-pro",
         name: "Gemini 2.5 Pro",

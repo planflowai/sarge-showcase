@@ -41,6 +41,7 @@ if (typeof window !== 'undefined') {
 export default function BuilderPage({ deployContent }: { deployContent?: React.ReactNode } = {}) {
   const [selectedModel, setSelectedModel] = useState<string | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<string>("deepseek");
+  const [webSearch, setWebSearch] = useState(false);
 
   // Artifact panel state - NOW PERSISTED via artifactStore
   const {
@@ -640,6 +641,8 @@ Please provide the complete modified version of this component. Make only the re
             selectedModel={selectedModel}
             selectedProvider={selectedProvider}
             onModelSelect={handleModelSelect}
+            webSearch={webSearch}
+            onWebSearchToggle={() => setWebSearch((v) => !v)}
           />
 
           {/* Chat messages + input */}
@@ -661,6 +664,7 @@ Please provide the complete modified version of this component. Make only the re
               onPromptSent={handlePromptSent}
               onRefreshFileTree={handleRefreshFileTree}
               autoApply={autoApply}
+              webSearch={webSearch}
             />
           </div>
 

@@ -90,7 +90,8 @@ interface BuilderChatState {
     provider: string,
     model: string,
     systemPrompt?: string,
-    images?: string[]
+    images?: string[],
+    webSearch?: boolean
   ) => Promise<void>;
   generateImage: (
     prompt: string,
@@ -154,7 +155,7 @@ export const useBuilderChatStore = create<BuilderChatState>()(
     }
   },
 
-  sendMessage: async (displayMessage, apiPrompt, provider, model, systemPrompt, images) => {
+  sendMessage: async (displayMessage, apiPrompt, provider, model, systemPrompt, images, webSearch = false) => {
     // Use provided system prompt or fall back to default
     const effectiveSystemPrompt = systemPrompt || BUILDER_SYSTEM_PROMPT;
     const { addMessage, updateStreamingMessage, finalizeStreamingMessage } = get();
@@ -193,18 +194,8 @@ export const useBuilderChatStore = create<BuilderChatState>()(
 
     try {
       // Determine if local or cloud
-      const isLocal = provider === "ollama";
+      const isLocal = provider === "ollama" || provider === "lmstudio";
       const source = isLocal ? "local" : "cloud";
-
-      console.log('[BuilderChat] Sending request:', {
-        provider,
-        model,
-        source,
-        isLocal,
-        providerType: typeof provider,
-        modelType: typeof model,
-        providerExact: provider === "ollama" ? "YES ollama" : `NO: "${provider}"`
-      });
 
       // Call the streaming API - use apiPrompt which includes context injection
       const response = await fetch("/api/test/stream", {
@@ -212,9 +203,11 @@ export const useBuilderChatStore = create<BuilderChatState>()(
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           model,
+          provider,
           prompt: apiPrompt,
           systemPrompt: effectiveSystemPrompt,
           source,
+          webSearch,
           images: images && images.length > 0 ? images : undefined,
         }),
         signal: abortController.signal,

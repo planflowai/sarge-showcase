@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Zap } from "lucide-react";
+import { Zap, Globe } from "lucide-react";
 import { useModelStore, useAIModeStore, fetchOllamaModels, providers, groupOllamaModels, cn } from "@sarge/core";
 import type { LocalModel } from "@sarge/core";
 import Link from "next/link";
@@ -10,12 +10,16 @@ interface BuilderModelBarProps {
   selectedModel: string | null;
   selectedProvider: string;
   onModelSelect: (modelId: string, provider: string) => void;
+  webSearch?: boolean;
+  onWebSearchToggle?: () => void;
 }
 
 export default function BuilderModelBar({
   selectedModel,
   selectedProvider,
   onModelSelect,
+  webSearch = false,
+  onWebSearchToggle,
 }: BuilderModelBarProps) {
   const { hydrated, hydrate, isBuilderModel, getDisplayName, getEffectiveModels } = useModelStore();
   const [ollamaModels, setOllamaModels] = useState<LocalModel[]>([]);
@@ -174,6 +178,23 @@ export default function BuilderModelBar({
         <Zap className="h-2.5 w-2.5" />
         {aiModeDisplayName()}
       </Link>
+
+      {/* Web Search toggle */}
+      {onWebSearchToggle && (
+        <button
+          onClick={onWebSearchToggle}
+          title={webSearch ? "Web search ON — click to disable" : "Web search OFF — click to enable (requires TAVILY_API_KEY)"}
+          className={cn(
+            "flex-shrink-0 flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-medium border transition-all",
+            webSearch
+              ? "bg-sky-500/20 border-sky-500/40 text-sky-400 hover:bg-sky-500/30"
+              : "bg-transparent border-zinc-700 text-zinc-500 hover:text-zinc-300 hover:border-zinc-500"
+          )}
+        >
+          <Globe className="h-2.5 w-2.5" />
+          Web
+        </button>
+      )}
     </div>
   );
 }

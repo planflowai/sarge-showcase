@@ -9,21 +9,54 @@ function parseDataUrl(dataUrl: string): { mimeType: string; base64Data: string }
   return { mimeType: match[1], base64Data: match[2] };
 }
 
+// ── Tavily web search helper ─────────────────────────────────────────────
+async function tavilySearch(query: string): Promise<string> {
+  const apiKey = process.env.TAVILY_API_KEY;
+  if (!apiKey || !query.trim()) return '';
+  try {
+    const res = await fetch('https://api.tavily.com/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        api_key: apiKey,
+        query: query.slice(0, 400) + ' ' + new Date().getFullYear(),
+        max_results: 5,
+        include_raw_content: false,
+      }),
+    });
+    if (!res.ok) return '';
+    const data = await res.json();
+    const results: { title?: string; url?: string; content?: string }[] = (data.results || [])
+      .filter((r: { content?: string }) => r.content && r.content.length > 20)
+      .slice(0, 5);
+    if (!results.length) return '';
+    const lines = results.map((r, i) =>
+      `${i + 1}. **${r.title || 'Result'}**\n${r.url || ''}\n${(r.content || '').slice(0, 500)}`
+    );
+    return `\n\n[Web Search Results for: "${query.slice(0, 80)}"]\n${lines.join('\n\n')}\n[End Web Search Results]\n`;
+  } catch {
+    return '';
+  }
+}
+
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  const { model, prompt, systemPrompt, source, provider, images } = body;
+  const { model, prompt, systemPrompt, source, provider, images, webSearch } = body;
 
   const hasImages = Array.isArray(images) && images.length > 0;
 
-  console.log('[API/test/stream] Received request:', {
-    model,
-    source,
-    provider,
-    hasSystemPrompt: !!systemPrompt,
-    imageCount: hasImages ? images.length : 0,
-  });
-
   const ollamaUrl = process.env.OLLAMA_URL || 'http://localhost:11434';
+
+  // Optional Tavily web search — inject into system prompt before routing
+  let enrichedSystemPrompt = systemPrompt || '';
+  if (webSearch && prompt) {
+    const searchContext = await tavilySearch(prompt);
+    if (searchContext) {
+      enrichedSystemPrompt = enrichedSystemPrompt
+        ? enrichedSystemPrompt + searchContext
+        : searchContext;
+    }
+  }
   const lmstudioUrl = process.env.NEXT_PUBLIC_LM_STUDIO_URL || 'http://127.0.0.1:1240/v1';
   const lmstudioApiKey = process.env.LMStudio_API_KEY || process.env.LM_STUDIO_API_KEY || '';
 
@@ -34,8 +67,8 @@ export async function POST(request: NextRequest) {
 
   // Build messages (text-only, for providers without vision)
   const messages: { role: string; content: string }[] = [];
-  if (systemPrompt) {
-    messages.push({ role: 'system', content: systemPrompt });
+  if (enrichedSystemPrompt) {
+    messages.push({ role: 'system', content: enrichedSystemPrompt });
   }
   messages.push({ role: 'user', content: prompt });
 
@@ -103,8 +136,8 @@ export async function POST(request: NextRequest) {
     try {
       // Ollama vision: send images as base64 in the message
       const ollamaMessages: any[] = [];
-      if (systemPrompt) {
-        ollamaMessages.push({ role: 'system', content: systemPrompt });
+      if (enrichedSystemPrompt) {
+        ollamaMessages.push({ role: 'system', content: enrichedSystemPrompt });
       }
       if (hasImages) {
         // Ollama expects images as base64 strings (without the data:image/... prefix)
@@ -177,7 +210,7 @@ export async function POST(request: NextRequest) {
       if (!process.env.ANTHROPIC_API_KEY && !process.env.CLAUDE_API_KEY) {
         return NextResponse.json({ error: 'Anthropic API key not configured. Please add ANTHROPIC_API_KEY to your .env file.' }, { status: 500 });
       }
-      return await streamAnthropic(model, prompt, systemPrompt, hasImages ? images : undefined);
+      return await streamAnthropic(model, prompt, enrichedSystemPrompt, hasImages ? images : undefined);
     }
     if (model.includes('gpt') || model.startsWith('o3') || model.startsWith('o4')) {
       if (!process.env.OPENAI_API_KEY) {
@@ -189,7 +222,7 @@ export async function POST(request: NextRequest) {
       if (!process.env.GOOGLE_API_KEY) {
         return NextResponse.json({ error: 'Google API key not configured. Please add GOOGLE_API_KEY to your .env file.' }, { status: 500 });
       }
-      return await streamGemini(model, prompt, systemPrompt, hasImages ? images : undefined);
+      return await streamGemini(model, prompt, enrichedSystemPrompt, hasImages ? images : undefined);
     }
     if (model.includes('grok')) {
       if (!process.env.XAI_API_KEY) {
