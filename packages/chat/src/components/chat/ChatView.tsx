@@ -23,7 +23,7 @@ import { TestModeView } from "../test/TestModeView";
 import dynamic from "next/dynamic";
 const ForensicLogView = dynamic(() => import("../forensic/ForensicLogView").then(m => m.ForensicLogView), { ssr: false });
 import { useForensicLogStore } from "@sarge/core";
-import { useAIModeStore } from "@sarge/core";
+
 import { exportChatToPDF } from "../../lib/export/pdf";
 import { exportChatToCSV } from "../../lib/export/csv";
 import { detectExportIntent, formatLabels, type ExportFormat } from "../../lib/export/exportDetector";
@@ -37,7 +37,7 @@ import {
 } from "../../lib/export/chatDocumentExport";
 import { useUIStore } from "@sarge/core";
 import { Button } from "@/components/ui/button";
-import { FileText, Download, Bot, Sparkles, MessageSquare, Zap, Settings, Columns2 } from "lucide-react";
+import { FileText, Download, Bot, Sparkles, MessageSquare, Settings, Columns2 } from "lucide-react";
 import { cn } from "@sarge/core";
 import { useThreadGuardianStore } from "@sarge/core";
 import { useParallelChatStore } from "../../stores/parallelChatStore";
@@ -118,9 +118,7 @@ export function ChatView({ conversationId, onMultiChat, onWarRoom, hideInput }: 
   const openForensicLog = useForensicLogStore((s) => s.openForensicLog);
   const showToast = useUIStore((s) => s.showToast);
   const setPendingPrompt = useBuilderPromptStore((s) => s.setPendingPrompt);
-  const aiModeDisplayName = useAIModeStore((s) => s.getDisplayName);
-  const activePresetId = useAIModeStore((s) => s.activePresetId);
-  const executionMode = useAIModeStore((s) => s.executionMode);
+
   const [voiceError, setVoiceError] = useState<string | null>(null);
   const [commandFeedback, setCommandFeedback] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -525,44 +523,9 @@ export function ChatView({ conversationId, onMultiChat, onWarRoom, hideInput }: 
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-end px-4 py-2 border-b border-zinc-800 bg-zinc-900/50">
-        {/* Thread Guardian + AI Mode pill + Current model indicator */}
-        <div className="flex items-center gap-3">
-          {/* Thread Guardian Indicator */}
-          <ThreadGuardianIndicator conversationId={conversationId} />
-
-          {/* AI Mode Quick Toggle */}
-          <button
-            onClick={() => router.push("/settings")}
-            className={cn(
-              "flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-medium transition-all",
-              "hover:ring-1 hover:ring-zinc-600",
-              executionMode === "local" && "bg-emerald-500/20 text-emerald-400",
-              executionMode === "cloud" && "bg-violet-500/20 text-violet-400",
-              executionMode === "hybrid" && "bg-amber-500/20 text-amber-400"
-            )}
-            title="AI Orchestration Mode - Click to configure"
-          >
-            <Zap className="h-3 w-3" />
-            {aiModeDisplayName()}
-          </button>
-
-          {/* Current model indicator */}
-          {currentProvider && currentModel && (
-            <div className="flex items-center gap-1.5 text-xs text-zinc-500">
-              <span className="text-zinc-600 dark:text-zinc-400">
-                {providers.find((p) => p.id === currentProvider)?.name || currentProvider}
-              </span>
-              <span className="text-zinc-400 dark:text-zinc-600">·</span>
-              <span className="text-zinc-500 dark:text-zinc-500 font-mono text-[10px]">
-                {currentProvider === "ollama"
-                  ? getOllamaFriendlyName(currentModel)
-                  : currentModel}
-              </span>
-            </div>
-          )}
-        </div>
+      {/* Header — Thread Guardian only */}
+      <div className="flex items-center justify-end px-4 py-1.5 border-b border-zinc-800/50 bg-zinc-900/30">
+        <ThreadGuardianIndicator conversationId={conversationId} />
       </div>
 
       {/* Messages */}

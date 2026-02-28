@@ -89,13 +89,11 @@ export function ModelPanel({ provider, currentModel, onSelectModel, onClose }: M
       )
     : models;
 
-  const showSearch = models.length >= 8;
-
   return (
     <div className="flex-shrink-0 bg-zinc-900/98 backdrop-blur-md border-b border-zinc-800/40 shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
-      <div className="mx-auto max-w-[1680px] px-8 py-3">
+      <div className="mx-auto max-w-[1680px] px-8 py-3 h-[340px] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-2 flex-shrink-0">
           <div className="flex items-center gap-3">
             <span
               className="w-2.5 h-2.5 rounded-full"
@@ -116,66 +114,66 @@ export function ModelPanel({ provider, currentModel, onSelectModel, onClose }: M
           </button>
         </div>
 
-        {/* Search */}
-        {showSearch && (
-          <div className="relative mb-2">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Filter models..."
-              className="w-full pl-9 pr-3 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700/60 text-sm text-zinc-200 placeholder:text-zinc-500 focus:outline-none focus:border-orange-500/40 transition-colors"
-              autoFocus
-            />
-          </div>
-        )}
+        {/* Search — always visible to prevent layout shift */}
+        <div className="relative mb-2 flex-shrink-0">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Filter models..."
+            className="w-full pl-9 pr-3 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700/60 text-sm text-zinc-200 placeholder:text-zinc-500 focus:outline-none focus:border-orange-500/40 transition-colors"
+            autoFocus
+          />
+        </div>
 
-        {/* Model grid */}
-        {loading ? (
-          <div className="py-4 text-center text-sm text-zinc-500">Loading models...</div>
-        ) : filtered.length === 0 ? (
-          <div className="py-4 text-center text-sm text-zinc-500">
-            {isLocal
-              ? `No models found. Is ${providerConfig?.name} running?`
-              : search
-              ? "No models match your search"
-              : "No models available"}
-          </div>
-        ) : (
-          <div className="grid grid-cols-6 gap-1.5 max-h-[300px] overflow-y-auto pr-1">
-            {filtered.map((m) => (
-              <button
-                key={m.id}
-                onClick={() => onSelectModel(m.id)}
-                className={cn(
-                  "text-left rounded-lg px-2.5 py-2 transition-all border",
-                  currentModel === m.id
-                    ? "bg-orange-500/10 border-orange-500/50 shadow-[0_0_10px_rgba(249,115,22,0.2)]"
-                    : "bg-zinc-800/50 border-zinc-800 hover:border-orange-500/30 hover:bg-zinc-800 hover:shadow-[0_0_8px_rgba(249,115,22,0.1)]"
-                )}
-              >
-                <div className="text-[11px] font-semibold text-zinc-200 truncate mb-0.5">
-                  {m.name}
-                </div>
-                <div className="flex items-center gap-1">
-                  <span
-                    className={cn(
-                      "text-[9px] font-medium px-1 py-0.5 rounded",
-                      TAG_STYLES[m.tag] || TAG_STYLES.general
-                    )}
-                  >
-                    {m.tag}
-                  </span>
-                  {m.size && (
-                    <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-zinc-700/60 text-zinc-300">
-                      {m.size}
-                    </span>
+        {/* Model grid — fills remaining space, scrolls */}
+        <div className="flex-1 min-h-0 overflow-y-auto pr-1">
+          {loading ? (
+            <div className="py-4 text-center text-sm text-zinc-500">Loading models...</div>
+          ) : filtered.length === 0 ? (
+            <div className="py-4 text-center text-sm text-zinc-500">
+              {isLocal
+                ? `No models found. Is ${providerConfig?.name} running?`
+                : search
+                ? "No models match your search"
+                : "No models available"}
+            </div>
+          ) : (
+            <div className="grid grid-cols-6 gap-1.5">
+              {filtered.map((m) => (
+                <button
+                  key={m.id}
+                  onClick={() => onSelectModel(m.id)}
+                  className={cn(
+                    "text-left rounded-lg px-2.5 py-2 transition-all border",
+                    currentModel === m.id
+                      ? "bg-orange-500/10 border-orange-500/50 shadow-[0_0_10px_rgba(249,115,22,0.2)]"
+                      : "bg-zinc-800/50 border-zinc-800 hover:border-orange-500/30 hover:bg-zinc-800 hover:shadow-[0_0_8px_rgba(249,115,22,0.1)]"
                   )}
-                </div>
-              </button>
-            ))}
-          </div>
-        )}
+                >
+                  <div className="text-[11px] font-semibold text-zinc-200 truncate mb-0.5">
+                    {m.name}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span
+                      className={cn(
+                        "text-[9px] font-medium px-1 py-0.5 rounded",
+                        TAG_STYLES[m.tag] || TAG_STYLES.general
+                      )}
+                    >
+                      {m.tag}
+                    </span>
+                    {m.size && (
+                      <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-zinc-700/60 text-zinc-300">
+                        {m.size}
+                      </span>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
