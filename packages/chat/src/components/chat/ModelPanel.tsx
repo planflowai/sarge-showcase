@@ -88,12 +88,12 @@ export function ModelPanel({ provider, currentModel, onSelectModel, onClose }: M
   }, [isLocal, localModels, provider, getEffectiveModels, getDisplayName]);
 
   return (
-    <div className="flex-shrink-0 bg-zinc-900/98 backdrop-blur-md border-b border-zinc-800/40 shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
+    <div className="flex-shrink-0 bg-white/98 dark:bg-zinc-900/98 backdrop-blur-md border-b border-zinc-200/40 dark:border-zinc-800/40 shadow-[0_4px_20px_rgba(0,0,0,0.1)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
       <div className="px-6 h-[130px] flex items-center gap-4">
         {/* Left — provider label */}
         <div className="flex items-center gap-2 flex-shrink-0">
           <span className="w-2 h-2 rounded-full" style={{ backgroundColor: providerConfig?.color }} />
-          <span className="text-xs font-bold text-zinc-300 whitespace-nowrap">{providerConfig?.name}</span>
+          <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300 whitespace-nowrap">{providerConfig?.name}</span>
           <span className="text-[10px] text-zinc-500">{models.length}</span>
         </div>
 
@@ -117,16 +117,16 @@ export function ModelPanel({ provider, currentModel, onSelectModel, onClose }: M
                   "flex-shrink-0 w-[130px] text-center rounded-lg px-2 py-1.5 transition-all border",
                   currentModel === m.id
                     ? "bg-orange-500/10 border-orange-500/50 shadow-[0_0_10px_rgba(249,115,22,0.2)]"
-                    : "bg-zinc-800/50 border-zinc-800 hover:border-orange-500/30 hover:bg-zinc-800 hover:shadow-[0_0_8px_rgba(249,115,22,0.1)]"
+                    : "bg-gray-100/50 dark:bg-zinc-800/50 border-zinc-200 dark:border-zinc-800 hover:border-orange-500/30 hover:bg-gray-200 dark:hover:bg-zinc-800 hover:shadow-[0_0_8px_rgba(249,115,22,0.1)]"
                 )}
               >
-                <div className="text-[11px] font-semibold text-zinc-200 truncate">{m.name}</div>
+                <div className="text-[11px] font-semibold text-zinc-800 dark:text-zinc-200 truncate">{m.name}</div>
                 <div className="flex items-center justify-center gap-1 mt-0.5">
                   <span className={cn("text-[9px] font-medium px-1 py-0.5 rounded", TAG_STYLES[m.tag] || TAG_STYLES.general)}>
                     {m.tag}
                   </span>
                   {m.size && (
-                    <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-zinc-700/60 text-zinc-300">{m.size}</span>
+                    <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-zinc-200/60 dark:bg-zinc-700/60 text-zinc-600 dark:text-zinc-300">{m.size}</span>
                   )}
                 </div>
               </button>
@@ -141,7 +141,7 @@ export function ModelPanel({ provider, currentModel, onSelectModel, onClose }: M
         </div>
 
         {/* Right — close */}
-        <button onClick={onClose} className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors flex-shrink-0">
+        <button onClick={onClose} className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-800 transition-colors flex-shrink-0">
           <X className="h-4 w-4" />
         </button>
       </div>

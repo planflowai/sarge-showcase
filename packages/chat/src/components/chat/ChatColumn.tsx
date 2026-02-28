@@ -164,15 +164,15 @@ export function ChatColumn({
   const cloudProviders = providers.filter(p => p.type === "cloud" && getEffectiveModels(p.id).length > 0);
 
   return (
-    <div className="flex flex-col h-full border-r border-zinc-800 last:border-r-0 bg-zinc-900">
+    <div className="flex flex-col h-full border-r border-zinc-200 dark:border-zinc-800 last:border-r-0 bg-white dark:bg-zinc-900">
       {/* Column Header — model pill + role + clear */}
-      <div className="flex flex-col border-b border-zinc-800 bg-zinc-900/50">
+      <div className="flex flex-col border-b border-zinc-200 dark:border-zinc-800 bg-gray-100/50 dark:bg-zinc-900/50">
         <div className="flex items-center gap-1.5 px-2 py-2">
           {/* Model pill — single dropdown with all providers */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-zinc-800 border border-zinc-700 text-zinc-300 hover:border-orange-500/50 transition-all truncate max-w-[160px]"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-gray-200 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:border-orange-500/50 transition-all truncate max-w-[160px]"
               >
                 <span
                   className="w-1.5 h-1.5 rounded-full flex-shrink-0"
@@ -186,7 +186,7 @@ export function ChatColumn({
               {/* Cloud providers */}
               {cloudProviders.map(provider => (
                 <div key={provider.id}>
-                  <DropdownMenuLabel className="text-[10px] text-zinc-400 flex items-center gap-1 py-1">
+                  <DropdownMenuLabel className="text-[10px] text-zinc-500 dark:text-zinc-400 flex items-center gap-1 py-1">
                     <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: provider.color }} />
                     {provider.name}
                   </DropdownMenuLabel>
@@ -206,7 +206,7 @@ export function ChatColumn({
               ))}
               {/* Ollama */}
               <DropdownMenuSeparator />
-              <DropdownMenuLabel className="text-[10px] text-zinc-400 flex items-center gap-1 py-1">
+              <DropdownMenuLabel className="text-[10px] text-zinc-500 dark:text-zinc-400 flex items-center gap-1 py-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-yellow-400" />
                 Ollama
                 {ollamaLoading && <Loader2 className="h-2.5 w-2.5 animate-spin ml-1" />}
@@ -240,7 +240,7 @@ export function ChatColumn({
                   "flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold border transition-all truncate",
                   currentRole
                     ? "border-indigo-500/50 text-indigo-400 bg-indigo-500/10"
-                    : "border-zinc-700 text-zinc-500 bg-zinc-800"
+                    : "border-zinc-300 dark:border-zinc-700 text-zinc-500 bg-gray-200 dark:bg-zinc-800"
                 )}
               >
                 <Shield className="h-3 w-3 flex-shrink-0" />
@@ -252,7 +252,7 @@ export function ChatColumn({
               <DropdownMenuLabel className="text-xs">Assign Role</DropdownMenuLabel>
               <DropdownMenuItem
                 onClick={() => onRoleChange(undefined)}
-                className={cn("text-xs", !column.roleId && "bg-zinc-800")}
+                className={cn("text-xs", !column.roleId && "bg-gray-200 dark:bg-zinc-800")}
               >
                 No Role (General)
               </DropdownMenuItem>
@@ -263,7 +263,7 @@ export function ChatColumn({
                   onClick={() => onRoleChange(role.id)}
                   className={cn(
                     "text-xs flex items-center justify-between",
-                    column.roleId === role.id && "bg-zinc-800"
+                    column.roleId === role.id && "bg-gray-200 dark:bg-zinc-800"
                   )}
                 >
                   <span className="truncate">{role.name}{role.isDefault ? " (Default)" : ""}</span>
@@ -307,12 +307,12 @@ export function ChatColumn({
 
         {/* Role Editor Modal */}
         {showRoleEditor && (
-          <div className="px-3 pb-2 space-y-2 border-t border-zinc-700 pt-2 bg-zinc-800/50">
+          <div className="px-3 pb-2 space-y-2 border-t border-zinc-300 dark:border-zinc-700 pt-2 bg-gray-200/50 dark:bg-zinc-800/50">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-semibold text-zinc-400">
+              <span className="text-[10px] font-semibold text-zinc-500 dark:text-zinc-400">
                 {editingRoleId ? "Edit Role" : "New Role"}
               </span>
-              <button onClick={handleCancelRoleEdit} className="text-zinc-400 hover:text-zinc-300">
+              <button onClick={handleCancelRoleEdit} className="text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300">
                 <X className="h-3.5 w-3.5" />
               </button>
             </div>
@@ -326,7 +326,7 @@ export function ChatColumn({
               value={rolePromptInput}
               onChange={(e) => setRolePromptInput(e.target.value)}
               placeholder="System prompt..."
-              className="w-full h-16 text-xs rounded border border-zinc-600 bg-zinc-800 px-2 py-1 resize-none text-zinc-200"
+              className="w-full h-16 text-xs rounded border border-zinc-400 dark:border-zinc-600 bg-gray-200 dark:bg-zinc-800 px-2 py-1 resize-none text-zinc-800 dark:text-zinc-200"
             />
             <div className="flex justify-end gap-1">
               <Button size="sm" variant="ghost" onClick={handleCancelRoleEdit} className="h-6 text-[10px]">
@@ -349,12 +349,12 @@ export function ChatColumn({
       {/* Messages */}
       <div
         ref={scrollRef}
-        className="flex-1 min-h-0 overflow-y-auto px-3 py-2 space-y-3 bg-zinc-900"
+        className="flex-1 min-h-0 overflow-y-auto px-3 py-2 space-y-3 bg-white dark:bg-zinc-900"
       >
         {column.messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-zinc-500 text-xs">
             <p>No messages yet</p>
-            <p className="text-zinc-600 mt-1">Type below to start</p>
+            <p className="text-zinc-500 dark:text-zinc-600 mt-1">Type below to start</p>
           </div>
         ) : (
           column.messages.map(message => (

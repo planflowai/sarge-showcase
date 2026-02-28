@@ -122,7 +122,7 @@ export default function ChatPage() {
 
   return (
     <ErrorBoundary fallbackTitle="Chat Error">
-      <div className="flex flex-col h-full bg-zinc-950">
+      <div className="flex flex-col h-full bg-gray-50 dark:bg-zinc-950">
         {/* Chat area — full width, no sidebar */}
         <main className="flex-1 min-h-0 overflow-hidden">
           {parallelHydrated && parallelEnabled ? (
@@ -146,7 +146,7 @@ export default function ChatPage() {
         </main>
 
         {/* Bottom strip — full viewport width, persistent */}
-        <div className="w-full flex-shrink-0 bg-zinc-950">
+        <div className="w-full flex-shrink-0 bg-gray-50 dark:bg-zinc-950">
           <InputArea
             conversationId={currentConversationId ?? ""}
             onSend={handleSend}

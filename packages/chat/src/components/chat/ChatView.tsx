@@ -64,7 +64,7 @@ function MultiChatModeToggle() {
   }, [hydrated, hydrate]);
 
   return (
-    <div className="flex items-center rounded-lg bg-zinc-800/80 border border-zinc-700/40 p-0.5">
+    <div className="flex items-center rounded-lg bg-gray-200/80 dark:bg-zinc-800/80 border border-zinc-300/40 dark:border-zinc-700/40 p-0.5">
       <button
         type="button"
         onClick={() => { if (enabled) toggleParallelMode(); }}
@@ -72,7 +72,7 @@ function MultiChatModeToggle() {
           "px-2.5 py-1 text-[11px] font-bold rounded-md transition-all",
           !enabled
             ? "bg-orange-600 text-white shadow-sm"
-            : "text-zinc-400 hover:text-zinc-200"
+            : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200"
         )}
       >
         Single
@@ -84,7 +84,7 @@ function MultiChatModeToggle() {
           "px-2.5 py-1 text-[11px] font-bold rounded-md transition-all flex items-center gap-1",
           enabled
             ? "bg-orange-600 text-white shadow-sm"
-            : "text-zinc-400 hover:text-zinc-200"
+            : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200"
         )}
       >
         <Columns2 className="h-3 w-3" />
@@ -523,9 +523,19 @@ export function ChatView({ conversationId, onMultiChat, onWarRoom, hideInput }: 
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      {/* Header — Thread Guardian only */}
-      <div className="flex items-center justify-end px-4 py-1.5 border-b border-zinc-800/50 bg-zinc-900/30">
-        <ThreadGuardianIndicator conversationId={conversationId} />
+      {/* Header — model name centered + Thread Guardian right */}
+      <div className="flex items-center px-4 py-1.5 border-b border-zinc-200/50 dark:border-zinc-800/50 bg-gray-100/30 dark:bg-zinc-900/30">
+        <div className="flex-1" />
+        <div className="text-base font-bold text-zinc-800 dark:text-zinc-100 truncate max-w-[400px]" title={currentModel}>
+          {currentProvider === "ollama"
+            ? getOllamaFriendlyName(currentModel)
+            : currentProvider === "lmstudio"
+            ? currentModel
+            : getDisplayName(currentModel, currentModel)}
+        </div>
+        <div className="flex-1 flex justify-end">
+          <ThreadGuardianIndicator conversationId={conversationId} />
+        </div>
       </div>
 
       {/* Messages */}
@@ -536,10 +546,10 @@ export function ChatView({ conversationId, onMultiChat, onWarRoom, hideInput }: 
               {/* Loading skeletons */}
               {[1, 2, 3].map((i) => (
                 <div key={i} className={`flex ${i % 2 === 0 ? "justify-end" : "justify-start"}`}>
-                  <div className="animate-pulse rounded-lg bg-zinc-800 px-5 py-4" style={{ width: `${40 + i * 10}%` }}>
-                    <div className="h-3 rounded bg-zinc-700 mb-2" style={{ width: "80%" }} />
-                    <div className="h-3 rounded bg-zinc-700 mb-2" style={{ width: "60%" }} />
-                    <div className="h-3 rounded bg-zinc-700" style={{ width: "40%" }} />
+                  <div className="animate-pulse rounded-lg bg-gray-200 dark:bg-zinc-800 px-5 py-4" style={{ width: `${40 + i * 10}%` }}>
+                    <div className="h-3 rounded bg-gray-300 dark:bg-zinc-700 mb-2" style={{ width: "80%" }} />
+                    <div className="h-3 rounded bg-gray-300 dark:bg-zinc-700 mb-2" style={{ width: "60%" }} />
+                    <div className="h-3 rounded bg-gray-300 dark:bg-zinc-700" style={{ width: "40%" }} />
                   </div>
                 </div>
               ))}
@@ -555,7 +565,7 @@ export function ChatView({ conversationId, onMultiChat, onWarRoom, hideInput }: 
               ))}
               {sending && (
                 <div className="flex items-start gap-3">
-                  <div className="relative rounded-2xl bg-gradient-to-br from-zinc-800 to-zinc-900 px-6 py-4 border border-zinc-700/50 shadow-lg">
+                  <div className="relative rounded-2xl bg-gradient-to-br from-gray-200 dark:from-zinc-800 to-gray-100 dark:to-zinc-900 px-6 py-4 border border-zinc-300/50 dark:border-zinc-700/50 shadow-lg">
                     {/* Animated glow background */}
                     <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-cyan-500/10 via-purple-500/10 to-pink-500/10 animate-pulse" />
 
@@ -609,7 +619,7 @@ export function ChatView({ conversationId, onMultiChat, onWarRoom, hideInput }: 
                       exportChatToPDF(messages, "Chat Export");
                       showToast({ message: "Exported chat as PDF", type: "success" });
                     }}
-                    className="h-6 gap-1 px-2 text-[10px] text-zinc-600 hover:text-zinc-400"
+                    className="h-6 gap-1 px-2 text-[10px] text-zinc-500 dark:text-zinc-600 hover:text-zinc-500 dark:hover:text-zinc-400"
                   >
                     <FileText className="h-3 w-3" /> Export PDF
                   </Button>
@@ -620,7 +630,7 @@ export function ChatView({ conversationId, onMultiChat, onWarRoom, hideInput }: 
                       exportChatToCSV(messages, "Chat Export");
                       showToast({ message: "Exported chat as CSV", type: "success" });
                     }}
-                    className="h-6 gap-1 px-2 text-[10px] text-zinc-600 hover:text-zinc-400"
+                    className="h-6 gap-1 px-2 text-[10px] text-zinc-500 dark:text-zinc-600 hover:text-zinc-500 dark:hover:text-zinc-400"
                   >
                     <Download className="h-3 w-3" /> Export CSV
                   </Button>

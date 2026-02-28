@@ -169,7 +169,7 @@ export function Header() {
 
       <div className="flex flex-col border-b border-border">
         {/* Row 1: Main Title - Centered */}
-        <div className="h-14 flex items-center justify-center bg-gradient-to-r from-zinc-900 via-zinc-800/60 to-zinc-900 relative border-b border-zinc-800 shadow-sm">
+        <div className="h-14 flex items-center justify-center bg-gradient-to-r from-slate-100 via-orange-50 to-slate-100 dark:from-zinc-900 dark:via-zinc-800/60 dark:to-zinc-900 relative border-b border-slate-200 dark:border-zinc-800 shadow-sm">
           <div className="flex items-center gap-2.5 relative z-10">
             {/* Builder icon */}
             <div className="relative">

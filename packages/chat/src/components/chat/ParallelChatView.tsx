@@ -354,7 +354,7 @@ export function ParallelChatView({ onSingleChat, onWarRoom, hideInput }: Paralle
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-amber-500" />
-            <span className="text-sm font-black tracking-wide text-zinc-200">Multi-Chat</span>
+            <span className="text-sm font-black tracking-wide text-zinc-800 dark:text-zinc-200">Multi-Chat</span>
           </div>
         </div>
 
@@ -495,9 +495,9 @@ export function ParallelChatView({ onSingleChat, onWarRoom, hideInput }: Paralle
                           {group}
                         </div>
                         {groupedSessions[group].map(session => (
-                          <div key={session.id} className="flex items-center gap-2 px-3 py-2 hover:bg-zinc-800/60 group">
+                          <div key={session.id} className="flex items-center gap-2 px-3 py-2 hover:bg-gray-200/60 dark:hover:bg-zinc-800/60 group">
                             <div className="flex-1 min-w-0">
-                              <p className="text-xs font-medium text-zinc-300 truncate">{session.name}</p>
+                              <p className="text-xs font-medium text-zinc-700 dark:text-zinc-300 truncate">{session.name}</p>
                               <p className="text-[10px] text-zinc-500">{session.activeColumnCount} panes · {session.columns.reduce((n, c) => n + c.messages.length, 0)} msgs</p>
                             </div>
                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -575,7 +575,7 @@ export function ParallelChatView({ onSingleChat, onWarRoom, hideInput }: Paralle
       {!hideInput && (
       <div
         ref={dropRef}
-        className="relative border-t border-zinc-700/50 bg-zinc-900 p-3"
+        className="relative border-t border-zinc-300/50 dark:border-zinc-700/50 bg-white dark:bg-zinc-900 p-3"
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
         onDragOver={handleDragOver}
@@ -640,17 +640,17 @@ export function ParallelChatView({ onSingleChat, onWarRoom, hideInput }: Paralle
             placeholder={attachments.length > 0 ? "Add a message about your files..." : "Send to all models simultaneously… (Enter to send, Shift+Enter for new line)"}
             disabled={anySending}
             rows={2}
-            className="w-full resize-none rounded-xl bg-zinc-800 px-4 py-3 text-sm text-zinc-200 placeholder:text-zinc-500 focus:outline-none border border-zinc-700 focus:border-orange-500/50 disabled:opacity-50 min-h-[44px] max-h-[120px] transition-colors"
+            className="w-full resize-none rounded-xl bg-gray-200 dark:bg-zinc-800 px-4 py-3 text-sm text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none border border-zinc-300 dark:border-zinc-700 focus:border-orange-500/50 disabled:opacity-50 min-h-[44px] max-h-[120px] transition-colors"
           />
 
           {/* Bottom action bar — centered, Forge themed */}
           <div className="flex items-center justify-center gap-1 mt-2">
             {/* Single | Multi-Chat Toggle */}
-            <div className="flex items-center rounded-lg bg-zinc-800/80 border border-zinc-700/40 p-0.5 mr-1">
+            <div className="flex items-center rounded-lg bg-gray-200/80 dark:bg-zinc-800/80 border border-zinc-300/40 dark:border-zinc-700/40 p-0.5 mr-1">
               <button
                 type="button"
                 onClick={toggleParallelMode}
-                className="px-2.5 py-1 text-[11px] font-bold rounded-md transition-all text-zinc-500 hover:text-zinc-200"
+                className="px-2.5 py-1 text-[11px] font-bold rounded-md transition-all text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
               >
                 Single
               </button>
@@ -668,7 +668,7 @@ export function ParallelChatView({ onSingleChat, onWarRoom, hideInput }: Paralle
               onClick={() => setSharedInput("Generate an image: ")}
               disabled={anySending}
               title="Generate image"
-              className="p-2 rounded-lg text-zinc-500 hover:bg-zinc-800 hover:text-amber-400 transition-colors disabled:opacity-30"
+              className="p-2 rounded-lg text-zinc-500 hover:bg-gray-200 dark:hover:bg-zinc-800 hover:text-amber-400 transition-colors disabled:opacity-30"
             >
               <ImageIcon className="h-5 w-5" />
             </button>
@@ -678,7 +678,7 @@ export function ParallelChatView({ onSingleChat, onWarRoom, hideInput }: Paralle
               onClick={handleCopyAll}
               disabled={columns.slice(0, activeColumnCount).every(c => c.messages.length === 0)}
               title="Copy all responses"
-              className="p-2 rounded-lg text-zinc-500 hover:bg-zinc-800 hover:text-amber-400 transition-colors disabled:opacity-30"
+              className="p-2 rounded-lg text-zinc-500 hover:bg-gray-200 dark:hover:bg-zinc-800 hover:text-amber-400 transition-colors disabled:opacity-30"
             >
               {copiedAll ? (
                 <Check className="h-5 w-5 text-emerald-400" />
@@ -692,7 +692,7 @@ export function ParallelChatView({ onSingleChat, onWarRoom, hideInput }: Paralle
               onClick={handleCompare}
               disabled={columns.slice(0, activeColumnCount).some(c => c.messages.length === 0) || anySending || isComparing}
               title="Compare all responses"
-              className="p-2 rounded-lg text-zinc-500 hover:bg-zinc-800 hover:text-amber-400 transition-colors disabled:opacity-30"
+              className="p-2 rounded-lg text-zinc-500 hover:bg-gray-200 dark:hover:bg-zinc-800 hover:text-amber-400 transition-colors disabled:opacity-30"
             >
               <MessageSquare className="h-5 w-5" />
             </button>
@@ -702,21 +702,21 @@ export function ParallelChatView({ onSingleChat, onWarRoom, hideInput }: Paralle
               <button
                 onClick={onWarRoom}
                 title="Switch to War Room"
-                className="p-2 rounded-lg text-zinc-500 hover:bg-zinc-800 hover:text-red-400 transition-colors"
+                className="p-2 rounded-lg text-zinc-500 hover:bg-gray-200 dark:hover:bg-zinc-800 hover:text-red-400 transition-colors"
               >
                 <Swords className="h-5 w-5" />
               </button>
             )}
 
             {/* Divider */}
-            <div className="w-px h-6 bg-zinc-700 mx-1" />
+            <div className="w-px h-6 bg-zinc-300 dark:bg-zinc-700 mx-1" />
 
             {/* Attach */}
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={anySending}
               title="Attach files"
-              className="p-2 rounded-lg text-zinc-500 hover:bg-zinc-800 hover:text-orange-400 transition-colors disabled:opacity-30"
+              className="p-2 rounded-lg text-zinc-500 hover:bg-gray-200 dark:hover:bg-zinc-800 hover:text-orange-400 transition-colors disabled:opacity-30"
             >
               <Paperclip className="h-5 w-5" />
             </button>

@@ -47,18 +47,18 @@ export function HistoryDrawer({ open, onClose }: HistoryDrawerProps) {
       <div
         ref={panelRef}
         className={cn(
-          "fixed left-0 top-0 z-50 h-full w-80 bg-zinc-950 border-r border-zinc-800/60 shadow-2xl transition-transform duration-300 ease-out flex flex-col",
+          "fixed left-0 top-0 z-50 h-full w-80 bg-gray-50 dark:bg-zinc-950 border-r border-zinc-200/60 dark:border-zinc-800/60 shadow-2xl transition-transform duration-300 ease-out flex flex-col",
           open ? "translate-x-0" : "-translate-x-full"
         )}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 flex-shrink-0">
-          <span className="text-sm font-bold text-zinc-200 tracking-wide">
+          <span className="text-sm font-bold text-zinc-800 dark:text-zinc-200 tracking-wide">
             History
           </span>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+            className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-800 transition-colors"
           >
             <X className="h-4 w-4" />
           </button>

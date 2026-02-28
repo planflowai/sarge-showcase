@@ -535,7 +535,7 @@ Please provide the complete modified version of this component. Make only the re
   // Fullscreen mode
   if (isFullscreen) {
     return (
-      <div className="fixed inset-0 z-50 bg-zinc-950">
+      <div className="fixed inset-0 z-50 bg-gray-50 dark:bg-zinc-950">
         <ArtifactPanel
           code={previewCode}
           onCodeChange={handleCodeChange}
@@ -557,28 +557,28 @@ Please provide the complete modified version of this component. Make only the re
   // If workspace is active, show control panel instead
   if (isWorkspaceActive && activeWindows.length > 0) {
     return (
-      <div className="flex flex-col h-full w-full bg-zinc-950 items-center justify-center">
-        <div className="bg-zinc-900 rounded-2xl p-8 shadow-2xl border border-zinc-800 max-w-md w-full mx-4">
+      <div className="flex flex-col h-full w-full bg-gray-50 dark:bg-zinc-950 items-center justify-center">
+        <div className="bg-white dark:bg-zinc-900 rounded-2xl p-8 shadow-2xl border border-zinc-200 dark:border-zinc-800 max-w-md w-full mx-4">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
               <LayoutGrid className="w-7 h-7 text-white" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-white">Workspace Active</h2>
-              <p className="text-sm text-zinc-400">Multi-window mode is running</p>
+              <h2 className="text-xl font-semibold text-zinc-900 dark:text-white">Workspace Active</h2>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">Multi-window mode is running</p>
             </div>
           </div>
 
           <div className="space-y-3 mb-6">
-            <div className="flex items-center justify-between py-2 px-3 bg-zinc-800/50 rounded-lg">
-              <span className="text-sm text-zinc-300">Studio (Architect + Builder)</span>
-              <span className={`text-xs px-2 py-0.5 rounded-full ${activeWindows.includes('builder') ? 'bg-emerald-500/20 text-emerald-400' : 'bg-zinc-700 text-zinc-500'}`}>
+            <div className="flex items-center justify-between py-2 px-3 bg-gray-200/50 dark:bg-zinc-800/50 rounded-lg">
+              <span className="text-sm text-zinc-700 dark:text-zinc-300">Studio (Architect + Builder)</span>
+              <span className={`text-xs px-2 py-0.5 rounded-full ${activeWindows.includes('builder') ? 'bg-emerald-500/20 text-emerald-400' : 'bg-gray-300 dark:bg-zinc-700 text-zinc-500'}`}>
                 {activeWindows.includes('builder') ? 'Open' : 'Closed'}
               </span>
             </div>
-            <div className="flex items-center justify-between py-2 px-3 bg-zinc-800/50 rounded-lg">
-              <span className="text-sm text-zinc-300">Preview</span>
-              <span className={`text-xs px-2 py-0.5 rounded-full ${activeWindows.includes('preview') ? 'bg-blue-500/20 text-blue-400' : 'bg-zinc-700 text-zinc-500'}`}>
+            <div className="flex items-center justify-between py-2 px-3 bg-gray-200/50 dark:bg-zinc-800/50 rounded-lg">
+              <span className="text-sm text-zinc-700 dark:text-zinc-300">Preview</span>
+              <span className={`text-xs px-2 py-0.5 rounded-full ${activeWindows.includes('preview') ? 'bg-blue-500/20 text-blue-400' : 'bg-gray-300 dark:bg-zinc-700 text-zinc-500'}`}>
                 {activeWindows.includes('preview') ? 'Open' : 'Closed'}
               </span>
             </div>

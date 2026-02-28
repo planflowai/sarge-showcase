@@ -32,7 +32,7 @@ function LiveStreamingContent({ content }: { content: string }) {
   if (fenceIdx === -1) {
     // No code fence yet — pure text streaming
     return (
-      <div className="text-sm leading-relaxed whitespace-pre-wrap text-zinc-200">
+      <div className="text-sm leading-relaxed whitespace-pre-wrap text-zinc-800 dark:text-zinc-200">
         {content || " "}
         <span className="inline-block w-1.5 h-4 bg-indigo-400 animate-pulse ml-0.5 align-text-bottom rounded-sm" />
       </div>
@@ -58,15 +58,15 @@ function LiveStreamingContent({ content }: { content: string }) {
   return (
     <div className="text-sm leading-relaxed space-y-2">
       {textBefore && (
-        <p className="whitespace-pre-wrap text-zinc-200">{textBefore}</p>
+        <p className="whitespace-pre-wrap text-zinc-800 dark:text-zinc-200">{textBefore}</p>
       )}
 
       {/* Live code block */}
-      <div className="rounded-md overflow-hidden border border-zinc-700 bg-zinc-950">
+      <div className="rounded-md overflow-hidden border border-zinc-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-950">
         {/* Header */}
-        <div className="flex items-center justify-between px-3 py-1.5 bg-zinc-900 border-b border-zinc-700">
+        <div className="flex items-center justify-between px-3 py-1.5 bg-white dark:bg-zinc-900 border-b border-zinc-300 dark:border-zinc-700">
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-mono font-semibold text-zinc-300 uppercase">
+            <span className="text-[11px] font-mono font-semibold text-zinc-700 dark:text-zinc-300 uppercase">
               {lang}
             </span>
             {lineCount > 0 && (
@@ -86,7 +86,7 @@ function LiveStreamingContent({ content }: { content: string }) {
         </div>
 
         {/* Scrollable code — capped at 300px so it doesn't take over the chat */}
-        <pre className="p-3 overflow-x-auto overflow-y-auto max-h-72 text-xs leading-relaxed font-mono text-zinc-200">
+        <pre className="p-3 overflow-x-auto overflow-y-auto max-h-72 text-xs leading-relaxed font-mono text-zinc-800 dark:text-zinc-200">
           <code>{codeText}</code>
           {!isComplete && (
             <span className="inline-block w-1.5 h-3.5 bg-emerald-400 animate-pulse ml-0.5 align-text-bottom rounded-sm" />
@@ -95,7 +95,7 @@ function LiveStreamingContent({ content }: { content: string }) {
       </div>
 
       {textAfter && (
-        <p className="whitespace-pre-wrap text-zinc-200">{textAfter}</p>
+        <p className="whitespace-pre-wrap text-zinc-800 dark:text-zinc-200">{textAfter}</p>
       )}
     </div>
   );
@@ -320,8 +320,8 @@ export default function BuilderMessageBubble({
         // Show a minimal inline reference instead of a card
         const lineCount = codeString.split("\n").length;
         return (
-          <div className="flex items-center gap-2 py-1 my-1 text-xs border-l-2 border-zinc-600 pl-3">
-            <span className="text-zinc-400 font-mono">{lang}</span>
+          <div className="flex items-center gap-2 py-1 my-1 text-xs border-l-2 border-zinc-400 dark:border-zinc-600 pl-3">
+            <span className="text-zinc-500 dark:text-zinc-400 font-mono">{lang}</span>
             <span className="text-emerald-500">+{lineCount} lines</span>
             <span className="text-zinc-500">→ preview</span>
           </div>
@@ -358,7 +358,7 @@ export default function BuilderMessageBubble({
           <span>{providerConfig.name}</span>
           {modelDisplayName && (
             <>
-              <span className="text-zinc-400">·</span>
+              <span className="text-zinc-500 dark:text-zinc-400">·</span>
               <span>{modelDisplayName}</span>
             </>
           )}
@@ -461,7 +461,7 @@ export default function BuilderMessageBubble({
               </div>
             </div>
           ) : (
-            <div className="prose prose-sm prose-invert max-w-none">
+            <div className="prose prose-sm dark:prose-invert max-w-none">
               <ReactMarkdown components={markdownComponents}>{message.content}</ReactMarkdown>
             </div>
           )

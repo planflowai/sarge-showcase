@@ -394,7 +394,7 @@ export function InputArea({
 
       <div
         ref={dropRef}
-        className="relative bg-zinc-950 px-6 pt-3 pb-2"
+        className="relative bg-gray-50 dark:bg-zinc-950 px-6 pt-3 pb-2"
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
         onDragOver={handleDragOver}
@@ -460,9 +460,6 @@ export function InputArea({
                 openProvider={modelPanelProvider}
                 onProviderClick={handleProviderClick}
               />
-              <div className="mt-2 px-1 text-sm text-orange-400 font-semibold truncate max-w-[320px]" title={currentModel}>
-                {modelDisplayName}
-              </div>
             </div>
 
             {/* Center — Textarea + Icons (always centered on page, never moves) */}
@@ -483,7 +480,7 @@ export function InputArea({
                     minRows={3}
                     maxRows={8}
                     disabled={disabled}
-                    className="w-full resize-none rounded-xl bg-zinc-900 px-5 py-3 text-sm text-zinc-200 placeholder:text-zinc-500 focus:outline-none disabled:opacity-50 border border-zinc-800 focus:border-zinc-700 transition-colors"
+                    className="w-full resize-none rounded-xl bg-white dark:bg-zinc-900 px-5 py-3 text-sm text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none disabled:opacity-50 border border-zinc-300 dark:border-zinc-800 focus:border-zinc-400 dark:focus:border-zinc-700 transition-colors"
                   />
                 </div>
                 <div className="flex items-center flex-shrink-0">
@@ -491,7 +488,7 @@ export function InputArea({
                     onClick={handleSend}
                     disabled={(!input.trim() && attachments.length === 0 && selectedVaultIds.length === 0) || disabled}
                     title="Send message"
-                    className="p-3 rounded-xl bg-orange-600 text-white hover:bg-orange-500 transition-all hover:shadow-[0_0_14px_rgba(249,115,22,0.4)] disabled:opacity-30 disabled:hover:bg-orange-600 disabled:hover:shadow-none"
+                    className="p-3 rounded-xl bg-orange-500 dark:bg-orange-600 text-white hover:bg-orange-400 dark:hover:bg-orange-500 transition-all hover:shadow-[0_0_14px_rgba(249,115,22,0.4)] disabled:opacity-30 disabled:hover:bg-orange-500 dark:disabled:hover:bg-orange-600 disabled:hover:shadow-none"
                   >
                     <Send className="h-5 w-5" />
                   </button>
@@ -500,7 +497,7 @@ export function InputArea({
 
               {/* Single/Multi + Icons (24px) */}
               <div className="flex items-center justify-center gap-4 mt-2">
-                <div className="flex items-center rounded-lg bg-zinc-800/80 border border-zinc-700/40 p-0.5 flex-shrink-0">
+                <div className="flex items-center rounded-lg bg-gray-200/80 dark:bg-zinc-800/80 border border-zinc-300/40 dark:border-zinc-700/40 p-0.5 flex-shrink-0">
                   <button
                     type="button"
                     onClick={() => { if (parallelEnabled) toggleParallelMode(); }}
@@ -541,7 +538,7 @@ export function InputArea({
                       <BookText className="h-6 w-6" />
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-72 max-h-80 overflow-y-auto bg-zinc-900 border-zinc-700">
+                  <DropdownMenuContent align="start" className="w-72 max-h-80 overflow-y-auto bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700">
                     {prompts.length === 0 ? (
                       <div className="px-3 py-4 text-center text-sm text-zinc-500">
                         <p>No saved prompts</p>
@@ -594,7 +591,7 @@ export function InputArea({
 
         {/* Image Generation Dialog */}
         <Dialog open={showImageDialog} onOpenChange={setShowImageDialog}>
-          <DialogContent className="border-zinc-700 bg-zinc-900 text-zinc-200 sm:max-w-md">
+          <DialogContent className="border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Generate Image</DialogTitle>
             </DialogHeader>
@@ -607,7 +604,7 @@ export function InputArea({
                 placeholder="A futuristic city at sunset..."
                 minRows={3}
                 maxRows={6}
-                className="w-full resize-none rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-500 focus:border-orange-500 focus:outline-none"
+                className="w-full resize-none rounded-md border border-zinc-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-800 px-3 py-2 text-sm text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:border-orange-500 focus:outline-none"
                 autoFocus
               />
             </div>
