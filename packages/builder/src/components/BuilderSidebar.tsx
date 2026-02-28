@@ -615,6 +615,10 @@ export default function BuilderSidebar({
               <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">File Explorer</span>
               {projectPath && (
                 <div className="flex items-center gap-0.5">
+                  <button onClick={() => setShowPathInput(!showPathInput)} title="Open project"
+                    className="p-1 text-zinc-400 hover:text-amber-500 dark:hover:text-amber-400 rounded transition-colors">
+                    <FolderOpen className="h-3.5 w-3.5" />
+                  </button>
                   <button onClick={handleNewFile} title="New file"
                     className="p-1 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 rounded transition-colors">
                     <Plus className="h-3.5 w-3.5" />
@@ -635,6 +639,32 @@ export default function BuilderSidebar({
             <div className="flex-1 overflow-y-auto p-2">
               {projectPath ? (
                 <>
+                  {/* Inline path input for switching projects */}
+                  {showPathInput && (
+                    <div className="space-y-1.5 p-1 mb-2 border-b border-zinc-200 dark:border-zinc-700 pb-2">
+                      <input
+                        type="text"
+                        value={pathInput}
+                        onChange={(e) => setPathInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && pathInput.trim()) handleOpenProject(pathInput);
+                          if (e.key === "Escape") setShowPathInput(false);
+                        }}
+                        placeholder="Enter folder path…"
+                        className="w-full px-2 py-1.5 text-xs rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400"
+                        autoFocus
+                      />
+                      <div className="flex gap-1">
+                        <Button size="sm" onClick={() => handleOpenProject(pathInput)}
+                          disabled={!pathInput.trim() || isLoading}
+                          className="flex-1 h-6 text-[10px] bg-indigo-600 hover:bg-indigo-700 text-white">
+                          {isLoading ? "Loading…" : "Open"}
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => setShowPathInput(false)}
+                          className="h-6 text-[10px]">Cancel</Button>
+                      </div>
+                    </div>
+                  )}
                   <div className="flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
                     <FolderOpen className="h-4 w-4 text-amber-500" />
                     <span className="truncate">{projectName}</span>

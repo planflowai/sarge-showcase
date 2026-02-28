@@ -43,6 +43,92 @@ function isHtmlComplete(code: string): boolean {
   return /<\/html>/i.test(code);
 }
 
+/** Inline Deploy Panel — export/download options + deployment guidance */
+function DeployPanel({
+  code,
+  projectPath,
+  projectName,
+  onExport,
+  onDownload,
+}: {
+  code: string;
+  projectPath: string | null;
+  projectName?: string;
+  onExport: () => void;
+  onDownload: () => void;
+}) {
+  const hasCode = code && code.trim().length > 0;
+  const name = projectName || 'my-site';
+
+  return (
+    <div className="p-6 max-w-xl mx-auto space-y-6">
+      <div>
+        <h2 className="text-lg font-semibold text-zinc-800 dark:text-zinc-100 mb-1">Deploy Your Build</h2>
+        <p className="text-sm text-zinc-500 dark:text-zinc-400">Export your code and deploy it anywhere.</p>
+      </div>
+
+      {!hasCode ? (
+        <div className="rounded-lg border border-dashed border-zinc-300 dark:border-zinc-700 p-8 text-center">
+          <Rocket className="h-8 w-8 text-zinc-400 mx-auto mb-3" />
+          <p className="text-sm text-zinc-500">Generate some code first, then come back to deploy.</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {/* Export as ZIP */}
+          <button
+            onClick={onExport}
+            className="w-full flex items-center gap-4 p-4 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-colors text-left"
+          >
+            <div className="h-10 w-10 rounded-lg bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+              <Download className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <div>
+              <div className="text-sm font-medium text-zinc-800 dark:text-zinc-200">Export as ZIP</div>
+              <div className="text-xs text-zinc-500 dark:text-zinc-400">
+                Download {name}.zip with HTML, CSS, and JS — ready to upload to any host.
+              </div>
+            </div>
+          </button>
+
+          {/* Download single file */}
+          <button
+            onClick={onDownload}
+            className="w-full flex items-center gap-4 p-4 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:border-blue-500/50 hover:bg-blue-500/5 transition-colors text-left"
+          >
+            <div className="h-10 w-10 rounded-lg bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+              <Download className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <div className="text-sm font-medium text-zinc-800 dark:text-zinc-200">Download File</div>
+              <div className="text-xs text-zinc-500 dark:text-zinc-400">
+                Save the current artifact as a single file.
+              </div>
+            </div>
+          </button>
+
+          {/* Deployment guides */}
+          <div className="pt-2">
+            <h3 className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-3">Quick Deploy To</h3>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { name: 'Vercel', hint: 'vercel deploy' },
+                { name: 'Netlify', hint: 'netlify deploy' },
+                { name: 'GitHub Pages', hint: 'Push to gh-pages branch' },
+                { name: 'Cloudflare', hint: 'wrangler pages deploy' },
+              ].map((target) => (
+                <div key={target.name} className="p-3 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50">
+                  <div className="text-xs font-medium text-zinc-700 dark:text-zinc-300">{target.name}</div>
+                  <div className="text-[10px] text-zinc-500 dark:text-zinc-500 mt-0.5 font-mono">{target.hint}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ArtifactPanelInner({
   code,
   onCodeChange,
@@ -530,21 +616,19 @@ function ArtifactPanelInner({
                 Diff
               </button>
             )}
-            {/* Deploy tab - only shown when deployContent is provided */}
-            {deployContent && (
-              <button
-                onClick={() => onTabChange("deploy")}
-                className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
-                  activeTab === "deploy"
-                    ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
-                    : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
-                )}
-              >
-                <Rocket className="h-3.5 w-3.5" />
-                Deploy
-              </button>
-            )}
+            {/* Deploy tab - always visible */}
+            <button
+              onClick={() => onTabChange("deploy")}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
+                activeTab === "deploy"
+                  ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
+                  : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
+              )}
+            >
+              <Rocket className="h-3.5 w-3.5" />
+              Deploy
+            </button>
           </div>
 
           {/* Content type badge */}
@@ -817,11 +901,27 @@ function ArtifactPanelInner({
           </div>
         )}
 
-        {activeTab === "deploy" && deployContent && (
-          <div className="h-full overflow-hidden">
-            {React.isValidElement(deployContent)
-              ? React.cloneElement(deployContent as React.ReactElement<any>, { projectPath, projectName: storeProjectName })
-              : deployContent}
+        {activeTab === "deploy" && (
+          <div className="h-full overflow-auto">
+            {deployContent ? (
+              React.isValidElement(deployContent)
+                ? React.cloneElement(deployContent as React.ReactElement<any>, { projectPath, projectName: storeProjectName })
+                : deployContent
+            ) : (
+              <DeployPanel
+                code={code}
+                projectPath={projectPath}
+                projectName={projectName || storeProjectName || undefined}
+                onExport={async () => {
+                  if (!code) return;
+                  const name = projectName || storeProjectName || 'client-site';
+                  const blob = await exportToZip(code, '', undefined, name);
+                  downloadZip(blob, name);
+                  showToast({ message: `Exported ${name} as zip`, type: 'success' });
+                }}
+                onDownload={handleDownload}
+              />
+            )}
           </div>
         )}
       </div>

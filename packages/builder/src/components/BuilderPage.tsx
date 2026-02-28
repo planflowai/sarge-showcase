@@ -39,8 +39,18 @@ if (typeof window !== 'undefined') {
  */
 
 export default function BuilderPage({ deployContent }: { deployContent?: React.ReactNode } = {}) {
-  const [selectedModel, setSelectedModel] = useState<string | null>(null);
-  const [selectedProvider, setSelectedProvider] = useState<string>("deepseek");
+  const [selectedModel, setSelectedModel] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('builder-selected-model') || null;
+    }
+    return null;
+  });
+  const [selectedProvider, setSelectedProvider] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('builder-selected-provider') || "deepseek";
+    }
+    return "deepseek";
+  });
   const [webSearch, setWebSearch] = useState(false);
 
   // Artifact panel state - NOW PERSISTED via artifactStore
@@ -276,6 +286,9 @@ export default function BuilderPage({ deployContent }: { deployContent?: React.R
     console.log('[BuilderPage] Model selection changed:', { modelId, provider });
     setSelectedModel(modelId);
     setSelectedProvider(provider);
+    // Persist selection so it survives navigation
+    localStorage.setItem('builder-selected-model', modelId);
+    localStorage.setItem('builder-selected-provider', provider);
   };
 
   // Handle opening code in the artifact panel (from chat code blocks)

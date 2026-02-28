@@ -475,7 +475,7 @@ async function streamGemini(model: string, prompt: string, systemPrompt?: string
   });
 }
 
-// ── DeepSeek — OpenAI-compatible SSE streaming (no vision) ──────────────
+// ── DeepSeek — OpenAI-compatible SSE streaming with reasoning support ───
 async function streamDeepSeek(model: string, messages: { role: string; content: string }[]) {
   const apiKey = process.env.DEEPSEEK_API_KEY || '';
   const res = await fetch('https://api.deepseek.com/chat/completions', {
@@ -499,7 +499,15 @@ async function streamDeepSeek(model: string, messages: { role: string; content: 
         if (!line.startsWith('data: ') || line.includes('[DONE]')) continue;
         try {
           const data = JSON.parse(line.slice(6));
-          const content = data.choices?.[0]?.delta?.content;
+          const delta = data.choices?.[0]?.delta;
+          // DeepSeek R1 sends reasoning_content for thinking tokens
+          const reasoning = delta?.reasoning_content;
+          if (reasoning) {
+            controller.enqueue(new TextEncoder().encode(
+              JSON.stringify({ message: { content: '', reasoning_content: reasoning } }) + '\n'
+            ));
+          }
+          const content = delta?.content;
           if (content) {
             controller.enqueue(new TextEncoder().encode(
               JSON.stringify({ message: { content } }) + '\n'

@@ -4,7 +4,7 @@ import { useMemo, useState, useEffect, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import type { Components } from "react-markdown";
 import { Check, X, Loader2, FileCode, FilePlus } from "lucide-react";
-import { cn } from "@sarge/core";
+import { cn } from "@/lib/utils";
 
 /**
  * Infer a meaningful filename from code content instead of generic "artifact.html"

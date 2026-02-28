@@ -526,7 +526,11 @@ export function ChatView({ conversationId, onMultiChat, onWarRoom, hideInput }: 
       {/* Header — model name centered + Thread Guardian right */}
       <div className="flex items-center px-4 py-1.5 border-b border-zinc-200/50 dark:border-zinc-800/50 bg-gray-100/30 dark:bg-zinc-900/30">
         <div className="flex-1" />
-        <div className="text-base font-bold text-zinc-800 dark:text-zinc-100 truncate max-w-[400px]" title={currentModel}>
+        <div
+          className="text-base font-bold truncate max-w-[400px]"
+          title={currentModel}
+          style={{ color: activeProvider?.color || undefined }}
+        >
           {currentProvider === "ollama"
             ? getOllamaFriendlyName(currentModel)
             : currentProvider === "lmstudio"

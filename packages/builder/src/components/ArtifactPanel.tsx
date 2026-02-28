@@ -530,21 +530,19 @@ function ArtifactPanelInner({
                 Diff
               </button>
             )}
-            {/* Deploy tab - only shown when deployContent is provided */}
-            {deployContent && (
-              <button
-                onClick={() => onTabChange("deploy")}
-                className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
-                  activeTab === "deploy"
-                    ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
-                    : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
-                )}
-              >
-                <Rocket className="h-3.5 w-3.5" />
-                Deploy
-              </button>
-            )}
+            {/* Deploy tab - always visible */}
+            <button
+              onClick={() => onTabChange("deploy")}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
+                activeTab === "deploy"
+                  ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
+                  : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
+              )}
+            >
+              <Rocket className="h-3.5 w-3.5" />
+              Deploy
+            </button>
           </div>
 
           {/* Content type badge */}
@@ -819,11 +817,83 @@ function ArtifactPanelInner({
           </div>
         )}
 
-        {activeTab === "deploy" && deployContent && (
+        {activeTab === "deploy" && (
           <div className="h-full overflow-hidden">
-            {React.isValidElement(deployContent)
-              ? React.cloneElement(deployContent as React.ReactElement<any>, { projectPath, projectName: storeProjectName })
-              : deployContent}
+            {deployContent ? (
+              React.isValidElement(deployContent)
+                ? React.cloneElement(deployContent as React.ReactElement<any>, { projectPath, projectName: storeProjectName })
+                : deployContent
+            ) : (
+              <div className="h-full overflow-y-auto p-6 space-y-6">
+                {/* Export ZIP */}
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
+                    <Download className="h-4 w-4 text-emerald-400" />
+                    Export
+                  </h3>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-xs border-zinc-700 hover:bg-zinc-800"
+                      disabled={!code}
+                      onClick={async () => {
+                        if (!code) return;
+                        const name = projectName || storeProjectName || 'project';
+                        const blob = await exportToZip(code, '', undefined, name);
+                        downloadZip(blob, name);
+                        showToast({ message: `Exported ${name}.zip`, type: 'success' });
+                      }}
+                    >
+                      <Download className="h-3.5 w-3.5 mr-1.5" />
+                      Export ZIP
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-xs border-zinc-700 hover:bg-zinc-800"
+                      disabled={!code}
+                      onClick={() => {
+                        if (!code) return;
+                        const ext = language === 'html' ? 'html' : language === 'css' ? 'css' : 'txt';
+                        const blob = new Blob([code], { type: 'text/plain' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `artifact.${ext}`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                        showToast({ message: `Downloaded artifact.${ext}`, type: 'success' });
+                      }}
+                    >
+                      <Download className="h-3.5 w-3.5 mr-1.5" />
+                      Download File
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Quick Deploy Guides */}
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
+                    <Rocket className="h-4 w-4 text-indigo-400" />
+                    Quick Deploy
+                  </h3>
+                  {[
+                    { name: 'Vercel', cmd: 'npx vercel --prod', color: 'text-white' },
+                    { name: 'Netlify', cmd: 'npx netlify deploy --prod', color: 'text-teal-400' },
+                    { name: 'GitHub Pages', cmd: 'git push origin main', color: 'text-zinc-300' },
+                    { name: 'Cloudflare', cmd: 'npx wrangler pages deploy .', color: 'text-orange-400' },
+                  ].map(({ name, cmd, color }) => (
+                    <div key={name} className="flex items-center justify-between px-3 py-2 rounded-md bg-zinc-800/50 border border-zinc-700/50">
+                      <span className={cn("text-xs font-medium", color)}>{name}</span>
+                      <code className="text-[10px] text-zinc-400 font-mono">{cmd}</code>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

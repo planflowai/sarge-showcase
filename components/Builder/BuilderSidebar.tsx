@@ -499,8 +499,17 @@ export default function BuilderSidebar({ selectedModel, selectedProvider, onMode
             Files
           </label>
           <div className="flex items-center gap-0.5">
-            {projectPath && (
+            {projectPath ? (
               <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowPathInput(true)}
+                  className="h-6 w-6 p-0 text-zinc-500 hover:text-indigo-500 dark:hover:text-indigo-400"
+                  title="Open different project"
+                >
+                  <FolderOpen className="h-3.5 w-3.5" />
+                </Button>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -530,12 +539,58 @@ export default function BuilderSidebar({ selectedModel, selectedProvider, onMode
                   <X className="h-3.5 w-3.5" />
                 </Button>
               </>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowPathInput(true)}
+                className="h-6 w-6 p-0 text-zinc-500 hover:text-indigo-500 dark:hover:text-indigo-400"
+                title="Open project"
+              >
+                <FolderOpen className="h-3.5 w-3.5" />
+              </Button>
             )}
           </div>
         </div>
 
         {/* Project content */}
         <div className="flex-1 px-1">
+          {/* Inline path input — shown when FolderOpen clicked while project is open */}
+          {projectPath && showPathInput && (
+            <div className="px-2 py-2 border-b border-zinc-200 dark:border-zinc-800">
+              <input
+                type="text"
+                value={pathInput}
+                onChange={(e) => setPathInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleOpenProject(pathInput);
+                  if (e.key === 'Escape') setShowPathInput(false);
+                }}
+                placeholder="Enter folder path..."
+                className="w-full px-2 py-1.5 text-xs rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400"
+                autoFocus
+              />
+              <div className="flex gap-1 mt-1">
+                <Button
+                  size="sm"
+                  onClick={() => handleOpenProject(pathInput)}
+                  disabled={!pathInput.trim() || isLoading}
+                  className="flex-1 h-6 text-[10px] bg-indigo-600 hover:bg-indigo-700 text-white"
+                >
+                  {isLoading ? "Loading..." : "Open"}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowPathInput(false)}
+                  className="h-6 text-[10px]"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+
           {projectPath ? (
             <>
               {/* Project name header */}

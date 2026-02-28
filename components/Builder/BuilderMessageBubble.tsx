@@ -3,19 +3,18 @@
 import { useState, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import type { Components } from "react-markdown";
-import { Copy, Check, Zap, Clock } from "lucide-react";
-import type { BuilderMessage } from "../stores/builderChatStore";
+import { Copy, Check, Zap, Clock, Brain, ChevronDown, ChevronRight } from "lucide-react";
+import type { BuilderMessage } from "@/lib/stores/builderChatStore";
 import ArtifactCard from "./ArtifactCard";
 import StreamingMessageRenderer from "./StreamingMessageRenderer";
 import EditProgressPanel from "./EditProgressPanel";
-import { cn } from "@sarge/core";
-import { formatDate } from "@sarge/core";
-import { providers } from "@sarge/core";
-import { getOllamaFriendlyName } from "@sarge/core";
+import { cn, formatDate } from "@/lib/utils";
+import { providers } from "@/lib/providers";
+import { getOllamaFriendlyName } from "@/lib/ollamaModelGroups";
 import { Button } from "@/components/ui/button";
-import { parseFileEditProposals, type FileEditProposal } from "@sarge/core";
-import { extractSummaryFromResponse } from "../../lib/builderLogger";
-import { hasEditBlocks } from "../lib/editBlockParser";
+import { parseFileEditProposals, type FileEditProposal } from "@/lib/contextInjector";
+import { extractSummaryFromResponse } from "@/lib/builderLogger";
+import { hasEditBlocks } from "@/lib/editBlockParser";
 
 interface BuilderMessageBubbleProps {
   message: BuilderMessage;
@@ -32,6 +31,32 @@ interface BuilderMessageBubbleProps {
   }) => void;
   autoApply?: boolean;
   onRefreshFileTree?: () => Promise<void>;
+}
+
+/** Collapsible thinking/reasoning block */
+function ThinkingBlock({ thinking, isStreaming }: { thinking: string; isStreaming: boolean }) {
+  const [expanded, setExpanded] = useState(false);
+  const wordCount = thinking.split(/\s+/).length;
+
+  return (
+    <div className="mb-2">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="flex items-center gap-1.5 text-[11px] text-purple-500 dark:text-purple-400 hover:text-purple-600 dark:hover:text-purple-300 transition-colors"
+      >
+        <Brain className={cn("h-3.5 w-3.5", isStreaming && "animate-pulse")} />
+        <span className="font-medium">
+          {isStreaming ? "Thinking..." : `Thought for ${wordCount} words`}
+        </span>
+        {expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+      </button>
+      {expanded && (
+        <div className="mt-1.5 px-3 py-2 rounded-md bg-purple-500/5 border border-purple-500/20 text-xs text-zinc-500 dark:text-zinc-400 max-h-48 overflow-y-auto whitespace-pre-wrap leading-relaxed">
+          {thinking}
+        </div>
+      )}
+    </div>
+  );
 }
 
 /**
@@ -311,6 +336,11 @@ export default function BuilderMessageBubble({
             <img src={message.imageUrl} alt={message.content} className="max-w-full rounded-lg" loading="lazy" />
             <p className="mt-1 text-xs text-zinc-500 italic">{message.content}</p>
           </div>
+        )}
+
+        {/* Thinking/reasoning block (DeepSeek R1, etc.) */}
+        {!isUser && message.thinking && (
+          <ThinkingBlock thinking={message.thinking} isStreaming={message.isStreaming || false} />
         )}
 
         {/* Assistant messages */}
