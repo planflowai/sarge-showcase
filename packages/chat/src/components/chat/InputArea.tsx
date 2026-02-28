@@ -451,24 +451,23 @@ export function InputArea({
             </div>
           )}
 
-          {/* ─── Two-column layout: Providers left, Input right ─── */}
-          <div className="flex gap-6">
-            {/* Left column — Provider groups + selected model */}
-            <div className="flex-shrink-0">
+          {/* ─── Providers left, Input centered ─── */}
+          <div className="relative">
+            {/* Left — Provider groups + model name (anchored left) */}
+            <div className="absolute left-0 top-0">
               <ProviderBar
                 activeProvider={currentProvider}
                 openProvider={modelPanelProvider}
                 onProviderClick={handleProviderClick}
               />
-              {/* Selected model name — clearly visible */}
-              <div className="mt-2 px-1 text-sm text-orange-400 font-semibold truncate" title={currentModel}>
+              <div className="mt-2 px-1 text-sm text-orange-400 font-semibold truncate max-w-[320px]" title={currentModel}>
                 {modelDisplayName}
               </div>
             </div>
 
-            {/* Right column — Input area */}
-            <div className="flex-1 min-w-0">
-              {/* Row 1: Textarea + Send */}
+            {/* Center — Textarea + Icons (always centered, does not move) */}
+            <div className="max-w-2xl mx-auto">
+              {/* Textarea + Send */}
               <div className="flex items-stretch gap-3">
                 <div className="flex-1 min-w-0">
                   <TextareaAutosize
@@ -499,9 +498,8 @@ export function InputArea({
                 </div>
               </div>
 
-              {/* Row 2: Single/Multi toggle + Icons (24px, generous spacing) */}
-              <div className="flex items-center gap-4 mt-2">
-                {/* Single/Multi toggle */}
+              {/* Single/Multi + Icons (24px) */}
+              <div className="flex items-center justify-center gap-4 mt-2">
                 <div className="flex items-center rounded-lg bg-zinc-800/80 border border-zinc-700/40 p-0.5 flex-shrink-0">
                   <button
                     type="button"
@@ -528,55 +526,52 @@ export function InputArea({
                   </button>
                 </div>
 
-                {/* Icons — 24px, generous spacing */}
-                <div className="flex-1 flex items-center gap-4">
-                  <button onClick={() => setShowHistory(true)} title="History" className="p-2 rounded-lg text-orange-500/60 hover:text-orange-400 hover:bg-orange-500/10 transition-colors">
-                    <Clock className="h-6 w-6" />
-                  </button>
-                  <button onClick={handleSaveChat} disabled={!hasVisibleMessages} title="Save chat" className="p-2 rounded-lg text-orange-500/60 hover:text-orange-400 hover:bg-orange-500/10 transition-colors disabled:opacity-30">
-                    {saveFeedback ? <Check className="h-6 w-6 text-emerald-400" /> : <Download className="h-6 w-6" />}
-                  </button>
-                  <button onClick={handleClearChat} disabled={!hasVisibleMessages} title={confirmClear ? "Confirm clear" : "Clear"} className={`p-2 rounded-lg transition-colors disabled:opacity-30 ${confirmClear ? "text-red-400 bg-red-500/15 animate-pulse" : "text-orange-500/60 hover:text-red-400 hover:bg-red-500/10"}`}>
-                    <Trash2 className="h-6 w-6" />
-                  </button>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button disabled={disabled} title="Prompts" className="p-2 rounded-lg text-amber-500/60 hover:text-amber-400 hover:bg-amber-500/10 transition-colors disabled:opacity-30">
-                        <BookText className="h-6 w-6" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="w-72 max-h-80 overflow-y-auto bg-zinc-900 border-zinc-700">
-                      {prompts.length === 0 ? (
-                        <div className="px-3 py-4 text-center text-sm text-zinc-500">
-                          <p>No saved prompts</p>
-                          <a href="/settings" className="mt-1 inline-block text-xs text-orange-400 hover:underline">Create in Settings &rarr;</a>
-                        </div>
-                      ) : (
-                        prompts.map((p) => (
-                          <DropdownMenuItem key={p.id} onClick={() => setInput(p.content)} className="flex flex-col items-start gap-0.5 cursor-pointer">
-                            <span className="font-medium text-sm">{p.name}</span>
-                            <span className="text-xs text-zinc-500 line-clamp-2">{p.content}</span>
-                          </DropdownMenuItem>
-                        ))
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                  <button onClick={() => setShowImageDialog(true)} disabled={disabled || !supportsImageGen} title="Generate image" className="p-2 rounded-lg text-orange-500/60 hover:text-orange-400 hover:bg-orange-500/10 transition-colors disabled:opacity-30">
-                    <ImageIcon className="h-6 w-6" />
-                  </button>
-                  <button onClick={handleCopyThread} disabled={disabled || !hasVisibleMessages} title="Copy thread" className="p-2 rounded-lg text-amber-500/60 hover:text-amber-400 hover:bg-amber-500/10 transition-colors disabled:opacity-30">
-                    {threadCopied ? <Check className="h-6 w-6 text-emerald-400" /> : <ClipboardCopy className="h-6 w-6" />}
-                  </button>
-                  <button onClick={() => setShowVaultModal(true)} disabled={disabled} title="Knowledge Vault" className={`relative p-2 rounded-lg transition-colors disabled:opacity-30 ${selectedVaultIds.length > 0 ? "bg-amber-500/15 text-amber-400" : "text-amber-500/60 hover:text-amber-400 hover:bg-amber-500/10"}`}>
-                    <Database className="h-6 w-6" />
-                  </button>
-                  <button onClick={() => fileInputRef.current?.click()} disabled={disabled} title="Attach files" className="p-2 rounded-lg text-orange-500/60 hover:text-orange-400 hover:bg-orange-500/10 transition-colors disabled:opacity-30">
-                    <Paperclip className="h-6 w-6" />
-                  </button>
-                  <button onClick={handleVoiceClick} disabled={disabled || !supportsVoice} title={supportsVoice ? (isVoiceActive ? "Stop" : "Voice") : "Voice N/A"} className={`relative p-2 rounded-lg transition-colors disabled:opacity-30 ${isVoiceActive ? "bg-red-500/20 text-red-400" : "text-emerald-500/60 hover:text-emerald-400 hover:bg-emerald-500/10"}`}>
-                    <Mic className={`h-6 w-6 ${isVoiceActive ? "animate-pulse" : ""}`} />
-                  </button>
-                </div>
+                <button onClick={() => setShowHistory(true)} title="History" className="p-2 rounded-lg text-orange-500/60 hover:text-orange-400 hover:bg-orange-500/10 transition-colors">
+                  <Clock className="h-6 w-6" />
+                </button>
+                <button onClick={handleSaveChat} disabled={!hasVisibleMessages} title="Save chat" className="p-2 rounded-lg text-orange-500/60 hover:text-orange-400 hover:bg-orange-500/10 transition-colors disabled:opacity-30">
+                  {saveFeedback ? <Check className="h-6 w-6 text-emerald-400" /> : <Download className="h-6 w-6" />}
+                </button>
+                <button onClick={handleClearChat} disabled={!hasVisibleMessages} title={confirmClear ? "Confirm clear" : "Clear"} className={`p-2 rounded-lg transition-colors disabled:opacity-30 ${confirmClear ? "text-red-400 bg-red-500/15 animate-pulse" : "text-orange-500/60 hover:text-red-400 hover:bg-red-500/10"}`}>
+                  <Trash2 className="h-6 w-6" />
+                </button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button disabled={disabled} title="Prompts" className="p-2 rounded-lg text-amber-500/60 hover:text-amber-400 hover:bg-amber-500/10 transition-colors disabled:opacity-30">
+                      <BookText className="h-6 w-6" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-72 max-h-80 overflow-y-auto bg-zinc-900 border-zinc-700">
+                    {prompts.length === 0 ? (
+                      <div className="px-3 py-4 text-center text-sm text-zinc-500">
+                        <p>No saved prompts</p>
+                        <a href="/settings" className="mt-1 inline-block text-xs text-orange-400 hover:underline">Create in Settings &rarr;</a>
+                      </div>
+                    ) : (
+                      prompts.map((p) => (
+                        <DropdownMenuItem key={p.id} onClick={() => setInput(p.content)} className="flex flex-col items-start gap-0.5 cursor-pointer">
+                          <span className="font-medium text-sm">{p.name}</span>
+                          <span className="text-xs text-zinc-500 line-clamp-2">{p.content}</span>
+                        </DropdownMenuItem>
+                      ))
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <button onClick={() => setShowImageDialog(true)} disabled={disabled || !supportsImageGen} title="Generate image" className="p-2 rounded-lg text-orange-500/60 hover:text-orange-400 hover:bg-orange-500/10 transition-colors disabled:opacity-30">
+                  <ImageIcon className="h-6 w-6" />
+                </button>
+                <button onClick={handleCopyThread} disabled={disabled || !hasVisibleMessages} title="Copy thread" className="p-2 rounded-lg text-amber-500/60 hover:text-amber-400 hover:bg-amber-500/10 transition-colors disabled:opacity-30">
+                  {threadCopied ? <Check className="h-6 w-6 text-emerald-400" /> : <ClipboardCopy className="h-6 w-6" />}
+                </button>
+                <button onClick={() => setShowVaultModal(true)} disabled={disabled} title="Knowledge Vault" className={`relative p-2 rounded-lg transition-colors disabled:opacity-30 ${selectedVaultIds.length > 0 ? "bg-amber-500/15 text-amber-400" : "text-amber-500/60 hover:text-amber-400 hover:bg-amber-500/10"}`}>
+                  <Database className="h-6 w-6" />
+                </button>
+                <button onClick={() => fileInputRef.current?.click()} disabled={disabled} title="Attach files" className="p-2 rounded-lg text-orange-500/60 hover:text-orange-400 hover:bg-orange-500/10 transition-colors disabled:opacity-30">
+                  <Paperclip className="h-6 w-6" />
+                </button>
+                <button onClick={handleVoiceClick} disabled={disabled || !supportsVoice} title={supportsVoice ? (isVoiceActive ? "Stop" : "Voice") : "Voice N/A"} className={`relative p-2 rounded-lg transition-colors disabled:opacity-30 ${isVoiceActive ? "bg-red-500/20 text-red-400" : "text-emerald-500/60 hover:text-emerald-400 hover:bg-emerald-500/10"}`}>
+                  <Mic className={`h-6 w-6 ${isVoiceActive ? "animate-pulse" : ""}`} />
+                </button>
               </div>
             </div>
           </div>
