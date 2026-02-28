@@ -13,6 +13,7 @@ export { ChatView, useBuilderPromptStore } from './components/chat/ChatView';
 export { ChatColumn } from './components/chat/ChatColumn';
 export { CodeBlock } from './components/chat/CodeBlock';
 export { InputArea } from './components/chat/InputArea';
+export type { Attachment } from './components/chat/InputArea';
 export { MessageBubble } from './components/chat/MessageBubble';
 export { ParallelChatView } from './components/chat/ParallelChatView';
 export { DebateBanner } from './components/chat/DebateBanner';

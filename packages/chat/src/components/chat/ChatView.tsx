@@ -98,9 +98,10 @@ interface ChatViewProps {
   conversationId: string;
   onMultiChat?: () => void;
   onWarRoom?: () => void;
+  hideInput?: boolean;
 }
 
-export function ChatView({ conversationId, onMultiChat, onWarRoom }: ChatViewProps) {
+export function ChatView({ conversationId, onMultiChat, onWarRoom, hideInput }: ChatViewProps) {
   const router = useRouter();
   const { messages, loading, sending, loadMessages, sendMessage, generateImage } = useMessageStore();
   const { currentProvider, currentModel, setProvider, setModel, summarizeForCloud, sanitizeForCloud } = useProviderStore();
@@ -667,41 +668,45 @@ export function ChatView({ conversationId, onMultiChat, onWarRoom }: ChatViewPro
         </div>
       </div>
 
-      {/* Voice indicator */}
-      <VoiceIndicator voiceState={voiceState} />
+      {!hideInput && (
+        <>
+          {/* Voice indicator */}
+          <VoiceIndicator voiceState={voiceState} />
 
-      {/* Command feedback */}
-      {commandFeedback && (
-        <div className="px-4 py-1 text-center text-xs font-medium text-emerald-400">
-          {commandFeedback}
-        </div>
+          {/* Command feedback */}
+          {commandFeedback && (
+            <div className="px-4 py-1 text-center text-xs font-medium text-emerald-400">
+              {commandFeedback}
+            </div>
+          )}
+
+          {/* Voice error */}
+          {voiceError && (
+            <div className="px-4 py-1 text-center text-xs text-red-400">
+              {voiceError}
+            </div>
+          )}
+
+          {/* Input area */}
+          <InputArea
+            conversationId={conversationId}
+            onSend={handleSend}
+            onImageGen={handleImageGen}
+            onDebate={openDebate}
+            onDebateThread={handleDebateThread}
+            onCopyThread={handleCopyThread}
+            onMultiChat={onMultiChat}
+            onWarRoom={onWarRoom}
+            hasMessages={messages.length > 0}
+            supportsImageGen={supportsImageGen}
+            voiceState={voiceState}
+            supportsVoice={supportsVoice}
+            onVoiceStart={start}
+            onVoiceStop={stop}
+            onVoiceInterrupt={interrupt}
+          />
+        </>
       )}
-
-      {/* Voice error */}
-      {voiceError && (
-        <div className="px-4 py-1 text-center text-xs text-red-400">
-          {voiceError}
-        </div>
-      )}
-
-      {/* Input area */}
-      <InputArea
-        conversationId={conversationId}
-        onSend={handleSend}
-        onImageGen={handleImageGen}
-        onDebate={openDebate}
-        onDebateThread={handleDebateThread}
-        onCopyThread={handleCopyThread}
-        onMultiChat={onMultiChat}
-        onWarRoom={onWarRoom}
-        hasMessages={messages.length > 0}
-        supportsImageGen={supportsImageGen}
-        voiceState={voiceState}
-        supportsVoice={supportsVoice}
-        onVoiceStart={start}
-        onVoiceStop={stop}
-        onVoiceInterrupt={interrupt}
-      />
 
     </div>
   );

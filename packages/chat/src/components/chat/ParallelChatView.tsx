@@ -61,9 +61,10 @@ function formatFileSize(bytes: number): string {
 interface ParallelChatViewProps {
   onSingleChat?: () => void;
   onWarRoom?: () => void;
+  hideInput?: boolean;
 }
 
-export function ParallelChatView({ onSingleChat, onWarRoom }: ParallelChatViewProps = {}) {
+export function ParallelChatView({ onSingleChat, onWarRoom, hideInput }: ParallelChatViewProps = {}) {
   const {
     columns,
     activeColumnCount,
@@ -570,7 +571,7 @@ export function ParallelChatView({ onSingleChat, onWarRoom }: ParallelChatViewPr
         ))}
       </div>
 
-      {/* Shared Input Area */}
+      {!hideInput && (
       <div
         ref={dropRef}
         className="relative border-t border-zinc-700/50 bg-zinc-900 p-3"
@@ -740,6 +741,7 @@ export function ParallelChatView({ onSingleChat, onWarRoom }: ParallelChatViewPr
           </div>
         </div>
       </div>
+      )}
 
       {/* Jury Guardian Toasts */}
       <JuryToastContainer />
