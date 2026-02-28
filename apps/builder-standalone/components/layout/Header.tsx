@@ -259,10 +259,7 @@ export function Header() {
                   </span>
                 </>
               ) : (
-                <>
-                  <ShieldOff className="h-4 w-4" />
-                  <span className="hidden sm:inline">Unsecured</span>
-                </>
+                <ShieldOff className="h-4 w-4" />
               )}
             </button>
 
@@ -290,10 +287,7 @@ export function Header() {
                   <Shield className="h-3 w-3 opacity-70" />
                 </>
               ) : (
-                <>
-                  <Radio className="h-4 w-4 transition-transform group-hover:scale-110" />
-                  <span className="hidden sm:inline">Online</span>
-                </>
+                <Radio className="h-4 w-4 transition-transform group-hover:scale-110" />
               )}
             </button>
 

@@ -19,6 +19,7 @@ import { useProviderStore } from "@sarge/core";
 import { useModelStore } from "@sarge/core";
 import { useKnowledgeStore } from "@sarge/core";
 import { useDraftStore } from "@sarge/core";
+import { getOllamaFriendlyName } from "@sarge/core";
 import { providers } from "@sarge/core";
 import { VaultAttachmentModal } from "./VaultAttachmentModal";
 import { ProviderBar } from "./ProviderBar";
@@ -98,6 +99,7 @@ export function InputArea({
   const [saveFeedback, setSaveFeedback] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
   const [threadCopied, setThreadCopied] = useState(false);
+  const [showExportHint, setShowExportHint] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropRef = useRef<HTMLDivElement>(null);
   const dragCounter = useRef(0);
@@ -370,6 +372,14 @@ export function InputArea({
 
   // ─── Render ───────────────────────────────────────────────────────
 
+  // Friendly model name for display
+  const getDisplayName = useModelStore((s) => s.getDisplayName);
+  const modelDisplayName = currentProvider === "ollama"
+    ? getOllamaFriendlyName(currentModel)
+    : currentProvider === "lmstudio"
+    ? currentModel
+    : getDisplayName(currentModel, currentModel);
+
   return (
     <>
       {/* Model panel — normal flow, pushes chat area up when open */}
@@ -384,7 +394,7 @@ export function InputArea({
 
       <div
         ref={dropRef}
-        className="relative bg-zinc-950 px-8 pt-3 pb-4"
+        className="relative bg-zinc-950 px-6 pt-3 pb-2"
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
         onDragOver={handleDragOver}
@@ -441,126 +451,134 @@ export function InputArea({
             </div>
           )}
 
-          {/* Row 1: Single/Multi toggle + Provider pills (left-aligned) */}
-          <div className="flex items-center gap-3 py-1">
-            {/* Single/Multi toggle */}
-            <div className="flex items-center rounded-lg bg-zinc-800/80 border border-zinc-700/40 p-0.5 flex-shrink-0">
-              <button
-                type="button"
-                onClick={() => { if (parallelEnabled) toggleParallelMode(); }}
-                className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all ${
-                  !parallelEnabled
-                    ? "bg-orange-600 text-white shadow-sm"
-                    : "text-zinc-400 hover:text-zinc-200"
-                }`}
-              >
-                Single
-              </button>
-              <button
-                type="button"
-                onClick={() => { if (!parallelEnabled) toggleParallelMode(); }}
-                className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all flex items-center gap-1 ${
-                  parallelEnabled
-                    ? "bg-orange-600 text-white shadow-sm"
-                    : "text-zinc-400 hover:text-zinc-200"
-                }`}
-              >
-                <Columns2 className="h-3 w-3" />
-                Multi
-              </button>
-            </div>
-
-            {/* Provider pills */}
-            <ProviderBar
-              activeProvider={currentProvider}
-              activeModel={currentModel}
-              openProvider={modelPanelProvider}
-              onProviderClick={handleProviderClick}
-            />
-          </div>
-
-          {/* Row 2: Textarea + Send */}
-          <div className="flex items-stretch gap-3 mt-1">
-            {/* Text input — takes remaining space, 3-4 lines tall */}
-            <div className="flex-1 min-w-0">
-              <TextareaAutosize
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                onPaste={handlePaste}
-                placeholder={
-                  attachments.length > 0
-                    ? "Add a message about your files..."
-                    : "Type a message... (Enter to send, Shift+Enter for new line)"
-                }
-                minRows={3}
-                maxRows={8}
-                disabled={disabled}
-                className="w-full resize-none rounded-xl bg-zinc-900 px-5 py-3 text-sm text-zinc-200 placeholder:text-zinc-500 focus:outline-none disabled:opacity-50 border border-zinc-800 focus:border-zinc-700 transition-colors"
+          {/* ─── Two-column layout: Providers left, Input right ─── */}
+          <div className="flex gap-5">
+            {/* Left column — Provider grid + active model label */}
+            <div className="flex-shrink-0 w-[220px]">
+              <ProviderBar
+                activeProvider={currentProvider}
+                openProvider={modelPanelProvider}
+                onProviderClick={handleProviderClick}
               />
+              {/* Active model display */}
+              <div className="mt-1.5 px-1 text-[10px] text-orange-400/70 font-medium truncate" title={currentModel}>
+                {modelDisplayName}
+              </div>
             </div>
 
-            {/* Send button — right side, vertically centered */}
-            <div className="flex items-center flex-shrink-0">
-              <button
-                onClick={handleSend}
-                disabled={(!input.trim() && attachments.length === 0 && selectedVaultIds.length === 0) || disabled}
-                title="Send message"
-                className="p-3 rounded-xl bg-orange-600 text-white hover:bg-orange-500 transition-all hover:shadow-[0_0_14px_rgba(249,115,22,0.4)] disabled:opacity-30 disabled:hover:bg-orange-600 disabled:hover:shadow-none"
-              >
-                <Send className="h-5 w-5" />
-              </button>
-            </div>
-          </div>
+            {/* Right column — Input area */}
+            <div className="flex-1 min-w-0">
+              {/* Row 1: Textarea + Send */}
+              <div className="flex items-stretch gap-3">
+                <div className="flex-1 min-w-0">
+                  <TextareaAutosize
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    onPaste={handlePaste}
+                    placeholder={
+                      attachments.length > 0
+                        ? "Add a message about your files..."
+                        : "Type a message... (Enter to send, Shift+Enter for new line)"
+                    }
+                    minRows={3}
+                    maxRows={8}
+                    disabled={disabled}
+                    className="w-full resize-none rounded-xl bg-zinc-900 px-5 py-3 text-sm text-zinc-200 placeholder:text-zinc-500 focus:outline-none disabled:opacity-50 border border-zinc-800 focus:border-zinc-700 transition-colors"
+                  />
+                </div>
+                <div className="flex items-center flex-shrink-0">
+                  <button
+                    onClick={handleSend}
+                    disabled={(!input.trim() && attachments.length === 0 && selectedVaultIds.length === 0) || disabled}
+                    title="Send message"
+                    className="p-3 rounded-xl bg-orange-600 text-white hover:bg-orange-500 transition-all hover:shadow-[0_0_14px_rgba(249,115,22,0.4)] disabled:opacity-30 disabled:hover:bg-orange-600 disabled:hover:shadow-none"
+                  >
+                    <Send className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
 
-          {/* Row 3: Icons spread evenly below input */}
-          <div className="flex items-center justify-between mt-2 px-1">
-            <button onClick={() => setShowHistory(true)} title="History" className="p-2 rounded-lg text-orange-500/60 hover:text-orange-400 hover:bg-orange-500/10 transition-colors">
-              <Clock className="h-4 w-4" />
-            </button>
-            <button onClick={handleSaveChat} disabled={!hasVisibleMessages} title="Save chat" className="p-2 rounded-lg text-orange-500/60 hover:text-orange-400 hover:bg-orange-500/10 transition-colors disabled:opacity-30">
-              {saveFeedback ? <Check className="h-4 w-4 text-emerald-400" /> : <Download className="h-4 w-4" />}
-            </button>
-            <button onClick={handleClearChat} disabled={!hasVisibleMessages} title={confirmClear ? "Confirm clear" : "Clear"} className={`p-2 rounded-lg transition-colors disabled:opacity-30 ${confirmClear ? "text-red-400 bg-red-500/15 animate-pulse" : "text-orange-500/60 hover:text-red-400 hover:bg-red-500/10"}`}>
-              <Trash2 className="h-4 w-4" />
-            </button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button disabled={disabled} title="Prompts" className="p-2 rounded-lg text-amber-500/60 hover:text-amber-400 hover:bg-amber-500/10 transition-colors disabled:opacity-30">
-                  <BookText className="h-4 w-4" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-72 max-h-80 overflow-y-auto bg-zinc-900 border-zinc-700">
-                {prompts.length === 0 ? (
-                  <div className="px-3 py-4 text-center text-sm text-zinc-500">
-                    <p>No saved prompts</p>
-                    <a href="/settings" className="mt-1 inline-block text-xs text-orange-400 hover:underline">Create in Settings &rarr;</a>
-                  </div>
-                ) : (
-                  prompts.map((p) => (
-                    <DropdownMenuItem key={p.id} onClick={() => setInput(p.content)} className="flex flex-col items-start gap-0.5 cursor-pointer">
-                      <span className="font-medium text-sm">{p.name}</span>
-                      <span className="text-xs text-zinc-500 line-clamp-2">{p.content}</span>
-                    </DropdownMenuItem>
-                  ))
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <button onClick={() => setShowImageDialog(true)} disabled={disabled || !supportsImageGen} title="Generate image" className="p-2 rounded-lg text-orange-500/60 hover:text-orange-400 hover:bg-orange-500/10 transition-colors disabled:opacity-30">
-              <ImageIcon className="h-4 w-4" />
-            </button>
-            <button onClick={handleCopyThread} disabled={disabled || !hasVisibleMessages} title="Copy thread" className="p-2 rounded-lg text-amber-500/60 hover:text-amber-400 hover:bg-amber-500/10 transition-colors disabled:opacity-30">
-              {threadCopied ? <Check className="h-4 w-4 text-emerald-400" /> : <ClipboardCopy className="h-4 w-4" />}
-            </button>
-            <button onClick={() => setShowVaultModal(true)} disabled={disabled} title="Knowledge Vault" className={`relative p-2 rounded-lg transition-colors disabled:opacity-30 ${selectedVaultIds.length > 0 ? "bg-amber-500/15 text-amber-400" : "text-amber-500/60 hover:text-amber-400 hover:bg-amber-500/10"}`}>
-              <Database className="h-4 w-4" />
-            </button>
-            <button onClick={() => fileInputRef.current?.click()} disabled={disabled} title="Attach files" className="p-2 rounded-lg text-orange-500/60 hover:text-orange-400 hover:bg-orange-500/10 transition-colors disabled:opacity-30">
-              <Paperclip className="h-4 w-4" />
-            </button>
-            <button onClick={handleVoiceClick} disabled={disabled || !supportsVoice} title={supportsVoice ? (isVoiceActive ? "Stop" : "Voice") : "Voice N/A"} className={`relative p-2 rounded-lg transition-colors disabled:opacity-30 ${isVoiceActive ? "bg-red-500/20 text-red-400" : "text-emerald-500/60 hover:text-emerald-400 hover:bg-emerald-500/10"}`}>
-              <Mic className={`h-4 w-4 ${isVoiceActive ? "animate-pulse" : ""}`} />
-            </button>
+              {/* Row 2: Single/Multi toggle + Icons */}
+              <div className="flex items-center gap-3 mt-2">
+                {/* Single/Multi toggle */}
+                <div className="flex items-center rounded-lg bg-zinc-800/80 border border-zinc-700/40 p-0.5 flex-shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => { if (parallelEnabled) toggleParallelMode(); }}
+                    className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all ${
+                      !parallelEnabled
+                        ? "bg-orange-600 text-white shadow-sm"
+                        : "text-zinc-400 hover:text-zinc-200"
+                    }`}
+                  >
+                    Single
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { if (!parallelEnabled) toggleParallelMode(); }}
+                    className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all flex items-center gap-1 ${
+                      parallelEnabled
+                        ? "bg-orange-600 text-white shadow-sm"
+                        : "text-zinc-400 hover:text-zinc-200"
+                    }`}
+                  >
+                    <Columns2 className="h-3 w-3" />
+                    Multi
+                  </button>
+                </div>
+
+                {/* Icons — spread across remaining space */}
+                <div className="flex-1 flex items-center justify-between">
+                  <button onClick={() => setShowHistory(true)} title="History" className="p-1.5 rounded-lg text-orange-500/60 hover:text-orange-400 hover:bg-orange-500/10 transition-colors">
+                    <Clock className="h-4 w-4" />
+                  </button>
+                  <button onClick={handleSaveChat} disabled={!hasVisibleMessages} title="Save chat" className="p-1.5 rounded-lg text-orange-500/60 hover:text-orange-400 hover:bg-orange-500/10 transition-colors disabled:opacity-30">
+                    {saveFeedback ? <Check className="h-4 w-4 text-emerald-400" /> : <Download className="h-4 w-4" />}
+                  </button>
+                  <button onClick={handleClearChat} disabled={!hasVisibleMessages} title={confirmClear ? "Confirm clear" : "Clear"} className={`p-1.5 rounded-lg transition-colors disabled:opacity-30 ${confirmClear ? "text-red-400 bg-red-500/15 animate-pulse" : "text-orange-500/60 hover:text-red-400 hover:bg-red-500/10"}`}>
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button disabled={disabled} title="Prompts" className="p-1.5 rounded-lg text-amber-500/60 hover:text-amber-400 hover:bg-amber-500/10 transition-colors disabled:opacity-30">
+                        <BookText className="h-4 w-4" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-72 max-h-80 overflow-y-auto bg-zinc-900 border-zinc-700">
+                      {prompts.length === 0 ? (
+                        <div className="px-3 py-4 text-center text-sm text-zinc-500">
+                          <p>No saved prompts</p>
+                          <a href="/settings" className="mt-1 inline-block text-xs text-orange-400 hover:underline">Create in Settings &rarr;</a>
+                        </div>
+                      ) : (
+                        prompts.map((p) => (
+                          <DropdownMenuItem key={p.id} onClick={() => setInput(p.content)} className="flex flex-col items-start gap-0.5 cursor-pointer">
+                            <span className="font-medium text-sm">{p.name}</span>
+                            <span className="text-xs text-zinc-500 line-clamp-2">{p.content}</span>
+                          </DropdownMenuItem>
+                        ))
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <button onClick={() => setShowImageDialog(true)} disabled={disabled || !supportsImageGen} title="Generate image" className="p-1.5 rounded-lg text-orange-500/60 hover:text-orange-400 hover:bg-orange-500/10 transition-colors disabled:opacity-30">
+                    <ImageIcon className="h-4 w-4" />
+                  </button>
+                  <button onClick={handleCopyThread} disabled={disabled || !hasVisibleMessages} title="Copy thread" className="p-1.5 rounded-lg text-amber-500/60 hover:text-amber-400 hover:bg-amber-500/10 transition-colors disabled:opacity-30">
+                    {threadCopied ? <Check className="h-4 w-4 text-emerald-400" /> : <ClipboardCopy className="h-4 w-4" />}
+                  </button>
+                  <button onClick={() => setShowVaultModal(true)} disabled={disabled} title="Knowledge Vault" className={`relative p-1.5 rounded-lg transition-colors disabled:opacity-30 ${selectedVaultIds.length > 0 ? "bg-amber-500/15 text-amber-400" : "text-amber-500/60 hover:text-amber-400 hover:bg-amber-500/10"}`}>
+                    <Database className="h-4 w-4" />
+                  </button>
+                  <button onClick={() => fileInputRef.current?.click()} disabled={disabled} title="Attach files" className="p-1.5 rounded-lg text-orange-500/60 hover:text-orange-400 hover:bg-orange-500/10 transition-colors disabled:opacity-30">
+                    <Paperclip className="h-4 w-4" />
+                  </button>
+                  <button onClick={handleVoiceClick} disabled={disabled || !supportsVoice} title={supportsVoice ? (isVoiceActive ? "Stop" : "Voice") : "Voice N/A"} className={`relative p-1.5 rounded-lg transition-colors disabled:opacity-30 ${isVoiceActive ? "bg-red-500/20 text-red-400" : "text-emerald-500/60 hover:text-emerald-400 hover:bg-emerald-500/10"}`}>
+                    <Mic className={`h-4 w-4 ${isVoiceActive ? "animate-pulse" : ""}`} />
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -610,6 +628,29 @@ export function InputArea({
           onSelectionChange={setSelectedVaultIds}
         />
       </div>
+
+      {/* Quick Export — full-width green neon bar */}
+      {showExportHint && (
+        <div className="bg-emerald-500/10 border-t border-emerald-500/30 px-6 py-2">
+          <div className="mx-auto max-w-[1680px] flex items-center justify-center gap-2 relative">
+            <div className="flex items-center gap-2 justify-center">
+              <Download className="h-3.5 w-3.5 text-emerald-400 flex-shrink-0" />
+              <span className="text-xs text-emerald-400 text-center">
+                <strong>Quick Export:</strong> Use <code className="bg-emerald-500/10 px-1.5 py-0.5 rounded text-[11px] font-mono">create the powerpoint</code>,{" "}
+                <code className="bg-emerald-500/10 px-1.5 py-0.5 rounded text-[11px] font-mono">export as pdf</code>,{" "}
+                <code className="bg-emerald-500/10 px-1.5 py-0.5 rounded text-[11px] font-mono">make an excel</code>, etc.
+              </span>
+            </div>
+            <button
+              onClick={() => setShowExportHint(false)}
+              className="absolute right-0 text-emerald-400 hover:text-emerald-300 transition-colors flex-shrink-0"
+              title="Hide hint"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* History Drawer — rendered as fixed overlay */}
       <HistoryDrawer open={showHistory} onClose={() => setShowHistory(false)} />
