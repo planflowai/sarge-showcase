@@ -457,9 +457,10 @@ export async function POST(request: NextRequest) {
           cloudflareUrl = `https://${safeCfName}.pages.dev`;
         }
         // Save wrangler.toml so detect and push can find it
+        // Must include pages_build_output_dir so wrangler knows this is a Pages project (not Workers)
         const wranglerTomlPath = path.join(projectPath, "wrangler.toml");
         if (!fs.existsSync(wranglerTomlPath) && cloudflareUrl) {
-          fs.writeFileSync(wranglerTomlPath, `name = "${safeCfName}"\n`, "utf-8");
+          fs.writeFileSync(wranglerTomlPath, `name = "${safeCfName}"\npages_build_output_dir = "."\n`, "utf-8");
         }
       }
 
@@ -570,9 +571,14 @@ export async function POST(request: NextRequest) {
         }
         const wranglerToml = path.join(projectPath, "wrangler.toml");
         if (fs.existsSync(wranglerToml)) {
-          const wranglerCfg = fs.readFileSync(wranglerToml, "utf-8");
+          let wranglerCfg = fs.readFileSync(wranglerToml, "utf-8");
           const cfNameMatch = wranglerCfg.match(/name\s*=\s*"([^"]+)"/);
           if (cfNameMatch) {
+            // Ensure pages_build_output_dir exists (fixes legacy toml files missing it)
+            if (!wranglerCfg.includes("pages_build_output_dir")) {
+              wranglerCfg += `pages_build_output_dir = "."\n`;
+              fs.writeFileSync(wranglerToml, wranglerCfg, "utf-8");
+            }
             redeployTasks.push(
               runCommand(
                 `npx wrangler pages deploy "." --project-name="${cfNameMatch[1]}"`,
