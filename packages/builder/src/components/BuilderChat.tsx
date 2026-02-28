@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback, useState } from "react";
-import { Send, X, StopCircle, Paperclip, CheckCircle, Bookmark, Database, ImageIcon, MessageSquare, Hammer, Pencil, RefreshCw, Bot, Check, Image as ImageLucide, Trash2, ClipboardCopy, Plus, Save, Terminal as TerminalIcon, Loader2, GitBranch, MoreHorizontal } from "lucide-react";
+import { Send, X, StopCircle, Paperclip, CheckCircle, Bookmark, Database, ImageIcon, MessageSquare, Hammer, Pencil, RefreshCw, Bot, Check, Image as ImageLucide, Trash2, ClipboardCopy, Plus, Save, Terminal as TerminalIcon, Loader2, GitBranch } from "lucide-react";
 import { type Attachment, readFileAsAttachment, formatFileSize } from "../lib/utils/attachments";
 import { useBuilderChatStore } from "../stores/builderChatStore";
 import { useChangesStore } from "../stores/changesStore";
@@ -107,7 +107,7 @@ export default function BuilderChat({
   const [showVaultModal, setShowVaultModal] = useState(false);
   const [selectedVaultIds, setSelectedVaultIds] = useState<string[]>([]);
   const [showImageDialog, setShowImageDialog] = useState(false);
-  const [showOverflow, setShowOverflow] = useState(false);
+  // showOverflow removed — all buttons are now visible inline
   const [imagePrompt, setImagePrompt] = useState("");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [copyFeedback, setCopyFeedback] = useState(false);
@@ -734,9 +734,9 @@ export default function BuilderChat({
             />
           </div>
 
-          {/* Row 2: [Attach][Img][Web][...overflow] | [Plan][Build][Edit][Regen][Auto][Send] */}
+          {/* Row 2: [Attach][Img][Web][Plan][Build][Edit][Regen][Auto][Send] */}
           <div className="flex items-center justify-between gap-2">
-            {/* Left: Attach + Image + Web + Overflow */}
+            {/* Left: Attach + Image + Web */}
             <div className="flex items-center gap-1">
               {/* Attach button */}
               {isLocalModel ? (
@@ -783,7 +783,7 @@ export default function BuilderChat({
                 {attachments.length > 0 && <span className="text-[9px] font-bold">{attachments.length}</span>}
               </Button>
 
-              {/* Web search — kept inline since it's a toggle */}
+              {/* Web search */}
               {webSearch !== undefined && (
                 <Button
                   variant="ghost"
@@ -800,58 +800,6 @@ export default function BuilderChat({
                   Web
                 </Button>
               )}
-
-              {/* Overflow menu (...) — Clear, Copy, Vault, ImageGen */}
-              <div className="relative">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowOverflow(!showOverflow)}
-                  className="h-7 w-7 p-0 text-zinc-500 hover:text-zinc-300"
-                  title="More actions"
-                >
-                  <MoreHorizontal className="h-3.5 w-3.5" />
-                </Button>
-                {showOverflow && (
-                  <div className="absolute bottom-full left-0 mb-1 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl py-1 z-50 min-w-[160px]">
-                    {messages.length > 0 && (
-                      <button
-                        onClick={() => { clearMessages(); setShowOverflow(false); }}
-                        disabled={sending}
-                        className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-zinc-300 hover:bg-zinc-700 transition-colors"
-                      >
-                        <Trash2 className="h-3 w-3 text-red-400" /> Clear Chat
-                      </button>
-                    )}
-                    {messages.some(m => m.role === 'assistant') && (
-                      <button
-                        onClick={() => { handleCopyLastResponse(); setShowOverflow(false); }}
-                        disabled={sending}
-                        className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-zinc-300 hover:bg-zinc-700 transition-colors"
-                      >
-                        <ClipboardCopy className="h-3 w-3 text-blue-400" /> Copy Response
-                      </button>
-                    )}
-                    <button
-                      onClick={() => { setShowVaultModal(true); setShowOverflow(false); }}
-                      disabled={noModel || sending}
-                      className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-zinc-300 hover:bg-zinc-700 transition-colors"
-                    >
-                      <Database className="h-3 w-3 text-indigo-400" /> Knowledge Vault
-                      {selectedVaultIds.length > 0 && <span className="text-[9px] text-indigo-400 ml-auto">{selectedVaultIds.length}</span>}
-                    </button>
-                    {supportsImageGen && (
-                      <button
-                        onClick={() => { setShowImageDialog(true); setShowOverflow(false); }}
-                        disabled={noModel || sending}
-                        className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-zinc-300 hover:bg-zinc-700 transition-colors"
-                      >
-                        <ImageIcon className="h-3 w-3 text-purple-400" /> Generate Image
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
             </div>
 
             {/* Right: Mode toggles + Send */}
@@ -960,8 +908,8 @@ export default function BuilderChat({
             </div>
           </div>
 
-          {/* Row 3: [New][Save][Push][Term] */}
-          <div className="flex items-center justify-center gap-1 mt-1.5 pt-1.5 border-t border-zinc-200 dark:border-zinc-800">
+          {/* Row 3: [New][Save][Push][Term] + [Clear][Copy][Vault][ImgGen] */}
+          <div className="flex items-center justify-center gap-1 mt-1.5 pt-1.5 border-t border-zinc-200 dark:border-zinc-800 flex-wrap">
             <button
               onClick={onNewBuild}
               className="flex items-center gap-1 text-[10px] font-medium transition-colors rounded px-2 py-1 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/30 border border-purple-300 dark:border-purple-700"
@@ -1014,6 +962,60 @@ export default function BuilderChat({
               <span>Term</span>
               {terminalOpen && <span className="text-[8px] font-bold">●</span>}
             </button>
+
+            <div className="w-px h-4 bg-zinc-300 dark:bg-zinc-700 mx-0.5" />
+
+            {messages.length > 0 && (
+              <button
+                onClick={() => clearMessages()}
+                disabled={sending}
+                className="flex items-center gap-1 text-[10px] font-medium transition-colors rounded px-2 py-1 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30"
+                title="Clear Chat"
+              >
+                <Trash2 className="h-3 w-3" />
+                <span>Clear</span>
+              </button>
+            )}
+
+            {messages.some(m => m.role === 'assistant') && (
+              <button
+                onClick={handleCopyLastResponse}
+                disabled={sending}
+                className="flex items-center gap-1 text-[10px] font-medium transition-colors rounded px-2 py-1 text-blue-500 hover:bg-blue-100 dark:hover:bg-blue-900/30"
+                title="Copy Last Response"
+              >
+                <ClipboardCopy className="h-3 w-3" />
+                <span>Copy</span>
+              </button>
+            )}
+
+            <button
+              onClick={() => setShowVaultModal(true)}
+              disabled={noModel || sending}
+              className={cn(
+                "flex items-center gap-1 text-[10px] font-medium transition-colors rounded px-2 py-1",
+                selectedVaultIds.length > 0
+                  ? "text-indigo-500 bg-indigo-100 dark:bg-indigo-900/30"
+                  : "text-zinc-500 hover:text-indigo-500"
+              )}
+              title="Knowledge Vault"
+            >
+              <Database className="h-3 w-3" />
+              <span>Vault</span>
+              {selectedVaultIds.length > 0 && <span className="text-[8px] font-bold">({selectedVaultIds.length})</span>}
+            </button>
+
+            {supportsImageGen && (
+              <button
+                onClick={() => setShowImageDialog(true)}
+                disabled={noModel || sending}
+                className="flex items-center gap-1 text-[10px] font-medium transition-colors rounded px-2 py-1 text-purple-500 hover:bg-purple-100 dark:hover:bg-purple-900/30"
+                title="Generate Image"
+              >
+                <ImageIcon className="h-3 w-3" />
+                <span>ImgGen</span>
+              </button>
+            )}
           </div>
 
         </div>

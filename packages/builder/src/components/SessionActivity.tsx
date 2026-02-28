@@ -47,7 +47,7 @@ export default function SessionActivity({
   const changes = useChangesStore((s) => s.changes);
   const clearChanges = useChangesStore((s) => s.clearChanges);
   const messages = useBuilderChatStore((s) => s.messages);
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   const [, forceUpdate] = useState(0);
 
   // Update relative times periodically
@@ -101,32 +101,29 @@ export default function SessionActivity({
 
   // Don't show if no activity
   if (totalMessages === 0 && changes.length === 0) {
-    return (
-      <div className={cn("p-3", className)}>
-        <div className="flex items-center gap-2 text-zinc-500 text-xs">
-          <Activity className="h-4 w-4" />
-          <span>No activity yet</span>
-        </div>
-        <p className="text-[10px] text-zinc-600 mt-1">
-          Start a conversation to build something
-        </p>
-      </div>
-    );
+    return null;
   }
+
+  // Total activity count for badge
+  const totalActivity = changes.length || userMessages;
 
   return (
     <div className={cn("flex flex-col", className)}>
-      {/* Header */}
+      {/* Collapsed: tiny inline badge. Expanded: full panel. */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex items-center justify-between px-3 py-2 hover:bg-zinc-800/50 transition-colors"
+        className={cn(
+          "flex items-center gap-2 transition-colors",
+          expanded ? "justify-between px-3 py-2 hover:bg-zinc-800/50" : "px-3 py-1 hover:bg-zinc-800/30"
+        )}
       >
-        <div className="flex items-center gap-2">
-          <Activity className="h-4 w-4 text-indigo-400" />
-          <span className="text-xs font-medium text-zinc-300">Session Activity</span>
-          {(appliedChanges > 0 || userMessages > 0) && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400">
-              {appliedChanges > 0 ? `${appliedChanges} changes` : `${userMessages} messages`}
+        <div className="flex items-center gap-1.5">
+          <Activity className="h-3.5 w-3.5 text-indigo-400" />
+          {expanded ? (
+            <span className="text-xs font-medium text-zinc-300">Session Activity</span>
+          ) : (
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400 font-medium">
+              {totalActivity} {totalActivity === 1 ? "change" : "changes"}
             </span>
           )}
         </div>
