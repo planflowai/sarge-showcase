@@ -3,8 +3,8 @@ import "./globals.css";
 import { Header } from "@/components/layout/Header";
 
 export const metadata: Metadata = {
-  title: "SARGE Builder Standalone",
-  description: "Standalone Builder — powered by @sarge/builder + @sarge/chat + @sarge/core",
+  title: "S.A.R.G.E. Forge",
+  description: "S.A.R.G.E. Forge — AI-powered multi-model code builder",
 };
 
 export default function RootLayout({

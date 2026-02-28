@@ -87,6 +87,16 @@ export function Header() {
     setMounted(true);
   }, []);
 
+  // Sync theme to <html> class so Tailwind dark: variants apply
+  useEffect(() => {
+    const html = document.documentElement;
+    if (theme === "dark") {
+      html.classList.add("dark");
+    } else {
+      html.classList.remove("dark");
+    }
+  }, [theme]);
+
   // Check API connectivity via proxy
   useEffect(() => {
     fetch("/api/status")

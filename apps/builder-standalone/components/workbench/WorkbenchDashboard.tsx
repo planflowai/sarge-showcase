@@ -207,9 +207,9 @@ export default function WorkbenchDashboard() {
       </div>
 
       {/* ── Monitor Grid ── */}
-      <div className="flex-1 overflow-auto p-4">
+      <div className="flex-1 min-h-0 p-4 flex flex-col gap-3">
         {/* Row 1: Mon5 | Mon1 | Mon3 */}
-        <div className="grid grid-cols-3 gap-3 mb-3">
+        <div className="flex-1 min-h-0 grid grid-cols-3 gap-3">
           {[s1, s2, s3].map((slot, i) => slot && (
             <WorkbenchCard
               key={slot.slot}
@@ -223,7 +223,7 @@ export default function WorkbenchDashboard() {
         </div>
 
         {/* Row 2: Mon6 | [MON 4 = THIS SCREEN] | Mon2 */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="flex-1 min-h-0 grid grid-cols-3 gap-3">
           {/* Slot 4 = Mon6 */}
           {s4 && (
             <WorkbenchCard
@@ -236,8 +236,8 @@ export default function WorkbenchDashboard() {
           )}
 
           {/* Center: MON 4 placeholder */}
-          <div className="flex flex-col items-center justify-center rounded-xl border border-zinc-800/40 bg-zinc-900/20"
-               style={{ minHeight: "360px", minWidth: "360px" }}>
+          <div className="flex flex-col items-center justify-center rounded-xl border border-zinc-800/40 bg-zinc-900/20 h-full"
+               style={{ minWidth: "400px" }}>
             <div className="w-10 h-10 rounded-xl border-2 border-zinc-700/40 flex items-center justify-center text-lg font-black text-zinc-600 mb-2">
               4
             </div>
