@@ -506,16 +506,22 @@ Please provide the complete modified version of this component. Make only the re
     document.body.style.cursor = 'col-resize';
     document.body.style.userSelect = 'none';
 
-    const sidebarWidth = 320; // Fixed sidebar width
+    // Add overlay to prevent iframe from capturing mouse events during drag
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;cursor:col-resize;';
+    document.body.appendChild(overlay);
+
+    // Get the chat panel's left edge dynamically (accounts for sidebar width)
+    const chatLeft = chatRef.current?.getBoundingClientRect().left || 0;
 
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizing.current) return;
-      // Chat width = mouse position minus sidebar width
-      const newChatWidth = e.clientX - sidebarWidth;
-      // Clamp between 300px and 60% of available space (leave room for artifact)
-      const availableWidth = window.innerWidth - sidebarWidth;
-      const maxChatWidth = availableWidth * 0.6;
-      const clampedWidth = Math.max(300, Math.min(maxChatWidth, newChatWidth));
+      const newChatWidth = e.clientX - chatLeft;
+      // Clamp: min 250px chat, leave at least 300px for artifact panel
+      const containerWidth = containerRef.current?.offsetWidth || window.innerWidth;
+      const sidebarWidth = chatLeft - (containerRef.current?.getBoundingClientRect().left || 0);
+      const maxChatWidth = containerWidth - sidebarWidth - 300 - 8; // 300px artifact min + handle
+      const clampedWidth = Math.max(250, Math.min(maxChatWidth, newChatWidth));
       setChatPanelWidth(clampedWidth);
     };
 
@@ -523,12 +529,21 @@ Please provide the complete modified version of this component. Make only the re
       isResizing.current = false;
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
+      overlay.remove();
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
 
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
+  }, []);
+
+  // Double-click resize handle to reset to 50/50 split
+  const handleResizeDoubleClick = useCallback(() => {
+    const containerWidth = containerRef.current?.offsetWidth || window.innerWidth;
+    const sidebarWidth = chatRef.current ? (chatRef.current.getBoundingClientRect().left - (containerRef.current?.getBoundingClientRect().left || 0)) : 320;
+    const available = containerWidth - sidebarWidth - 8; // 8px for handle
+    setChatPanelWidth(Math.round(available / 2));
   }, []);
 
   // Determine which code to show in preview (streaming or final)
@@ -664,7 +679,7 @@ Please provide the complete modified version of this component. Make only the re
         <div
           ref={chatRef}
           className="h-full flex-shrink-0 flex-grow-0 flex flex-col border-r border-zinc-200 dark:border-zinc-800 overflow-hidden"
-          style={{ width: `${chatPanelWidth}px`, minWidth: '300px' }}
+          style={{ width: `${chatPanelWidth}px`, minWidth: '250px' }}
         >
           <BuilderChat
             selectedModel={selectedModel}
@@ -686,17 +701,20 @@ Please provide the complete modified version of this component. Make only the re
           />
         </div>
 
-        {/* Resize handle */}
+        {/* Resize handle — wider grab target with visible indicator */}
         <div
-          className="w-1 h-full cursor-col-resize bg-zinc-300 dark:bg-zinc-700 hover:bg-indigo-500 active:bg-indigo-600 transition-colors flex-shrink-0 flex-grow-0"
+          className="w-2 h-full cursor-col-resize flex-shrink-0 flex-grow-0 group relative flex items-center justify-center hover:bg-indigo-500/10 active:bg-indigo-500/20 transition-colors"
           onMouseDown={handleResizeStart}
-        />
+          onDoubleClick={handleResizeDoubleClick}
+        >
+          <div className="w-0.5 h-8 rounded-full bg-zinc-400 dark:bg-zinc-600 group-hover:bg-indigo-500 group-active:bg-indigo-400 transition-colors" />
+        </div>
 
         {/* Artifact Panel - takes rest of screen, ALWAYS visible */}
         <div
           ref={artifactRef}
           className="flex-1 flex-shrink-0 h-full flex flex-col bg-white dark:bg-zinc-900 overflow-hidden"
-          style={{ minWidth: '400px' }}
+          style={{ minWidth: '300px' }}
         >
           {/* Session Activity - shows when NOT generating and there's activity */}
           {!sending && !isStreaming && (
