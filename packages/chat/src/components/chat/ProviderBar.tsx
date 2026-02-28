@@ -22,6 +22,7 @@ export function ProviderBar({ activeProvider, openProvider, onProviderClick }: P
   const pill = (p: typeof providers[number]) => {
     const isActive = activeProvider === p.id;
     const isOpen = openProvider === p.id;
+    const providerColor = p.color || "#f97316";
     return (
       <button
         key={p.id}
@@ -29,11 +30,17 @@ export function ProviderBar({ activeProvider, openProvider, onProviderClick }: P
         className={cn(
           "px-5 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap",
           isActive
-            ? "bg-orange-500/15 border-2 border-orange-500 text-orange-600 dark:text-orange-400 shadow-[0_0_12px_rgba(249,115,22,0.25)]"
+            ? "border-2"
             : isOpen
             ? "bg-zinc-200/50 dark:bg-zinc-700/50 border-2 border-zinc-400 dark:border-zinc-500 text-zinc-800 dark:text-zinc-200"
             : "bg-gray-100/60 dark:bg-zinc-800/60 border border-zinc-300/50 dark:border-zinc-700/50 text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:border-zinc-400 dark:hover:border-zinc-500"
         )}
+        style={isActive ? {
+          borderColor: providerColor,
+          color: providerColor,
+          backgroundColor: `${providerColor}15`,
+          boxShadow: `0 0 12px ${providerColor}40`,
+        } : undefined}
       >
         {p.name}
       </button>

@@ -22,12 +22,12 @@ import { fetchOllamaModels, fetchLMStudioModels, type LocalModel } from "@sarge/
 import type { ChatColumn as ChatColumnType } from "../../stores/parallelChatStore";
 import type { Provider, Message } from "@sarge/core";
 
-// Provider group definitions with colors/icons
+// Provider group definitions with colors/icons — active color matches selected provider
 const PROVIDER_GROUPS = [
-  { id: "cloud" as const, label: "Cloud", icon: Cloud, color: "text-cyan-400", bgActive: "bg-cyan-500/15 border-cyan-500/40", bgHover: "hover:bg-cyan-500/10" },
-  { id: "ollama" as const, label: "Ollama", icon: Cpu, color: "text-amber-400", bgActive: "bg-amber-500/15 border-amber-500/40", bgHover: "hover:bg-amber-500/10" },
-  { id: "huggingface" as const, label: "HF", icon: FlaskConical, color: "text-yellow-400", bgActive: "bg-yellow-500/15 border-yellow-500/40", bgHover: "hover:bg-yellow-500/10" },
-  { id: "lmstudio" as const, label: "LM Studio", icon: Monitor, color: "text-emerald-400", bgActive: "bg-emerald-500/15 border-emerald-500/40", bgHover: "hover:bg-emerald-500/10" },
+  { id: "cloud" as const, label: "Cloud", icon: Cloud, color: "text-cyan-400" },
+  { id: "ollama" as const, label: "Ollama", icon: Cpu, color: "text-amber-400" },
+  { id: "huggingface" as const, label: "HF", icon: FlaskConical, color: "text-yellow-400" },
+  { id: "lmstudio" as const, label: "LM Studio", icon: Monitor, color: "text-emerald-400" },
 ] as const;
 
 type ProviderGroupId = typeof PROVIDER_GROUPS[number]["id"];
@@ -190,15 +190,12 @@ export function ChatColumn({
     <div className="flex flex-col h-full border-r border-zinc-200 dark:border-zinc-800 last:border-r-0 bg-white dark:bg-zinc-900">
       {/* Column Header — model name top centered, provider buttons + role one row */}
       <div className="border-b border-zinc-200 dark:border-zinc-800 bg-gray-50/80 dark:bg-zinc-900/80">
-        {/* Model name — top, centered, big and bold */}
+        {/* Model name — top, centered, big and bold, provider color */}
         <div className="flex items-center justify-center px-3 pt-2 pb-1">
-          <span className={cn(
-            "text-base font-black truncate",
-            activeGroup === "cloud" ? "text-cyan-400" :
-            activeGroup === "ollama" ? "text-amber-400" :
-            activeGroup === "lmstudio" ? "text-emerald-400" :
-            "text-zinc-500"
-          )}>
+          <span
+            className="text-base font-black truncate"
+            style={{ color: providerConfig?.color || undefined }}
+          >
             {column.model ? modelDisplayName : "Select a model"}
           </span>
         </div>
@@ -216,8 +213,8 @@ export function ChatColumn({
                   key={group.id}
                   disabled
                   className={cn(
-                    "flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-bold border transition-all opacity-40 cursor-not-allowed",
-                    "border-zinc-300 dark:border-zinc-700 text-zinc-500"
+                    "flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-bold transition-all opacity-40 cursor-not-allowed",
+                    "bg-gray-100/60 dark:bg-zinc-800/60 border border-zinc-300/50 dark:border-zinc-700/50 text-zinc-500"
                   )}
                   title="Hugging Face — Coming Soon"
                 >
@@ -227,16 +224,25 @@ export function ChatColumn({
               );
             }
 
+            // Dynamic active color from the selected provider
+            const activeColor = providerConfig?.color || "#f97316";
+
             return (
               <DropdownMenu key={group.id}>
                 <DropdownMenuTrigger asChild>
                   <button
                     className={cn(
-                      "flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-bold border transition-all",
+                      "flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-bold transition-all",
                       isActive
-                        ? `${group.bgActive} border`
-                        : `border-transparent text-zinc-500 dark:text-zinc-400 ${group.bgHover}`
+                        ? "border-2"
+                        : "bg-gray-100/60 dark:bg-zinc-800/60 border border-zinc-300/50 dark:border-zinc-700/50 text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:border-zinc-400 dark:hover:border-zinc-500"
                     )}
+                    style={isActive ? {
+                      borderColor: activeColor,
+                      color: activeColor,
+                      backgroundColor: `${activeColor}15`,
+                      boxShadow: `0 0 12px ${activeColor}40`,
+                    } : undefined}
                   >
                     <Icon className={cn("h-4 w-4", group.color)} />
                     <span>{group.label}</span>
@@ -490,7 +496,7 @@ export function ChatColumn({
               className={cn(
                 "flex-1 resize-none rounded-lg px-3 py-2 text-sm",
                 "bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-200",
-                "placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-orange-500/50",
+                "placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-700 transition-colors",
                 "disabled:opacity-50 disabled:cursor-not-allowed",
                 "min-h-[36px] max-h-[120px]"
               )}
@@ -503,7 +509,7 @@ export function ChatColumn({
               size="sm"
               onClick={handleSend}
               disabled={!input.trim() || column.sending}
-              className="h-9 w-9 p-0 bg-orange-600 hover:bg-orange-500 transition-all hover:shadow-[0_0_10px_rgba(249,115,22,0.3)]"
+              className="h-9 w-9 p-0 bg-orange-500 dark:bg-orange-600 hover:bg-orange-400 dark:hover:bg-orange-500 transition-all hover:shadow-[0_0_14px_rgba(249,115,22,0.4)]"
             >
               <Send className="h-4 w-4" />
             </Button>
