@@ -251,9 +251,18 @@ export const useParallelChatStore = create<ParallelChatState>()(persist((set, ge
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error("[ParallelChat] API error response:", errorData);
-        throw new Error(errorData.error || `API error: ${response.status}`);
+        let errorMessage = `API error: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          console.error("[ParallelChat] API error response:", errorData);
+          errorMessage = errorData.error || errorMessage;
+        } catch {
+          try {
+            const text = await response.text();
+            if (text) errorMessage = text.slice(0, 200);
+          } catch { /* ignore */ }
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
