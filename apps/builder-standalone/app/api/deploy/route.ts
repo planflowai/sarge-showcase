@@ -563,6 +563,11 @@ export async function POST(request: NextRequest) {
       }
 
       if (targets.includes("cloudflare")) {
+        // Ensure .cfignore exists before every CF deploy (covers projects init'd before this was added)
+        const cfIgnorePath = path.join(projectPath, ".cfignore");
+        if (!fs.existsSync(cfIgnorePath)) {
+          fs.writeFileSync(cfIgnorePath, ".git\n.vercel\n.netlify\n.wrangler\nnode_modules\nexport.zip\nBUILDER_LOG.md\n_redirects\n_headers\n.netlifyignore\n", "utf-8");
+        }
         const wranglerToml = path.join(projectPath, "wrangler.toml");
         if (fs.existsSync(wranglerToml)) {
           const wranglerCfg = fs.readFileSync(wranglerToml, "utf-8");
