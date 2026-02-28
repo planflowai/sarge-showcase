@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { X, Send, Rocket, MonitorOff } from "lucide-react";
 import { useWorkbenchStore } from "@/lib/stores/workbenchStore";
 import {
@@ -29,10 +29,12 @@ export default function WorkbenchDashboard() {
     lockWinner,
   } = useWorkbenchStore();
 
-  const [prompt,      setPrompt]      = useState("");
-  const [openCount,   setOpenCount]   = useState(0);
-  const [launching,   setLaunching]   = useState(false);
-  const [workspaceOn, setWorkspaceOn] = useState(false);
+  const [prompt,        setPrompt]        = useState("");
+  const [openCount,     setOpenCount]     = useState(0);
+  const [launching,     setLaunching]     = useState(false);
+  const [workspaceOn,   setWorkspaceOn]   = useState(false);
+  const [compareImage,  setCompareImage]  = useState<string | null>(null);
+  const [dragOver,      setDragOver]      = useState(false);
 
   // ─── Effects ────────────────────────────────────────────────────────────────
 
@@ -150,6 +152,37 @@ export default function WorkbenchDashboard() {
     setActive(false);
   }, [setActive]);
 
+  const loadImageFile = useCallback((file: File) => {
+    if (!file.type.startsWith("image/")) return;
+    const reader = new FileReader();
+    reader.onload = (e) => setCompareImage(e.target?.result as string);
+    reader.readAsDataURL(file);
+  }, []);
+
+  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+    const items = Array.from(e.clipboardData.items);
+    for (const item of items) {
+      if (item.type.startsWith("image/")) {
+        const file = item.getAsFile();
+        if (file) { loadImageFile(file); e.preventDefault(); return; }
+      }
+    }
+  }, [loadImageFile]);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files[0];
+    if (file) loadImageFile(file);
+  }, [loadImageFile]);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback(() => setDragOver(false), []);
+
   // ─── Grid layout ─────────────────────────────────────────────────────────────
   // Physical layout:
   //   [slot1=Mon5]  [slot2=Mon1]  [slot3=Mon3]
@@ -160,7 +193,7 @@ export default function WorkbenchDashboard() {
   const selectedCount = slots.filter((s) => s.selected).length;
 
   return (
-    <div className="flex flex-col h-full bg-zinc-950 overflow-hidden">
+    <div className="flex flex-col h-full w-full bg-zinc-950 overflow-hidden">
 
       {/* ── Header ── */}
       <div className="flex items-center justify-between px-5 py-3 border-b border-zinc-800/60 flex-shrink-0">
@@ -260,74 +293,108 @@ export default function WorkbenchDashboard() {
       </div>
 
       {/* ── Prompt Bar ── */}
-      <div className="border-t border-zinc-800/60 bg-zinc-900/30 px-4 py-3 flex-shrink-0">
-        {/* Target indicator */}
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-[10px] text-zinc-600 font-semibold">Send to:</span>
-          <div className="flex gap-1 flex-wrap">
-            {slots.map((s) => {
-              const colors = ["#a855f7", "#3b82f6", "#22c55e", "#ec4899", "#f97316"];
-              const c = colors[s.slot - 1] ?? "#71717a";
-              return (
-                <button
-                  key={s.slot}
-                  onClick={() => useWorkbenchStore.getState().toggleSlotSelected(s.slot)}
-                  className={cn(
-                    "px-2 py-0.5 rounded text-[9px] font-bold border transition-all",
-                    s.selected
-                      ? "text-white"
-                      : "text-zinc-600 border-zinc-700/40 bg-transparent"
-                  )}
-                  style={s.selected ? { backgroundColor: `${c}25`, borderColor: `${c}50`, color: c } : {}}
-                >
-                  MON {s.monitorNumber}
-                </button>
-              );
-            })}
+      <div className="border-t border-zinc-800/60 bg-zinc-900/30 px-6 py-3 flex-shrink-0">
+        <div className="max-w-5xl mx-auto">
+          {/* Target indicator */}
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-[10px] text-zinc-600 font-semibold">Send to:</span>
+            <div className="flex gap-1 flex-wrap">
+              {slots.map((s) => {
+                const colors = ["#a855f7", "#3b82f6", "#22c55e", "#ec4899", "#f97316"];
+                const c = colors[s.slot - 1] ?? "#71717a";
+                return (
+                  <button
+                    key={s.slot}
+                    onClick={() => useWorkbenchStore.getState().toggleSlotSelected(s.slot)}
+                    className={cn(
+                      "px-2 py-0.5 rounded text-[9px] font-bold border transition-all",
+                      s.selected
+                        ? "text-white"
+                        : "text-zinc-600 border-zinc-700/40 bg-transparent"
+                    )}
+                    style={s.selected ? { backgroundColor: `${c}25`, borderColor: `${c}50`, color: c } : {}}
+                  >
+                    MON {s.monitorNumber}
+                  </button>
+                );
+              })}
+              <button
+                onClick={() => {
+                  const allSelected = slots.every((s) => s.selected);
+                  if (allSelected) {
+                    slots.forEach((s) => { if (s.selected) useWorkbenchStore.getState().toggleSlotSelected(s.slot); });
+                  } else {
+                    slots.forEach((s) => { if (!s.selected) useWorkbenchStore.getState().toggleSlotSelected(s.slot); });
+                  }
+                }}
+                className="px-2 py-0.5 rounded text-[9px] font-bold border border-zinc-700/40 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-all"
+              >
+                {slots.every((s) => s.selected) ? "Deselect All" : "Select All"}
+              </button>
+            </div>
+            <span className="ml-auto text-[9px] text-zinc-600">
+              {selectedCount} of 5 selected
+            </span>
+          </div>
+
+          {/* Comparison image preview */}
+          {compareImage && (
+            <div className="flex items-center gap-3 mb-2 p-2 rounded-lg bg-zinc-800/60 border border-zinc-700/40">
+              <img
+                src={compareImage}
+                alt="Reference"
+                className="h-16 rounded border border-zinc-600 object-cover"
+              />
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-semibold text-zinc-400">📎 Comparison reference attached</p>
+                <p className="text-[9px] text-zinc-600">Visible to you — describe what you want changed relative to this</p>
+              </div>
+              <button
+                onClick={() => setCompareImage(null)}
+                className="flex-shrink-0 w-5 h-5 rounded-full bg-zinc-700 hover:bg-red-500 text-zinc-300 text-xs flex items-center justify-center transition-colors"
+              >
+                ×
+              </button>
+            </div>
+          )}
+
+          {/* Input row — drag/drop target */}
+          <div
+            className={cn(
+              "flex gap-2 rounded-xl transition-all",
+              dragOver && "ring-2 ring-indigo-500/60 bg-indigo-500/5"
+            )}
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+          >
+            <textarea
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+              onPaste={handlePaste}
+              placeholder={
+                dragOver
+                  ? "Drop image here..."
+                  : selectedCount === 0
+                  ? "Select at least one monitor above..."
+                  : selectedCount === slots.length
+                  ? "Send to all 5 monitors… paste screenshot to compare (Enter to send)"
+                  : `Send to ${selectedCount} monitor${selectedCount !== 1 ? "s" : ""}… paste screenshot to compare (Enter to send)`
+              }
+              rows={2}
+              disabled={selectedCount === 0}
+              className="flex-1 resize-none rounded-xl bg-zinc-800 px-4 py-2.5 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none border border-zinc-700 focus:border-zinc-600 disabled:opacity-40 min-h-[44px] max-h-[120px]"
+            />
             <button
-              onClick={() => {
-                const allSelected = slots.every((s) => s.selected);
-                if (allSelected) {
-                  slots.forEach((s) => { if (s.selected) useWorkbenchStore.getState().toggleSlotSelected(s.slot); });
-                } else {
-                  slots.forEach((s) => { if (!s.selected) useWorkbenchStore.getState().toggleSlotSelected(s.slot); });
-                }
-              }}
-              className="px-2 py-0.5 rounded text-[9px] font-bold border border-zinc-700/40 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-all"
+              onClick={handleSend}
+              disabled={!prompt.trim() || selectedCount === 0}
+              className="px-5 rounded-xl text-white font-bold text-sm bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 disabled:hover:bg-indigo-600 transition-colors flex items-center gap-2"
             >
-              {slots.every((s) => s.selected) ? "Deselect All" : "Select All"}
+              <Send className="h-4 w-4" />
+              {selectedCount === slots.length ? "Send to All" : "Send"}
             </button>
           </div>
-          <span className="ml-auto text-[9px] text-zinc-600">
-            {selectedCount} of 5 selected
-          </span>
-        </div>
-
-        {/* Input row */}
-        <div className="flex gap-2">
-          <textarea
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-            placeholder={
-              selectedCount === 0
-                ? "Select at least one monitor above..."
-                : selectedCount === slots.length
-                ? "Send to all 5 monitors... (Enter to send)"
-                : `Send to ${selectedCount} selected monitor${selectedCount !== 1 ? "s" : ""}... (Enter to send)`
-            }
-            rows={2}
-            disabled={selectedCount === 0}
-            className="flex-1 resize-none rounded-xl bg-zinc-800 px-4 py-2.5 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none border border-zinc-700 focus:border-zinc-600 disabled:opacity-40 min-h-[44px] max-h-[120px]"
-          />
-          <button
-            onClick={handleSend}
-            disabled={!prompt.trim() || selectedCount === 0}
-            className="px-4 rounded-xl text-white font-bold text-sm bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 disabled:hover:bg-indigo-600 transition-colors flex items-center gap-2"
-          >
-            <Send className="h-4 w-4" />
-            {selectedCount === slots.length ? "Send to All" : "Send"}
-          </button>
         </div>
       </div>
     </div>
