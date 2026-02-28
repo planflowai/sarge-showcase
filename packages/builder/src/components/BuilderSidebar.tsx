@@ -408,7 +408,8 @@ export default function BuilderSidebar({
     setDeleteConfirm(null);
     setShowProjectsHub(true);
     setActivePopover(null);
-    if (view === "list") loadHubProjects();
+    // Always load projects — this also fetches the correct baseDir from the server
+    loadHubProjects();
   }, [loadHubProjects]);
 
   // Custom events — let BuilderPage toolbar buttons trigger Projects Hub
