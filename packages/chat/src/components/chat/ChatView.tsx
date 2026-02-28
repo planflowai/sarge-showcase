@@ -569,7 +569,7 @@ export function ChatView({ conversationId, onMultiChat, onWarRoom, hideInput }: 
       <div className="flex-1 min-h-0 overflow-y-auto" ref={scrollRef}>
         <div className="flex flex-col">
           {loading ? (
-            <div className="space-y-4 px-4 sm:px-6 py-4 mx-auto max-w-7xl">
+            <div className="space-y-4 px-4 sm:px-6 py-4 mx-auto max-w-[1680px]">
               {/* Loading skeletons */}
               {[1, 2, 3].map((i) => (
                 <div key={i} className={`flex ${i % 2 === 0 ? "justify-end" : "justify-start"}`}>
@@ -586,7 +586,7 @@ export function ChatView({ conversationId, onMultiChat, onWarRoom, hideInput }: 
               <p className="text-sm text-zinc-500">Start typing to begin</p>
             </div>
           ) : (
-            <div className="mx-auto max-w-7xl space-y-4 px-4 sm:px-6 py-4">
+            <div className="mx-auto max-w-[1680px] space-y-4 px-4 sm:px-6 py-4">
               {messages.map((msg) => (
                 <MessageBubble key={msg.id} message={msg} />
               ))}

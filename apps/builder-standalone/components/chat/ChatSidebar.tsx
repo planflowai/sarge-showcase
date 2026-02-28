@@ -139,7 +139,7 @@ export function ChatSidebar({ conversationId }: ChatSidebarProps) {
   // ── Collapsed: slim icon strip ──────────────────────────────────────────
   if (collapsed) {
     return (
-      <aside className="flex-shrink-0 w-12 flex flex-col border-r border-zinc-800 bg-zinc-950 items-center pt-3 gap-2">
+      <aside className="flex-shrink-0 w-12 flex flex-col bg-zinc-950 items-center pt-3 gap-2">
         <button
           onClick={() => setCollapsed(false)}
           title="Expand sidebar"
@@ -167,10 +167,10 @@ export function ChatSidebar({ conversationId }: ChatSidebarProps) {
 
   // ── Expanded ─────────────────────────────────────────────────────────────
   return (
-    <aside className="flex-shrink-0 w-[300px] flex flex-col border-r border-zinc-800 bg-zinc-950 overflow-hidden">
+    <aside className="flex-shrink-0 w-[300px] flex flex-col bg-zinc-950 overflow-hidden">
 
       {/* Header */}
-      <div className="relative flex items-center justify-center px-4 py-3 border-b border-zinc-800/80 flex-shrink-0 bg-zinc-900/60">
+      <div className="relative flex items-center justify-center px-4 py-3 flex-shrink-0 bg-zinc-900/60">
         <div className="flex items-center gap-2">
           <Flame className="h-4 w-4 text-orange-500 drop-shadow-[0_0_6px_rgba(249,115,22,0.6)]" />
           <span className="text-sm font-black uppercase tracking-widest text-zinc-200">Chat</span>

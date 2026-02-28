@@ -187,10 +187,10 @@ export default function ThreadGuardianIndicator({
             "hover:bg-zinc-800/50",
             state === "running" && "animate-pulse"
           )}
-          title="Thread Guardian"
+          title="Thread Guardian — monitoring conversation quality"
         >
           <div className="relative">
-            <IconComponent className="h-4 w-4 text-zinc-400" />
+            <IconComponent className="h-6 w-6 text-zinc-400" />
             <span
               className={cn(
                 "absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full ring-2 ring-zinc-900",

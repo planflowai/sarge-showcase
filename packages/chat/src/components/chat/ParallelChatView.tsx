@@ -566,6 +566,7 @@ export function ParallelChatView({ onSingleChat, onWarRoom, hideInput }: Paralle
               onShareToAll={(message: Message) => handleShareToAll(message, column.id)}
               otherColumns={getOtherColumns(column.id)}
               isParallelMode={true}
+              hideInput={hideInput}
             />
           </div>
         ))}

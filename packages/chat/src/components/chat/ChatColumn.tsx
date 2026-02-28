@@ -32,6 +32,7 @@ interface ChatColumnProps {
   onShareToAll?: (message: Message) => void;
   otherColumns: ChatColumnType[];
   isParallelMode: boolean;
+  hideInput?: boolean;
 }
 
 export function ChatColumn({
@@ -44,6 +45,7 @@ export function ChatColumn({
   onShareToAll,
   otherColumns,
   isParallelMode,
+  hideInput,
 }: ChatColumnProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [input, setInput] = useState("");
@@ -419,38 +421,40 @@ export function ChatColumn({
         )}
       </div>
 
-      {/* Input Area */}
-      <div className="border-t border-zinc-200 dark:border-zinc-800 p-2 bg-zinc-50 dark:bg-zinc-900">
-        <div className="flex items-end gap-2">
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Type a message..."
-            disabled={column.sending}
-            rows={1}
-            className={cn(
-              "flex-1 resize-none rounded-lg px-3 py-2 text-sm",
-              "bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-200",
-              "placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-indigo-500",
-              "disabled:opacity-50 disabled:cursor-not-allowed",
-              "min-h-[36px] max-h-[120px]"
-            )}
-            style={{
-              height: "36px",
-              overflowY: input.split("\n").length > 3 ? "auto" : "hidden",
-            }}
-          />
-          <Button
-            size="sm"
-            onClick={handleSend}
-            disabled={!input.trim() || column.sending}
-            className="h-9 w-9 p-0 bg-indigo-600 hover:bg-indigo-700"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
+      {/* Input Area — hidden when parent provides a unified send bar */}
+      {!hideInput && (
+        <div className="border-t border-zinc-200 dark:border-zinc-800 p-2 bg-zinc-50 dark:bg-zinc-900">
+          <div className="flex items-end gap-2">
+            <textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Type a message..."
+              disabled={column.sending}
+              rows={1}
+              className={cn(
+                "flex-1 resize-none rounded-lg px-3 py-2 text-sm",
+                "bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-200",
+                "placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-indigo-500",
+                "disabled:opacity-50 disabled:cursor-not-allowed",
+                "min-h-[36px] max-h-[120px]"
+              )}
+              style={{
+                height: "36px",
+                overflowY: input.split("\n").length > 3 ? "auto" : "hidden",
+              }}
+            />
+            <Button
+              size="sm"
+              onClick={handleSend}
+              disabled={!input.trim() || column.sending}
+              className="h-9 w-9 p-0 bg-indigo-600 hover:bg-indigo-700"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
