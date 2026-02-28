@@ -39,22 +39,22 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   {
-    id: "builder",
-    label: "Builder",
-    emoji: "🔨",
-    href: "/",
-    activeColor: "text-black dark:text-white",
-    bgActive:
-      "bg-purple-100 dark:bg-purple-900/50 border-purple-400 dark:border-purple-500",
-  },
-  {
     id: "chat",
     label: "Chat",
     emoji: "💬",
     href: "/chat",
-    activeColor: "text-black dark:text-white",
+    activeColor: "text-white",
     bgActive:
-      "bg-blue-100 dark:bg-blue-900/50 border-blue-400 dark:border-blue-500",
+      "bg-amber-900/60 border-amber-500/80 text-amber-100 shadow-[0_0_14px_rgba(245,158,11,0.25)]",
+  },
+  {
+    id: "builder",
+    label: "Builder",
+    emoji: "🔨",
+    href: "/",
+    activeColor: "text-white",
+    bgActive:
+      "bg-orange-900/60 border-orange-500/80 text-orange-100 shadow-[0_0_14px_rgba(249,115,22,0.25)]",
   },
 ];
 
@@ -229,13 +229,13 @@ export function Header() {
                   key={item.id}
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-bold transition-all duration-200 border",
+                    "flex items-center gap-2 px-5 py-2 rounded-lg text-base font-black tracking-wide transition-all duration-200 border-2",
                     isActive
-                      ? `${item.bgActive} ${item.activeColor} shadow-sm`
-                      : "border-transparent text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200/80 dark:hover:bg-zinc-700/60"
+                      ? `${item.bgActive} ${item.activeColor}`
+                      : "border-transparent text-zinc-400 dark:text-zinc-400 hover:bg-zinc-200/80 dark:hover:bg-zinc-700/60 hover:text-zinc-100"
                   )}
                 >
-                  <span className="text-base leading-none">{item.emoji}</span>
+                  <span className="text-lg leading-none">{item.emoji}</span>
                   <span>{item.label}</span>
                 </Link>
               );

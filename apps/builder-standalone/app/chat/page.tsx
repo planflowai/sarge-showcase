@@ -32,7 +32,8 @@ export default function ChatPage() {
   const warRoomEnabled = useWarRoomStore((s) => s.enabled);
   const setWarRoomEnabled = useWarRoomStore((s) => s.setEnabled);
 
-  // Auto-load conversations on mount, auto-create if none exist
+  // Auto-load conversations on mount, auto-create if none exist.
+  // Skip heavy init if store already has a current conversation (navigation back preserves state).
   const initRef = useRef(false);
   useEffect(() => {
     if (initRef.current) return;
@@ -40,6 +41,9 @@ export default function ChatPage() {
     hydrateKnowledge();
     hydrateRoles();
     hydrateParallel();
+    // If Zustand-persist already restored a current conversation, nothing more to do
+    const existing = useConversationStore.getState();
+    if (existing.currentConversationId && existing.conversations.length > 0) return;
     (async () => {
       await loadConversations();
       const state = useConversationStore.getState();

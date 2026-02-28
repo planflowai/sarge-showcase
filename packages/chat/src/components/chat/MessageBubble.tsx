@@ -4,8 +4,9 @@ import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import type { Components } from "react-markdown";
-import { Copy, Check, Zap, Clock, Brain, AlertTriangle, KeyRound, Settings, XCircle, Database, Wrench, Share2 } from "lucide-react";
+import { Copy, Check, Zap, Clock, Brain, AlertTriangle, KeyRound, Settings, XCircle, Database, Wrench, Share2, Columns2 } from "lucide-react";
 import type { ChatColumn } from "../../stores/parallelChatStore";
+import { useParallelChatStore } from "../../stores/parallelChatStore";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -57,9 +58,12 @@ export function MessageBubble({
   const [copied, setCopied] = useState(false);
   const [saved, setSaved] = useState(false);
   const [sentToBuilder, setSentToBuilder] = useState(false);
+  const [sentToMultiChat, setSentToMultiChat] = useState(false);
   const [shared, setShared] = useState(false);
   const addDocument = useKnowledgeStore((s) => s.addDocument);
   const setPrefilledInput = useBuilderChatStore((s) => s.setPrefilledInput);
+  const parallelEnabled = useParallelChatStore((s) => s.enabled);
+  const toggleParallelMode = useParallelChatStore((s) => s.toggleParallelMode);
   const isUser = message.role === "user";
   const providerConfig = message.provider
     ? providers.find((p) => p.id === message.provider)
@@ -88,13 +92,23 @@ export function MessageBubble({
   };
 
   const handleSendToBuilder = () => {
-    if (builderPrompts.length === 0) return;
-    // Join multiple prompts with separators if there are multiple
-    const promptContent = builderPrompts.join("\n\n---\n\n");
-    setPrefilledInput(promptContent);
+    // Use BUILDER_PROMPT blocks if present, otherwise send full message content
+    const content = builderPrompts.length > 0
+      ? builderPrompts.join("\n\n---\n\n")
+      : message.content;
+    setPrefilledInput(content);
     setSentToBuilder(true);
     setTimeout(() => setSentToBuilder(false), 2000);
     router.push("/builder");
+  };
+
+  const handleSendToMultiChat = () => {
+    // Write content to localStorage for ParallelChatView to pick up
+    try { localStorage.setItem("sarge_multichat_prefill", message.content); } catch { /* ignore */ }
+    // Toggle to parallel mode if not already
+    if (!parallelEnabled) toggleParallelMode();
+    setSentToMultiChat(true);
+    setTimeout(() => setSentToMultiChat(false), 2000);
   };
 
   // Show friendly model name in the badge (look up display name, not raw ID)
@@ -237,7 +251,7 @@ export function MessageBubble({
           className={cn(
             "rounded-lg px-5 py-4 overflow-hidden break-words",
             isUser
-              ? "bg-indigo-600 text-white max-w-[85%]"
+              ? "bg-orange-700 text-white max-w-[85%]"
               : "bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 w-full"
           )}
         >
@@ -276,7 +290,7 @@ export function MessageBubble({
               className={cn(
                 "prose prose-base max-w-none break-words overflow-x-auto",
                 isUser
-                  ? "prose-invert prose-p:text-white prose-strong:text-white prose-code:text-indigo-200"
+                  ? "prose-invert prose-p:text-white prose-strong:text-white prose-code:text-orange-200"
                   : "dark:prose-invert prose-p:text-zinc-800 dark:prose-p:text-zinc-200 prose-strong:text-zinc-900 dark:prose-strong:text-zinc-100 prose-code:text-zinc-600 dark:prose-code:text-zinc-300"
               )}
             >
@@ -290,7 +304,7 @@ export function MessageBubble({
           <div
             className={cn(
               "mt-2 text-[10px]",
-              isUser ? "text-indigo-200" : "text-zinc-500"
+              isUser ? "text-orange-200" : "text-zinc-500"
             )}
           >
             {message.timestamp && message.timestamp instanceof Date
@@ -423,13 +437,13 @@ export function MessageBubble({
             </DropdownMenu>
           )}
 
-          {/* Send to Builder button (assistant only, when BUILDER_PROMPT is present) */}
-          {!isUser && builderPrompts.length > 0 && (
+          {/* Send to Builder button (all assistant messages) */}
+          {!isUser && (
             <Button
               variant="ghost"
               size="sm"
               onClick={handleSendToBuilder}
-              className="h-7 gap-1 px-2 text-xs text-indigo-500 opacity-0 transition-opacity group-hover:opacity-100 hover:text-indigo-400 hover:bg-indigo-500/10"
+              className="h-7 gap-1 px-2 text-xs text-orange-500/70 opacity-0 transition-opacity group-hover:opacity-100 hover:text-orange-400 hover:bg-orange-500/10"
             >
               {sentToBuilder ? (
                 <>
@@ -437,7 +451,27 @@ export function MessageBubble({
                 </>
               ) : (
                 <>
-                  <Wrench className="h-3.5 w-3.5" /> Send to Builder
+                  <Wrench className="h-3.5 w-3.5" /> Builder
+                </>
+              )}
+            </Button>
+          )}
+
+          {/* Send to Multi-Chat button (all assistant messages) */}
+          {!isUser && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSendToMultiChat}
+              className="h-7 gap-1 px-2 text-xs text-amber-500/70 opacity-0 transition-opacity group-hover:opacity-100 hover:text-amber-400 hover:bg-amber-500/10"
+            >
+              {sentToMultiChat ? (
+                <>
+                  <Check className="h-3.5 w-3.5" /> Sent
+                </>
+              ) : (
+                <>
+                  <Columns2 className="h-3.5 w-3.5" /> Multi-Chat
                 </>
               )}
             </Button>
