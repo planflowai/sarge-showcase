@@ -25,6 +25,7 @@ import DependencyGraph from "./DependencyGraph";
 import { Button } from "@/components/ui/button";
 import FileTree from "./FileTree";
 import { SkeletonFileTree } from "@/components/ui/skeleton";
+import { useProjectCommandStore } from "../stores/projectCommandStore";
 
 // ─── AI Template definitions ─────────────────────────────────────────────────
 
@@ -204,25 +205,7 @@ export default function BuilderSidebar({
   const [tooltipY, setTooltipY] = useState(0);
   const [selectedAiTemplate, setSelectedAiTemplate] = useState<(typeof AI_TEMPLATES)[0] | null>(null);
 
-  // ─── Projects Hub modal (replaces separate Open + New modals) ───────────────
-  const [showProjectsHub, setShowProjectsHub] = useState(false);
-  const [projectsHubView, setProjectsHubView] = useState<"list" | "new">("list");
-
-  // Projects list state
-  interface HubProject { name: string; path: string; fileCount: number; hasGit: boolean; githubRepo: string | null; mainFile: string | null; lastModified: string; }
-  const [hubProjects, setHubProjects] = useState<HubProject[]>([]);
-  const [hubLoading, setHubLoading] = useState(false);
-  const [hubBaseDir, setHubBaseDir] = useState("L:\\AI_MASTER_BUILDS");
-
-  // New project form
-  const [newProjectName, setNewProjectName] = useState("");
-  const [newProjectTemplateId, setNewProjectTemplateId] = useState("blank-html");
-  const [isCreatingProjectHub, setIsCreatingProjectHub] = useState(false);
-
-  // Delete confirmation
-  const [deleteConfirm, setDeleteConfirm] = useState<HubProject | null>(null);
-  const [deleteGithub, setDeleteGithubFlag] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  // Projects Hub is now in ProjectCommandCenter (rendered by BuilderPage)
 
   // Inline toast system (replaces alert() calls)
   const [toasts, setToasts] = useState<{ id: string; msg: string; type: "success" | "error" | "info" | "warning" }[]>([]);
@@ -296,8 +279,6 @@ export default function BuilderSidebar({
       if (e.key === "Escape") {
         setShowOpenModal(false);
         setShowNewModal(false);
-        setShowProjectsHub(false);
-        setDeleteConfirm(null);
       }
     }
     document.addEventListener("keydown", handleKeyDown);
@@ -348,9 +329,9 @@ export default function BuilderSidebar({
     }
   };
 
-  // Quick-access: open Projects Hub
-  const handleNewProjectQuick = () => openProjectsHub("new");
-  const handleOpenProjectQuick = () => openProjectsHub("list");
+  // Quick-access: open Projects Hub (via ProjectCommandCenter store)
+  const handleNewProjectQuick = () => useProjectCommandStore.getState().open("new");
+  const handleOpenProjectQuick = () => useProjectCommandStore.getState().open("grid");
 
   // ─── File operations ────────────────────────────────────────────────────────
 
@@ -381,135 +362,7 @@ export default function BuilderSidebar({
     }
   }, [setProject, addToRecents]);
 
-  // ─── Projects Hub handlers ───────────────────────────────────────────────────
-
-  const loadHubProjects = useCallback(async () => {
-    setHubLoading(true);
-    try {
-      const res = await fetch("/api/builder/list-projects");
-      const data = await res.json();
-      if (data.success) {
-        setHubProjects(data.projects);
-        setHubBaseDir(data.baseDir);
-      } else {
-        showToast(data.error || "Failed to load projects", "error");
-      }
-    } catch {
-      showToast("Could not reach server", "error");
-    } finally {
-      setHubLoading(false);
-    }
-  }, [showToast]);
-
-  const openProjectsHub = useCallback((view: "list" | "new" = "list") => {
-    setProjectsHubView(view);
-    setNewProjectName("");
-    setNewProjectTemplateId("blank-html");
-    setDeleteConfirm(null);
-    setShowProjectsHub(true);
-    setActivePopover(null);
-    // Always load projects — this also fetches the correct baseDir from the server
-    loadHubProjects();
-  }, [loadHubProjects]);
-
-  // Custom events — let BuilderPage toolbar buttons trigger Projects Hub
-  useEffect(() => {
-    const openHandler = () => openProjectsHub("list");
-    const newHandler = () => openProjectsHub("new");
-    window.addEventListener("builder:open-project", openHandler);
-    window.addEventListener("builder:new-project", newHandler);
-    return () => {
-      window.removeEventListener("builder:open-project", openHandler);
-      window.removeEventListener("builder:new-project", newHandler);
-    };
-  }, [openProjectsHub]);
-
-  const handleCreateProjectHub = useCallback(async () => {
-    const name = newProjectName.trim();
-    if (!name) { showToast("Enter a project name", "warning"); return; }
-    // Sanitize: no slashes, no dots at start
-    if (/[/\\:*?"<>|]/.test(name)) { showToast("Project name contains invalid characters", "error"); return; }
-
-    setIsCreatingProjectHub(true);
-    try {
-      const res = await fetch("/api/builder/create-project", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          templateId: newProjectTemplateId,
-          projectPath: `${hubBaseDir}/${name}`,
-          projectName: name,
-        }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setProject(data.projectPath, data.projectName, []);
-        addToRecents(data.projectPath);
-        setShowProjectsHub(false);
-        showToast(`Project "${data.projectName}" created`, "success");
-        // Reload the file tree
-        await handleOpenProject(data.projectPath);
-      } else {
-        showToast(data.error || "Failed to create project", "error");
-      }
-    } catch {
-      showToast("Failed to create project", "error");
-    } finally {
-      setIsCreatingProjectHub(false);
-    }
-  }, [newProjectName, newProjectTemplateId, hubBaseDir, setProject, addToRecents, handleOpenProject, showToast]);
-
-  const handleLoadProject = useCallback(async (proj: HubProject) => {
-    try {
-      const res = await fetch("/api/builder/list-directory", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ path: proj.path }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setProject(data.projectPath, data.projectName, data.tree);
-        addToRecents(proj.path);
-        setShowProjectsHub(false);
-        showToast(`Loaded "${proj.name}"`, "success");
-      } else {
-        showToast(data.error || "Failed to open project", "error");
-      }
-    } catch {
-      showToast("Failed to open project", "error");
-    }
-  }, [setProject, addToRecents, showToast]);
-
-  const handleDeleteProject = useCallback(async (proj: HubProject, withGithub: boolean) => {
-    setIsDeleting(true);
-    try {
-      const res = await fetch("/api/builder/delete-project", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectPath: proj.path, deleteGithub: withGithub }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setHubProjects(prev => prev.filter(p => p.path !== proj.path));
-        setDeleteConfirm(null);
-        // Clear project if it was the active one
-        if (projectPath === proj.path) clearProject();
-        let msg = `"${proj.name}" deleted`;
-        if (withGithub) {
-          msg += data.github?.deleted
-            ? " + GitHub repo removed"
-            : ` (folder deleted; GitHub: ${data.github?.error || "not deleted"})`;
-        }
-        showToast(msg, data.github?.error && withGithub ? "warning" : "success");
-      } else {
-        showToast(data.error || "Failed to delete project", "error");
-      }
-    } catch {
-      showToast("Failed to delete project", "error");
-    } finally {
-      setIsDeleting(false);
-    }
-  }, [projectPath, clearProject, showToast]);
+  // ─── Projects Hub delegated to ProjectCommandCenter (store-driven) ──────────
 
   // Open native OS folder picker via backend API.
   // Necessary because Chrome blocks reading file paths from drag-and-drop events.
@@ -1131,261 +984,7 @@ export default function BuilderSidebar({
         onSelectPrompt={(prompt) => { onPromptSelect?.(prompt); setActivePopover(null); }}
       />
 
-      {/* ─── Projects Hub Modal ─────────────────────────────────────────────── */}
-      {showProjectsHub && (
-        <div
-          className="fixed inset-0 z-[500] flex items-center justify-center bg-black/60 backdrop-blur-sm"
-          onMouseDown={(e) => { if (e.target === e.currentTarget) { setShowProjectsHub(false); setDeleteConfirm(null); } }}
-        >
-          <div className="bg-zinc-900 rounded-2xl shadow-2xl border border-zinc-700 w-[680px] max-w-[95vw] max-h-[85vh] flex flex-col overflow-hidden">
-
-            {/* Header */}
-            <div className="px-6 py-4 border-b border-zinc-800 flex items-center justify-between flex-shrink-0">
-              <div className="flex items-center gap-3">
-                <span className="text-xl">🏗️</span>
-                <div>
-                  <h2 className="text-lg font-bold text-white">Projects Hub</h2>
-                  <p className="text-xs text-zinc-500 mt-0.5 font-mono">{hubBaseDir}</p>
-                </div>
-              </div>
-              <button
-                onClick={() => { setShowProjectsHub(false); setDeleteConfirm(null); }}
-                className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            {/* Tab switcher */}
-            <div className="px-6 pt-4 flex gap-2 flex-shrink-0 border-b border-zinc-800 pb-0">
-              <button
-                onClick={() => { setProjectsHubView("list"); loadHubProjects(); }}
-                className={cn(
-                  "px-4 py-2 rounded-t-lg text-sm font-semibold transition-all border-b-2 -mb-px",
-                  projectsHubView === "list"
-                    ? "border-indigo-500 text-indigo-300 bg-indigo-500/10"
-                    : "border-transparent text-zinc-400 hover:text-zinc-200"
-                )}
-              >
-                <FolderOpen className="h-4 w-4 inline mr-1.5 -mt-0.5" />
-                My Projects
-                {!hubLoading && hubProjects.length > 0 && (
-                  <span className="ml-1.5 px-1.5 py-0.5 text-[10px] bg-zinc-700 text-zinc-400 rounded-full">{hubProjects.length}</span>
-                )}
-              </button>
-              <button
-                onClick={() => setProjectsHubView("new")}
-                className={cn(
-                  "px-4 py-2 rounded-t-lg text-sm font-semibold transition-all border-b-2 -mb-px",
-                  projectsHubView === "new"
-                    ? "border-emerald-500 text-emerald-300 bg-emerald-500/10"
-                    : "border-transparent text-zinc-400 hover:text-zinc-200"
-                )}
-              >
-                <Plus className="h-4 w-4 inline mr-1.5 -mt-0.5" />
-                New Project
-              </button>
-            </div>
-
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto p-6">
-
-              {/* ── My Projects list ── */}
-              {projectsHubView === "list" && (
-                <>
-                  <div className="flex justify-end mb-3">
-                    <button
-                      onClick={loadHubProjects}
-                      disabled={hubLoading}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
-                    >
-                      <RefreshCw className={cn("h-3.5 w-3.5", hubLoading && "animate-spin")} />
-                      Refresh
-                    </button>
-                  </div>
-
-                  {hubLoading ? (
-                    <div className="flex flex-col items-center justify-center py-16">
-                      <Loader2 className="h-8 w-8 text-indigo-400 animate-spin mb-3" />
-                      <p className="text-sm text-zinc-500">Loading projects...</p>
-                    </div>
-                  ) : hubProjects.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-16 text-center">
-                      <FolderOpen className="h-12 w-12 text-zinc-700 mb-4" />
-                      <p className="text-zinc-400 font-semibold">No projects yet</p>
-                      <p className="text-sm text-zinc-600 mt-1">Create your first project using the New Project tab</p>
-                      <button
-                        onClick={() => setProjectsHubView("new")}
-                        className="mt-4 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold transition-colors"
-                      >
-                        <Plus className="h-4 w-4 inline mr-1.5 -mt-0.5" />
-                        Create a Project
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {hubProjects.map((proj) => (
-                        <div key={proj.path}>
-                          {deleteConfirm?.path === proj.path ? (
-                            /* Delete confirmation row */
-                            <div className="rounded-xl border border-red-500/40 bg-red-950/20 p-4">
-                              <p className="text-sm font-semibold text-red-300 mb-1">Delete &quot;{proj.name}&quot;?</p>
-                              <p className="text-xs text-zinc-500 mb-3">
-                                The local folder will be permanently removed. This cannot be undone.
-                              </p>
-                              {proj.githubRepo && (
-                                <label className="flex items-center gap-2 mb-3 cursor-pointer select-none">
-                                  <input
-                                    type="checkbox"
-                                    checked={deleteGithub}
-                                    onChange={(e) => setDeleteGithubFlag(e.target.checked)}
-                                    className="rounded border-zinc-600 bg-zinc-800 accent-red-500"
-                                  />
-                                  <span className="text-xs text-zinc-300">
-                                    Also delete GitHub repo:{" "}
-                                    <span className="text-zinc-400 font-mono">{proj.githubRepo}</span>
-                                  </span>
-                                </label>
-                              )}
-                              <div className="flex gap-2">
-                                <button
-                                  onClick={() => handleDeleteProject(proj, deleteGithub)}
-                                  disabled={isDeleting}
-                                  className="px-4 py-2 rounded-lg text-sm font-semibold bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white transition-colors flex items-center gap-1.5"
-                                >
-                                  {isDeleting
-                                    ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                    : <Trash2 className="h-3.5 w-3.5" />
-                                  }
-                                  Yes, Delete
-                                </button>
-                                <button
-                                  onClick={() => { setDeleteConfirm(null); setDeleteGithubFlag(false); }}
-                                  className="px-4 py-2 rounded-lg text-sm font-semibold text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
-                                >
-                                  Cancel
-                                </button>
-                              </div>
-                            </div>
-                          ) : (
-                            /* Project card */
-                            <div className="group flex items-center gap-3 px-4 py-3 rounded-xl border border-zinc-800 bg-zinc-800/40 hover:border-zinc-700 hover:bg-zinc-800/70 transition-all">
-                              <div className="w-9 h-9 rounded-lg bg-indigo-500/15 flex items-center justify-center flex-shrink-0">
-                                <FolderOpen className="h-5 w-5 text-indigo-400" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-semibold text-zinc-200 truncate">{proj.name}</p>
-                                <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                                  <span className="text-[10px] text-zinc-500">
-                                    {new Date(proj.lastModified).toLocaleDateString("en-US", {
-                                      month: "short", day: "numeric", year: "numeric",
-                                    })}
-                                  </span>
-                                  <span className="text-[10px] text-zinc-700">·</span>
-                                  <span className="text-[10px] text-zinc-500">{proj.fileCount} files</span>
-                                  {proj.hasGit && (
-                                    <>
-                                      <span className="text-[10px] text-zinc-700">·</span>
-                                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-700 text-zinc-400">git</span>
-                                    </>
-                                  )}
-                                  {proj.githubRepo && (
-                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-900/40 text-blue-400">github</span>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                                <button
-                                  onClick={() => handleLoadProject(proj)}
-                                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition-colors"
-                                >
-                                  Load
-                                </button>
-                                <button
-                                  onClick={() => { setDeleteConfirm(proj); setDeleteGithubFlag(false); }}
-                                  className="p-1.5 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-red-950/40 transition-colors"
-                                  title="Delete project"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </>
-              )}
-
-              {/* ── New Project form ── */}
-              {projectsHubView === "new" && (
-                <div className="space-y-6">
-                  {/* Name input */}
-                  <div>
-                    <label className="block text-xs uppercase tracking-wider font-semibold text-zinc-500 mb-2">
-                      Project Name
-                    </label>
-                    <input
-                      type="text"
-                      value={newProjectName}
-                      onChange={(e) => setNewProjectName(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === "Enter") handleCreateProjectHub(); }}
-                      placeholder="e.g. my-portfolio-site"
-                      className="w-full px-3 py-2.5 text-sm rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30"
-                      autoFocus
-                    />
-                    <p className="text-[11px] text-zinc-500 mt-1.5">
-                      Will be created at:{" "}
-                      <span className="text-zinc-400 font-mono">
-                        {hubBaseDir}\{newProjectName.trim() || "<name>"}
-                      </span>
-                    </p>
-                  </div>
-
-                  {/* Template picker */}
-                  <div>
-                    <label className="block text-xs uppercase tracking-wider font-semibold text-zinc-500 mb-2">
-                      Starter Template
-                    </label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {PROJECT_TEMPLATES.map((t) => (
-                        <button
-                          key={t.id}
-                          onClick={() => setNewProjectTemplateId(t.id)}
-                          className={cn(
-                            "flex flex-col items-start gap-1.5 p-3 rounded-xl border transition-all text-left",
-                            newProjectTemplateId === t.id
-                              ? "border-emerald-500 bg-emerald-900/20"
-                              : "border-zinc-700 bg-zinc-800/50 hover:border-zinc-600 hover:bg-zinc-800"
-                          )}
-                        >
-                          <span className="text-2xl">{t.icon}</span>
-                          <span className="text-xs font-bold text-zinc-200">{t.name}</span>
-                          <span className="text-[10px] text-zinc-500 leading-tight">{t.description}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Create button */}
-                  <button
-                    onClick={handleCreateProjectHub}
-                    disabled={!newProjectName.trim() || isCreatingProjectHub}
-                    className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold text-sm transition-colors"
-                  >
-                    {isCreatingProjectHub ? (
-                      <><Loader2 className="h-4 w-4 animate-spin" /> Creating project...</>
-                    ) : (
-                      <><Plus className="h-4 w-4" /> Create Project</>
-                    )}
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Projects Hub is now in ProjectCommandCenter (rendered by BuilderPage) */}
 
       {/* ─── Toast notifications ──────────────────────────────────────────────── */}
       <div className="fixed top-4 right-4 z-[9999] flex flex-col gap-2 pointer-events-none">

@@ -17,8 +17,12 @@ import { flattenFileTree, useUIStore } from "@sarge/core";
 import { pushProject } from "../lib/pushProject";
 import { applyEditBlocks, type EditBlock, getDiffSummary } from "../lib/editBlockParser";
 import { useWorkspaceStore, launchWorkspace, recallWorkspace } from "../stores/workspaceStore";
-import { LayoutGrid, X, Plus, Save, Terminal as TerminalIcon, Loader2, FolderOpen, Rocket, FolderPlus } from "lucide-react";
+import { LayoutGrid, X, Plus, Save, Terminal as TerminalIcon, Loader2, FolderOpen, Rocket, FolderPlus, Package } from "lucide-react";
 import { ThreadGuardianIndicator } from "@sarge/chat";
+import ProjectCommandCenter from "./ProjectCommandCenter";
+import AssetLibrary from "./AssetLibrary";
+import { useProjectCommandStore } from "../stores/projectCommandStore";
+import { useAssetLibraryStore } from "../stores/assetLibraryStore";
 
 /**
  * BuilderPage - Main container for the Builder tab
@@ -693,7 +697,7 @@ Please provide the complete modified version of this component. Make only the re
         </button>
 
         <button
-          onClick={() => window.dispatchEvent(new CustomEvent("builder:new-project"))}
+          onClick={() => useProjectCommandStore.getState().open("new")}
           className="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg shadow-lg transition-all text-sm font-medium"
           title="New Project"
         >
@@ -702,12 +706,21 @@ Please provide the complete modified version of this component. Make only the re
         </button>
 
         <button
-          onClick={() => window.dispatchEvent(new CustomEvent("builder:open-project"))}
+          onClick={() => useProjectCommandStore.getState().open("grid")}
           className="flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg shadow-lg transition-all text-sm font-medium"
-          title="Open Project"
+          title="All Projects"
         >
           <FolderOpen className="w-4 h-4" />
-          Open
+          Projects
+        </button>
+
+        <button
+          onClick={() => useAssetLibraryStore.getState().open()}
+          className="flex items-center gap-1.5 px-3 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-lg shadow-lg transition-all text-sm font-medium"
+          title="Master Assets Library"
+        >
+          <Package className="w-4 h-4" />
+          Assets
         </button>
       </div>
 
@@ -837,6 +850,12 @@ Please provide the complete modified version of this component. Make only the re
         isOpen={terminalOpen}
         onClose={() => setTerminalOpen(false)}
       />
+
+      {/* Project Command Center overlay */}
+      <ProjectCommandCenter />
+
+      {/* Asset Library overlay */}
+      <AssetLibrary />
     </div>
   );
 }

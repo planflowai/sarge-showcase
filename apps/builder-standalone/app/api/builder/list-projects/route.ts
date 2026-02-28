@@ -8,10 +8,72 @@ const BUILDER_PROJECTS_DIR =
 
 const MAIN_FILES = ['index.html', 'src/App.tsx', 'app/page.tsx', 'main.js', 'main.ts', 'README.md'];
 
+/** Skip these folders — they are not projects */
+const SKIP_FOLDERS = new Set(['_assets', 'node_modules', '.cache']);
+
+/**
+ * Fast, local-only deploy URL detection for a project.
+ * Reads config files on disk — no CLI calls, no network requests.
+ */
+async function detectDeployUrls(projectPath: string) {
+  let githubUrl: string | null = null;
+  let vercelUrl: string | null = null;
+  let netlifyUrl: string | null = null;
+  let cloudflareUrl: string | null = null;
+
+  // GitHub — read .git/config for remote URL
+  try {
+    const gitConfig = await fs.readFile(path.join(projectPath, '.git', 'config'), 'utf-8');
+    const m = gitConfig.match(/url\s*=\s*.*github\.com[/:](.+?\/.+?)(?:\.git)?\s*$/m);
+    if (m) {
+      // Strip embedded credentials if present
+      const repoPath = m[1].trim();
+      githubUrl = `https://github.com/${repoPath}`;
+    }
+  } catch { /* no .git or no github remote */ }
+
+  // Vercel — check .vercel/url.txt first, fallback to project.json
+  try {
+    const urlFile = path.join(projectPath, '.vercel', 'url.txt');
+    vercelUrl = (await fs.readFile(urlFile, 'utf-8')).replace(/^\uFEFF/, '').trim();
+  } catch {
+    try {
+      const projFile = path.join(projectPath, '.vercel', 'project.json');
+      const vp = JSON.parse(await fs.readFile(projFile, 'utf-8'));
+      if (vp.projectName) {
+        const safeName = vp.projectName.replace(/_/g, '-').toLowerCase();
+        vercelUrl = `https://${safeName}.vercel.app`;
+      }
+    } catch { /* no vercel */ }
+  }
+
+  // Netlify — check .netlify/state.json
+  try {
+    const stateFile = path.join(projectPath, '.netlify', 'state.json');
+    const ns = JSON.parse(await fs.readFile(stateFile, 'utf-8'));
+    if (ns.siteId) {
+      // Infer URL from project folder name (Netlify normalizes to lowercase-kebab)
+      const projName = path.basename(projectPath).replace(/_/g, '-').toLowerCase();
+      netlifyUrl = `https://${projName}.netlify.app`;
+    }
+  } catch { /* no netlify */ }
+
+  // Cloudflare — check wrangler.toml
+  try {
+    const toml = await fs.readFile(path.join(projectPath, 'wrangler.toml'), 'utf-8');
+    const cfMatch = toml.match(/name\s*=\s*"([^"]+)"/);
+    if (cfMatch) {
+      cloudflareUrl = `https://${cfMatch[1]}.pages.dev`;
+    }
+  } catch { /* no wrangler */ }
+
+  return { githubUrl, vercelUrl, netlifyUrl, cloudflareUrl };
+}
+
 /**
  * GET /api/builder/list-projects
- * Lists all project folders in BUILDER_PROJECTS_DIR (L:\AI_MASTER_BUILDS).
- * Returns name, path, file count, last modified, hasGit, mainFile.
+ * Lists all project folders in BUILDER_PROJECTS_DIR.
+ * Returns name, path, file count, last modified, hasGit, mainFile, deploy URLs.
  */
 export async function GET() {
   try {
@@ -24,6 +86,7 @@ export async function GET() {
     for (const entry of entries) {
       if (!entry.isDirectory()) continue;
       if (entry.name.startsWith('.')) continue;
+      if (SKIP_FOLDERS.has(entry.name)) continue;
 
       const fullPath = path.join(BUILDER_PROJECTS_DIR, entry.name);
 
@@ -63,6 +126,9 @@ export async function GET() {
         } catch { /* not found */ }
       }
 
+      // Fast local-only deploy URL detection
+      const deployUrls = await detectDeployUrls(fullPath);
+
       projects.push({
         name: entry.name,
         path: fullPath,
@@ -71,6 +137,7 @@ export async function GET() {
         githubRepo,
         mainFile,
         lastModified: stat.mtime.toISOString(),
+        ...deployUrls,
       });
     }
 
