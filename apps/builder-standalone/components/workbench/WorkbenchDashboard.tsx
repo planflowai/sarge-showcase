@@ -293,12 +293,15 @@ export default function WorkbenchDashboard() {
       </div>
 
       {/* ── Prompt Bar ── */}
-      <div className="border-t border-zinc-800/60 bg-zinc-900/30 px-6 py-3 flex-shrink-0">
-        <div className="max-w-5xl mx-auto">
-          {/* Target indicator */}
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-[10px] text-zinc-600 font-semibold">Send to:</span>
-            <div className="flex gap-1 flex-wrap">
+      <div className="border-t border-zinc-800/60 bg-zinc-900/40 px-6 py-4 flex-shrink-0">
+        <div className="max-w-5xl mx-auto flex flex-col gap-3">
+
+          {/* ── Broadcast Target Row — centered, big ── */}
+          <div className="flex flex-col items-center gap-2">
+            <span className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">
+              Broadcast To
+            </span>
+            <div className="flex items-center gap-2 flex-wrap justify-center">
               {slots.map((s) => {
                 const colors = ["#a855f7", "#3b82f6", "#22c55e", "#ec4899", "#f97316"];
                 const c = colors[s.slot - 1] ?? "#71717a";
@@ -306,13 +309,12 @@ export default function WorkbenchDashboard() {
                   <button
                     key={s.slot}
                     onClick={() => useWorkbenchStore.getState().toggleSlotSelected(s.slot)}
-                    className={cn(
-                      "px-2 py-0.5 rounded text-[9px] font-bold border transition-all",
+                    className="px-5 py-2.5 rounded-xl text-sm font-black border-2 transition-all hover:scale-105"
+                    style={
                       s.selected
-                        ? "text-white"
-                        : "text-zinc-600 border-zinc-700/40 bg-transparent"
-                    )}
-                    style={s.selected ? { backgroundColor: `${c}25`, borderColor: `${c}50`, color: c } : {}}
+                        ? { backgroundColor: `${c}20`, borderColor: `${c}70`, color: c, boxShadow: `0 0 12px ${c}30` }
+                        : { backgroundColor: "transparent", borderColor: "#3f3f46", color: "#52525b" }
+                    }
                   >
                     MON {s.monitorNumber}
                   </button>
@@ -327,31 +329,31 @@ export default function WorkbenchDashboard() {
                     slots.forEach((s) => { if (!s.selected) useWorkbenchStore.getState().toggleSlotSelected(s.slot); });
                   }
                 }}
-                className="px-2 py-0.5 rounded text-[9px] font-bold border border-zinc-700/40 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-all"
+                className="px-4 py-2.5 rounded-xl text-sm font-bold border-2 border-dashed border-zinc-700 text-zinc-500 hover:border-zinc-500 hover:text-zinc-300 transition-all"
               >
-                {slots.every((s) => s.selected) ? "Deselect All" : "Select All"}
+                {slots.every((s) => s.selected) ? "Deselect All" : "All"}
               </button>
+              <span className="text-xs font-bold text-zinc-600 self-center pl-2">
+                {selectedCount} / 5
+              </span>
             </div>
-            <span className="ml-auto text-[9px] text-zinc-600">
-              {selectedCount} of 5 selected
-            </span>
           </div>
 
           {/* Comparison image preview */}
           {compareImage && (
-            <div className="flex items-center gap-3 mb-2 p-2 rounded-lg bg-zinc-800/60 border border-zinc-700/40">
+            <div className="flex items-center gap-4 p-3 rounded-xl bg-zinc-800/60 border border-zinc-700/40">
               <img
                 src={compareImage}
                 alt="Reference"
-                className="h-16 rounded border border-zinc-600 object-cover"
+                className="h-20 rounded-lg border border-zinc-600 object-cover"
               />
               <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-semibold text-zinc-400">📎 Comparison reference attached</p>
-                <p className="text-[9px] text-zinc-600">Visible to you — describe what you want changed relative to this</p>
+                <p className="text-sm font-bold text-zinc-300">📎 Comparison reference</p>
+                <p className="text-xs text-zinc-500 mt-0.5">Paste or drag images to compare — describe what to change</p>
               </div>
               <button
                 onClick={() => setCompareImage(null)}
-                className="flex-shrink-0 w-5 h-5 rounded-full bg-zinc-700 hover:bg-red-500 text-zinc-300 text-xs flex items-center justify-center transition-colors"
+                className="flex-shrink-0 w-7 h-7 rounded-full bg-zinc-700 hover:bg-red-500 text-zinc-300 text-sm font-bold flex items-center justify-center transition-colors"
               >
                 ×
               </button>
@@ -361,7 +363,7 @@ export default function WorkbenchDashboard() {
           {/* Input row — drag/drop target */}
           <div
             className={cn(
-              "flex gap-2 rounded-xl transition-all",
+              "flex gap-3 rounded-2xl transition-all",
               dragOver && "ring-2 ring-indigo-500/60 bg-indigo-500/5"
             )}
             onDrop={handleDrop}
@@ -375,26 +377,25 @@ export default function WorkbenchDashboard() {
               onPaste={handlePaste}
               placeholder={
                 dragOver
-                  ? "Drop image here..."
+                  ? "Drop image here…"
                   : selectedCount === 0
-                  ? "Select at least one monitor above..."
-                  : selectedCount === slots.length
-                  ? "Send to all 5 monitors… paste screenshot to compare (Enter to send)"
-                  : `Send to ${selectedCount} monitor${selectedCount !== 1 ? "s" : ""}… paste screenshot to compare (Enter to send)`
+                  ? "Select monitors above to broadcast…"
+                  : `Send to ${selectedCount === slots.length ? "all 5 monitors" : `${selectedCount} monitor${selectedCount !== 1 ? "s" : ""}`}… (Enter to send — paste/drop screenshot to compare)`
               }
               rows={2}
               disabled={selectedCount === 0}
-              className="flex-1 resize-none rounded-xl bg-zinc-800 px-4 py-2.5 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none border border-zinc-700 focus:border-zinc-600 disabled:opacity-40 min-h-[44px] max-h-[120px]"
+              className="flex-1 resize-none rounded-2xl bg-zinc-800 px-5 py-3 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none border border-zinc-700 focus:border-zinc-500 disabled:opacity-40 min-h-[52px] max-h-[120px]"
             />
             <button
               onClick={handleSend}
               disabled={!prompt.trim() || selectedCount === 0}
-              className="px-5 rounded-xl text-white font-bold text-sm bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 disabled:hover:bg-indigo-600 transition-colors flex items-center gap-2"
+              className="px-6 rounded-2xl text-white font-black text-sm bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 disabled:hover:bg-indigo-600 transition-all hover:scale-105 flex items-center gap-2"
             >
               <Send className="h-4 w-4" />
               {selectedCount === slots.length ? "Send to All" : "Send"}
             </button>
           </div>
+
         </div>
       </div>
     </div>
