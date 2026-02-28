@@ -60,6 +60,90 @@ function ThinkingBlock({ thinking, isStreaming }: { thinking: string; isStreamin
 }
 
 /**
+ * LiveStreamingContent: Renders streaming AI response in real-time
+ *
+ * Shows text before the code fence as plain text, then renders a live growing
+ * code block with a pulsing "LIVE" indicator while code streams in.
+ * Used ONLY when message.isStreaming === true — replaces ReactMarkdown which
+ * struggles with partial/incomplete markdown.
+ */
+function LiveStreamingContent({ content }: { content: string }) {
+  // Find first code fence
+  const fenceIdx = content.indexOf("```");
+
+  if (fenceIdx === -1) {
+    // No code fence yet — pure text streaming
+    return (
+      <div className="text-sm leading-relaxed whitespace-pre-wrap text-zinc-800 dark:text-zinc-200">
+        {content || " "}
+        <span className="inline-block w-1.5 h-4 bg-indigo-400 animate-pulse ml-0.5 align-text-bottom rounded-sm" />
+      </div>
+    );
+  }
+
+  const textBefore = content.slice(0, fenceIdx).trim();
+  const rest = content.slice(fenceIdx);
+
+  // Parse opening fence: ```lang\n
+  const openFenceMatch = rest.match(/^```(\w*)?\n?/);
+  const lang = openFenceMatch?.[1] || "html";
+  const afterOpenFence = openFenceMatch ? rest.slice(openFenceMatch[0].length) : rest.slice(3);
+
+  // Check for closing fence
+  const closingFenceIdx = afterOpenFence.indexOf("```");
+  const isComplete = closingFenceIdx !== -1;
+  const codeText = isComplete ? afterOpenFence.slice(0, closingFenceIdx) : afterOpenFence;
+  const textAfter = isComplete ? afterOpenFence.slice(closingFenceIdx + 3).trim() : "";
+
+  const lineCount = codeText ? codeText.split("\n").length : 0;
+
+  return (
+    <div className="text-sm leading-relaxed space-y-2">
+      {textBefore && (
+        <p className="whitespace-pre-wrap text-zinc-800 dark:text-zinc-200">{textBefore}</p>
+      )}
+
+      {/* Live code block */}
+      <div className="rounded-md overflow-hidden border border-zinc-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-950">
+        {/* Header */}
+        <div className="flex items-center justify-between px-3 py-1.5 bg-white dark:bg-zinc-900 border-b border-zinc-300 dark:border-zinc-700">
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-mono font-semibold text-zinc-700 dark:text-zinc-300 uppercase">
+              {lang}
+            </span>
+            {lineCount > 0 && (
+              <span className="text-[10px] text-zinc-500">{lineCount} lines</span>
+            )}
+          </div>
+          {!isComplete ? (
+            <div className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-[10px] font-semibold text-emerald-400 tracking-wide">
+                LIVE
+              </span>
+            </div>
+          ) : (
+            <span className="text-[10px] text-emerald-500 font-medium">✓ Generated</span>
+          )}
+        </div>
+
+        {/* Scrollable code — capped at 300px so it doesn't take over the chat */}
+        <pre className="p-3 overflow-x-auto overflow-y-auto max-h-72 text-xs leading-relaxed font-mono text-zinc-800 dark:text-zinc-200">
+          <code>{codeText}</code>
+          {!isComplete && (
+            <span className="inline-block w-1.5 h-3.5 bg-emerald-400 animate-pulse ml-0.5 align-text-bottom rounded-sm" />
+          )}
+        </pre>
+      </div>
+
+      {textAfter && (
+        <p className="whitespace-pre-wrap text-zinc-800 dark:text-zinc-200">{textAfter}</p>
+      )}
+    </div>
+  );
+}
+
+/**
  * BuilderMessageBubble: Render a single chat message
  *
  * Extracted from: BuilderChat.tsx (lines 76-445)
@@ -88,6 +172,8 @@ export default function BuilderMessageBubble({
   const [originalContents, setOriginalContents] = useState<Record<string, string>>({});
 
   const isUser = message.role === "user";
+  // Detect raw error messages — render as a friendly warning card instead of raw text
+  const isError = !isUser && /^Error:/i.test(message.content.trim());
   const providerConfig = providers.find((p) => p.id === message.provider);
   const isProjectMode = !!projectPath;
 
@@ -309,6 +395,8 @@ export default function BuilderMessageBubble({
           "rounded-lg px-5 py-4 overflow-hidden break-words",
           isUser
             ? "bg-indigo-600 text-white max-w-[85%]"
+            : isError
+            ? "bg-amber-50 dark:bg-amber-900/10 border border-amber-200/80 dark:border-amber-500/20 text-zinc-800 dark:text-zinc-200 w-full"
             : "bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 w-full"
         )}
       >
@@ -385,8 +473,25 @@ export default function BuilderMessageBubble({
               content={message.content}
               isStreaming={message.isStreaming || false}
             />
+          ) : message.isStreaming ? (
+            // Live streaming view: show raw text + growing code block in real-time
+            // Bypasses ReactMarkdown (which breaks on partial/incomplete markdown)
+            <LiveStreamingContent content={message.content} />
+          ) : isError ? (
+            // Friendly error card — never show raw "Error: API error: 500" to the user
+            <div className="flex items-start gap-2.5">
+              <span className="text-lg flex-shrink-0 mt-0.5">⚡</span>
+              <div>
+                <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
+                  Couldn't reach the model.
+                </p>
+                <p className="text-xs text-amber-600/80 dark:text-amber-400/70 mt-1 leading-relaxed">
+                  Check that Ollama is running, or switch to a cloud model in the selector above. Local and cloud models are both supported.
+                </p>
+              </div>
+            </div>
           ) : (
-            <div className="prose prose-sm prose-invert max-w-none">
+            <div className="prose prose-sm dark:prose-invert max-w-none">
               <ReactMarkdown components={markdownComponents}>{message.content}</ReactMarkdown>
             </div>
           )
