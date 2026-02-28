@@ -1,10 +1,12 @@
 /**
  * Push project to GitHub via the deploy API.
  * Beast mirror of packages/builder/src/lib/pushProject.ts
+ * targets defaults to ["github"] only to avoid burning hosting credits.
  */
 export async function pushProject(
   projectPath: string,
-  projectName: string
+  projectName: string,
+  targets: string[] = ["github"]
 ): Promise<{ success: boolean; message: string }> {
   try {
     const res = await fetch("/api/deploy", {
@@ -14,6 +16,7 @@ export async function pushProject(
         action: "push",
         projectPath,
         projectName,
+        targets,
       }),
     });
 

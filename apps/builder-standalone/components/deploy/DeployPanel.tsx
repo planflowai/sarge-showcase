@@ -14,14 +14,25 @@ import {
   FolderOpen,
   X,
   Info,
+  Cloud,
+  CheckCircle2,
+  XCircle,
+  MinusCircle,
 } from "lucide-react";
-import { useDeployStore } from "@/lib/stores/deployStore";
+import { useDeployStore, type DeployTarget } from "@/lib/stores/deployStore";
 import { useUIStore } from "@sarge/core";
 
 interface DeployPanelProps {
   projectPath?: string | null;
   projectName?: string | null;
 }
+
+const DEPLOY_TARGETS: { id: DeployTarget; label: string; color: string; icon: typeof Github }[] = [
+  { id: "github", label: "GitHub", color: "zinc", icon: Github },
+  { id: "vercel", label: "Vercel", color: "zinc", icon: Globe },
+  { id: "netlify", label: "Netlify", color: "teal", icon: Globe },
+  { id: "cloudflare", label: "Cloudflare Pages", color: "orange", icon: Cloud },
+];
 
 export default function DeployPanel({ projectPath, projectName }: DeployPanelProps) {
   const showToast = useUIStore((s) => s.showToast);
@@ -43,6 +54,10 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
   } = useDeployStore();
 
   const isInitialized = !!(githubUrl || cloudflareUrl || vercelUrl || netlifyUrl);
+
+  // Push target selection popup state
+  const [showPushPopup, setShowPushPopup] = useState(false);
+  const [selectedTargets, setSelectedTargets] = useState<DeployTarget[]>(["github"]);
 
   // When project changes, reset then auto-detect existing connections
   useEffect(() => {
@@ -71,14 +86,23 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
     }
   };
 
-  const handlePush = async () => {
-    if (!projectPath) return;
-    await pushProject(projectPath, projectName || "");
+  const handlePushConfirm = async () => {
+    if (!projectPath || selectedTargets.length === 0) return;
+    setShowPushPopup(false);
+    await pushProject(projectPath, projectName || "", selectedTargets);
     const state = useDeployStore.getState();
     if (state.error) {
       showToast({ message: `Push failed: ${state.error}`, type: "error" });
     }
-    // Success feedback is shown inline — no toast needed
+  };
+
+  const toggleTarget = (target: DeployTarget) => {
+    setSelectedTargets((prev) => {
+      if (target === "github") return prev; // GitHub is always required
+      return prev.includes(target)
+        ? prev.filter((t) => t !== target)
+        : [...prev, target];
+    });
   };
 
   const handleExport = async () => {
@@ -93,6 +117,32 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
         type: "success",
         duration: 8000,
       });
+    }
+  };
+
+  // Helper: get connection status for a target
+  const getTargetUrl = (target: DeployTarget): string | null => {
+    switch (target) {
+      case "github": return githubUrl;
+      case "vercel": return vercelUrl;
+      case "netlify": return netlifyUrl;
+      case "cloudflare": return cloudflareUrl;
+    }
+  };
+
+  // Helper: get deploy result status indicator
+  const getDeployResultIcon = (target: DeployTarget) => {
+    if (!lastPush?.deployResults) return null;
+    const status = lastPush.deployResults[target];
+    switch (status) {
+      case "success":
+        return <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />;
+      case "failed":
+        return <XCircle className="h-3.5 w-3.5 text-red-500" />;
+      case "skipped":
+        return <MinusCircle className="h-3.5 w-3.5 text-zinc-400" />;
+      default:
+        return null;
     }
   };
 
@@ -123,6 +173,54 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
       </div>
 
       <div className="flex-1 p-6 space-y-6">
+        {/* ═══ Deploy Targets — status indicators for all 4 ═══ */}
+        {isInitialized && (
+          <div className="space-y-2">
+            <h3 className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+              Deploy Targets
+            </h3>
+            <div className="grid grid-cols-2 gap-2">
+              {DEPLOY_TARGETS.map(({ id, label, icon: Icon }) => {
+                const url = getTargetUrl(id);
+                const isConnected = !!url;
+                const resultIcon = getDeployResultIcon(id);
+                return (
+                  <div
+                    key={id}
+                    className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border transition-colors ${
+                      isConnected
+                        ? "bg-emerald-50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800/50"
+                        : "bg-zinc-50 dark:bg-zinc-800/30 border-zinc-200 dark:border-zinc-700"
+                    }`}
+                  >
+                    <Icon className={`h-4 w-4 flex-shrink-0 ${isConnected ? "text-emerald-600 dark:text-emerald-400" : "text-zinc-400"}`} />
+                    <div className="flex-1 min-w-0">
+                      <div className={`text-xs font-bold ${isConnected ? "text-zinc-900 dark:text-zinc-100" : "text-zinc-400"}`}>
+                        {label}
+                      </div>
+                      {url && (
+                        <a
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[9px] text-indigo-500 hover:underline truncate block"
+                        >
+                          {url.replace(/https?:\/\/(www\.)?/, "").slice(0, 30)}
+                        </a>
+                      )}
+                    </div>
+                    {resultIcon || (
+                      isConnected
+                        ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" />
+                        : <XCircle className="h-3.5 w-3.5 text-zinc-300 dark:text-zinc-600 flex-shrink-0" />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* ═══ Detecting existing connections ═══ */}
         {isDetecting ? (
           <div className="flex items-center gap-3 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50">
@@ -202,7 +300,7 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
                   rel="noopener noreferrer"
                   className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm bg-orange-50 dark:bg-orange-900/20 hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors border border-orange-200 dark:border-orange-800/50"
                 >
-                  <Globe className="h-5 w-5 text-orange-500 flex-shrink-0" />
+                  <Cloud className="h-5 w-5 text-orange-500 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className="font-bold text-zinc-900 dark:text-zinc-100">Cloudflare Pages</div>
                     <div className="text-[11px] text-orange-600 dark:text-orange-400 truncate">{cloudflareUrl}</div>
@@ -258,31 +356,103 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
               )}
             </div>
 
-            {/* ═══ Push ═══ */}
+            {/* ═══ Push — with target selection popup ═══ */}
             <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 p-4 space-y-3">
               <div className="space-y-1">
                 <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
                   Push Changes
                 </h3>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  Commits and pushes all current files to GitHub.
-                  {(cloudflareUrl || vercelUrl || netlifyUrl) &&
-                    " Connected services auto-deploy from the push."}
+                  Commits and pushes to selected targets. Pick where to deploy.
                 </p>
               </div>
 
-              <button
-                onClick={handlePush}
-                disabled={isDeploying}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition-colors disabled:opacity-50 disabled:pointer-events-none"
-              >
-                {isDeploying ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="h-4 w-4" />
+              <div className="relative">
+                <button
+                  onClick={() => setShowPushPopup(!showPushPopup)}
+                  disabled={isDeploying}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                >
+                  {isDeploying ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                  {isDeploying ? "Pushing..." : "Push"}
+                </button>
+
+                {/* ═══ Target Selection Popup ═══ */}
+                {showPushPopup && !isDeploying && (
+                  <div className="absolute left-0 top-full mt-2 w-72 bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-2xl z-50 p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider">
+                        Deploy Targets
+                      </h4>
+                      <button
+                        onClick={() => setShowPushPopup(false)}
+                        className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      {DEPLOY_TARGETS.map(({ id, label, icon: Icon }) => {
+                        const url = getTargetUrl(id);
+                        const isConnected = !!url;
+                        const isSelected = selectedTargets.includes(id);
+                        const isGithub = id === "github";
+
+                        return (
+                          <button
+                            key={id}
+                            onClick={() => toggleTarget(id)}
+                            disabled={isGithub} // GitHub is always selected
+                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
+                              isSelected
+                                ? "bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-300 dark:border-emerald-700"
+                                : "bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-700/50"
+                            } ${!isConnected && !isGithub ? "opacity-40 cursor-not-allowed" : ""} ${isGithub ? "cursor-default" : ""}`}
+                          >
+                            {/* Checkbox */}
+                            <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 ${
+                              isSelected
+                                ? "bg-emerald-500 border-emerald-500"
+                                : "border-zinc-300 dark:border-zinc-600"
+                            }`}>
+                              {isSelected && <Check className="h-3 w-3 text-white" />}
+                            </div>
+
+                            <Icon className={`h-4 w-4 flex-shrink-0 ${isConnected ? "text-zinc-700 dark:text-zinc-300" : "text-zinc-400"}`} />
+
+                            <div className="flex-1 min-w-0">
+                              <div className="text-xs font-bold text-zinc-800 dark:text-zinc-200">{label}</div>
+                              <div className="text-[9px] text-zinc-400 truncate">
+                                {isConnected ? (url?.replace(/https?:\/\/(www\.)?/, "").slice(0, 35)) : "Not connected"}
+                              </div>
+                            </div>
+
+                            {isConnected ? (
+                              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" />
+                            ) : (
+                              <XCircle className="h-3.5 w-3.5 text-zinc-300 dark:text-zinc-600 flex-shrink-0" />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <button
+                      onClick={handlePushConfirm}
+                      disabled={selectedTargets.length === 0}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition-colors disabled:opacity-50"
+                    >
+                      <Send className="h-4 w-4" />
+                      Push to {selectedTargets.length} target{selectedTargets.length !== 1 ? "s" : ""}
+                    </button>
+                  </div>
                 )}
-                {isDeploying ? "Pushing..." : "Push"}
-              </button>
+              </div>
 
               {/* ═══ Push Result — persistent, clear feedback ═══ */}
               {lastPush && (
@@ -320,6 +490,34 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
                         {new Date(lastPush.timestamp).toLocaleTimeString()}
                       </span>
                     </div>
+
+                    {/* Per-target deploy results */}
+                    {lastPush.deployResults && lastPush.message !== "No changes to push" && (
+                      <div className="flex items-center gap-3 mt-2">
+                        {Object.entries(lastPush.deployResults).map(([target, status]) => (
+                          <span
+                            key={target}
+                            className={`inline-flex items-center gap-1 text-[10px] font-bold ${
+                              status === "success"
+                                ? "text-emerald-600 dark:text-emerald-400"
+                                : status === "failed"
+                                ? "text-red-500"
+                                : "text-zinc-400"
+                            }`}
+                          >
+                            {status === "success" ? (
+                              <CheckCircle2 className="h-3 w-3" />
+                            ) : status === "failed" ? (
+                              <XCircle className="h-3 w-3" />
+                            ) : (
+                              <MinusCircle className="h-3 w-3" />
+                            )}
+                            {target.charAt(0).toUpperCase() + target.slice(1)}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
                     {/* Quick links to verify */}
                     {lastPush.message !== "No changes to push" && githubUrl && (
                       <div className="flex items-center gap-2 mt-2">

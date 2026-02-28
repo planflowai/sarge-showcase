@@ -1,10 +1,14 @@
 import { create } from "zustand";
 
+export type DeployTarget = "github" | "vercel" | "netlify" | "cloudflare";
+export type DeployStatus = "success" | "skipped" | "failed" | "not_connected";
+
 interface PushResult {
   success: boolean;
   commitHash: string;
   message: string;          // "Pushed successfully" or "No changes to commit"
   timestamp: string;        // ISO string
+  deployResults?: Record<string, DeployStatus>;  // Per-target results
 }
 
 interface DeployState {
@@ -21,7 +25,7 @@ interface DeployState {
 
   detectProject: (projectPath: string) => Promise<void>;
   initProject: (name: string, projectPath: string) => Promise<void>;
-  pushProject: (projectPath: string, projectName: string) => Promise<void>;
+  pushProject: (projectPath: string, projectName: string, targets?: DeployTarget[]) => Promise<void>;
   exportZip: (projectPath: string) => Promise<string | null>;
   reset: () => void;
 }
@@ -109,7 +113,7 @@ export const useDeployStore = create<DeployState>()((set, get) => ({
     }
   },
 
-  pushProject: async (projectPath, projectName) => {
+  pushProject: async (projectPath, projectName, targets) => {
     // Guard: don't push if store is tracking a different project
     const current = get().currentProjectPath;
     if (current && current !== projectPath) {
@@ -121,7 +125,7 @@ export const useDeployStore = create<DeployState>()((set, get) => ({
       const res = await fetch("/api/deploy", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "push", projectPath, projectName }),
+        body: JSON.stringify({ action: "push", projectPath, projectName, targets: targets || ["github"] }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -136,6 +140,7 @@ export const useDeployStore = create<DeployState>()((set, get) => ({
           commitHash: data.commitHash || "",
           message: noChanges ? "No changes to push" : "Pushed successfully",
           timestamp: new Date().toISOString(),
+          deployResults: data.deployResults || undefined,
         },
       });
     } catch (err: any) {

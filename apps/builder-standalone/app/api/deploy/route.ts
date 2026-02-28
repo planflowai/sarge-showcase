@@ -471,6 +471,9 @@ export async function POST(request: NextRequest) {
     //  ACTION: push
     // ════════════════════════════════════════
     if (action === "push") {
+      // Selective targets: only redeploy to these services. Default = ["github"] (git push only)
+      const targets: string[] = body.targets || ["github"];
+
       // Stage all, commit, push
       const addResult = await runCommand("git add .", projectPath);
       if (addResult.code !== 0) {
@@ -511,44 +514,70 @@ export async function POST(request: NextRequest) {
 
       const hashResult = await runCommand("git rev-parse --short HEAD", projectPath);
 
-      // Re-deploy to hosting services in parallel
+      // Re-deploy to hosting services in parallel — only selected targets
       const redeployTasks: Promise<any>[] = [];
-      const vercelProjectFile = path.join(projectPath, ".vercel", "project.json");
-      if (fs.existsSync(vercelProjectFile)) {
-        redeployTasks.push(
-          runCommand("npx vercel --prod --yes", projectPath, 120_000).then((r) => {
-            // Update saved URL in case Vercel assigned a new alias
-            if (r.code === 0) {
-              const allUrls = r.stdout.match(/https:\/\/[^\s]+\.vercel\.app/g);
-              if (allUrls && allUrls.length > 0) {
-                const prodUrl = allUrls[allUrls.length - 1];
-                const urlFile = path.join(projectPath, ".vercel", "url.txt");
-                fs.writeFileSync(urlFile, prodUrl, "utf-8");
-              }
-            }
-          }).catch(() => {})
-        );
-      }
-      const netlifyStateFile = path.join(projectPath, ".netlify", "state.json");
-      if (fs.existsSync(netlifyStateFile)) {
-        redeployTasks.push(
-          runCommand('npx netlify deploy --prod --dir "."', projectPath, 120_000).catch(() => {})
-        );
-      }
-      // Cloudflare Pages redeploy
-      const wranglerToml = path.join(projectPath, "wrangler.toml");
-      if (fs.existsSync(wranglerToml)) {
-        const wranglerCfg = fs.readFileSync(wranglerToml, "utf-8");
-        const cfNameMatch = wranglerCfg.match(/name\s*=\s*"([^"]+)"/);
-        if (cfNameMatch) {
+      const deployResults: Record<string, "success" | "skipped" | "failed"> = {
+        github: "success", // git push already succeeded above
+      };
+
+      if (targets.includes("vercel")) {
+        const vercelProjectFile = path.join(projectPath, ".vercel", "project.json");
+        if (fs.existsSync(vercelProjectFile)) {
           redeployTasks.push(
-            runCommand(
-              `npx wrangler pages deploy "." --project-name="${cfNameMatch[1]}"`,
-              projectPath, 120_000
-            ).catch(() => {})
+            runCommand("npx vercel --prod --yes", projectPath, 120_000).then((r) => {
+              if (r.code === 0) {
+                deployResults.vercel = "success";
+                const allUrls = r.stdout.match(/https:\/\/[^\s]+\.vercel\.app/g);
+                if (allUrls && allUrls.length > 0) {
+                  const prodUrl = allUrls[allUrls.length - 1];
+                  const urlFile = path.join(projectPath, ".vercel", "url.txt");
+                  fs.writeFileSync(urlFile, prodUrl, "utf-8");
+                }
+              } else {
+                deployResults.vercel = "failed";
+              }
+            }).catch(() => { deployResults.vercel = "failed"; })
           );
+        } else {
+          deployResults.vercel = "skipped";
         }
       }
+
+      if (targets.includes("netlify")) {
+        const netlifyStateFile = path.join(projectPath, ".netlify", "state.json");
+        if (fs.existsSync(netlifyStateFile)) {
+          redeployTasks.push(
+            runCommand('npx netlify deploy --prod --dir "."', projectPath, 120_000).then((r) => {
+              deployResults.netlify = r.code === 0 ? "success" : "failed";
+            }).catch(() => { deployResults.netlify = "failed"; })
+          );
+        } else {
+          deployResults.netlify = "skipped";
+        }
+      }
+
+      if (targets.includes("cloudflare")) {
+        const wranglerToml = path.join(projectPath, "wrangler.toml");
+        if (fs.existsSync(wranglerToml)) {
+          const wranglerCfg = fs.readFileSync(wranglerToml, "utf-8");
+          const cfNameMatch = wranglerCfg.match(/name\s*=\s*"([^"]+)"/);
+          if (cfNameMatch) {
+            redeployTasks.push(
+              runCommand(
+                `npx wrangler pages deploy "." --project-name="${cfNameMatch[1]}"`,
+                projectPath, 120_000
+              ).then((r) => {
+                deployResults.cloudflare = r.code === 0 ? "success" : "failed";
+              }).catch(() => { deployResults.cloudflare = "failed"; })
+            );
+          } else {
+            deployResults.cloudflare = "skipped";
+          }
+        } else {
+          deployResults.cloudflare = "skipped";
+        }
+      }
+
       if (redeployTasks.length > 0) {
         await Promise.all(redeployTasks);
       }
@@ -556,6 +585,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         commitHash: hashResult.stdout,
+        deployResults,
       });
     }
 
