@@ -451,10 +451,10 @@ export function InputArea({
             </div>
           )}
 
-          {/* ─── Providers left, Input centered ─── */}
-          <div className="relative">
-            {/* Left — Provider groups + model name (anchored left) */}
-            <div className="absolute left-0 top-0">
+          {/* ─── 3-column grid: providers left | textarea centered | spacer right ─── */}
+          <div className="grid items-start" style={{ gridTemplateColumns: 'minmax(0,1fr) auto minmax(0,1fr)' }}>
+            {/* Left — Provider groups + model name */}
+            <div className="self-start pt-1 -ml-[306px]">
               <ProviderBar
                 activeProvider={currentProvider}
                 openProvider={modelPanelProvider}
@@ -465,8 +465,8 @@ export function InputArea({
               </div>
             </div>
 
-            {/* Center — Textarea + Icons (always centered, does not move) */}
-            <div className="max-w-2xl mx-auto">
+            {/* Center — Textarea + Icons (always centered on page, never moves) */}
+            <div className="w-[1040px]">
               {/* Textarea + Send */}
               <div className="flex items-stretch gap-3">
                 <div className="flex-1 min-w-0">
@@ -574,6 +574,9 @@ export function InputArea({
                 </button>
               </div>
             </div>
+
+            {/* Right — empty spacer to balance the grid and keep center truly centered */}
+            <div />
           </div>
         </div>
 
