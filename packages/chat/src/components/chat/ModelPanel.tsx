@@ -89,7 +89,7 @@ export function ModelPanel({ provider, currentModel, onSelectModel, onClose }: M
 
   return (
     <div className="flex-shrink-0 bg-zinc-900/98 backdrop-blur-md border-b border-zinc-800/40 shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
-      <div className="mx-auto max-w-[1680px] px-6 h-[130px] flex items-center gap-4">
+      <div className="px-6 h-[130px] flex items-center gap-4">
         {/* Left — provider label */}
         <div className="flex items-center gap-2 flex-shrink-0">
           <span className="w-2 h-2 rounded-full" style={{ backgroundColor: providerConfig?.color }} />
@@ -98,7 +98,7 @@ export function ModelPanel({ provider, currentModel, onSelectModel, onClose }: M
         </div>
 
         {/* Center — model cards, two rows */}
-        <div className="flex-1 min-w-0 overflow-x-auto scrollbar-none">
+        <div className="flex-1 min-w-0">
           {loading ? (
             <div className="py-2 text-center text-xs text-zinc-500">Loading...</div>
           ) : models.length === 0 ? (
