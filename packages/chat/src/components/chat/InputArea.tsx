@@ -516,54 +516,11 @@ export function InputArea({
           }}
         />
 
-        {/* Bottom action bar - all icons centered */}
+        {/* Bottom action bar - toggle far left, icons Forge-colored */}
         <div className="flex items-center justify-center gap-1 mt-2">
-          {/* Saved Prompts */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                disabled={disabled}
-                title="Load saved prompt"
-                className="p-2 rounded-lg text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-emerald-500 dark:hover:text-emerald-400 transition-colors disabled:opacity-30"
-              >
-                <BookText className="h-5 w-5" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="center" className="w-72 max-h-80 overflow-y-auto bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700">
-              {prompts.length === 0 ? (
-                <div className="px-3 py-4 text-center text-sm text-zinc-500">
-                  <p>No saved prompts</p>
-                  <a href="/settings" className="mt-1 inline-block text-xs text-indigo-400 hover:underline">
-                    Create in Settings &rarr;
-                  </a>
-                </div>
-              ) : (
-                prompts.map((p) => (
-                  <DropdownMenuItem
-                    key={p.id}
-                    onClick={() => setInput(p.content)}
-                    className="flex flex-col items-start gap-0.5 cursor-pointer"
-                  >
-                    <span className="font-medium text-sm">{p.name}</span>
-                    <span className="text-xs text-zinc-500 line-clamp-2">{p.content}</span>
-                  </DropdownMenuItem>
-                ))
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
 
-          {/* Generate Image */}
-          <button
-            onClick={() => setShowImageDialog(true)}
-            disabled={disabled || !supportsImageGen}
-            title="Generate image"
-            className="p-2 rounded-lg text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors disabled:opacity-30"
-          >
-            <ImageIcon className="h-5 w-5" />
-          </button>
-
-          {/* Single | Multi-Chat Toggle */}
-          <div className="flex items-center rounded-lg bg-zinc-200/60 dark:bg-zinc-800/80 border border-zinc-300 dark:border-zinc-700/40 p-0.5">
+          {/* Single | Multi-Chat Toggle — FAR LEFT */}
+          <div className="flex items-center rounded-lg bg-zinc-200/60 dark:bg-zinc-800/80 border border-zinc-300 dark:border-zinc-700/40 p-0.5 mr-1">
             <button
               type="button"
               onClick={() => { if (parallelEnabled) toggleParallelMode(); }}
@@ -589,13 +546,57 @@ export function InputArea({
             </button>
           </div>
 
+          {/* Saved Prompts */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                disabled={disabled}
+                title="Load saved prompt"
+                className="p-2 rounded-lg text-amber-500/60 hover:text-amber-400 hover:bg-amber-500/10 transition-colors disabled:opacity-30"
+              >
+                <BookText className="h-5 w-5" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center" className="w-72 max-h-80 overflow-y-auto bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700">
+              {prompts.length === 0 ? (
+                <div className="px-3 py-4 text-center text-sm text-zinc-500">
+                  <p>No saved prompts</p>
+                  <a href="/settings" className="mt-1 inline-block text-xs text-orange-400 hover:underline">
+                    Create in Settings &rarr;
+                  </a>
+                </div>
+              ) : (
+                prompts.map((p) => (
+                  <DropdownMenuItem
+                    key={p.id}
+                    onClick={() => setInput(p.content)}
+                    className="flex flex-col items-start gap-0.5 cursor-pointer"
+                  >
+                    <span className="font-medium text-sm">{p.name}</span>
+                    <span className="text-xs text-zinc-500 line-clamp-2">{p.content}</span>
+                  </DropdownMenuItem>
+                ))
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Generate Image */}
+          <button
+            onClick={() => setShowImageDialog(true)}
+            disabled={disabled || !supportsImageGen}
+            title="Generate image"
+            className="p-2 rounded-lg text-orange-500/60 hover:text-orange-400 hover:bg-orange-500/10 transition-colors disabled:opacity-30"
+          >
+            <ImageIcon className="h-5 w-5" />
+          </button>
+
           {/* War Room */}
           {onWarRoom && (
             <button
               onClick={onWarRoom}
               disabled={disabled}
               title="Switch to War Room"
-              className="p-2 rounded-lg text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-red-500 dark:hover:text-red-400 transition-colors disabled:opacity-30"
+              className="p-2 rounded-lg text-red-500/60 hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-30"
             >
               <Swords className="h-5 w-5" />
             </button>
@@ -607,7 +608,7 @@ export function InputArea({
               onClick={handleCopyThread}
               disabled={disabled}
               title="Copy thread to clipboard"
-              className="p-2 rounded-lg text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-cyan-500 dark:hover:text-cyan-400 transition-colors disabled:opacity-30"
+              className="p-2 rounded-lg text-amber-500/60 hover:text-amber-400 hover:bg-amber-500/10 transition-colors disabled:opacity-30"
             >
               {threadCopied ? (
                 <Check className="h-5 w-5 text-emerald-400" />
@@ -618,7 +619,7 @@ export function InputArea({
           )}
 
           {/* Divider */}
-          <div className="w-px h-6 bg-zinc-300 dark:bg-zinc-700 mx-1" />
+          <div className="w-px h-6 bg-zinc-700/60 mx-1" />
 
           {/* Knowledge Vault */}
           <button
@@ -627,13 +628,13 @@ export function InputArea({
             title="Attach from Knowledge Vault"
             className={`p-2 rounded-lg transition-colors disabled:opacity-30 ${
               selectedVaultIds.length > 0
-                ? "bg-indigo-600/20 text-indigo-400"
-                : "text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-indigo-500 dark:hover:text-indigo-400"
+                ? "bg-amber-500/15 text-amber-400"
+                : "text-amber-500/60 hover:text-amber-400 hover:bg-amber-500/10"
             }`}
           >
             <Database className="h-5 w-5" />
             {selectedVaultIds.length > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-indigo-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
                 {selectedVaultIds.length}
               </span>
             )}
@@ -644,7 +645,7 @@ export function InputArea({
             onClick={() => fileInputRef.current?.click()}
             disabled={disabled}
             title="Attach files"
-            className="p-2 rounded-lg text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-cyan-500 dark:hover:text-cyan-400 transition-colors disabled:opacity-30"
+            className="p-2 rounded-lg text-orange-500/60 hover:text-orange-400 hover:bg-orange-500/10 transition-colors disabled:opacity-30"
           >
             <Paperclip className="h-5 w-5" />
           </button>
@@ -657,7 +658,7 @@ export function InputArea({
             className={`relative p-2 rounded-lg transition-colors disabled:opacity-30 ${
               isVoiceActive
                 ? "bg-red-500/20 text-red-400"
-                : "text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-emerald-500 dark:hover:text-emerald-400"
+                : "text-emerald-500/60 hover:text-emerald-400 hover:bg-emerald-500/10"
             }`}
           >
             <Mic className={`h-5 w-5 ${isVoiceActive ? "animate-pulse" : ""}`} />
