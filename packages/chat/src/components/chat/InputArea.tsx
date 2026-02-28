@@ -502,9 +502,10 @@ export function InputArea({
                       }}
                       disabled={isComparing || columns.slice(0, activeColumnCount).filter(c => c.messages.some(m => m.role === "assistant" && !m.isError)).length < 2}
                       title="Compare responses across all panes"
-                      className="p-3 rounded-xl bg-purple-500 dark:bg-purple-600 text-white hover:bg-purple-400 dark:hover:bg-purple-500 transition-all hover:shadow-[0_0_14px_rgba(168,85,247,0.4)] disabled:opacity-30 disabled:hover:bg-purple-500 dark:disabled:hover:bg-purple-600 disabled:hover:shadow-none"
+                      className="px-5 py-3 rounded-xl bg-amber-800 dark:bg-amber-900 text-amber-100 hover:bg-amber-700 dark:hover:bg-amber-800 transition-all hover:shadow-[0_0_14px_rgba(146,64,14,0.5)] disabled:opacity-30 disabled:hover:bg-amber-800 dark:disabled:hover:bg-amber-900 disabled:hover:shadow-none flex items-center gap-2 font-bold text-sm"
                     >
                       {isComparing ? <Loader2 className="h-5 w-5 animate-spin" /> : <Scale className="h-5 w-5" />}
+                      {isComparing ? "Comparing..." : "Compare"}
                     </button>
                   )}
                 </div>
