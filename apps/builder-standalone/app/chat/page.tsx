@@ -9,6 +9,7 @@ import { useKnowledgeStore, useRoleStore } from "@sarge/core";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { useWarRoomStore } from "@/lib/stores/warRoomStore";
 import { WarRoomDashboard } from "@/components/chat/WarRoomDashboard";
+import { ChatToolbar } from "@/components/chat/ChatToolbar";
 
 export default function ChatPage() {
   const {
@@ -83,11 +84,16 @@ export default function ChatPage() {
 
   return (
     <ErrorBoundary fallbackTitle="Chat Error">
-      <ChatView
-        conversationId={currentConversationId}
-        onMultiChat={() => { if (!parallelEnabled) toggleParallelMode(); }}
-        onWarRoom={() => { if (parallelEnabled) toggleParallelMode(); setWarRoomEnabled(true); }}
-      />
+      <div className="flex flex-col h-full">
+        <ChatToolbar conversationId={currentConversationId} />
+        <div className="flex-1 min-h-0">
+          <ChatView
+            conversationId={currentConversationId}
+            onMultiChat={() => { if (!parallelEnabled) toggleParallelMode(); }}
+            onWarRoom={() => { if (parallelEnabled) toggleParallelMode(); setWarRoomEnabled(true); }}
+          />
+        </div>
+      </div>
     </ErrorBoundary>
   );
 }
