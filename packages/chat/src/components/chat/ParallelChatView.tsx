@@ -355,21 +355,6 @@ export function ParallelChatView({ onSingleChat, onWarRoom }: ParallelChatViewPr
             <Sparkles className="h-4 w-4 text-amber-500" />
             <span className="text-sm font-black tracking-wide text-zinc-200">Multi-Chat</span>
           </div>
-          {/* Single | Multi-Chat Toggle */}
-          <div className="flex items-center rounded-lg bg-zinc-800/80 p-0.5 border border-zinc-700/50">
-            <button
-              onClick={toggleParallelMode}
-              className="px-3 py-1.5 text-xs font-bold rounded-md transition-all text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700/60"
-            >
-              Single
-            </button>
-            <button
-              className="px-3 py-1.5 text-xs font-black rounded-md transition-all flex items-center gap-1.5 bg-orange-600/90 text-white shadow-sm"
-            >
-              <Columns2 className="h-3 w-3" />
-              Multi-Chat
-            </button>
-          </div>
         </div>
 
         {/* Column Count Selector + Actions */}
@@ -383,7 +368,7 @@ export function ParallelChatView({ onSingleChat, onWarRoom }: ParallelChatViewPr
               onClick={() => setColumnCount(2)}
               className={cn(
                 "h-7 w-7 p-0",
-                activeColumnCount === 2 ? "bg-zinc-300 dark:bg-zinc-700 text-zinc-900 dark:text-white" : "text-zinc-500 dark:text-zinc-400"
+                activeColumnCount === 2 ? "bg-orange-600/20 border border-orange-500/40 text-orange-400" : "text-zinc-500 dark:text-zinc-400"
               )}
               title="2-Way (Dual)"
             >
@@ -396,7 +381,7 @@ export function ParallelChatView({ onSingleChat, onWarRoom }: ParallelChatViewPr
               onClick={() => setColumnCount(3)}
               className={cn(
                 "h-7 w-7 p-0",
-                activeColumnCount === 3 ? "bg-zinc-300 dark:bg-zinc-700 text-zinc-900 dark:text-white" : "text-zinc-500 dark:text-zinc-400"
+                activeColumnCount === 3 ? "bg-orange-600/20 border border-orange-500/40 text-orange-400" : "text-zinc-500 dark:text-zinc-400"
               )}
               title="3-Way (Triple)"
             >
@@ -409,7 +394,7 @@ export function ParallelChatView({ onSingleChat, onWarRoom }: ParallelChatViewPr
               onClick={() => setColumnCount(4)}
               className={cn(
                 "h-7 w-7 p-0",
-                activeColumnCount === 4 ? "bg-zinc-300 dark:bg-zinc-700 text-zinc-900 dark:text-white" : "text-zinc-500 dark:text-zinc-400"
+                activeColumnCount === 4 ? "bg-orange-600/20 border border-orange-500/40 text-orange-400" : "text-zinc-500 dark:text-zinc-400"
               )}
               title="4-Way (Quad)"
             >
@@ -658,6 +643,24 @@ export function ParallelChatView({ onSingleChat, onWarRoom }: ParallelChatViewPr
 
           {/* Bottom action bar — centered, Forge themed */}
           <div className="flex items-center justify-center gap-1 mt-2">
+            {/* Single | Multi-Chat Toggle */}
+            <div className="flex items-center rounded-lg bg-zinc-800/80 border border-zinc-700/40 p-0.5 mr-1">
+              <button
+                type="button"
+                onClick={toggleParallelMode}
+                className="px-2.5 py-1 text-[11px] font-bold rounded-md transition-all text-zinc-500 hover:text-zinc-200"
+              >
+                Single
+              </button>
+              <button
+                type="button"
+                className="px-2.5 py-1 text-[11px] font-bold rounded-md transition-all flex items-center gap-1 bg-orange-600 text-white shadow-sm"
+              >
+                <Columns2 className="h-3 w-3" />
+                Multi
+              </button>
+            </div>
+
             {/* Generate Image */}
             <button
               onClick={() => setSharedInput("Generate an image: ")}

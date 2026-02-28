@@ -17,20 +17,12 @@ export async function fetchOllamaModels(): Promise<LocalModel[]> {
 }
 
 export async function fetchLMStudioModels(): Promise<LocalModel[]> {
-  // Use API route to avoid CORS issues
-  console.log('[LM Studio] Fetching models via API route');
   try {
     const res = await fetch('/api/lmstudio/models');
-    console.log('[LM Studio] API response status:', res.status);
-    if (!res.ok) {
-      console.error('[LM Studio] API failed:', res.status, res.statusText);
-      throw new Error("Failed to fetch LM Studio models");
-    }
+    if (!res.ok) return [];
     const data = await res.json();
-    console.log('[LM Studio] API response:', data);
     return data.models ?? [];
-  } catch (error) {
-    console.error('[LM Studio] Fetch error:', error);
-    throw error;
+  } catch {
+    return [];
   }
 }

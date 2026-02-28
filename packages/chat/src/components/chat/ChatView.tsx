@@ -64,31 +64,31 @@ function MultiChatModeToggle() {
   }, [hydrated, hydrate]);
 
   return (
-    <div className="flex items-center rounded-lg bg-zinc-800/50 p-0.5">
+    <div className="flex items-center rounded-lg bg-zinc-800/80 border border-zinc-700/40 p-0.5">
       <button
         type="button"
-        onClick={() => toggleParallelMode()}
+        onClick={() => { if (enabled) toggleParallelMode(); }}
         className={cn(
-          "px-2 py-1 text-[10px] font-medium rounded-md transition-all",
+          "px-2.5 py-1 text-[11px] font-bold rounded-md transition-all",
           !enabled
-            ? "bg-zinc-700 text-white shadow-sm"
-            : "text-zinc-400 hover:text-zinc-300"
+            ? "bg-orange-600 text-white shadow-sm"
+            : "text-zinc-400 hover:text-zinc-200"
         )}
       >
         Single
       </button>
       <button
         type="button"
-        onClick={() => toggleParallelMode()}
+        onClick={() => { if (!enabled) toggleParallelMode(); }}
         className={cn(
-          "px-2 py-1 text-[10px] font-medium rounded-md transition-all flex items-center gap-1",
+          "px-2.5 py-1 text-[11px] font-bold rounded-md transition-all flex items-center gap-1",
           enabled
-            ? "bg-indigo-600 text-white shadow-sm"
-            : "text-zinc-400 hover:text-zinc-300"
+            ? "bg-orange-600 text-white shadow-sm"
+            : "text-zinc-400 hover:text-zinc-200"
         )}
       >
         <Columns2 className="h-3 w-3" />
-        Multi-Chat
+        Multi
       </button>
     </div>
   );
@@ -528,11 +528,9 @@ export function ChatView({ conversationId, onMultiChat, onWarRoom }: ChatViewPro
       <div className="flex items-center justify-between px-4 py-2 border-b border-zinc-800 bg-zinc-900/50">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
-            <MessageSquare className="h-4 w-4 text-zinc-400" />
-            <span className="text-sm font-medium text-zinc-300">Chat</span>
+            <MessageSquare className="h-4 w-4 text-orange-500/70" />
+            <span className="text-sm font-bold text-orange-400">Chat</span>
           </div>
-          {/* Single | Parallel Toggle */}
-          <MultiChatModeToggle />
         </div>
         {/* Thread Guardian + AI Mode pill + Current model indicator */}
         <div className="flex items-center gap-3">

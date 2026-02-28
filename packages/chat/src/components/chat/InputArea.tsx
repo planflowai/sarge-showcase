@@ -9,7 +9,7 @@ interface FileSystemDirectoryReader { readEntries(cb: (entries: FileSystemEntry[
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import TextareaAutosize from "react-textarea-autosize";
-import { Send, ImageIcon, Mic, Paperclip, MoreHorizontal, X, FileIcon, ImageIcon as ImgIcon, BookText, MessageSquare, Shield, ShieldAlert, ShieldCheck, ChevronDown, ClipboardCopy, Check, Database, Download, Sparkles, Swords } from "lucide-react";
+import { Send, ImageIcon, Mic, Paperclip, MoreHorizontal, X, FileIcon, ImageIcon as ImgIcon, BookText, MessageSquare, Shield, ShieldAlert, ShieldCheck, ChevronDown, ClipboardCopy, Check, Database, Download, Sparkles, Swords, Columns2 } from "lucide-react";
 import { usePromptStore } from "@sarge/core";
 import { useProviderStore } from "@sarge/core";
 import { useModelStore } from "@sarge/core";
@@ -33,6 +33,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import type { VoiceState } from "@sarge/core";
+import { useParallelChatStore } from "../../stores/parallelChatStore";
 
 // ─── Attachment types (shared) ───────────────────────────────────────────────
 import { type Attachment, readFileAsAttachment, formatFileSize } from "../../lib/utils/attachments";
@@ -57,11 +58,11 @@ interface InputAreaProps {
   hasMessages?: boolean;
   supportsImageGen?: boolean;
   disabled?: boolean;
-  voiceState: VoiceState;
-  supportsVoice: boolean;
-  onVoiceStart: () => void;
-  onVoiceStop: () => void;
-  onVoiceInterrupt: () => void;
+  voiceState?: VoiceState;
+  supportsVoice?: boolean;
+  onVoiceStart?: () => void;
+  onVoiceStop?: () => void;
+  onVoiceInterrupt?: () => void;
 }
 
 export function InputArea({
@@ -76,11 +77,11 @@ export function InputArea({
   hasMessages,
   supportsImageGen,
   disabled,
-  voiceState,
-  supportsVoice,
-  onVoiceStart,
-  onVoiceStop,
-  onVoiceInterrupt,
+  voiceState = "idle",
+  supportsVoice = false,
+  onVoiceStart = () => {},
+  onVoiceStop = () => {},
+  onVoiceInterrupt = () => {},
 }: InputAreaProps) {
   // Draft persistence - restore input when returning to conversation
   const { getDraft, setDraft, clearDraft, hydrated: draftHydrated, hydrate: hydrateDraft } = useDraftStore();
@@ -163,6 +164,11 @@ export function InputArea({
   useEffect(() => {
     if (!promptHydrated) hydratePrompts();
   }, [promptHydrated, hydratePrompts]);
+
+  const { enabled: parallelEnabled, toggleParallelMode, hydrated: parallelHydrated, hydrate: hydrateParallel } = useParallelChatStore();
+  useEffect(() => {
+    if (!parallelHydrated) hydrateParallel();
+  }, [parallelHydrated, hydrateParallel]);
 
   const addFiles = useCallback(async (files: FileList | File[]) => {
     const fileArray = Array.from(files);
@@ -556,17 +562,32 @@ export function InputArea({
             <ImageIcon className="h-5 w-5" />
           </button>
 
-          {/* Multi-Chat */}
-          {onMultiChat && (
+          {/* Single | Multi-Chat Toggle */}
+          <div className="flex items-center rounded-lg bg-zinc-200/60 dark:bg-zinc-800/80 border border-zinc-300 dark:border-zinc-700/40 p-0.5">
             <button
-              onClick={onMultiChat}
-              disabled={disabled}
-              title="Switch to Multi-Chat"
-              className="p-2 rounded-lg text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors disabled:opacity-30"
+              type="button"
+              onClick={() => { if (parallelEnabled) toggleParallelMode(); }}
+              className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all ${
+                !parallelEnabled
+                  ? "bg-orange-600 text-white shadow-sm"
+                  : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
+              }`}
             >
-              <Sparkles className="h-5 w-5" />
+              Single
             </button>
-          )}
+            <button
+              type="button"
+              onClick={() => { if (!parallelEnabled) toggleParallelMode(); }}
+              className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all flex items-center gap-1 ${
+                parallelEnabled
+                  ? "bg-orange-600 text-white shadow-sm"
+                  : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
+              }`}
+            >
+              <Columns2 className="h-3 w-3" />
+              Multi
+            </button>
+          </div>
 
           {/* War Room */}
           {onWarRoom && (
@@ -650,7 +671,7 @@ export function InputArea({
             onClick={handleSend}
             disabled={(!input.trim() && attachments.length === 0 && selectedVaultIds.length === 0) || disabled}
             title="Send message"
-            className="p-2.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-500 transition-colors disabled:opacity-30 disabled:hover:bg-indigo-600"
+            className="p-2.5 rounded-xl bg-orange-600 text-white hover:bg-orange-500 transition-all hover:shadow-[0_0_14px_rgba(249,115,22,0.4)] disabled:opacity-30 disabled:hover:bg-orange-600 disabled:hover:shadow-none"
           >
             <Send className="h-5 w-5" />
           </button>
