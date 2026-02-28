@@ -18,16 +18,6 @@ import { useWorkspaceStore, recallWorkspace } from "../stores/workspaceStore";
 import { LayoutGrid, X, Plus, Save, Terminal as TerminalIcon, Loader2, FolderOpen } from "lucide-react";
 import { ThreadGuardianIndicator } from "@sarge/chat";
 
-// Clear old builder chat messages on load (one-time cleanup)
-if (typeof window !== 'undefined') {
-  const cleanupKey = 'builder-chat-cleanup-v2';
-  if (!localStorage.getItem(cleanupKey)) {
-    localStorage.removeItem('builder-chat-messages');
-    localStorage.setItem(cleanupKey, 'done');
-    console.log('[BuilderPage] Cleared old builder chat messages');
-  }
-}
-
 /**
  * BuilderPage - Main container for the Builder tab
  *
@@ -39,18 +29,8 @@ if (typeof window !== 'undefined') {
  */
 
 export default function BuilderPage({ deployContent }: { deployContent?: React.ReactNode } = {}) {
-  const [selectedModel, setSelectedModel] = useState<string | null>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('builder-selected-model') || null;
-    }
-    return null;
-  });
-  const [selectedProvider, setSelectedProvider] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('builder-selected-provider') || "deepseek";
-    }
-    return "deepseek";
-  });
+  const [selectedModel, setSelectedModel] = useState<string | null>(null);
+  const [selectedProvider, setSelectedProvider] = useState<string>("deepseek");
   const [webSearch, setWebSearch] = useState(false);
 
   // Artifact panel state - NOW PERSISTED via artifactStore
@@ -70,11 +50,24 @@ export default function BuilderPage({ deployContent }: { deployContent?: React.R
     hydrate: hydrateArtifact,
   } = useArtifactStore();
 
-  // Hydrate artifact store on mount
+  // Hydrate stores + restore localStorage values on mount (avoids SSR mismatch)
   useEffect(() => {
     if (!artifactHydrated) {
       hydrateArtifact();
     }
+    // One-time cleanup of old builder chat messages
+    const cleanupKey = 'builder-chat-cleanup-v2';
+    if (!localStorage.getItem(cleanupKey)) {
+      localStorage.removeItem('builder-chat-messages');
+      localStorage.setItem(cleanupKey, 'done');
+    }
+    // Restore persisted selections
+    const savedModel = localStorage.getItem('builder-selected-model');
+    if (savedModel) setSelectedModel(savedModel);
+    const savedProvider = localStorage.getItem('builder-selected-provider');
+    if (savedProvider) setSelectedProvider(savedProvider);
+    const savedWidth = localStorage.getItem('builder-chat-panel-width');
+    if (savedWidth) setChatPanelWidth(parseInt(savedWidth, 10));
   }, [artifactHydrated, hydrateArtifact]);
 
   // Local state for artifact path setter (wrapper for store)
@@ -84,14 +77,8 @@ export default function BuilderPage({ deployContent }: { deployContent?: React.R
 
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  // Resizable chat panel width (stored in state, persists via localStorage)
-  const [chatPanelWidth, setChatPanelWidth] = useState<number>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('builder-chat-panel-width');
-      return saved ? parseInt(saved, 10) : 480;
-    }
-    return 480;
-  });
+  // Resizable chat panel width (restored from localStorage in useEffect below)
+  const [chatPanelWidth, setChatPanelWidth] = useState<number>(480);
   const isResizing = useRef(false);
 
   // Terminal state
