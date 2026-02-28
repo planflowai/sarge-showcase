@@ -78,7 +78,6 @@ export function ParallelChatView({ onSingleChat, onWarRoom, hideInput }: Paralle
     sendToAll,
     shareMessage,
     shareMessageToAll,
-    compareAnswers,
     clearColumn,
     clearAllColumns,
     getOtherColumns,
@@ -92,7 +91,6 @@ export function ParallelChatView({ onSingleChat, onWarRoom, hideInput }: Paralle
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [showAnchorsPanel, setShowAnchorsPanel] = useState(false);
-  const [isComparing, setIsComparing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropRef = useRef<HTMLDivElement>(null);
   const dragCounter = useRef(0);
@@ -264,16 +262,6 @@ export function ParallelChatView({ onSingleChat, onWarRoom, hideInput }: Paralle
       }
     } catch { /* ignore */ }
   }, [hydrated]);
-
-  const handleCompare = async () => {
-    if (isComparing) return;
-    setIsComparing(true);
-    try {
-      await compareAnswers();
-    } finally {
-      setIsComparing(false);
-    }
-  };
 
   const handleSendToAll = () => {
     if (!sharedInput.trim() && attachments.length === 0) return;

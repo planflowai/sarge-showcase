@@ -429,30 +429,36 @@ export const useParallelChatStore = create<ParallelChatState>()(persist((set, ge
     const { columns, activeColumnCount } = get();
     const activeColumns = columns.slice(0, activeColumnCount);
 
-    // Get the last assistant message from each column
-    const answers = activeColumns.map(col => {
-      const lastAssistantMsg = col.messages
-        .slice()
-        .reverse()
-        .find(m => m.role === "assistant");
+    // Collect the last assistant message from each column that has one
+    const answers = activeColumns
+      .map(col => {
+        const lastAssistantMsg = col.messages
+          .slice()
+          .reverse()
+          .find(m => m.role === "assistant" && !m.isError);
+        return {
+          columnId: col.id,
+          modelName: col.model.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase()),
+          content: lastAssistantMsg?.content || null,
+        };
+      })
+      .filter(a => a.content !== null);
 
-      return {
-        columnId: col.id,
-        modelName: col.model.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase()),
-        content: lastAssistantMsg?.content || "(no answer)",
-      };
+    if (answers.length < 2) return;
+
+    // For each pane, build a prompt with only the OTHER panes' responses
+    const promises = answers.map(current => {
+      const others = answers.filter(a => a.columnId !== current.columnId);
+      const otherParts = others.map(
+        o => `[${o.modelName}]: ${o.content}`
+      ).join("\n\n---\n\n");
+
+      const prompt = `Here are responses from other models:\n\n${otherParts}\n\nCompare these with your own response. What did they get right? What did they miss? What would you improve?`;
+
+      return get().sendToColumn(current.columnId, prompt);
     });
 
-    // Create context message with all answers
-    const contextParts = answers.map(
-      (ans, idx) => `**Model ${idx + 1} (${ans.modelName}):**\n${ans.content}`
-    );
-    const contextContent = `Here are all the answers to consider:\n\n${contextParts.join("\n\n---\n\n")}\n\n---\n\nPlease provide your comment on these responses.`;
-
-    // Send to all columns
-    await Promise.all(
-      activeColumns.map(col => get().sendToColumn(col.id, contextContent))
-    );
+    await Promise.all(promises);
   },
 
   clearColumn: (columnId) => {

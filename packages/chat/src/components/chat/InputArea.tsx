@@ -12,7 +12,7 @@ import TextareaAutosize from "react-textarea-autosize";
 import {
   Send, ImageIcon, Mic, Paperclip, X, FileIcon, ImageIcon as ImgIcon,
   BookText, Shield, ShieldAlert, ShieldCheck, ClipboardCopy, Check,
-  Database, Download, Trash2, Clock, Columns2,
+  Database, Download, Trash2, Clock, Columns2, Scale, Loader2,
 } from "lucide-react";
 import { usePromptStore } from "@sarge/core";
 import { useProviderStore } from "@sarge/core";
@@ -99,6 +99,7 @@ export function InputArea({
   const [saveFeedback, setSaveFeedback] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
   const [threadCopied, setThreadCopied] = useState(false);
+  const [isComparing, setIsComparing] = useState(false);
   const [showExportHint, setShowExportHint] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropRef = useRef<HTMLDivElement>(null);
@@ -119,7 +120,7 @@ export function InputArea({
   const messages = useMessageStore((s) => s.messages);
   const clearMessages = useMessageStore((s) => s.clearMessages);
 
-  const { enabled: parallelEnabled, toggleParallelMode, hydrated: parallelHydrated, hydrate: hydrateParallel } = useParallelChatStore();
+  const { enabled: parallelEnabled, toggleParallelMode, hydrated: parallelHydrated, hydrate: hydrateParallel, compareAnswers, columns, activeColumnCount } = useParallelChatStore();
 
   // Hydration
   useEffect(() => { if (!vaultHydrated) hydrateVault(); }, [vaultHydrated, hydrateVault]);
@@ -483,7 +484,7 @@ export function InputArea({
                     className="w-full resize-none rounded-xl bg-white dark:bg-zinc-900 px-5 py-3 text-sm text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none disabled:opacity-50 border border-zinc-300 dark:border-zinc-800 focus:border-zinc-400 dark:focus:border-zinc-700 transition-colors"
                   />
                 </div>
-                <div className="flex items-center flex-shrink-0">
+                <div className="flex items-center gap-2 flex-shrink-0">
                   <button
                     onClick={handleSend}
                     disabled={(!input.trim() && attachments.length === 0 && selectedVaultIds.length === 0) || disabled}
@@ -492,6 +493,20 @@ export function InputArea({
                   >
                     <Send className="h-5 w-5" />
                   </button>
+                  {parallelEnabled && (
+                    <button
+                      onClick={async () => {
+                        if (isComparing) return;
+                        setIsComparing(true);
+                        try { await compareAnswers(); } finally { setIsComparing(false); }
+                      }}
+                      disabled={isComparing || columns.slice(0, activeColumnCount).filter(c => c.messages.some(m => m.role === "assistant" && !m.isError)).length < 2}
+                      title="Compare responses across all panes"
+                      className="p-3 rounded-xl bg-purple-500 dark:bg-purple-600 text-white hover:bg-purple-400 dark:hover:bg-purple-500 transition-all hover:shadow-[0_0_14px_rgba(168,85,247,0.4)] disabled:opacity-30 disabled:hover:bg-purple-500 dark:disabled:hover:bg-purple-600 disabled:hover:shadow-none"
+                    >
+                      {isComparing ? <Loader2 className="h-5 w-5 animate-spin" /> : <Scale className="h-5 w-5" />}
+                    </button>
+                  )}
                 </div>
               </div>
 
