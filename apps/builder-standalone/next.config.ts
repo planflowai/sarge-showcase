@@ -11,6 +11,11 @@ const nextConfig: NextConfig = {
   devIndicators: false,
   transpilePackages: ["@sarge/core", "@sarge/chat", "@sarge/builder"],
   async rewrites() {
+    // Catch-all proxy to beast for routes not handled locally.
+    // Local routes (in app/api/) take priority over rewrites automatically.
+    // Local: chat, test/stream, deploy, models/scan, status, builder/*,
+    //        thread-guardian, jury-guardian, search/tavily, image
+    // Proxied: diagnostics/*, journal/*, rollcall, health, web-search, etc.
     return [
       {
         source: "/api/:path*",
