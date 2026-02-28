@@ -190,7 +190,7 @@ export function ChatSidebar({ conversationId }: ChatSidebarProps) {
         {/* Cloud providers — 2-col grid */}
         <div>
           <p className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-amber-500/80 text-center">Cloud</p>
-          <div className="grid grid-cols-2 gap-1.5">
+          <div className="flex flex-wrap justify-center gap-1.5">
             {cloudProviders.map((p) => (
               <button
                 key={p.id}

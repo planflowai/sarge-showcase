@@ -373,7 +373,7 @@ export function InputArea({
         </div>
       )}
 
-      <div className="mx-auto max-w-5xl">
+      <div className="mx-auto max-w-7xl">
         {/* Protection Status Badge - Flashes when poison detected/neutralized */}
         {protectionStatus && (
           <div className={`mb-3 flex items-center justify-center gap-2 py-2 px-4 rounded-lg animate-pulse ${
@@ -517,7 +517,7 @@ export function InputArea({
         />
 
         {/* Bottom action bar - toggle far left, icons Forge-colored */}
-        <div className="flex items-center justify-center gap-1 mt-2">
+        <div className="flex items-center justify-center gap-2.5 mt-2">
 
           {/* Single | Multi-Chat Toggle — FAR LEFT */}
           <div className="flex items-center rounded-lg bg-zinc-200/60 dark:bg-zinc-800/80 border border-zinc-300 dark:border-zinc-700/40 p-0.5 mr-1">
