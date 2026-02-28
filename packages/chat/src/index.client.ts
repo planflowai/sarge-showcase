@@ -21,6 +21,9 @@ export { default as ThreadGuardianIndicator } from './components/chat/ThreadGuar
 export { VaultAttachmentModal, getVaultDocumentsForContext } from './components/chat/VaultAttachmentModal';
 export { VoiceButton } from './components/chat/VoiceButton';
 export { VoiceIndicator } from './components/chat/VoiceIndicator';
+export { ProviderBar } from './components/chat/ProviderBar';
+export { ModelPanel } from './components/chat/ModelPanel';
+export { HistoryDrawer } from './components/chat/HistoryDrawer';
 
 // ─── Components — Conversation ──────────────────────────
 export { ConversationList } from './components/conversation/ConversationList';

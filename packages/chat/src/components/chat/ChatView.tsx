@@ -692,11 +692,7 @@ export function ChatView({ conversationId, onMultiChat, onWarRoom, hideInput }: 
             conversationId={conversationId}
             onSend={handleSend}
             onImageGen={handleImageGen}
-            onDebate={openDebate}
-            onDebateThread={handleDebateThread}
             onCopyThread={handleCopyThread}
-            onMultiChat={onMultiChat}
-            onWarRoom={onWarRoom}
             hasMessages={messages.length > 0}
             supportsImageGen={supportsImageGen}
             voiceState={voiceState}

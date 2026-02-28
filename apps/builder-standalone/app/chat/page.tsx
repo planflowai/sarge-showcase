@@ -12,7 +12,6 @@ import { useKnowledgeStore, useRoleStore, useProviderStore } from "@sarge/core";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { useWarRoomStore } from "@/lib/stores/warRoomStore";
 import { WarRoomDashboard } from "@/components/chat/WarRoomDashboard";
-import { ChatSidebar } from "@/components/chat/ChatSidebar";
 
 export default function ChatPage() {
   const {
@@ -33,7 +32,7 @@ export default function ChatPage() {
   const sendToAll = useParallelChatStore((s) => s.sendToAll);
   const parallelColumns = useParallelChatStore((s) => s.columns);
 
-  // War Room / Workbench mode
+  // War Room mode
   const warRoomEnabled = useWarRoomStore((s) => s.enabled);
   const setWarRoomEnabled = useWarRoomStore((s) => s.setEnabled);
 
@@ -41,7 +40,7 @@ export default function ChatPage() {
   const { messages, sending, sendMessage, generateImage } = useMessageStore();
   const { currentProvider, currentModel, summarizeForCloud, sanitizeForCloud } = useProviderStore();
 
-  // Auto-load conversations on mount, auto-create if none exist.
+  // Auto-load conversations on mount
   const initRef = useRef(false);
   useEffect(() => {
     if (initRef.current) return;
@@ -49,7 +48,6 @@ export default function ChatPage() {
     hydrateKnowledge();
     hydrateRoles();
     hydrateParallel();
-    // If Zustand-persist already restored a current conversation, nothing more to do
     const existing = useConversationStore.getState();
     if (existing.currentConversationId && existing.conversations.length > 0) return;
     (async () => {
@@ -78,7 +76,6 @@ export default function ChatPage() {
     } else {
       if (!currentConversationId) return;
       let finalContent = content;
-      // Vault injection
       if (vaultIds?.length) {
         const vaultDocs = useKnowledgeStore.getState().documents;
         const vaultBlocks = vaultDocs
@@ -86,7 +83,6 @@ export default function ChatPage() {
           .map((d) => `--- Knowledge Vault: ${d.name} ---\n${d.content}\n--- End of ${d.name} ---`);
         if (vaultBlocks.length > 0) finalContent = vaultBlocks.join("\n\n") + "\n\n" + finalContent;
       }
-      // File attachments
       if (attachments?.length) {
         const parts = attachments.map((a) =>
           a.isImage
@@ -115,7 +111,7 @@ export default function ChatPage() {
   const inputDisabled = parallelEnabled ? parallelAnySending : sending;
   const supportsImageGen = ["openai", "xai", "google"].includes(currentProvider) && !parallelEnabled;
 
-  // Show War Room dashboard when enabled
+  // War Room
   if (warRoomEnabled) {
     return (
       <ErrorBoundary fallbackTitle="Workbench Error">
@@ -127,38 +123,34 @@ export default function ChatPage() {
   return (
     <ErrorBoundary fallbackTitle="Chat Error">
       <div className="flex flex-col h-full bg-zinc-950">
-        {/* Middle section: sidebar + chat content */}
-        <div className="flex flex-1 min-h-0 overflow-hidden">
-          <ChatSidebar conversationId={currentConversationId ?? undefined} />
-          <main className="flex-1 min-h-0 overflow-hidden">
-            {parallelHydrated && parallelEnabled ? (
-              <ParallelChatView
-                hideInput={true}
-                onSingleChat={() => { if (parallelEnabled) toggleParallelMode(); }}
-                onWarRoom={() => { if (parallelEnabled) toggleParallelMode(); setWarRoomEnabled(true); }}
-              />
-            ) : currentConversationId ? (
-              <ChatView
-                hideInput={true}
-                conversationId={currentConversationId}
-                onMultiChat={() => { if (!parallelEnabled) toggleParallelMode(); }}
-                onWarRoom={() => setWarRoomEnabled(true)}
-              />
-            ) : (
-              <div className="flex h-full items-center justify-center">
-                <p className="text-zinc-500 text-lg">Select or create a conversation</p>
-              </div>
-            )}
-          </main>
-        </div>
+        {/* Chat area — full width, no sidebar */}
+        <main className="flex-1 min-h-0 overflow-hidden">
+          {parallelHydrated && parallelEnabled ? (
+            <ParallelChatView
+              hideInput={true}
+              onSingleChat={() => { if (parallelEnabled) toggleParallelMode(); }}
+              onWarRoom={() => { if (parallelEnabled) toggleParallelMode(); setWarRoomEnabled(true); }}
+            />
+          ) : currentConversationId ? (
+            <ChatView
+              hideInput={true}
+              conversationId={currentConversationId}
+              onMultiChat={() => { if (!parallelEnabled) toggleParallelMode(); }}
+              onWarRoom={() => setWarRoomEnabled(true)}
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center">
+              <p className="text-zinc-500 text-lg">Select or create a conversation</p>
+            </div>
+          )}
+        </main>
 
-        {/* Unified bottom bar — full viewport width, never moves */}
+        {/* Bottom strip — full viewport width, persistent */}
         <div className="w-full flex-shrink-0 bg-zinc-950">
           <InputArea
             conversationId={currentConversationId ?? ""}
             onSend={handleSend}
             onImageGen={handleImageGen}
-            onWarRoom={() => setWarRoomEnabled(true)}
             hasMessages={hasMessages}
             disabled={inputDisabled}
             supportsImageGen={supportsImageGen}
