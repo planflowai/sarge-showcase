@@ -20,6 +20,16 @@ export const providers: ProviderConfig[] = [
         isEnabled: true,
       },
       {
+        id: "claude-sonnet-4-6",
+        name: "Claude Sonnet 4.6",
+        provider: "anthropic",
+        maxTokens: 8192,
+        temperature: 0.7,
+        topP: 1,
+        contextWindow: 200000,
+        isEnabled: true,
+      },
+      {
         id: "claude-sonnet-4-5-20250929",
         name: "Claude Sonnet 4.5",
         provider: "anthropic",
