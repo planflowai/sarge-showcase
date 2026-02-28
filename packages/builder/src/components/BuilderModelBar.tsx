@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { Zap, Globe } from "lucide-react";
-import { useModelStore, useAIModeStore, fetchOllamaModels, providers, groupOllamaModels, cn } from "@sarge/core";
+import { useModelStore, useAIModeStore, fetchOllamaModels, fetchLMStudioModels, providers, groupOllamaModels, cn } from "@sarge/core";
 import type { LocalModel } from "@sarge/core";
 import Link from "next/link";
 
@@ -40,45 +40,53 @@ export default function BuilderModelBar({
     if (builderModels.length > 0) onModelSelect(builderModels[0].id, selectedProvider);
   }, [hydrated, selectedProvider, selectedModel, getEffectiveModels, isBuilderModel, onModelSelect]);
 
-  // Fetch Ollama models when ollama is selected
+  // Fetch local models when ollama or lmstudio is selected
   useEffect(() => {
-    if (selectedProvider !== "ollama") return;
+    if (selectedProvider !== "ollama" && selectedProvider !== "lmstudio") return;
     setOllamaLoading(true);
     setOllamaError(null);
-    fetchOllamaModels()
+    const fetchFn = selectedProvider === "lmstudio" ? fetchLMStudioModels : fetchOllamaModels;
+    fetchFn()
       .then((models) => {
         setOllamaModels(models);
         if (!selectedModel && models.length > 0) {
-          const builderModels = models.filter((m) => isBuilderModel(m.id, "ollama"));
-          if (builderModels.length > 0) onModelSelect(builderModels[0].id, "ollama");
+          // For local models, show all without builder flag filtering
+          onModelSelect(models[0].id, selectedProvider);
         }
       })
       .catch(() => {
         setOllamaModels([]);
-        setOllamaError("Ollama not running");
+        setOllamaError(selectedProvider === "lmstudio" ? "LM Studio not running" : "Ollama not running");
       })
       .finally(() => setOllamaLoading(false));
   }, [selectedProvider, isBuilderModel, selectedModel, onModelSelect]);
 
   // Provider lists
   const cloudProviderIds = new Set(["anthropic", "openai", "google", "xai", "deepseek"]);
-  const allProviders = providers.filter((p) => cloudProviderIds.has(p.id) || p.id === "ollama");
+  const localProviderIds = new Set(["ollama", "lmstudio"]);
+  const allProviders = providers.filter((p) => cloudProviderIds.has(p.id) || localProviderIds.has(p.id));
   const cloudProviders = allProviders.filter((p) => p.type === "cloud");
   const localProviders = allProviders.filter((p) => p.type === "local");
 
   // Models for current provider
+  const isLocalProvider = selectedProvider === "ollama" || selectedProvider === "lmstudio";
   const currentProviderModels = useMemo(() => {
     if (!hydrated) return [];
-    if (selectedProvider === "ollama") {
-      return ollamaModels.filter((m) => isBuilderModel(m.id, "ollama"));
+    if (isLocalProvider) {
+      // Show all local models — no builder flag filter for local
+      return ollamaModels;
     }
     return getEffectiveModels(selectedProvider).filter((m) => isBuilderModel(m.id, selectedProvider));
-  }, [hydrated, selectedProvider, ollamaModels, isBuilderModel, getEffectiveModels]);
+  }, [hydrated, selectedProvider, isLocalProvider, ollamaModels, isBuilderModel, getEffectiveModels]);
 
   const handleProviderSelect = (providerId: string) => {
-    if (providerId === "ollama") {
-      const bm = ollamaModels.filter((m) => isBuilderModel(m.id));
-      onModelSelect(bm.length > 0 ? bm[0].id : "", providerId);
+    if (providerId === "ollama" || providerId === "lmstudio") {
+      // For local providers, select first available model (no builder flag filter)
+      if (ollamaModels.length > 0) {
+        onModelSelect(ollamaModels[0].id, providerId);
+      } else {
+        onModelSelect("", providerId);
+      }
     } else {
       const bm = getEffectiveModels(providerId).filter((m) => isBuilderModel(m.id));
       if (bm.length > 0) onModelSelect(bm[0].id, providerId);
@@ -115,7 +123,7 @@ export default function BuilderModelBar({
 
       {/* Model dropdown */}
       <div className="w-40 min-w-0">
-        {selectedProvider === "ollama" ? (
+        {isLocalProvider ? (
           ollamaLoading ? (
             <span className="text-[10px] text-zinc-500">Loading…</span>
           ) : ollamaError ? (

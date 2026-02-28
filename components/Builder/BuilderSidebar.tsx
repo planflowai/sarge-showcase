@@ -16,7 +16,7 @@ import AIHelpersSection from "./AIHelpersSection";
 import RouterStatus from "./RouterStatus";
 import AICapabilitiesPanel from "./AICapabilitiesPanel";
 import DependencyGraph from "./DependencyGraph";
-import { fetchOllamaModels, type LocalModel } from "@/lib/providers/localModels";
+import { fetchOllamaModels, fetchLMStudioModels, type LocalModel } from "@/lib/providers/localModels";
 import { providers, getCloudProviders, getLocalProviders } from "@/lib/providers";
 import { groupOllamaModels } from "@/lib/ollamaModelGroups";
 import Link from "next/link";
@@ -124,47 +124,42 @@ export default function BuilderSidebar({ selectedModel, selectedProvider, onMode
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const isLocalProvider = selectedProvider === "ollama" || selectedProvider === "lmstudio";
+
   // Auto-select model for cloud providers (like DeepSeek) on initial load
   useEffect(() => {
-    if (!hydrated || selectedProvider === "ollama" || selectedModel) return;
+    if (!hydrated || isLocalProvider || selectedModel) return;
 
     const allModels = getEffectiveModels(selectedProvider);
-    // Pass provider for accurate cloud model auto-tagging
     const builderModels = allModels.filter(m => isBuilderModel(m.id, selectedProvider));
     if (builderModels.length > 0) {
       onModelSelect(builderModels[0].id, selectedProvider);
     }
-  }, [hydrated, selectedProvider, selectedModel, getEffectiveModels, isBuilderModel, onModelSelect]);
+  }, [hydrated, selectedProvider, selectedModel, isLocalProvider, getEffectiveModels, isBuilderModel, onModelSelect]);
 
-  // Fetch Ollama models when ollama is selected
+  // Fetch local models when ollama or lmstudio is selected
   useEffect(() => {
-    if (selectedProvider !== "ollama") {
-      return;
-    }
+    if (!isLocalProvider) return;
 
     setOllamaLoading(true);
     setOllamaError(null);
 
-    fetchOllamaModels()
+    const fetchFn = selectedProvider === "lmstudio" ? fetchLMStudioModels : fetchOllamaModels;
+    fetchFn()
       .then((models) => {
         setOllamaModels(models);
-        // Auto-select first builder model if none selected
         if (!selectedModel && models.length > 0) {
-          // Pass "ollama" provider for local model pattern matching
-          const builderModels = models.filter(m => isBuilderModel(m.id, "ollama"));
-          if (builderModels.length > 0) {
-            onModelSelect(builderModels[0].id, "ollama");
-          }
+          onModelSelect(models[0].id, selectedProvider);
         }
       })
       .catch(() => {
         setOllamaModels([]);
-        setOllamaError("Ollama not running");
+        setOllamaError(selectedProvider === "lmstudio" ? "LM Studio not running" : "Ollama not running");
       })
       .finally(() => {
         setOllamaLoading(false);
       });
-  }, [selectedProvider, isBuilderModel, selectedModel, onModelSelect]);
+  }, [selectedProvider, isLocalProvider, selectedModel, onModelSelect]);
 
   // Get providers that have builder models
   // Always show ALL cloud providers - they all have models auto-tagged as builders
@@ -173,32 +168,28 @@ export default function BuilderSidebar({ selectedModel, selectedProvider, onMode
 
     // All cloud providers should always be available (per CLAUDE.md Phase 5A)
     // Their models are auto-tagged as builders
-    const cloudProviderIds = new Set(['anthropic', 'openai', 'google', 'xai', 'deepseek']);
+    const allowedProviderIds = new Set(['anthropic', 'openai', 'google', 'xai', 'deepseek', 'ollama', 'lmstudio']);
 
-    // Also include ollama for local models
-    cloudProviderIds.add("ollama");
-
-    return providers.filter(p => cloudProviderIds.has(p.id));
+    return providers.filter(p => allowedProviderIds.has(p.id));
   }, [hydrated]);
 
   // Get cloud and local providers separately
   const cloudProviders = providersWithBuilderModels.filter(p => p.type === "cloud");
   const localProviders = providersWithBuilderModels.filter(p => p.type === "local");
 
-  // Get models for current provider (only builder-tagged ones)
+  // Get models for current provider
   const currentProviderModels = useMemo(() => {
     if (!hydrated) return [];
 
-    if (selectedProvider === "ollama") {
-      // Filter ollama models to only builder-tagged ones (local patterns)
-      return ollamaModels.filter(m => isBuilderModel(m.id, "ollama"));
+    if (isLocalProvider) {
+      // Show all local models — no builder flag filter
+      return ollamaModels;
     }
 
     // For cloud providers, get effective models and filter to builder only
-    // Pass provider so ALL cloud models are auto-tagged
     const allModels = getEffectiveModels(selectedProvider);
     return allModels.filter(m => isBuilderModel(m.id, selectedProvider));
-  }, [hydrated, selectedProvider, ollamaModels, isBuilderModel, getEffectiveModels]);
+  }, [hydrated, selectedProvider, isLocalProvider, ollamaModels, isBuilderModel, getEffectiveModels]);
 
   // Get current provider config
   const activeProvider = providers.find(p => p.id === selectedProvider);
@@ -272,12 +263,10 @@ export default function BuilderSidebar({ selectedModel, selectedProvider, onMode
 
   // Handle provider selection
   const handleProviderSelect = useCallback((providerId: string) => {
-    // When switching providers, select the first builder model for that provider
-    if (providerId === "ollama") {
-      // Wait for ollama models to load
-      const builderModels = ollamaModels.filter(m => isBuilderModel(m.id));
-      if (builderModels.length > 0) {
-        onModelSelect(builderModels[0].id, providerId);
+    if (providerId === "ollama" || providerId === "lmstudio") {
+      // For local providers, select first available model (no builder flag filter)
+      if (ollamaModels.length > 0) {
+        onModelSelect(ollamaModels[0].id, providerId);
       } else {
         onModelSelect("", providerId);
       }
@@ -441,7 +430,7 @@ export default function BuilderSidebar({ selectedModel, selectedProvider, onMode
 
           {/* Model Dropdown - fixed height to prevent sidebar jiggling */}
           <div className="h-[28px] flex items-center">
-            {selectedProvider === "ollama" ? (
+            {isLocalProvider ? (
               ollamaLoading ? (
                 <div className="text-[10px] text-zinc-500">Loading...</div>
               ) : ollamaError ? (

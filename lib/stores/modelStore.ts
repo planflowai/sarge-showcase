@@ -67,16 +67,17 @@ export const useModelStore = create<ModelState>((set, get) => ({
   builderFlags: {},
 
   hydrate: () => {
-    // Auto-tag all cloud models as builders on first hydrate
+    // Auto-tag all cloud models as builders — always ensure new models are tagged
     const state = get();
-    if (Object.keys(state.builderFlags).length === 0) {
-      const newFlags: Record<string, boolean> = {};
-      // Tag all non-ollama models as builders (cloud providers)
-      state.models.forEach(m => {
-        if (m.provider !== 'ollama') {
-          newFlags[m.id] = true;
-        }
-      });
+    const newFlags: Record<string, boolean> = { ...state.builderFlags };
+    let changed = false;
+    state.models.forEach(m => {
+      if (m.provider !== 'ollama' && m.provider !== 'lmstudio' && newFlags[m.id] === undefined) {
+        newFlags[m.id] = true;
+        changed = true;
+      }
+    });
+    if (changed || Object.keys(state.builderFlags).length === 0) {
       set({ builderFlags: newFlags });
     }
 

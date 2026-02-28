@@ -236,7 +236,38 @@ export async function POST(request: NextRequest) {
       }
       return await streamDeepSeek(model, hasImages ? messagesWithNote : messages);
     }
-    return NextResponse.json({ error: 'Unknown model provider' }, { status: 400 });
+    // Fallback: use the `provider` field if model name pattern didn't match
+    if (provider === 'anthropic') {
+      if (!process.env.ANTHROPIC_API_KEY && !process.env.CLAUDE_API_KEY) {
+        return NextResponse.json({ error: 'Anthropic API key not configured.' }, { status: 500 });
+      }
+      return await streamAnthropic(model, prompt, enrichedSystemPrompt, hasImages ? images : undefined);
+    }
+    if (provider === 'openai') {
+      if (!process.env.OPENAI_API_KEY) {
+        return NextResponse.json({ error: 'OpenAI API key not configured.' }, { status: 500 });
+      }
+      return await streamOpenAI(model, messages, hasImages ? images : undefined);
+    }
+    if (provider === 'google') {
+      if (!process.env.GOOGLE_API_KEY) {
+        return NextResponse.json({ error: 'Google API key not configured.' }, { status: 500 });
+      }
+      return await streamGemini(model, prompt, enrichedSystemPrompt, hasImages ? images : undefined);
+    }
+    if (provider === 'xai') {
+      if (!process.env.XAI_API_KEY) {
+        return NextResponse.json({ error: 'xAI API key not configured.' }, { status: 500 });
+      }
+      return await streamXAI(model, hasImages ? messagesWithNote : messages);
+    }
+    if (provider === 'deepseek') {
+      if (!process.env.DEEPSEEK_API_KEY) {
+        return NextResponse.json({ error: 'DeepSeek API key not configured.' }, { status: 500 });
+      }
+      return await streamDeepSeek(model, hasImages ? messagesWithNote : messages);
+    }
+    return NextResponse.json({ error: `Unknown model provider: model="${model}", provider="${provider}"` }, { status: 400 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
