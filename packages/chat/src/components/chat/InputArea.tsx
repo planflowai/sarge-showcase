@@ -372,6 +372,16 @@ export function InputArea({
 
   return (
     <>
+      {/* Model panel — normal flow, pushes chat area up when open */}
+      {modelPanelProvider && (
+        <ModelPanel
+          provider={modelPanelProvider}
+          currentModel={currentModel}
+          onSelectModel={handleModelSelect}
+          onClose={() => setModelPanelProvider(null)}
+        />
+      )}
+
       <div
         ref={dropRef}
         className="relative bg-zinc-950 px-8 pt-3 pb-4"
@@ -388,16 +398,6 @@ export function InputArea({
               <p className="mt-2 text-sm font-bold text-orange-300">Drop files to attach</p>
             </div>
           </div>
-        )}
-
-        {/* Model panel — slides up from bottom strip */}
-        {modelPanelProvider && (
-          <ModelPanel
-            provider={modelPanelProvider}
-            currentModel={currentModel}
-            onSelectModel={handleModelSelect}
-            onClose={() => setModelPanelProvider(null)}
-          />
         )}
 
         <div className="mx-auto w-full max-w-[1680px]">
@@ -449,37 +449,90 @@ export function InputArea({
             onProviderClick={handleProviderClick}
           />
 
-          {/* Row 3: Input row — [Toggle] [Textarea 60%] [Icons] [Send] */}
-          <div className="flex items-center gap-4 mt-2">
-            {/* Single/Multi toggle */}
-            <div className="flex items-center rounded-lg bg-zinc-800/80 border border-zinc-700/40 p-0.5 flex-shrink-0">
-              <button
-                type="button"
-                onClick={() => { if (parallelEnabled) toggleParallelMode(); }}
-                className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all ${
-                  !parallelEnabled
-                    ? "bg-orange-600 text-white shadow-sm"
-                    : "text-zinc-400 hover:text-zinc-200"
-                }`}
-              >
-                Single
-              </button>
-              <button
-                type="button"
-                onClick={() => { if (!parallelEnabled) toggleParallelMode(); }}
-                className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all flex items-center gap-1 ${
-                  parallelEnabled
-                    ? "bg-orange-600 text-white shadow-sm"
-                    : "text-zinc-400 hover:text-zinc-200"
-                }`}
-              >
-                <Columns2 className="h-3 w-3" />
-                Multi
-              </button>
+          {/* Row 2: Input row — [Left column: toggle + icons] [Textarea] [Send] */}
+          <div className="flex items-stretch gap-3 mt-2">
+            {/* Left column — toggle on top, icons below */}
+            <div className="flex flex-col gap-2 flex-shrink-0 items-center">
+              {/* Single/Multi toggle */}
+              <div className="flex items-center rounded-lg bg-zinc-800/80 border border-zinc-700/40 p-0.5">
+                <button
+                  type="button"
+                  onClick={() => { if (parallelEnabled) toggleParallelMode(); }}
+                  className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all ${
+                    !parallelEnabled
+                      ? "bg-orange-600 text-white shadow-sm"
+                      : "text-zinc-400 hover:text-zinc-200"
+                  }`}
+                >
+                  Single
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { if (!parallelEnabled) toggleParallelMode(); }}
+                  className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all flex items-center gap-1 ${
+                    parallelEnabled
+                      ? "bg-orange-600 text-white shadow-sm"
+                      : "text-zinc-400 hover:text-zinc-200"
+                  }`}
+                >
+                  <Columns2 className="h-3 w-3" />
+                  Multi
+                </button>
+              </div>
+
+              {/* Icon grid — compact 2-column */}
+              <div className="grid grid-cols-5 gap-0.5">
+                <button onClick={() => setShowHistory(true)} title="History" className="p-1.5 rounded-lg text-orange-500/60 hover:text-orange-400 hover:bg-orange-500/10 transition-colors">
+                  <Clock className="h-4 w-4" />
+                </button>
+                <button onClick={handleSaveChat} disabled={!hasVisibleMessages} title="Save chat" className="p-1.5 rounded-lg text-orange-500/60 hover:text-orange-400 hover:bg-orange-500/10 transition-colors disabled:opacity-30">
+                  {saveFeedback ? <Check className="h-4 w-4 text-emerald-400" /> : <Download className="h-4 w-4" />}
+                </button>
+                <button onClick={handleClearChat} disabled={!hasVisibleMessages} title={confirmClear ? "Confirm clear" : "Clear"} className={`p-1.5 rounded-lg transition-colors disabled:opacity-30 ${confirmClear ? "text-red-400 bg-red-500/15 animate-pulse" : "text-orange-500/60 hover:text-red-400 hover:bg-red-500/10"}`}>
+                  <Trash2 className="h-4 w-4" />
+                </button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button disabled={disabled} title="Prompts" className="p-1.5 rounded-lg text-amber-500/60 hover:text-amber-400 hover:bg-amber-500/10 transition-colors disabled:opacity-30">
+                      <BookText className="h-4 w-4" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-72 max-h-80 overflow-y-auto bg-zinc-900 border-zinc-700">
+                    {prompts.length === 0 ? (
+                      <div className="px-3 py-4 text-center text-sm text-zinc-500">
+                        <p>No saved prompts</p>
+                        <a href="/settings" className="mt-1 inline-block text-xs text-orange-400 hover:underline">Create in Settings &rarr;</a>
+                      </div>
+                    ) : (
+                      prompts.map((p) => (
+                        <DropdownMenuItem key={p.id} onClick={() => setInput(p.content)} className="flex flex-col items-start gap-0.5 cursor-pointer">
+                          <span className="font-medium text-sm">{p.name}</span>
+                          <span className="text-xs text-zinc-500 line-clamp-2">{p.content}</span>
+                        </DropdownMenuItem>
+                      ))
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <button onClick={() => setShowImageDialog(true)} disabled={disabled || !supportsImageGen} title="Generate image" className="p-1.5 rounded-lg text-orange-500/60 hover:text-orange-400 hover:bg-orange-500/10 transition-colors disabled:opacity-30">
+                  <ImageIcon className="h-4 w-4" />
+                </button>
+                <button onClick={handleCopyThread} disabled={disabled || !hasVisibleMessages} title="Copy thread" className="p-1.5 rounded-lg text-amber-500/60 hover:text-amber-400 hover:bg-amber-500/10 transition-colors disabled:opacity-30">
+                  {threadCopied ? <Check className="h-4 w-4 text-emerald-400" /> : <ClipboardCopy className="h-4 w-4" />}
+                </button>
+                <button onClick={() => setShowVaultModal(true)} disabled={disabled} title="Knowledge Vault" className={`relative p-1.5 rounded-lg transition-colors disabled:opacity-30 ${selectedVaultIds.length > 0 ? "bg-amber-500/15 text-amber-400" : "text-amber-500/60 hover:text-amber-400 hover:bg-amber-500/10"}`}>
+                  <Database className="h-4 w-4" />
+                </button>
+                <button onClick={() => fileInputRef.current?.click()} disabled={disabled} title="Attach files" className="p-1.5 rounded-lg text-orange-500/60 hover:text-orange-400 hover:bg-orange-500/10 transition-colors disabled:opacity-30">
+                  <Paperclip className="h-4 w-4" />
+                </button>
+                <button onClick={handleVoiceClick} disabled={disabled || !supportsVoice} title={supportsVoice ? (isVoiceActive ? "Stop" : "Voice") : "Voice N/A"} className={`relative p-1.5 rounded-lg transition-colors disabled:opacity-30 ${isVoiceActive ? "bg-red-500/20 text-red-400" : "text-emerald-500/60 hover:text-emerald-400 hover:bg-emerald-500/10"}`}>
+                  <Mic className={`h-4 w-4 ${isVoiceActive ? "animate-pulse" : ""}`} />
+                </button>
+              </div>
             </div>
 
-            {/* Text input — 60% width */}
-            <div className="flex-[0_1_60%] min-w-0">
+            {/* Text input — takes remaining space, 3-4 lines tall */}
+            <div className="flex-1 min-w-0">
               <TextareaAutosize
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
@@ -490,151 +543,20 @@ export function InputArea({
                     ? "Add a message about your files..."
                     : "Type a message... (Enter to send, Shift+Enter for new line)"
                 }
-                minRows={1}
-                maxRows={6}
+                minRows={3}
+                maxRows={8}
                 disabled={disabled}
                 className="w-full resize-none rounded-xl bg-zinc-900 px-5 py-3 text-sm text-zinc-200 placeholder:text-zinc-500 focus:outline-none disabled:opacity-50 border border-zinc-800 focus:border-zinc-700 transition-colors"
               />
             </div>
 
-            {/* Icon bar — spread out */}
-            <div className="flex items-center gap-3 flex-shrink-0">
-              {/* History */}
-              <button
-                onClick={() => setShowHistory(true)}
-                title="Conversation history"
-                className="p-2 rounded-lg text-orange-500/60 hover:text-orange-400 hover:bg-orange-500/10 transition-colors"
-              >
-                <Clock className="h-5 w-5" />
-              </button>
-
-              {/* Save Chat */}
-              <button
-                onClick={handleSaveChat}
-                disabled={!hasVisibleMessages}
-                title="Save chat as markdown"
-                className="p-2 rounded-lg text-orange-500/60 hover:text-orange-400 hover:bg-orange-500/10 transition-colors disabled:opacity-30"
-              >
-                {saveFeedback ? <Check className="h-5 w-5 text-emerald-400" /> : <Download className="h-5 w-5" />}
-              </button>
-
-              {/* Clear Chat */}
-              <button
-                onClick={handleClearChat}
-                disabled={!hasVisibleMessages}
-                title={confirmClear ? "Click again to confirm" : "Clear chat"}
-                className={`p-2 rounded-lg transition-colors disabled:opacity-30 ${
-                  confirmClear
-                    ? "text-red-400 bg-red-500/15 animate-pulse"
-                    : "text-orange-500/60 hover:text-red-400 hover:bg-red-500/10"
-                }`}
-              >
-                <Trash2 className="h-5 w-5" />
-              </button>
-
-              {/* Divider */}
-              <div className="w-px h-6 bg-zinc-700/40" />
-
-              {/* Saved Prompts */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    disabled={disabled}
-                    title="Load saved prompt"
-                    className="p-2 rounded-lg text-amber-500/60 hover:text-amber-400 hover:bg-amber-500/10 transition-colors disabled:opacity-30"
-                  >
-                    <BookText className="h-5 w-5" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="center" className="w-72 max-h-80 overflow-y-auto bg-zinc-900 border-zinc-700">
-                  {prompts.length === 0 ? (
-                    <div className="px-3 py-4 text-center text-sm text-zinc-500">
-                      <p>No saved prompts</p>
-                      <a href="/settings" className="mt-1 inline-block text-xs text-orange-400 hover:underline">Create in Settings &rarr;</a>
-                    </div>
-                  ) : (
-                    prompts.map((p) => (
-                      <DropdownMenuItem key={p.id} onClick={() => setInput(p.content)} className="flex flex-col items-start gap-0.5 cursor-pointer">
-                        <span className="font-medium text-sm">{p.name}</span>
-                        <span className="text-xs text-zinc-500 line-clamp-2">{p.content}</span>
-                      </DropdownMenuItem>
-                    ))
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              {/* Generate Image */}
-              <button
-                onClick={() => setShowImageDialog(true)}
-                disabled={disabled || !supportsImageGen}
-                title="Generate image"
-                className="p-2 rounded-lg text-orange-500/60 hover:text-orange-400 hover:bg-orange-500/10 transition-colors disabled:opacity-30"
-              >
-                <ImageIcon className="h-5 w-5" />
-              </button>
-
-              {/* Export / Copy Thread */}
-              {hasVisibleMessages && (
-                <button
-                  onClick={handleCopyThread}
-                  disabled={disabled}
-                  title="Copy thread to clipboard"
-                  className="p-2 rounded-lg text-amber-500/60 hover:text-amber-400 hover:bg-amber-500/10 transition-colors disabled:opacity-30"
-                >
-                  {threadCopied ? <Check className="h-5 w-5 text-emerald-400" /> : <ClipboardCopy className="h-5 w-5" />}
-                </button>
-              )}
-
-              {/* Knowledge Vault */}
-              <button
-                onClick={() => setShowVaultModal(true)}
-                disabled={disabled}
-                title="Attach from Knowledge Vault"
-                className={`relative p-2 rounded-lg transition-colors disabled:opacity-30 ${
-                  selectedVaultIds.length > 0
-                    ? "bg-amber-500/15 text-amber-400"
-                    : "text-amber-500/60 hover:text-amber-400 hover:bg-amber-500/10"
-                }`}
-              >
-                <Database className="h-5 w-5" />
-                {selectedVaultIds.length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                    {selectedVaultIds.length}
-                  </span>
-                )}
-              </button>
-
-              {/* Attach */}
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={disabled}
-                title="Attach files"
-                className="p-2 rounded-lg text-orange-500/60 hover:text-orange-400 hover:bg-orange-500/10 transition-colors disabled:opacity-30"
-              >
-                <Paperclip className="h-5 w-5" />
-              </button>
-
-              {/* Microphone */}
-              <button
-                onClick={handleVoiceClick}
-                disabled={disabled || !supportsVoice}
-                title={supportsVoice ? (isVoiceActive ? "Stop recording" : "Start voice input") : "Voice not supported"}
-                className={`relative p-2 rounded-lg transition-colors disabled:opacity-30 ${
-                  isVoiceActive
-                    ? "bg-red-500/20 text-red-400"
-                    : "text-emerald-500/60 hover:text-emerald-400 hover:bg-emerald-500/10"
-                }`}
-              >
-                <Mic className={`h-5 w-5 ${isVoiceActive ? "animate-pulse" : ""}`} />
-                {isVoiceActive && <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-red-500 rounded-full animate-ping" />}
-              </button>
-
-              {/* Send */}
+            {/* Send button — right side, vertically centered */}
+            <div className="flex items-center flex-shrink-0">
               <button
                 onClick={handleSend}
                 disabled={(!input.trim() && attachments.length === 0 && selectedVaultIds.length === 0) || disabled}
                 title="Send message"
-                className="p-2.5 rounded-xl bg-orange-600 text-white hover:bg-orange-500 transition-all hover:shadow-[0_0_14px_rgba(249,115,22,0.4)] disabled:opacity-30 disabled:hover:bg-orange-600 disabled:hover:shadow-none"
+                className="p-3 rounded-xl bg-orange-600 text-white hover:bg-orange-500 transition-all hover:shadow-[0_0_14px_rgba(249,115,22,0.4)] disabled:opacity-30 disabled:hover:bg-orange-600 disabled:hover:shadow-none"
               >
                 <Send className="h-5 w-5" />
               </button>
