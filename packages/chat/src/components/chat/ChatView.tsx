@@ -525,13 +525,7 @@ export function ChatView({ conversationId, onMultiChat, onWarRoom }: ChatViewPro
   return (
     <div className="flex h-full flex-col overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-zinc-800 bg-zinc-900/50">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <MessageSquare className="h-4 w-4 text-orange-500/70" />
-            <span className="text-sm font-bold text-orange-400">Chat</span>
-          </div>
-        </div>
+      <div className="flex items-center justify-end px-4 py-2 border-b border-zinc-800 bg-zinc-900/50">
         {/* Thread Guardian + AI Mode pill + Current model indicator */}
         <div className="flex items-center gap-3">
           {/* Thread Guardian Indicator */}

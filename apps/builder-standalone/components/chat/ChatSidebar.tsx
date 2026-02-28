@@ -170,7 +170,7 @@ export function ChatSidebar({ conversationId }: ChatSidebarProps) {
     <aside className="flex-shrink-0 w-[300px] flex flex-col border-r border-zinc-800 bg-zinc-950 overflow-hidden">
 
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800/80 flex-shrink-0 bg-zinc-900/60">
+      <div className="relative flex items-center justify-center px-4 py-3 border-b border-zinc-800/80 flex-shrink-0 bg-zinc-900/60">
         <div className="flex items-center gap-2">
           <Flame className="h-4 w-4 text-orange-500 drop-shadow-[0_0_6px_rgba(249,115,22,0.6)]" />
           <span className="text-sm font-black uppercase tracking-widest text-zinc-200">Chat</span>
@@ -178,7 +178,7 @@ export function ChatSidebar({ conversationId }: ChatSidebarProps) {
         <button
           onClick={() => setCollapsed(true)}
           title="Collapse sidebar"
-          className="p-1.5 rounded-lg text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+          className="absolute right-2 p-1.5 rounded-lg text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
@@ -221,7 +221,7 @@ export function ChatSidebar({ conversationId }: ChatSidebarProps) {
         {/* Local providers */}
         <div>
           <p className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-amber-500/80 text-center">Local</p>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1.5 justify-center">
             {localProviders.map((p) => (
               <button
                 key={p.id}
@@ -317,49 +317,51 @@ export function ChatSidebar({ conversationId }: ChatSidebarProps) {
       </div>
 
       {/* Cloud Privacy */}
-      <div className="flex-shrink-0 px-4 py-3 border-b border-zinc-800/40 space-y-2.5">
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500/80">Cloud Privacy</p>
-        <label className="flex items-center gap-2.5 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={summarizeForCloud}
-            onChange={(e) => setSummarizeForCloud(e.target.checked)}
-            className="h-3.5 w-3.5 rounded border-zinc-600 accent-orange-500"
-          />
-          <span className="text-xs text-zinc-400 hover:text-zinc-300">Summarize threads for cloud</span>
-        </label>
-        <label className="flex items-center gap-2.5 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={sanitizeForCloud}
-            onChange={(e) => setSanitizeForCloud(e.target.checked)}
-            className="h-3.5 w-3.5 rounded border-zinc-600 accent-orange-500"
-          />
-          <span className="text-xs text-zinc-400 hover:text-zinc-300">Sanitize queries for cloud</span>
-        </label>
+      <div className="flex-shrink-0 px-4 py-3 border-b border-zinc-800/40">
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500/80 text-center mb-2.5">Cloud Privacy</p>
+        <div className="flex flex-col items-center gap-2.5">
+          <label className="flex items-center gap-2.5 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={summarizeForCloud}
+              onChange={(e) => setSummarizeForCloud(e.target.checked)}
+              className="h-3.5 w-3.5 rounded border-zinc-600 accent-orange-500"
+            />
+            <span className="text-xs text-zinc-400 hover:text-zinc-300">Summarize threads for cloud</span>
+          </label>
+          <label className="flex items-center gap-2.5 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={sanitizeForCloud}
+              onChange={(e) => setSanitizeForCloud(e.target.checked)}
+              className="h-3.5 w-3.5 rounded border-zinc-600 accent-orange-500"
+            />
+            <span className="text-xs text-zinc-400 hover:text-zinc-300">Sanitize queries for cloud</span>
+          </label>
+        </div>
       </div>
 
       {/* Footer: Save + Clear */}
-      <div className="flex-shrink-0 px-4 py-3 flex gap-2">
+      <div className="flex-shrink-0 px-4 py-4 flex gap-3">
         <button
           onClick={handleSaveChat}
           disabled={!hasMessages}
-          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-xs font-bold border border-zinc-700 bg-zinc-800/60 text-zinc-300 hover:text-amber-400 hover:border-amber-500/40 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          className="flex-1 flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-sm font-bold border border-zinc-700 bg-zinc-800/60 text-zinc-300 hover:text-amber-400 hover:border-amber-500/40 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
         >
-          <Download className="h-3.5 w-3.5" />
+          <Download className="h-4 w-4" />
           {saveFeedback ? "Saved!" : "Save Chat"}
         </button>
         <button
           onClick={handleClearChat}
           disabled={!hasMessages}
           className={cn(
-            "flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-xs font-bold border transition-all disabled:opacity-40 disabled:cursor-not-allowed",
+            "flex-1 flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-sm font-bold border transition-all disabled:opacity-40 disabled:cursor-not-allowed",
             confirmClear
               ? "bg-red-500/15 border-red-500/50 text-red-400 animate-pulse"
               : "border-zinc-700 bg-zinc-800/60 text-zinc-300 hover:text-red-400 hover:border-red-500/40"
           )}
         >
-          <Trash2 className="h-3.5 w-3.5" />
+          <Trash2 className="h-4 w-4" />
           {confirmClear ? "Confirm?" : "Clear"}
         </button>
       </div>
