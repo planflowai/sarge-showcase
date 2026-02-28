@@ -121,14 +121,12 @@ function ProjectCard({
     }
   };
 
-  const connectedPlatforms = PLATFORMS.filter((p) => getUrl(project, p.id));
-
   // ─── Delete confirmation view ──────────────────────────────────────────────
   if (isDeleteTarget) {
     return (
-      <div className="rounded-xl border border-red-500/40 bg-red-950/30 p-5 flex flex-col gap-3">
-        <p className="text-sm font-bold text-red-300">Delete &quot;{project.name}&quot;?</p>
-        <p className="text-xs text-zinc-400">
+      <div className="rounded-2xl border border-red-500/40 bg-red-950/30 p-6 flex flex-col gap-4">
+        <p className="text-base font-bold text-red-300">Delete &quot;{project.name}&quot;?</p>
+        <p className="text-sm text-zinc-400">
           The local folder will be permanently removed. This cannot be undone.
         </p>
         {project.githubRepo && (
@@ -167,8 +165,8 @@ function ProjectCard({
   // ─── Push target picker view ───────────────────────────────────────────────
   if (isPushTarget) {
     return (
-      <div className="rounded-xl border border-emerald-500/40 bg-emerald-950/20 p-5 flex flex-col gap-3">
-        <p className="text-sm font-bold text-emerald-300">Push &quot;{project.name}&quot;</p>
+      <div className="rounded-2xl border border-emerald-500/40 bg-emerald-950/20 p-6 flex flex-col gap-4">
+        <p className="text-base font-bold text-emerald-300">Push &quot;{project.name}&quot;</p>
         <div className="space-y-1.5">
           {PLATFORMS.map(({ id, label, icon: Icon }) => {
             const url = getUrl(project, id);
@@ -223,11 +221,11 @@ function ProjectCard({
 
   // ─── Normal card view ──────────────────────────────────────────────────────
   return (
-    <div className="group relative rounded-xl border border-zinc-700/80 bg-zinc-800/60 hover:border-zinc-600 hover:bg-zinc-800/90 transition-all p-4 flex flex-col gap-3">
+    <div className="group relative rounded-2xl border border-zinc-700/80 bg-zinc-800/60 hover:border-zinc-600 hover:bg-zinc-800/90 transition-all p-6 flex flex-col gap-4">
       {/* Name row */}
-      <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-lg bg-indigo-500/15 flex items-center justify-center flex-shrink-0">
-          <FolderOpen className="h-5 w-5 text-indigo-400" />
+      <div className="flex items-start gap-4">
+        <div className="w-14 h-14 rounded-xl bg-indigo-500/15 flex items-center justify-center flex-shrink-0">
+          <FolderOpen className="h-7 w-7 text-indigo-400" />
         </div>
         <div className="flex-1 min-w-0">
           {isRenameTarget ? (
@@ -241,68 +239,81 @@ function ProjectCard({
               }}
               onBlur={handleRename}
               disabled={isRenaming}
-              className="w-full px-2 py-1 text-sm font-bold rounded bg-zinc-700 border border-indigo-500 text-zinc-100 focus:outline-none"
+              className="w-full px-3 py-1.5 text-base font-bold rounded-lg bg-zinc-700 border border-indigo-500 text-zinc-100 focus:outline-none"
             />
           ) : (
-            <p className="text-sm font-bold text-zinc-100 truncate">{project.name}</p>
+            <p className="text-base font-bold text-zinc-100 truncate">{project.name}</p>
           )}
-          <div className="flex items-center gap-2 mt-1 flex-wrap">
-            <span className="text-[10px] text-zinc-500">
+          <div className="flex items-center gap-2.5 mt-1.5 flex-wrap">
+            <span className="text-xs text-zinc-500">
               {new Date(project.lastModified).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
             </span>
-            <span className="text-[10px] text-zinc-700">·</span>
-            <span className="text-[10px] text-zinc-500">{project.fileCount} files</span>
+            <span className="text-xs text-zinc-700">·</span>
+            <span className="text-xs text-zinc-500">{project.fileCount} files</span>
             {project.mainFile && (
               <>
-                <span className="text-[10px] text-zinc-700">·</span>
-                <span className="text-[10px] text-zinc-500 font-mono">{project.mainFile}</span>
+                <span className="text-xs text-zinc-700">·</span>
+                <span className="text-xs text-zinc-500 font-mono">{project.mainFile}</span>
               </>
             )}
           </div>
         </div>
       </div>
 
-      {/* Platform badges */}
-      {connectedPlatforms.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {connectedPlatforms.map(({ id, label, icon: Icon, color, bgClass }) => {
-            const url = getUrl(project, id);
-            return (
-              <a
-                key={id}
-                href={url || "#"}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => { if (!url) e.preventDefault(); }}
-                className={cn(
-                  "flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold transition-opacity hover:opacity-80",
-                  bgClass, color
+      {/* All 4 platforms — always visible */}
+      <div className="grid grid-cols-2 gap-2">
+        {PLATFORMS.map(({ id, label, icon: Icon }) => {
+          const url = getUrl(project, id);
+          const isConnected = !!url;
+          return (
+            <div
+              key={id}
+              className={cn(
+                "flex items-center gap-2.5 px-3 py-2.5 rounded-lg border transition-colors",
+                isConnected
+                  ? "bg-emerald-950/30 border-emerald-800/50"
+                  : "bg-zinc-800/40 border-zinc-700/50"
+              )}
+            >
+              <Icon className={cn("h-4 w-4 flex-shrink-0", isConnected ? "text-emerald-400" : "text-zinc-600")} />
+              <div className="flex-1 min-w-0">
+                <span className={cn("text-xs font-bold", isConnected ? "text-zinc-200" : "text-zinc-500")}>{label}</span>
+                {url && (
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block text-[10px] text-indigo-400 hover:underline truncate"
+                  >
+                    {url.replace(/https?:\/\/(www\.)?/, "").slice(0, 40)}
+                  </a>
                 )}
-                title={url || label}
-              >
-                <Icon className="h-3 w-3" />
-                {label}
-              </a>
-            );
-          })}
-        </div>
-      )}
+              </div>
+              {isConnected ? (
+                <Check className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+              ) : (
+                <X className="h-3.5 w-3.5 text-zinc-600 flex-shrink-0" />
+              )}
+            </div>
+          );
+        })}
+      </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-2 mt-auto pt-1">
+      <div className="flex items-center gap-2.5 mt-auto pt-1">
         <button
           onClick={() => onOpen(project)}
-          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white transition-colors"
+          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold bg-indigo-600 hover:bg-indigo-500 text-white transition-colors"
         >
-          <FolderOpen className="h-3.5 w-3.5" />
+          <FolderOpen className="h-4 w-4" />
           Open
         </button>
         {project.hasGit && (
           <button
             onClick={() => setPushingProject(project)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-emerald-600/80 hover:bg-emerald-500 text-white transition-colors"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold bg-emerald-600/80 hover:bg-emerald-500 text-white transition-colors"
           >
-            <Send className="h-3.5 w-3.5" />
+            <Send className="h-4 w-4" />
             Push
           </button>
         )}
@@ -311,30 +322,30 @@ function ProjectCard({
         <div className="relative" ref={menuRef}>
           <button
             onClick={() => setShowMenu(!showMenu)}
-            className="p-2 rounded-lg text-zinc-500 hover:text-zinc-200 hover:bg-zinc-700 transition-colors"
+            className="p-2.5 rounded-lg text-zinc-500 hover:text-zinc-200 hover:bg-zinc-700 transition-colors"
           >
-            <MoreHorizontal className="h-4 w-4" />
+            <MoreHorizontal className="h-5 w-5" />
           </button>
           {showMenu && (
-            <div className="absolute right-0 top-full mt-1 w-44 bg-zinc-800 border border-zinc-700 rounded-xl shadow-2xl z-50 py-1.5 overflow-hidden">
+            <div className="absolute right-0 top-full mt-1 w-48 bg-zinc-800 border border-zinc-700 rounded-xl shadow-2xl z-50 py-1.5 overflow-hidden">
               <button
                 onClick={() => { setShowMenu(false); setRenamingProject(project); }}
-                className="w-full flex items-center gap-2.5 px-4 py-2 text-xs text-zinc-300 hover:bg-zinc-700 hover:text-white transition-colors"
+                className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-zinc-300 hover:bg-zinc-700 hover:text-white transition-colors"
               >
-                <Pencil className="h-3.5 w-3.5" /> Rename
+                <Pencil className="h-4 w-4" /> Rename
               </button>
               <button
                 onClick={handleExport}
-                className="w-full flex items-center gap-2.5 px-4 py-2 text-xs text-zinc-300 hover:bg-zinc-700 hover:text-white transition-colors"
+                className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-zinc-300 hover:bg-zinc-700 hover:text-white transition-colors"
               >
-                <Download className="h-3.5 w-3.5" /> Export ZIP
+                <Download className="h-4 w-4" /> Export ZIP
               </button>
               <div className="my-1 border-t border-zinc-700" />
               <button
                 onClick={() => { setShowMenu(false); setDeleteConfirm(project); }}
-                className="w-full flex items-center gap-2.5 px-4 py-2 text-xs text-red-400 hover:bg-red-950/40 hover:text-red-300 transition-colors"
+                className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-400 hover:bg-red-950/40 hover:text-red-300 transition-colors"
               >
-                <Trash2 className="h-3.5 w-3.5" /> Delete
+                <Trash2 className="h-4 w-4" /> Delete
               </button>
             </div>
           )}
@@ -464,7 +475,7 @@ export default function ProjectCommandCenter() {
       className="fixed inset-0 z-[600] flex items-center justify-center bg-black/70 backdrop-blur-sm"
       onMouseDown={(e) => { if (e.target === e.currentTarget) close(); }}
     >
-      <div className="bg-zinc-900 rounded-2xl shadow-2xl border border-zinc-700 w-[960px] max-w-[95vw] max-h-[90vh] flex flex-col overflow-hidden">
+      <div className="bg-zinc-900 rounded-2xl shadow-2xl border border-zinc-700 w-[1400px] max-w-[95vw] max-h-[90vh] flex flex-col overflow-hidden">
 
         {/* ═══ Header ═══ */}
         <div className="px-6 py-4 border-b border-zinc-800 flex items-center gap-4 flex-shrink-0">
@@ -591,7 +602,7 @@ export default function ProjectCommandCenter() {
                   )}
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {filteredProjects.map((proj) => (
                     <ProjectCard key={proj.path} project={proj} onOpen={handleOpen} />
                   ))}
