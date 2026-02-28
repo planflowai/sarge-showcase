@@ -609,7 +609,7 @@ export default function BuilderSidebar({
       // ── Files popover ────────────────────────────────────────────────────────
       case "files":
         return (
-          <div className="w-72 flex flex-col max-h-[70vh]">
+          <div className="w-[420px] flex flex-col max-h-[70vh]">
             {/* Header */}
             <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-200 dark:border-zinc-700">
               <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">File Explorer</span>
@@ -753,7 +753,7 @@ export default function BuilderSidebar({
       // ── AI Templates popover ─────────────────────────────────────────────────
       case "templates":
         return (
-          <div className="w-80 flex flex-col max-h-[70vh]">
+          <div className="w-[420px] flex flex-col max-h-[70vh]">
             <div className="px-3 py-2 border-b border-zinc-200 dark:border-zinc-700">
               <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">AI Templates</span>
               <p className="text-[10px] text-zinc-500 mt-0.5">Click a template to preview — then inject into chat</p>
@@ -808,7 +808,7 @@ export default function BuilderSidebar({
       // ── Prompts popover ──────────────────────────────────────────────────────
       case "prompts":
         return (
-          <div className="w-96 flex flex-col max-h-[75vh]">
+          <div className="w-[480px] flex flex-col max-h-[75vh]">
             <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-200 dark:border-zinc-700">
               <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Prompt Library</span>
               <button onClick={() => setShowGallery(true)}
@@ -883,7 +883,7 @@ export default function BuilderSidebar({
       // ── AI Helpers popover ───────────────────────────────────────────────────
       case "helpers":
         return (
-          <div className="w-80 max-h-[70vh] overflow-y-auto">
+          <div className="w-[420px] max-h-[70vh] overflow-y-auto">
             <div className="px-3 py-2.5 border-b border-zinc-200 dark:border-zinc-700">
               <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">AI Helpers</span>
               <p className="text-[10px] text-zinc-500 mt-0.5">Autonomous agents that analyze your code in parallel</p>
@@ -912,7 +912,7 @@ export default function BuilderSidebar({
       // ── Components popover ───────────────────────────────────────────────────
       case "components":
         return (
-          <div className="w-72 max-h-[70vh] overflow-y-auto">
+          <div className="w-[420px] max-h-[70vh] overflow-y-auto">
             <div className="px-3 py-2 border-b border-zinc-200 dark:border-zinc-700">
               <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Component Library</span>
               <p className="text-[10px] text-zinc-500 mt-0.5">Insert, use as base, or modify with AI</p>
@@ -930,7 +930,7 @@ export default function BuilderSidebar({
       // ── Router / Flow popover ────────────────────────────────────────────────
       case "router":
         return (
-          <div className="w-72 max-h-[70vh] overflow-y-auto">
+          <div className="w-[420px] max-h-[70vh] overflow-y-auto">
             <div className="px-3 py-2 border-b border-zinc-200 dark:border-zinc-700">
               <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Smart Router</span>
               <p className="text-[10px] text-zinc-500 mt-0.5">AI routing decisions and capability flow</p>
@@ -948,7 +948,7 @@ export default function BuilderSidebar({
       // ── Changes popover ──────────────────────────────────────────────────────
       case "changes":
         return (
-          <div className="w-72 flex flex-col max-h-[70vh]">
+          <div className="w-[420px] flex flex-col max-h-[70vh]">
             <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-200 dark:border-zinc-700">
               <div className="flex items-center gap-1.5">
                 <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Changes</span>
@@ -1072,7 +1072,7 @@ export default function BuilderSidebar({
           id="builder-toolbar-popover"
           className="fixed z-[200] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-2xl overflow-hidden"
           style={{
-            left: Math.min(popoverRect.left, window.innerWidth - 320),
+            left: Math.min(popoverRect.left, window.innerWidth - 500),
             top: popoverRect.bottom + 4,
           }}
         >

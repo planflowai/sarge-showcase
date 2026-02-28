@@ -14,6 +14,8 @@ import { useBuilderStore } from "../stores/builderStore";
 import { useAirGapStore } from "@sarge/core";
 import BuilderDiffEditor from "./BuilderDiffEditor";
 import SaveToLibraryDialog from "./SaveToLibraryDialog";
+import BuilderStatusStrip from "./BuilderStatusStrip";
+import type { ProgressStep } from "./ProgressCards";
 
 export interface DiffViewState {
   filePath: string;
@@ -36,6 +38,10 @@ interface ArtifactPanelProps {
   lastPrompt?: string; // The prompt that generated the current code
   projectName?: string | null; // If set, use API-based preview with CSS/JS inlining
   deployContent?: React.ReactNode; // Optional deploy panel content
+  // Status strip props (progress + file ops)
+  progressSteps?: ProgressStep[];
+  progressVisible?: boolean;
+  streamingContent?: string;
 }
 
 // Check if HTML code is complete (has closing </html> tag)
@@ -56,6 +62,9 @@ function ArtifactPanelInner({
   lastPrompt = "",
   projectName = null,
   deployContent,
+  progressSteps = [],
+  progressVisible = false,
+  streamingContent,
 }: ArtifactPanelProps) {
   const [previewContent, setPreviewContent] = useState<string>("");
   const [previewError, setPreviewError] = useState<string | null>(null);
@@ -486,6 +495,14 @@ function ArtifactPanelInner({
         isFullscreen && "fixed inset-0 z-50"
       )}
     >
+      {/* Status strip — progress + file ops above tabs */}
+      <BuilderStatusStrip
+        streamingContent={streamingContent}
+        isStreaming={isStreaming}
+        progressSteps={progressSteps}
+        progressVisible={progressVisible}
+      />
+
       {/* Header */}
       <div className="flex items-center justify-between px-4 h-12 flex-shrink-0 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/80">
         <div className="flex items-center gap-3">
@@ -1018,7 +1035,10 @@ const ArtifactPanel = memo(ArtifactPanelInner, (prevProps, nextProps) => {
     prevProps.isStreaming === nextProps.isStreaming &&
     prevProps.projectName === nextProps.projectName &&
     prevProps.diffView === nextProps.diffView &&
-    prevProps.lastPrompt === nextProps.lastPrompt
+    prevProps.lastPrompt === nextProps.lastPrompt &&
+    prevProps.progressSteps === nextProps.progressSteps &&
+    prevProps.progressVisible === nextProps.progressVisible &&
+    prevProps.streamingContent === nextProps.streamingContent
   );
 });
 

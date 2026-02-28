@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback, useState } from "react";
-import { Send, X, StopCircle, Paperclip, CheckCircle, Bookmark, Database, ImageIcon, MessageSquare, Hammer, Pencil, RefreshCw, Bot, Check, Image as ImageLucide, Trash2, ClipboardCopy } from "lucide-react";
+import { Send, X, StopCircle, Paperclip, CheckCircle, Bookmark, Database, ImageIcon, MessageSquare, Hammer, Pencil, RefreshCw, Bot, Check, Image as ImageLucide, Trash2, ClipboardCopy, Plus, Save, Terminal as TerminalIcon, Loader2, GitBranch, MoreHorizontal } from "lucide-react";
 import { type Attachment, readFileAsAttachment, formatFileSize } from "../lib/utils/attachments";
 import { useBuilderChatStore } from "../stores/builderChatStore";
 import { useChangesStore } from "../stores/changesStore";
@@ -43,6 +43,20 @@ interface BuilderChatProps {
   onRefreshFileTree?: () => Promise<void>;
   autoApply?: boolean;
   webSearch?: boolean;
+  // Progress callbacks (lifted from useProgressSteps to BuilderPage)
+  progressStartProgress?: () => void;
+  progressStartStep?: (step: string, label?: string) => void;
+  progressFinishProgress?: () => void;
+  progressIsVisible?: boolean;
+  // Bottom bar callbacks (moved from BuilderPage bottom bar into Row 3)
+  onNewBuild?: () => void;
+  onSaveProgress?: () => void;
+  isSavingProgress?: boolean;
+  saveSuccess?: boolean;
+  onTerminalToggle?: () => void;
+  terminalOpen?: boolean;
+  onPushProject?: () => void;
+  isPushing?: boolean;
 }
 
 export default function BuilderChat({
@@ -63,6 +77,18 @@ export default function BuilderChat({
   onRefreshFileTree,
   autoApply: autoApplyProp,
   webSearch = false,
+  progressStartProgress,
+  progressStartStep,
+  progressFinishProgress,
+  progressIsVisible = false,
+  onNewBuild,
+  onSaveProgress,
+  isSavingProgress = false,
+  saveSuccess = false,
+  onTerminalToggle,
+  terminalOpen = false,
+  onPushProject,
+  isPushing = false,
 }: BuilderChatProps) {
   const { messages, sending, hydrated, hydrate, sendMessage, generateImage, clearMessages, abortStream, prefilledInput, setPrefilledInput } = useBuilderChatStore();
   const addChange = useChangesStore(state => state.addChange);
@@ -81,6 +107,7 @@ export default function BuilderChat({
   const [showVaultModal, setShowVaultModal] = useState(false);
   const [selectedVaultIds, setSelectedVaultIds] = useState<string[]>([]);
   const [showImageDialog, setShowImageDialog] = useState(false);
+  const [showOverflow, setShowOverflow] = useState(false);
   const [imagePrompt, setImagePrompt] = useState("");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [copyFeedback, setCopyFeedback] = useState(false);
@@ -192,8 +219,15 @@ export default function BuilderChat({
     setPendingEdit(null);
   }, []);
 
-  // Progress steps for Claude Code-style progress cards
-  const progress = useProgressSteps();
+  // Progress steps — use callbacks from parent (BuilderPage) if provided
+  const localProgress = useProgressSteps();
+  const progress = {
+    steps: localProgress.steps,
+    isVisible: progressIsVisible !== undefined ? progressIsVisible : localProgress.isVisible,
+    startProgress: progressStartProgress || localProgress.startProgress,
+    startStep: progressStartStep || localProgress.startStep,
+    finishProgress: progressFinishProgress || localProgress.finishProgress,
+  };
 
   // Get context status for UI
   const isLocalModel = selectedProvider === "ollama";
@@ -230,7 +264,7 @@ export default function BuilderChat({
   }, [guardianEnabled, isGuardianAllowed]);
 
   // Extract progress functions to avoid infinite loop
-  const { startStep, finishProgress, isVisible: progressIsVisible } = progress;
+  const { startStep, finishProgress, isVisible: progressIsVisibleLocal } = progress;
 
   // Wrap callbacks with useCallback for stable references
   const handleStreamingUpdate = useCallback((code: string, isStreaming: boolean) => {
@@ -262,7 +296,7 @@ export default function BuilderChat({
     onViewDiff: handleViewDiff,
     startStep,
     finishProgress,
-    progressIsVisible,
+    progressIsVisible: progressIsVisibleLocal,
   });
 
   // Sync pending edit from hook
@@ -559,9 +593,6 @@ export default function BuilderChat({
             }}
           />
 
-          {/* Claude Code-style progress cards */}
-          <ProgressCards steps={progress.steps} isVisible={progress.isVisible} />
-
           {/* AI Helper responses */}
           {helperResponses.length > 0 && (
             <div className="space-y-2 px-4 pb-4">
@@ -703,72 +734,18 @@ export default function BuilderChat({
             />
           </div>
 
-          {/* Action buttons - centered layout */}
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            {/* Left group: Clear + Copy + Vault + Attach + Image */}
-            <div className="flex items-center gap-1.5">
-              {/* Clear chat button — visible icon, only when messages exist */}
-              {messages.length > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={clearMessages}
-                  disabled={sending}
-                  className="h-8 w-8 p-0 text-zinc-500 hover:text-red-500 hover:bg-red-500/10 transition-colors"
-                  title="Clear chat"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-              )}
-
-              {/* Copy last response button */}
-              {messages.some(m => m.role === 'assistant') && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleCopyLastResponse}
-                  disabled={sending}
-                  className={cn(
-                    "h-8 px-2 gap-1 transition-colors",
-                    copyFeedback
-                      ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
-                      : "text-zinc-500 hover:text-blue-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                  )}
-                  title="Copy last AI response to clipboard"
-                >
-                  <ClipboardCopy className="h-3.5 w-3.5" />
-                  {copyFeedback && <span className="text-[10px] font-medium">Copied!</span>}
-                </Button>
-              )}
-
-              {/* Knowledge Vault button */}
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={noModel || sending}
-                onClick={() => setShowVaultModal(true)}
-                className={cn(
-                  "h-8 px-2 gap-1 transition-colors",
-                  selectedVaultIds.length > 0
-                    ? "bg-indigo-500/10 border border-indigo-500/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/20"
-                    : "text-zinc-500 hover:text-indigo-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                )}
-                title="Attach from Knowledge Vault"
-              >
-                <Database className="h-3.5 w-3.5" />
-                {selectedVaultIds.length > 0 && (
-                  <span className="text-[10px] font-bold">{selectedVaultIds.length}</span>
-                )}
-              </Button>
-
-              {/* Attach button - different behavior for local vs cloud */}
+          {/* Row 2: [Attach][Img][Web][...overflow] | [Plan][Build][Edit][Regen][Auto][Send] */}
+          <div className="flex items-center justify-between gap-2">
+            {/* Left: Attach + Image + Web + Overflow */}
+            <div className="flex items-center gap-1">
+              {/* Attach button */}
               {isLocalModel ? (
                 <div
-                  className="flex items-center gap-1 h-8 px-2 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
-                  title="Context is automatically attached for local models"
+                  className="flex items-center gap-1 h-7 px-1.5 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
+                  title="Context auto-attached for local models"
                 >
-                  <CheckCircle className="h-3.5 w-3.5" />
-                  <span className="text-[10px] font-medium">Auto</span>
+                  <CheckCircle className="h-3 w-3" />
+                  <span className="text-[9px] font-medium">Auto</span>
                 </div>
               ) : (
                 <Button
@@ -777,70 +754,118 @@ export default function BuilderChat({
                   disabled={noModel || sending}
                   onClick={() => setAttachCode(!attachCode)}
                   className={cn(
-                    "h-8 px-2 gap-1 transition-colors",
+                    "h-7 px-1.5 gap-1 transition-colors",
                     attachCode
-                      ? "bg-indigo-500/10 border border-indigo-500/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/20"
-                      : "text-zinc-500 hover:text-indigo-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                      ? "bg-indigo-500/10 border border-indigo-500/30 text-indigo-600 dark:text-indigo-400"
+                      : "text-zinc-500 hover:text-indigo-500"
                   )}
-                  title={attachCode ? "Context will be attached" : "Click to attach editor code to prompt"}
+                  title={attachCode ? "Context attached" : "Attach code context"}
                 >
-                  <Paperclip className="h-3.5 w-3.5" />
-                  <span className="text-[10px] font-medium">{attachCode ? "On" : "Off"}</span>
+                  <Paperclip className="h-3 w-3" />
                 </Button>
               )}
 
-              {/* Image Generation button */}
-              {supportsImageGen && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  disabled={noModel || sending}
-                  onClick={() => setShowImageDialog(true)}
-                  className="h-8 w-8 p-0 text-zinc-500 hover:text-indigo-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-                  title="Generate image"
-                >
-                  <ImageIcon className="h-3.5 w-3.5" />
-                </Button>
-              )}
-
-              {/* Attach Image/Screenshot button */}
+              {/* Attach Image */}
               <Button
                 variant="ghost"
                 size="sm"
                 disabled={noModel || sending}
                 onClick={() => fileInputRef.current?.click()}
                 className={cn(
-                  "h-8 px-2 gap-1 transition-colors",
+                  "h-7 px-1.5 gap-1 transition-colors",
                   attachments.length > 0
-                    ? "bg-cyan-500/10 border border-cyan-500/30 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/20"
-                    : "text-zinc-500 hover:text-cyan-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                    ? "bg-cyan-500/10 border border-cyan-500/30 text-cyan-400"
+                    : "text-zinc-500 hover:text-cyan-500"
                 )}
-                title="Attach image or screenshot (or paste/drag-drop)"
+                title="Attach image"
               >
-                <ImageLucide className="h-3.5 w-3.5" />
-                {attachments.length > 0 ? (
-                  <span className="text-[10px] font-bold">{attachments.length}</span>
-                ) : (
-                  <span className="text-[10px] font-medium">Img</span>
-                )}
+                <ImageLucide className="h-3 w-3" />
+                {attachments.length > 0 && <span className="text-[9px] font-bold">{attachments.length}</span>}
               </Button>
+
+              {/* Web search — kept inline since it's a toggle */}
+              {webSearch !== undefined && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={noModel || sending}
+                  className={cn(
+                    "h-7 px-1.5 gap-1 text-[9px] font-medium transition-colors",
+                    webSearch
+                      ? "bg-sky-500/10 border border-sky-500/30 text-sky-400"
+                      : "text-zinc-500 hover:text-sky-400"
+                  )}
+                  title="Web search"
+                >
+                  Web
+                </Button>
+              )}
+
+              {/* Overflow menu (...) — Clear, Copy, Vault, ImageGen */}
+              <div className="relative">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowOverflow(!showOverflow)}
+                  className="h-7 w-7 p-0 text-zinc-500 hover:text-zinc-300"
+                  title="More actions"
+                >
+                  <MoreHorizontal className="h-3.5 w-3.5" />
+                </Button>
+                {showOverflow && (
+                  <div className="absolute bottom-full left-0 mb-1 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl py-1 z-50 min-w-[160px]">
+                    {messages.length > 0 && (
+                      <button
+                        onClick={() => { clearMessages(); setShowOverflow(false); }}
+                        disabled={sending}
+                        className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-zinc-300 hover:bg-zinc-700 transition-colors"
+                      >
+                        <Trash2 className="h-3 w-3 text-red-400" /> Clear Chat
+                      </button>
+                    )}
+                    {messages.some(m => m.role === 'assistant') && (
+                      <button
+                        onClick={() => { handleCopyLastResponse(); setShowOverflow(false); }}
+                        disabled={sending}
+                        className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-zinc-300 hover:bg-zinc-700 transition-colors"
+                      >
+                        <ClipboardCopy className="h-3 w-3 text-blue-400" /> Copy Response
+                      </button>
+                    )}
+                    <button
+                      onClick={() => { setShowVaultModal(true); setShowOverflow(false); }}
+                      disabled={noModel || sending}
+                      className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-zinc-300 hover:bg-zinc-700 transition-colors"
+                    >
+                      <Database className="h-3 w-3 text-indigo-400" /> Knowledge Vault
+                      {selectedVaultIds.length > 0 && <span className="text-[9px] text-indigo-400 ml-auto">{selectedVaultIds.length}</span>}
+                    </button>
+                    {supportsImageGen && (
+                      <button
+                        onClick={() => { setShowImageDialog(true); setShowOverflow(false); }}
+                        disabled={noModel || sending}
+                        className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-zinc-300 hover:bg-zinc-700 transition-colors"
+                      >
+                        <ImageIcon className="h-3 w-3 text-purple-400" /> Generate Image
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Center group: Mode toggles */}
-            <div className="flex items-center gap-1.5">
-              {/* Plan/Build Mode Toggle */}
-              <div
-                className="flex items-center h-8 rounded-md border border-zinc-300 dark:border-zinc-700 overflow-hidden"
-                title={builderMode === "plan" ? "Plan mode: AI will discuss and plan" : "Build mode: AI will write files"}
-              >
+            {/* Right: Mode toggles + Send */}
+            <div className="flex items-center gap-1">
+              {/* Plan/Build */}
+              <div className="flex items-center h-7 rounded-md border border-zinc-300 dark:border-zinc-700 overflow-hidden">
                 <button
                   onClick={() => toggleMode()}
                   disabled={sending}
                   className={cn(
-                    "flex items-center gap-1 px-2 h-full text-[11px] font-medium transition-colors",
+                    "flex items-center gap-1 px-1.5 h-full text-[10px] font-medium transition-colors",
                     builderMode === "plan"
                       ? "bg-amber-500/20 text-amber-600 dark:text-amber-400"
-                      : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+                      : "text-zinc-400 hover:text-zinc-300"
                   )}
                 >
                   <MessageSquare className="h-3 w-3" />
@@ -850,10 +875,10 @@ export default function BuilderChat({
                   onClick={() => toggleMode()}
                   disabled={sending}
                   className={cn(
-                    "flex items-center gap-1 px-2 h-full text-[11px] font-medium transition-colors",
+                    "flex items-center gap-1 px-1.5 h-full text-[10px] font-medium transition-colors",
                     builderMode === "build"
                       ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
-                      : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+                      : "text-zinc-400 hover:text-zinc-300"
                   )}
                 >
                   <Hammer className="h-3 w-3" />
@@ -861,20 +886,17 @@ export default function BuilderChat({
                 </button>
               </div>
 
-              {/* Edit/Generate Mode Toggle - only shown when in Build mode and there's existing code */}
+              {/* Edit/Regen */}
               {builderMode === "build" && artifactCode && artifactCode.trim().length > 50 && (
-                <div
-                  className="flex items-center h-8 rounded-md border border-zinc-300 dark:border-zinc-700 overflow-hidden"
-                  title={editMode === "edit" ? "Edit mode: surgical changes" : "Generate mode: regenerate file"}
-                >
+                <div className="flex items-center h-7 rounded-md border border-zinc-300 dark:border-zinc-700 overflow-hidden">
                   <button
                     onClick={() => toggleEditMode()}
                     disabled={sending}
                     className={cn(
-                      "flex items-center gap-1 px-2 h-full text-[11px] font-medium transition-colors",
+                      "flex items-center gap-1 px-1.5 h-full text-[10px] font-medium transition-colors",
                       editMode === "edit"
                         ? "bg-blue-500/20 text-blue-600 dark:text-blue-400"
-                        : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+                        : "text-zinc-400 hover:text-zinc-300"
                     )}
                   >
                     <Pencil className="h-3 w-3" />
@@ -884,10 +906,10 @@ export default function BuilderChat({
                     onClick={() => toggleEditMode()}
                     disabled={sending}
                     className={cn(
-                      "flex items-center gap-1 px-2 h-full text-[11px] font-medium transition-colors",
+                      "flex items-center gap-1 px-1.5 h-full text-[10px] font-medium transition-colors",
                       editMode === "generate"
                         ? "bg-purple-500/20 text-purple-600 dark:text-purple-400"
-                        : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+                        : "text-zinc-400 hover:text-zinc-300"
                     )}
                   >
                     <RefreshCw className="h-3 w-3" />
@@ -896,46 +918,102 @@ export default function BuilderChat({
                 </div>
               )}
 
-              {/* Auto Apply Toggle - shown in project mode */}
+              {/* Auto Apply */}
               {projectPath && (
                 <button
                   onClick={() => toggleAutoApply()}
                   disabled={sending}
-                  title={autoApply ? "Auto Apply: ON (files apply immediately)" : "Auto Apply: OFF (click to apply)"}
+                  title={autoApply ? "Auto Apply ON" : "Auto Apply OFF"}
                   className={cn(
-                    "px-2 h-8 rounded-md border text-[11px] font-medium transition-colors",
+                    "px-1.5 h-7 rounded-md border text-[10px] font-medium transition-colors",
                     autoApply
                       ? "bg-green-500/20 border-green-500/50 text-green-600 dark:text-green-400"
-                      : "border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
+                      : "border-zinc-300 dark:border-zinc-700 text-zinc-500 hover:text-zinc-300"
                   )}
                 >
                   {autoApply ? "✓ Auto" : "Manual"}
                 </button>
               )}
-            </div>
 
-            {/* Send/Stop button */}
-            {sending ? (
-              <Button
-                onClick={abortStream}
-                className="h-8 px-3 gap-1.5 bg-red-600 hover:bg-red-700 text-white"
-                title="Stop generation"
+              {/* Send/Stop */}
+              {sending ? (
+                <Button
+                  onClick={abortStream}
+                  className="h-7 px-2.5 gap-1 bg-red-600 hover:bg-red-700 text-white"
+                  title="Stop generation"
+                >
+                  <StopCircle className="h-3 w-3" />
+                  <span className="text-[10px] font-medium">Stop</span>
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleSend}
+                  onContextMenu={handleSendButtonContextMenu}
+                  disabled={noModel || !input.trim()}
+                  className="h-7 px-2.5 gap-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white"
+                  title="Send (right-click to save as prompt)"
+                >
+                  <Send className="h-3 w-3" />
+                  <span className="text-[10px] font-medium">Send</span>
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Row 3: [New][Save][Push][Term] */}
+          <div className="flex items-center justify-center gap-1 mt-1.5 pt-1.5 border-t border-zinc-200 dark:border-zinc-800">
+            <button
+              onClick={onNewBuild}
+              className="flex items-center gap-1 text-[10px] font-medium transition-colors rounded px-2 py-1 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/30 border border-purple-300 dark:border-purple-700"
+              title="New Build"
+            >
+              <Plus className="h-3 w-3" />
+              <span>New</span>
+            </button>
+
+            {projectPath && (
+              <button
+                onClick={onSaveProgress}
+                disabled={isSavingProgress}
+                className={cn(
+                  "flex items-center gap-1 text-[10px] font-medium transition-colors rounded px-2 py-1",
+                  saveSuccess
+                    ? "text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30"
+                    : "text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/30"
+                )}
+                title={saveSuccess ? "Saved!" : "Save Progress"}
               >
-                <StopCircle className="h-3.5 w-3.5" />
-                <span className="text-[11px] font-medium">Stop</span>
-              </Button>
-            ) : (
-              <Button
-                onClick={handleSend}
-                onContextMenu={handleSendButtonContextMenu}
-                disabled={noModel || !input.trim()}
-                className="h-8 px-3 gap-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white"
-                title="Send message (right-click to save as prompt)"
-              >
-                <Send className="h-3.5 w-3.5" />
-                <span className="text-[11px] font-medium">Send</span>
-              </Button>
+                {isSavingProgress ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
+                <span>{saveSuccess ? "Saved" : "Save"}</span>
+              </button>
             )}
+
+            {projectPath && (
+              <button
+                onClick={onPushProject}
+                disabled={isPushing}
+                className="flex items-center gap-1 text-[10px] font-medium transition-colors rounded px-2 py-1 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 border border-emerald-300 dark:border-emerald-700"
+                title="Push to GitHub"
+              >
+                {isPushing ? <Loader2 className="h-3 w-3 animate-spin" /> : <GitBranch className="h-3 w-3" />}
+                <span>{isPushing ? "Pushing..." : "Push"}</span>
+              </button>
+            )}
+
+            <button
+              onClick={onTerminalToggle}
+              className={cn(
+                "flex items-center gap-1 text-[10px] font-medium transition-colors rounded px-2 py-1",
+                terminalOpen
+                  ? "text-cyan-600 dark:text-cyan-400 bg-cyan-100 dark:bg-cyan-900/30"
+                  : "text-zinc-500 hover:text-zinc-300"
+              )}
+              title="Toggle Terminal"
+            >
+              <TerminalIcon className="h-3 w-3" />
+              <span>Term</span>
+              {terminalOpen && <span className="text-[8px] font-bold">●</span>}
+            </button>
           </div>
 
         </div>

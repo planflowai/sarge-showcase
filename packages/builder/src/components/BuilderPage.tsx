@@ -12,7 +12,9 @@ import { useBuilderStore } from "../stores/builderStore";
 import { useBuilderChatStore } from "../stores/builderChatStore";
 import { useArtifactStore } from "../stores/artifactStore";
 import { useBuilderDocumentStore } from "../stores/builderDocumentStore";
-import { flattenFileTree } from "@sarge/core";
+import { useProgressSteps } from "./ProgressCards";
+import { flattenFileTree, useUIStore } from "@sarge/core";
+import { pushProject } from "../lib/pushProject";
 import { applyEditBlocks, type EditBlock, getDiffSummary } from "../lib/editBlockParser";
 import { useWorkspaceStore, launchWorkspace, recallWorkspace } from "../stores/workspaceStore";
 import { LayoutGrid, X, Plus, Save, Terminal as TerminalIcon, Loader2, FolderOpen, Rocket, FolderPlus } from "lucide-react";
@@ -234,6 +236,17 @@ export default function BuilderPage({ deployContent }: { deployContent?: React.R
 
   // Get sending state from chat store for progress indicator
   const sending = useBuilderChatStore((state) => state.sending);
+
+  // Progress steps — lifted here so both BuilderChat and ArtifactPanel can access
+  const progress = useProgressSteps();
+
+  // Get latest streaming message content for status strip
+  const latestStreamingContent = useBuilderChatStore((state) => {
+    const msgs = state.messages;
+    if (!state.sending || msgs.length === 0) return undefined;
+    const last = msgs[msgs.length - 1];
+    return last?.isStreaming ? last.content : undefined;
+  });
 
   // Refs for layout debugging
   const chatRef = useRef<HTMLDivElement>(null);
@@ -458,6 +471,27 @@ export default function BuilderPage({ deployContent }: { deployContent?: React.R
     }
   }, [projectPath, projectName]);
 
+  // Push project to GitHub
+  const [isPushing, setIsPushing] = useState(false);
+  const showToast = useUIStore((s) => s.showToast);
+
+  const handlePushProject = useCallback(async () => {
+    if (!projectPath || !projectName) return;
+    setIsPushing(true);
+    try {
+      const result = await pushProject(projectPath, projectName);
+      if (result.success) {
+        showToast({ message: result.message, type: 'success' });
+      } else {
+        showToast({ message: result.message, type: 'error' });
+      }
+    } catch (err: any) {
+      showToast({ message: err.message || 'Push failed', type: 'error' });
+    } finally {
+      setIsPushing(false);
+    }
+  }, [projectPath, projectName, showToast]);
+
   // Handle inserting a component from the library
   const handleInsertComponent = useCallback((code: string, componentId: string) => {
     // Append the component code to the current artifact
@@ -564,6 +598,9 @@ Please provide the complete modified version of this component. Make only the re
           lastPrompt={lastPrompt}
           projectName={activeProjectName}
           deployContent={deployContent}
+          progressSteps={progress.steps}
+          progressVisible={progress.isVisible}
+          streamingContent={latestStreamingContent}
         />
       </div>
     );
@@ -707,49 +744,19 @@ Please provide the complete modified version of this component. Make only the re
               onRefreshFileTree={handleRefreshFileTree}
               autoApply={autoApply}
               webSearch={webSearch}
+              progressStartProgress={progress.startProgress}
+              progressStartStep={progress.startStep}
+              progressFinishProgress={progress.finishProgress}
+              progressIsVisible={progress.isVisible}
+              onNewBuild={handleNewBuild}
+              onSaveProgress={handleSaveProgress}
+              isSavingProgress={isSavingProgress}
+              saveSuccess={saveSuccess}
+              onTerminalToggle={handleTerminalToggle}
+              terminalOpen={terminalOpen}
+              onPushProject={handlePushProject}
+              isPushing={isPushing}
             />
-          </div>
-
-          {/* Bottom bar — New / Save / Term */}
-          <div className="flex-shrink-0 flex items-center justify-center gap-1 px-2 py-1.5 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900">
-            <button
-              onClick={handleNewBuild}
-              className="flex items-center gap-1 text-[10px] font-medium transition-colors rounded px-2 py-1 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/30 border border-purple-300 dark:border-purple-700"
-              title="New Build — clears chat, artifact, and project"
-            >
-              <Plus className="h-3 w-3" />
-              <span>New</span>
-            </button>
-
-            {projectPath && (
-              <button
-                onClick={handleSaveProgress}
-                disabled={isSavingProgress}
-                className={`flex items-center gap-1 text-[10px] font-medium transition-colors rounded px-2 py-1 ${
-                  saveSuccess
-                    ? "text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30"
-                    : "text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/30"
-                }`}
-                title={saveSuccess ? "Progress Saved!" : "Save Progress to BUILDER_LOG.md"}
-              >
-                {isSavingProgress ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
-                <span>{saveSuccess ? "Saved" : "Save"}</span>
-              </button>
-            )}
-
-            <button
-              onClick={handleTerminalToggle}
-              className={`flex items-center gap-1 text-[10px] font-medium transition-colors rounded px-2 py-1 ${
-                terminalOpen
-                  ? "text-cyan-600 dark:text-cyan-400 bg-cyan-100 dark:bg-cyan-900/30"
-                  : "text-zinc-500 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
-              }`}
-              title="Toggle Terminal"
-            >
-              <TerminalIcon className="h-3 w-3" />
-              <span>Term</span>
-              {terminalOpen && <span className="text-[8px] font-bold">●</span>}
-            </button>
           </div>
         </div>
 
@@ -787,6 +794,9 @@ Please provide the complete modified version of this component. Make only the re
             lastPrompt={lastPrompt}
             projectName={activeProjectName}
             deployContent={deployContent}
+            progressSteps={progress.steps}
+            progressVisible={progress.isVisible}
+            streamingContent={latestStreamingContent}
           />
         </div>
       </div>
