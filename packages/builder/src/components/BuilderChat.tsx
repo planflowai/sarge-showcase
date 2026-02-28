@@ -942,9 +942,14 @@ export default function BuilderChat({
             {projectPath && (
               <button
                 onClick={onPushProject}
-                disabled={isPushing}
-                className="flex items-center gap-1 text-[10px] font-medium transition-colors rounded px-2 py-1 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 border border-emerald-300 dark:border-emerald-700"
-                title="Push to GitHub"
+                disabled={isPushing || sending}
+                className={cn(
+                  "flex items-center gap-1 text-[10px] font-medium transition-colors rounded px-2 py-1 border",
+                  isPushing || sending
+                    ? "text-zinc-400 dark:text-zinc-500 border-zinc-300 dark:border-zinc-700 cursor-not-allowed opacity-50"
+                    : "text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 border-emerald-300 dark:border-emerald-700"
+                )}
+                title={sending ? "Wait for file writes to complete" : "Push to GitHub"}
               >
                 {isPushing ? <Loader2 className="h-3 w-3 animate-spin" /> : <GitBranch className="h-3 w-3" />}
                 <span>{isPushing ? "Pushing..." : "Push"}</span>
