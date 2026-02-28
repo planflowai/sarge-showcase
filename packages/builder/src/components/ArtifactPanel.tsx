@@ -42,6 +42,7 @@ interface ArtifactPanelProps {
   progressSteps?: ProgressStep[];
   progressVisible?: boolean;
   streamingContent?: string;
+  previewRefreshKey?: number; // Increment to force preview rebuild (e.g., after CSS/JS file writes)
 }
 
 // Check if HTML code is complete (has closing </html> tag)
@@ -65,6 +66,7 @@ function ArtifactPanelInner({
   progressSteps = [],
   progressVisible = false,
   streamingContent,
+  previewRefreshKey = 0,
 }: ArtifactPanelProps) {
   const [previewContent, setPreviewContent] = useState<string>("");
   const [previewError, setPreviewError] = useState<string | null>(null);
@@ -330,6 +332,17 @@ function ArtifactPanelInner({
       setPreviewError(err.message || "Failed to build preview");
     }
   }, [previewContent.length, isStreaming, airGapEnabled, rewriteAssetPaths]);
+
+  // Force preview rebuild when previewRefreshKey changes (e.g., after CSS/JS file writes)
+  useEffect(() => {
+    if (previewRefreshKey > 0 && code) {
+      // Reset lastCodeRef so the next code update effect will rebuild
+      lastCodeRef.current = '';
+      buildPreview(code, true);
+      console.log('[ArtifactPanel] Forced preview refresh (key:', previewRefreshKey, ')');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [previewRefreshKey]);
 
   // Track when streaming starts - do we already have a preview?
   useEffect(() => {
@@ -1038,7 +1051,8 @@ const ArtifactPanel = memo(ArtifactPanelInner, (prevProps, nextProps) => {
     prevProps.lastPrompt === nextProps.lastPrompt &&
     prevProps.progressSteps === nextProps.progressSteps &&
     prevProps.progressVisible === nextProps.progressVisible &&
-    prevProps.streamingContent === nextProps.streamingContent
+    prevProps.streamingContent === nextProps.streamingContent &&
+    prevProps.previewRefreshKey === nextProps.previewRefreshKey
   );
 });
 

@@ -19,6 +19,7 @@ interface MessageListProps {
   }) => void;
   autoApply?: boolean;
   onRefreshFileTree?: () => Promise<void>;
+  onFileWritten?: (filePath: string, content: string) => void;
 }
 
 /**
@@ -42,6 +43,7 @@ export default function MessageList({
   onChangeTracked,
   autoApply = false,
   onRefreshFileTree,
+  onFileWritten,
 }: MessageListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -74,9 +76,10 @@ export default function MessageList({
           onChangeTracked={onChangeTracked}
           autoApply={autoApply}
           onRefreshFileTree={onRefreshFileTree}
+          onFileWritten={onFileWritten}
         />
       )),
-    [messages, onOpenInEditor, onOpenPreview, projectPath, projectName, onViewDiff, onChangeTracked, autoApply, onRefreshFileTree]
+    [messages, onOpenInEditor, onOpenPreview, projectPath, projectName, onViewDiff, onChangeTracked, autoApply, onRefreshFileTree, onFileWritten]
   );
 
   return (

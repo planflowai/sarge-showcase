@@ -145,6 +145,7 @@ interface BuilderMessageBubbleProps {
   }) => void;
   autoApply?: boolean;
   onRefreshFileTree?: () => Promise<void>;
+  onFileWritten?: (filePath: string, content: string) => void;
 }
 
 /**
@@ -170,6 +171,7 @@ export default function BuilderMessageBubble({
   onChangeTracked,
   autoApply = false,
   onRefreshFileTree,
+  onFileWritten,
 }: BuilderMessageBubbleProps) {
   const [copied, setCopied] = useState(false);
   const [fileProposals, setFileProposals] = useState<FileEditProposal[]>([]);
@@ -315,6 +317,9 @@ export default function BuilderMessageBubble({
 
     // Refresh file tree so sidebar shows the new/updated file
     onRefreshFileTree?.().catch(() => {});
+
+    // Notify parent to refresh preview (triggers immediate preview update)
+    onFileWritten?.(cleanRelativePath, proposal.content);
   };
 
   // Handle reject for a file proposal

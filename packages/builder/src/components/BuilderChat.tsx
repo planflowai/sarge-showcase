@@ -41,6 +41,7 @@ interface BuilderChatProps {
   onPendingPromptConsumed?: () => void;
   onPromptSent?: (prompt: string) => void;
   onRefreshFileTree?: () => Promise<void>;
+  onFileWritten?: (filePath: string, content: string) => void;
   autoApply?: boolean;
   webSearch?: boolean;
   // Progress callbacks (lifted from useProgressSteps to BuilderPage)
@@ -75,6 +76,7 @@ export default function BuilderChat({
   onPendingPromptConsumed,
   onPromptSent,
   onRefreshFileTree,
+  onFileWritten,
   autoApply: autoApplyProp,
   webSearch = false,
   progressStartProgress,
@@ -579,6 +581,7 @@ export default function BuilderChat({
             onViewDiff={onViewDiff}
             autoApply={autoApply}
             onRefreshFileTree={onRefreshFileTree}
+            onFileWritten={onFileWritten}
             onChangeTracked={(change) => {
               const correspondingMsg = messages.find(m => !m.isStreaming && m.role === 'assistant');
               addChange({

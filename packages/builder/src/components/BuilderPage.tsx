@@ -97,6 +97,11 @@ export default function BuilderPage({ deployContent }: { deployContent?: React.R
   // Generation timing
   const [generationStartTime, setGenerationStartTime] = useState<number | null>(null);
 
+  // Track which project was auto-loaded to prevent re-loading
+  const autoLoadedProjectRef = useRef<string | null>(null);
+  // Counter to force preview refresh after non-HTML file writes
+  const [previewRefreshKey, setPreviewRefreshKey] = useState(0);
+
   // Builder store for file and project state
   const { updateCurrentContent, projectPath, projectName, fileTree, setFileTree, clearProject, isDirty, markClean, autoApply } = useBuilderStore();
 
@@ -177,6 +182,9 @@ export default function BuilderPage({ deployContent }: { deployContent?: React.R
   useEffect(() => {
     if (!projectPath || fileTree.length === 0) return;
 
+    // Only auto-load once per project (ref tracks which project was loaded)
+    if (autoLoadedProjectRef.current === projectPath) return;
+
     // Find index.html (or similar entry point) in the file tree
     const findEntryFile = (nodes: typeof fileTree): string | null => {
       for (const node of nodes) {
@@ -195,8 +203,8 @@ export default function BuilderPage({ deployContent }: { deployContent?: React.R
     const entryFile = findEntryFile(fileTree);
     if (!entryFile) return;
 
-    // Only auto-load if artifact panel is empty (don't overwrite active work)
-    if (artifactCode && artifactCode.trim().length > 0) return;
+    // Mark this project as auto-loaded before fetching
+    autoLoadedProjectRef.current = projectPath;
 
     const loadEntry = async () => {
       try {
@@ -219,7 +227,7 @@ export default function BuilderPage({ deployContent }: { deployContent?: React.R
     };
 
     loadEntry();
-  }, [projectPath, fileTree, artifactCode, setArtifactCode, setActiveTab]);
+  }, [projectPath, fileTree, setArtifactCode, setActiveTab]);
 
   // Diff view state
   const [diffView, setDiffView] = useState<{
@@ -407,6 +415,25 @@ export default function BuilderPage({ deployContent }: { deployContent?: React.R
     }
   }, [projectPath, setFileTree]);
 
+  // Handle file written during build — refresh preview
+  const handleFileWritten = useCallback(async (filePath: string, content: string) => {
+    if (!projectPath) return;
+
+    const fileName = filePath.split(/[\\/]/).pop()?.toLowerCase() || '';
+    const isHtml = fileName.endsWith('.html') || fileName.endsWith('.htm');
+
+    if (isHtml) {
+      // HTML file written — set as artifact code for immediate preview
+      setArtifactCode(content, filePath);
+      setActiveTab("preview");
+      console.log('[BuilderPage] Preview refreshed from file write:', fileName);
+    } else {
+      // Non-HTML file (CSS/JS/etc.) — force preview to re-render so iframe re-fetches assets
+      setPreviewRefreshKey(k => k + 1);
+      console.log('[BuilderPage] Triggered preview refresh for:', fileName);
+    }
+  }, [projectPath, setArtifactCode, setActiveTab]);
+
   // Handle prompt selection from sidebar
   const handlePromptSelect = useCallback((prompt: string) => {
     setPendingPrompt(prompt);
@@ -435,6 +462,7 @@ export default function BuilderPage({ deployContent }: { deployContent?: React.R
     clearMessages();
     clearArtifact(); // Clears persisted artifact state
     clearProject(); // Clears project so preview uses srcdoc instead of API URL
+    autoLoadedProjectRef.current = null; // Allow auto-load for next project
     setLastPrompt("");
     setDiffView(null);
     console.log('[BuilderPage] Started new build - cleared chat, artifact, and project');
@@ -601,6 +629,7 @@ Please provide the complete modified version of this component. Make only the re
           progressSteps={progress.steps}
           progressVisible={progress.isVisible}
           streamingContent={latestStreamingContent}
+          previewRefreshKey={previewRefreshKey}
         />
       </div>
     );
@@ -742,6 +771,7 @@ Please provide the complete modified version of this component. Make only the re
               onPendingPromptConsumed={handlePendingPromptConsumed}
               onPromptSent={handlePromptSent}
               onRefreshFileTree={handleRefreshFileTree}
+              onFileWritten={handleFileWritten}
               autoApply={autoApply}
               webSearch={webSearch}
               progressStartProgress={progress.startProgress}
@@ -797,6 +827,7 @@ Please provide the complete modified version of this component. Make only the re
             progressSteps={progress.steps}
             progressVisible={progress.isVisible}
             streamingContent={latestStreamingContent}
+            previewRefreshKey={previewRefreshKey}
           />
         </div>
       </div>
