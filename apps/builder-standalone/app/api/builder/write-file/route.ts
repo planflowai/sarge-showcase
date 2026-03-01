@@ -9,6 +9,7 @@ import {
 const MAX_CONTENT_BYTES = 5 * 1024 * 1024; // 5 MB
 
 export async function POST(request: NextRequest) {
+  console.log('🔴 WRITE-FILE CALLED:', request.url);
   const clientIp = request.headers.get('x-forwarded-for') ||
                    request.headers.get('x-real-ip') ||
                    'unknown';
@@ -148,8 +149,9 @@ export async function POST(request: NextRequest) {
     await fs.mkdir(dir, { recursive: true });
 
     // Write the file
-    console.log('[write-file] Writing file:', normalizedPath);
+    console.log('🔴 WRITING TO DISK:', normalizedPath, 'content length:', content.length);
     await fs.writeFile(normalizedPath, content, 'utf-8');
+    console.log('🔴 WRITE COMPLETE:', normalizedPath);
 
     // Log successful write
     logForensicEvent({
