@@ -56,5 +56,12 @@ module.exports = {
       cwd: "L:\\ai_builder\\ai_builderv2\\apps\\jury-standalone",
       env: { NODE_ENV: "development" },
     },
+    {
+      name: "debate-standalone",
+      script: "cmd",
+      args: "/c npm run dev",
+      cwd: "L:\\ai_builder\\ai_builderv2\\apps\\debate-standalone",
+      env: { NODE_ENV: "development" },
+    },
   ],
 };
