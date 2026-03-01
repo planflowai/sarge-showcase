@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { MonitorUp, MonitorOff, Trophy, ChevronDown } from "lucide-react";
+import { MonitorUp, MonitorOff, Trophy, ChevronDown, RotateCcw, Eye, Code2, Star } from "lucide-react";
+import { recallWorkbenchSlot } from "@/lib/workbenchPopoutManager";
 import { useWorkbenchStore, type WorkbenchSlot, type WorkbenchStatus } from "@/lib/stores/workbenchStore";
 import { sendWorkbenchConfig } from "@/lib/workbenchPopoutManager";
 import { providers, fetchOllamaModels } from "@sarge/core";
@@ -253,8 +254,31 @@ export default function WorkbenchCard({
   onLockWinner,
 }: WorkbenchCardProps) {
   const toggleSelected = useWorkbenchStore((s) => s.toggleSlotSelected);
+  const setSlotStatus  = useWorkbenchStore((s) => s.setSlotStatus);
   const meta      = PROVIDER_META[slot.provider] ?? { color: "#71717a", name: slot.provider };
   const statusCfg = STATUS_CONFIG[slot.status];
+
+  // Context menu state
+  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null);
+  const ctxRef = useRef<HTMLDivElement>(null);
+
+  // Close context menu on outside click or Escape
+  useEffect(() => {
+    if (!ctxMenu) return;
+    const handleClick = (e: MouseEvent) => {
+      if (ctxRef.current && !ctxRef.current.contains(e.target as Node)) setCtxMenu(null);
+    };
+    const handleKey = (e: KeyboardEvent) => { if (e.key === "Escape") setCtxMenu(null); };
+    document.addEventListener("mousedown", handleClick);
+    document.addEventListener("keydown", handleKey);
+    return () => { document.removeEventListener("mousedown", handleClick); document.removeEventListener("keydown", handleKey); };
+  }, [ctxMenu]);
+
+  const handleContextMenu = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setCtxMenu({ x: e.clientX, y: e.clientY });
+  }, []);
 
   // Monitor 1 gets gold border, others get model brand color
   const isAnchor     = slot.monitorNumber === 1;
@@ -275,6 +299,7 @@ export default function WorkbenchCard({
       className="flex flex-col transition-all cursor-pointer h-full overflow-hidden"
       style={{ border: `2px solid ${borderColor}`, borderRadius: "12px", backgroundColor: "#0c0c0f", boxShadow: glowShadow }}
       onClick={() => toggleSelected(slot.slot)}
+      onContextMenu={handleContextMenu}
       title={slot.selected ? "Click to deselect" : "Click to select for broadcast"}
     >
       {/* Row 1: MON left | model name centered | status right */}
@@ -355,6 +380,73 @@ export default function WorkbenchCard({
           </button>
         )}
       </div>
+
+      {/* Right-click context menu */}
+      {ctxMenu && (
+        <div
+          ref={ctxRef}
+          className="fixed z-[9999] min-w-[180px] rounded-xl border border-zinc-700 bg-zinc-900 shadow-2xl py-1 overflow-hidden"
+          style={{ top: ctxMenu.y, left: ctxMenu.x }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            className="w-full text-left px-4 py-2.5 text-xs font-semibold text-zinc-300 hover:bg-zinc-800 flex items-center gap-2 transition-colors"
+            onClick={() => { onRecall(); setCtxMenu(null); }}
+          >
+            <RotateCcw className="w-3.5 h-3.5 text-red-400" /> Recall this monitor
+          </button>
+          <button
+            className="w-full text-left px-4 py-2.5 text-xs font-semibold text-zinc-300 hover:bg-zinc-800 flex items-center gap-2 transition-colors"
+            onClick={() => {
+              // Promote: set this slot's model/provider on Mon 1 (anchor)
+              const store = useWorkbenchStore.getState();
+              store.setSlotProvider(1, slot.provider);
+              store.setSlotModel(1, slot.model);
+              sendWorkbenchConfig(1, slot.provider, slot.model);
+              setCtxMenu(null);
+            }}
+          >
+            <Star className="w-3.5 h-3.5 text-amber-400" /> Promote to anchor
+          </button>
+          {slot.lastCode && (
+            <>
+              <div className="border-t border-zinc-800 my-1" />
+              <button
+                className="w-full text-left px-4 py-2.5 text-xs font-semibold text-zinc-300 hover:bg-zinc-800 flex items-center gap-2 transition-colors"
+                onClick={() => {
+                  // View code — open in new window
+                  const w = window.open("", "_blank", "width=800,height=600");
+                  if (w) { w.document.write(`<html><head><title>Code — Mon ${slot.monitorNumber}</title><style>body{background:#0a0a0a;color:#e4e4e7;font-family:monospace;white-space:pre-wrap;padding:24px;font-size:13px;}</style></head><body>${slot.lastCode.replace(/</g,"&lt;").replace(/>/g,"&gt;")}</body></html>`); w.document.close(); }
+                  setCtxMenu(null);
+                }}
+              >
+                <Code2 className="w-3.5 h-3.5 text-blue-400" /> View code
+              </button>
+              <button
+                className="w-full text-left px-4 py-2.5 text-xs font-semibold text-zinc-300 hover:bg-zinc-800 flex items-center gap-2 transition-colors"
+                onClick={() => {
+                  // View preview — open rendered HTML in new window
+                  const w = window.open("", "_blank", "width=1024,height=768");
+                  if (w) { w.document.write(slot.lastCode); w.document.close(); }
+                  setCtxMenu(null);
+                }}
+              >
+                <Eye className="w-3.5 h-3.5 text-emerald-400" /> View preview
+              </button>
+            </>
+          )}
+          <div className="border-t border-zinc-800 my-1" />
+          <button
+            className="w-full text-left px-4 py-2.5 text-xs font-semibold text-zinc-300 hover:bg-zinc-800 flex items-center gap-2 transition-colors"
+            onClick={() => {
+              setSlotStatus(slot.slot, "idle");
+              setCtxMenu(null);
+            }}
+          >
+            <RotateCcw className="w-3.5 h-3.5 text-zinc-500" /> Reset
+          </button>
+        </div>
+      )}
 
       <style jsx>{`
         @keyframes workbench-sweep {

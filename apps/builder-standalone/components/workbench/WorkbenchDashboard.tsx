@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { X, Send, Rocket, MonitorOff } from "lucide-react";
+import { X, Send, Rocket, MonitorOff, Plus, FolderOpen, Save, Trash2, Lightbulb, Hammer, Pencil, RefreshCw, Upload, Globe, Package, Download, Copy, BookOpen } from "lucide-react";
 import { useWorkbenchStore } from "@/lib/stores/workbenchStore";
+import { useBuilderStore } from "@sarge/builder/index.client";
 import {
   WORKBENCH_CHANNEL,
   checkWindowManagement,
@@ -35,6 +36,11 @@ export default function WorkbenchDashboard() {
   const [workspaceOn,   setWorkspaceOn]   = useState(false);
   const [compareImage,  setCompareImage]  = useState<string | null>(null);
   const [dragOver,      setDragOver]      = useState(false);
+  const [lastAction,    setLastAction]    = useState("Ready");
+
+  // Project info from builder store
+  const projectName = useBuilderStore((s) => s.projectName);
+  const fileTree    = useBuilderStore((s) => s.fileTree);
 
   // ─── Effects ────────────────────────────────────────────────────────────────
 
@@ -140,6 +146,7 @@ export default function WorkbenchDashboard() {
       selectedSlots.forEach((s) => broadcastWorkbenchPrompt(text, s.slot));
     }
     setPrompt("");
+    setLastAction(`Broadcast sent to ${selectedSlots.length} monitor${selectedSlots.length !== 1 ? "s" : ""}`);
   }, [prompt, slots]);
 
   const handleLockWinner = useCallback((slot: number) => {
@@ -233,6 +240,55 @@ export default function WorkbenchDashboard() {
         </div>
       </div>
 
+      {/* ── Toolbar — project, build, deploy actions ── */}
+      <div className="flex items-center justify-between px-5 py-1.5 bg-[#141414] border-y border-zinc-800/40 flex-shrink-0">
+        {/* Left: Project management */}
+        <div className="flex items-center gap-1.5">
+          <button onClick={() => setLastAction("New project...")} className="flex items-center gap-1 h-8 px-3 rounded-md text-xs font-semibold text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-zinc-700/40 transition-colors">
+            <Plus className="h-3.5 w-3.5" /> New
+          </button>
+          <button onClick={() => setLastAction("Open project...")} className="flex items-center gap-1 h-8 px-3 rounded-md text-xs font-semibold text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-zinc-700/40 transition-colors">
+            <FolderOpen className="h-3.5 w-3.5" /> Open
+          </button>
+          <button onClick={() => setLastAction("Project saved")} className="flex items-center gap-1 h-8 px-3 rounded-md text-xs font-semibold text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-zinc-700/40 transition-colors">
+            <Save className="h-3.5 w-3.5" /> Save
+          </button>
+          <button onClick={() => setLastAction("Delete project...")} className="flex items-center gap-1 h-8 px-3 rounded-md text-xs font-semibold text-red-400/60 hover:text-red-400 hover:bg-red-500/10 border border-zinc-700/40 transition-colors">
+            <Trash2 className="h-3.5 w-3.5" /> Delete
+          </button>
+        </div>
+        {/* Center: Build actions */}
+        <div className="flex items-center gap-1.5">
+          <button onClick={() => setLastAction("Planning...")} className="flex items-center gap-1 h-8 px-3 rounded-md text-xs font-semibold text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-zinc-700/40 transition-colors">
+            <Lightbulb className="h-3.5 w-3.5" /> Plan
+          </button>
+          <button onClick={() => setLastAction("Building...")} className="flex items-center gap-1 h-8 px-3 rounded-md text-xs font-bold text-white bg-[#FF6700]/80 hover:bg-[#FF6700] border border-[#FF6700]/50 transition-colors">
+            <Hammer className="h-3.5 w-3.5" /> Build
+          </button>
+          <button onClick={() => setLastAction("Editing...")} className="flex items-center gap-1 h-8 px-3 rounded-md text-xs font-semibold text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-zinc-700/40 transition-colors">
+            <Pencil className="h-3.5 w-3.5" /> Edit
+          </button>
+          <button onClick={() => setLastAction("Regenerating...")} className="flex items-center gap-1 h-8 px-3 rounded-md text-xs font-semibold text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-zinc-700/40 transition-colors">
+            <RefreshCw className="h-3.5 w-3.5" /> Regen
+          </button>
+        </div>
+        {/* Right: Deploy actions */}
+        <div className="flex items-center gap-1.5">
+          <button onClick={() => setLastAction("Pushing...")} className="flex items-center gap-1 h-8 px-3 rounded-md text-xs font-bold text-white bg-[#FF6700]/80 hover:bg-[#FF6700] border border-[#FF6700]/50 transition-colors">
+            <Upload className="h-3.5 w-3.5" /> Push
+          </button>
+          <button onClick={() => setLastAction("Deploying...")} className="flex items-center gap-1 h-8 px-3 rounded-md text-xs font-semibold text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-zinc-700/40 transition-colors">
+            <Globe className="h-3.5 w-3.5" /> Deploy
+          </button>
+          <button onClick={() => setLastAction("Exporting for client...")} className="flex items-center gap-1 h-8 px-3 rounded-md text-xs font-semibold text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-zinc-700/40 transition-colors">
+            <Package className="h-3.5 w-3.5" /> Export
+          </button>
+          <button onClick={() => setLastAction("Downloading...")} className="flex items-center gap-1 h-8 px-3 rounded-md text-xs font-semibold text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-zinc-700/40 transition-colors">
+            <Download className="h-3.5 w-3.5" /> Download
+          </button>
+        </div>
+      </div>
+
       {/* ── Monitor Grid ── */}
       <div className="flex-1 min-h-0 p-4 flex flex-col gap-3 overflow-hidden">
         {/* Row 1: Mon5 | Mon1 | Mon3 */}
@@ -282,6 +338,32 @@ export default function WorkbenchDashboard() {
               onLockWinner={() => handleLockWinner(s5.slot)}
             />
           )}
+        </div>
+      </div>
+
+      {/* ── Status Bar — between grid and broadcast ── */}
+      <div className="flex items-center justify-between h-8 px-5 bg-[#111] border-y border-zinc-800/30 flex-shrink-0 text-xs text-zinc-500">
+        {/* Left: project info */}
+        <div className="flex items-center gap-2">
+          <FolderOpen className="h-3 w-3 text-[#FF6700]/60" />
+          <span className="font-medium text-zinc-400">{projectName || "No project"}</span>
+          {fileTree.length > 0 && (
+            <span className="text-zinc-600">· {fileTree.length} files</span>
+          )}
+        </div>
+        {/* Center: last action */}
+        <span className="text-zinc-600 font-medium">{lastAction}</span>
+        {/* Right: quick actions */}
+        <div className="flex items-center gap-1.5">
+          <button className="flex items-center gap-1 px-2 py-1 rounded text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors">
+            <Package className="h-3 w-3" /> Assets
+          </button>
+          <button className="flex items-center gap-1 px-2 py-1 rounded text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors">
+            <Copy className="h-3 w-3" /> Copy
+          </button>
+          <button className="flex items-center gap-1 px-2 py-1 rounded text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors">
+            <BookOpen className="h-3 w-3" /> Vault
+          </button>
         </div>
       </div>
 
