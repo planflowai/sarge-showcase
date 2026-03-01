@@ -277,24 +277,25 @@ export default function WorkbenchCard({
       onClick={() => toggleSelected(slot.slot)}
       title={slot.selected ? "Click to deselect" : "Click to select for broadcast"}
     >
-      {/* Row 1: monitor badge + model name (bold, brand color) + status + anchor */}
-      <div className="flex items-center justify-between px-4 pt-3 pb-2 flex-shrink-0">
-        <div className="flex items-center gap-3">
+      {/* Row 1: MON left | model name centered | status right */}
+      <div className="relative flex items-center px-4 pt-3 pb-2 flex-shrink-0">
+        {/* Left: MON badge */}
+        <div className="flex items-center gap-2 flex-shrink-0">
           <div
             className="w-9 h-9 rounded-xl flex items-center justify-center text-base font-black flex-shrink-0"
             style={{ border: `2px solid ${cardBorder}50`, color: cardBorder, background: `${cardBorder}12` }}
           >
             {slot.monitorNumber}
           </div>
-          <div>
-            <p className="text-sm font-black text-zinc-200 tracking-wide">MON {slot.monitorNumber}</p>
-            <p className="text-[16px] font-bold truncate max-w-[200px]" style={{ color: meta.color }}>{displayModelName}</p>
-          </div>
+          <p className="text-sm font-black text-zinc-200 tracking-wide">MON {slot.monitorNumber}</p>
           {slot.selected && (
-            <span className="text-[11px] px-2 py-0.5 rounded-full bg-indigo-500/25 text-indigo-300 font-black">✓ Selected</span>
+            <span className="text-[11px] px-2 py-0.5 rounded-full bg-indigo-500/25 text-indigo-300 font-black">✓</span>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        {/* Center: model name — absolutely positioned for true center */}
+        <p className="absolute left-1/2 -translate-x-1/2 text-[16px] font-bold truncate max-w-[55%] text-center" style={{ color: meta.color }}>{displayModelName}</p>
+        {/* Right: anchor badge + status */}
+        <div className="flex items-center gap-2 ml-auto flex-shrink-0">
           {isAnchor && (
             <span className="text-[9px] px-2 py-0.5 rounded-full font-black tracking-wider" style={{ backgroundColor: "#FFD70020", color: "#FFD700", border: "1px solid #FFD70040" }}>
               ANCHOR

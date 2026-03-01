@@ -624,15 +624,15 @@ Please provide the complete modified version of this component. Make only the re
 
   return (
     <div className="relative flex flex-col h-full w-full bg-zinc-50 dark:bg-zinc-950">
-      {/* The Pit — fixed top LEFT */}
+      {/* The Pit — fixed top LEFT, centered text with orange-gold gradient */}
       <div className="fixed top-4 left-4 z-[100] flex items-center gap-3">
         <button
           onClick={launchWorkspace}
-          className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#FF6700] to-orange-600 hover:from-[#FF6700]/90 hover:to-orange-500 text-white rounded-lg shadow-lg transition-all text-sm font-bold"
+          className="flex items-center justify-center gap-2 px-6 py-3 bg-zinc-900/80 hover:bg-zinc-800/80 border border-[#FF6700]/40 rounded-lg shadow-lg transition-all text-sm font-[800] tracking-[1px]"
           title="Launch The Pit — multi-window workspace across your monitors"
         >
-          <Rocket className="w-4 h-4" />
-          The Pit
+          <Rocket className="w-4 h-4 text-[#FF6700]" />
+          <span className="bg-gradient-to-r from-[#FF6700] to-[#FFD700] bg-clip-text text-transparent">The Pit</span>
         </button>
         <ThreadGuardianIndicator conversationId="builder-chat" />
       </div>
