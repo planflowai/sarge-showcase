@@ -18,7 +18,7 @@ function FileLine({
   autoApply,
 }: {
   edit: ParsedEdit;
-  status: "streaming" | "pending" | "applied" | "rejected";
+  status: "streaming" | "pending" | "applied" | "rejected" | "error";
   isStreaming: boolean;
   onApply: () => Promise<void>;
   onReject: () => void;
@@ -30,6 +30,8 @@ function FileLine({
     setIsApplying(true);
     try {
       await onApply();
+    } catch (err) {
+      console.error('[StreamingMessageRenderer] Apply failed:', err);
     } finally {
       setIsApplying(false);
     }
@@ -51,7 +53,7 @@ function FileLine({
         <Loader2 className="h-5 w-5 text-blue-400 animate-spin flex-shrink-0" />
       ) : status === "applied" ? (
         <Check className="h-5 w-5 text-emerald-400 flex-shrink-0" />
-      ) : status === "rejected" ? (
+      ) : status === "rejected" || status === "error" ? (
         <X className="h-5 w-5 text-red-400 flex-shrink-0" />
       ) : edit.isNew ? (
         <FilePlus className="h-5 w-5 text-emerald-400 flex-shrink-0" />
@@ -85,6 +87,9 @@ function FileLine({
       )}
       {status === "rejected" && (
         <span className="text-sm text-red-400 ml-auto">Rejected</span>
+      )}
+      {status === "error" && (
+        <span className="text-sm text-red-400 ml-auto">Failed</span>
       )}
       {status === "pending" && (
         <span className="flex items-center gap-3 ml-auto">
@@ -132,7 +137,7 @@ export default function StreamingMessageRenderer({
   onViewDiff,
   autoApply = false,
 }: StreamingMessageRendererProps) {
-  const [editStatuses, setEditStatuses] = useState<Record<string, "streaming" | "pending" | "applied" | "rejected">>({});
+  const [editStatuses, setEditStatuses] = useState<Record<string, "streaming" | "pending" | "applied" | "rejected" | "error">>({});
 
   const parsed = useMemo(() => parseStreamingContent(content), [content]);
 
@@ -169,8 +174,13 @@ export default function StreamingMessageRenderer({
 
   const handleApply = async (edit: ParsedEdit) => {
     if (onApply) {
-      await onApply(edit.filePath, edit.content);
-      setEditStatuses((prev) => ({ ...prev, [edit.filePath]: "applied" }));
+      try {
+        await onApply(edit.filePath, edit.content);
+        setEditStatuses((prev) => ({ ...prev, [edit.filePath]: "applied" }));
+      } catch (err) {
+        console.error('[StreamingMessageRenderer] File write failed:', edit.filePath, err);
+        setEditStatuses((prev) => ({ ...prev, [edit.filePath]: "error" }));
+      }
     } else if (onOpenPreview) {
       onOpenPreview(edit.content);
       setEditStatuses((prev) => ({ ...prev, [edit.filePath]: "applied" }));
