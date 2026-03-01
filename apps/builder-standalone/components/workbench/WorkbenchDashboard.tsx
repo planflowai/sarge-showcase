@@ -196,16 +196,16 @@ export default function WorkbenchDashboard() {
     <div className="flex flex-col h-full w-full bg-zinc-950 overflow-hidden">
 
       {/* ── Header ── */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-zinc-800/60 flex-shrink-0">
-        <div className="flex items-center gap-4">
-          <h1 className="text-4xl font-[800] text-white tracking-[2px]">THE PIT</h1>
+      <div className="relative flex items-center justify-end px-6 py-3 border-b border-zinc-800/60 flex-shrink-0">
+        {/* Centered title — absolute so buttons don't push it off-center */}
+        <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-3">
+          <h1 className="text-4xl font-[800] tracking-[2px] bg-gradient-to-r from-[#FF6700] to-[#FFD700] bg-clip-text text-transparent">THE PIT</h1>
           {workspaceOn && (
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/8 border border-emerald-500/15">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
               <span className="text-[10px] font-bold text-emerald-400">{openCount} LIVE</span>
             </div>
           )}
-          <p className="text-xs text-zinc-600">5-Monitor Command Center</p>
         </div>
 
         <div className="flex items-center gap-3">
