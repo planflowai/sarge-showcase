@@ -49,5 +49,12 @@ module.exports = {
       cwd: "L:\\ai_builder\\ai_builderv2\\apps\\guardian-standalone",
       env: { NODE_ENV: "development" },
     },
+    {
+      name: "jury-standalone",
+      script: "cmd",
+      args: "/c npm run dev",
+      cwd: "L:\\ai_builder\\ai_builderv2\\apps\\jury-standalone",
+      env: { NODE_ENV: "development" },
+    },
   ],
 };
