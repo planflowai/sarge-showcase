@@ -239,7 +239,7 @@ export function WorkbenchPopout({ slotNum, monitorNumber, provider: initProvider
         <div className="flex items-center gap-3 flex-shrink-0">
           {/* Provider color pill */}
           <div
-            className="px-2.5 py-1 rounded-md text-sm font-black uppercase tracking-widest flex-shrink-0"
+            className="px-3 py-1.5 rounded-lg text-base font-black uppercase tracking-widest flex-shrink-0"
             style={{ background: `${color}18`, border: `1px solid ${color}35`, color }}
           >
             {providerName}
@@ -256,7 +256,7 @@ export function WorkbenchPopout({ slotNum, monitorNumber, provider: initProvider
         <span className="absolute left-1/2 -translate-x-1/2 text-2xl font-[800] tracking-wide" style={{ color }} title={activeModel}>
           {displayName}
         </span>
-        <span className="text-xs font-mono font-bold text-zinc-600 flex-shrink-0">
+        <span className="text-xl font-mono font-[800] text-zinc-400 flex-shrink-0 tracking-wide">
           MON {monitorNumber} · SLOT {slotNum}
         </span>
       </div>
@@ -285,7 +285,7 @@ export function WorkbenchPopout({ slotNum, monitorNumber, provider: initProvider
 
       {/* Status bar */}
       <div
-        className="flex items-center justify-between px-4 py-1.5 flex-shrink-0 text-[9px] font-mono"
+        className="flex items-center justify-between px-5 py-2 flex-shrink-0 text-sm font-mono"
         style={{ borderTop: `1px solid ${color}12`, background: `${color}04` }}
       >
         <span className="text-zinc-500">
