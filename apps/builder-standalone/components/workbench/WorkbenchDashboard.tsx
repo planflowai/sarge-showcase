@@ -146,22 +146,25 @@ export default function WorkbenchDashboard() {
       if (s === "granted" || s === "prompt") prefetchScreens();
     });
 
-    // Attempt to move this window to Monitor 4 (0-indexed: screens[3])
-    const positionOnMonitor4 = async () => {
-      try {
-        if (!("getScreenDetails" in window)) return;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const details = await (window as any).getScreenDetails();
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const screens = details.screens as any[];
-        if (screens.length >= 4) {
-          const mon4 = screens[3];
-          window.moveTo(mon4.left, mon4.top);
-          window.resizeTo(mon4.width, mon4.height);
-        }
-      } catch { /* permission denied or API unsupported — silent fail */ }
-    };
-    positionOnMonitor4();
+    // Attempt to move this window to Monitor 4 — only on first launch, not refresh
+    if (!sessionStorage.getItem("pit-positioned")) {
+      const positionOnMonitor4 = async () => {
+        try {
+          if (!("getScreenDetails" in window)) return;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const details = await (window as any).getScreenDetails();
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const screens = details.screens as any[];
+          if (screens.length >= 4) {
+            const mon4 = screens[3];
+            window.moveTo(mon4.left, mon4.top);
+            window.resizeTo(mon4.width, mon4.height);
+          }
+          sessionStorage.setItem("pit-positioned", "1");
+        } catch { /* permission denied or API unsupported — silent fail */ }
+      };
+      positionOnMonitor4();
+    }
   }, []);
 
   // Load active builder project into anchor (Mon 1) — wait for store hydration
