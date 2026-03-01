@@ -162,25 +162,7 @@ export default function WorkbenchDashboard() {
     initScreens();
   }, []);
 
-  // Load active builder project into anchor (Mon 1) — wait for store hydration
-  const builderHydrated  = useBuilderStore((s) => s.hydrated);
-  const artifactHydrated = useArtifactStore((s) => s.hydrated);
-  const artifactCode     = useArtifactStore((s) => s.code);
-  const [anchorLoaded, setAnchorLoaded] = useState(false);
-
-  useEffect(() => {
-    if (anchorLoaded) return;
-    if (!builderHydrated || !artifactHydrated) return;
-    const builderState = useBuilderStore.getState();
-    const code = artifactCode;
-    if (builderState.projectPath && code) {
-      const anchorSlot = useWorkbenchStore.getState().slots.find((s) => s.monitorNumber === 1);
-      if (anchorSlot && !anchorSlot.previewHtml) {
-        useWorkbenchStore.getState().setSlotPreview(anchorSlot.slot, code, code);
-      }
-    }
-    setAnchorLoaded(true);
-  }, [builderHydrated, artifactHydrated, artifactCode, anchorLoaded]);
+  // Mon 1 (anchor) starts empty — builds only when user broadcasts
 
   // Poll open window count
   useEffect(() => {
