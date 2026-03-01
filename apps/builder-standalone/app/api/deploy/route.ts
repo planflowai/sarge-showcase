@@ -219,11 +219,11 @@ export async function POST(request: NextRequest) {
       const ghEmail = (ghUser.email as string) || `${ghLogin}@users.noreply.github.com`;
 
       // 2b. Create hosting config files if they don't exist
-      // vercel.json — tells Vercel to serve static files with SPA fallback
+      // vercel.json — tells Vercel this is a static site (no build), serve from root
       const vercelJsonPath = path.join(projectPath, "vercel.json");
       if (!fs.existsSync(vercelJsonPath)) {
         fs.writeFileSync(vercelJsonPath, JSON.stringify(
-          { rewrites: [{ source: "/(.*)", destination: "/index.html" }] },
+          { version: 2, buildCommand: "", outputDirectory: ".", rewrites: [{ source: "/(.*)", destination: "/index.html" }] },
           null, 2
         ), "utf-8");
       }
@@ -528,6 +528,19 @@ export async function POST(request: NextRequest) {
       };
 
       if (targets.includes("vercel")) {
+        // Ensure vercel.json has buildCommand (fixes projects init'd before this was added)
+        const vercelJsonPath = path.join(projectPath, "vercel.json");
+        if (fs.existsSync(vercelJsonPath)) {
+          try {
+            const vj = JSON.parse(fs.readFileSync(vercelJsonPath, "utf-8"));
+            if (!("buildCommand" in vj)) {
+              vj.version = 2;
+              vj.buildCommand = "";
+              vj.outputDirectory = ".";
+              fs.writeFileSync(vercelJsonPath, JSON.stringify(vj, null, 2), "utf-8");
+            }
+          } catch { /* ignore */ }
+        }
         const vercelProjectFile = path.join(projectPath, ".vercel", "project.json");
         if (fs.existsSync(vercelProjectFile)) {
           redeployTasks.push(
@@ -615,13 +628,13 @@ export async function POST(request: NextRequest) {
         ".next", "dist", "__pycache__", ".cache", "export.zip",
       ]);
 
-      // Ensure vercel.json exists for SPA rewrite
+      // Ensure vercel.json exists for static deploy (no build, serve from root)
       const vercelJsonPath = path.join(projectPath, "vercel.json");
       if (!fs.existsSync(vercelJsonPath)) {
         fs.writeFileSync(
           vercelJsonPath,
           JSON.stringify(
-            { rewrites: [{ source: "/(.*)", destination: "/index.html" }] },
+            { version: 2, buildCommand: "", outputDirectory: ".", rewrites: [{ source: "/(.*)", destination: "/index.html" }] },
             null,
             2
           ),
