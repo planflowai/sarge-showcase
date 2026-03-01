@@ -196,45 +196,39 @@ export default function WorkbenchDashboard() {
     <div className="flex flex-col h-full w-full bg-zinc-950 overflow-hidden">
 
       {/* ── Header ── */}
-      <div className="flex items-center justify-between px-5 py-3 border-b border-zinc-800/60 flex-shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-purple-500/15 border border-purple-500/30 flex items-center justify-center">
-            <span className="text-base">🔧</span>
-          </div>
-          <div>
-            <h1 className="text-sm font-bold text-white tracking-wide">The Pit</h1>
-            <p className="text-[10px] text-zinc-500">5-Monitor Builder Command Center</p>
-          </div>
+      <div className="flex items-center justify-between px-6 py-3 border-b border-zinc-800/60 flex-shrink-0">
+        <div className="flex items-center gap-4">
+          <h1 className="text-4xl font-[800] text-white tracking-[2px]">THE PIT</h1>
           {workspaceOn && (
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/8 border border-emerald-500/15">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
               <span className="text-[10px] font-bold text-emerald-400">{openCount} LIVE</span>
             </div>
           )}
+          <p className="text-xs text-zinc-600">5-Monitor Command Center</p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <button
             onClick={handleLaunchAll}
             disabled={launching || workspaceOn}
-            className="flex items-center gap-1.5 px-4 py-1.5 rounded-md text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white transition-all disabled:opacity-40"
+            className="flex items-center gap-2 h-12 px-6 rounded-lg text-base font-bold bg-[#FF6700] hover:bg-[#FF6700]/85 text-white transition-all disabled:opacity-40"
             title={workspaceOn ? "Already launched" : "Open all monitor popouts"}
           >
-            <Rocket className="h-3.5 w-3.5" /> Launch All
+            <Rocket className="h-5 w-5" /> Launch All
           </button>
           <button
             onClick={handleRecallAll}
-            disabled={!workspaceOn}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold bg-red-500/8 hover:bg-red-500/15 text-red-400 border border-red-500/15 transition-all disabled:opacity-40"
-            title={!workspaceOn ? "No windows open" : "Close all monitor popouts"}
+            className="flex items-center gap-2 h-12 px-6 rounded-lg text-base font-bold text-white border-2 border-white/60 hover:border-white hover:bg-white/10 transition-all"
+            title="Close all monitor popouts"
           >
-            <MonitorOff className="h-3.5 w-3.5" /> Recall All
+            <MonitorOff className="h-5 w-5" /> Recall All
           </button>
           <button
             onClick={handleExit}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[10px] font-bold text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 border border-zinc-700/30 transition-all"
+            className="flex items-center gap-1.5 h-12 px-5 rounded-lg text-sm font-bold text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 border border-zinc-700/40 transition-all"
           >
-            <X className="h-3 w-3" /> Exit
+            <X className="h-4 w-4" /> Exit
           </button>
         </div>
       </div>

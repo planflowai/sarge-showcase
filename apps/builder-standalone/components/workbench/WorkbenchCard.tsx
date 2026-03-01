@@ -221,14 +221,8 @@ function LiveThumbnail({ html, status, color, modelName, providerName }: { html:
         </>
       ) : (
         <div className="flex items-center justify-center h-full min-h-[120px]">
-          <div className="text-center">
-            <div
-              className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3 text-xl font-black"
-              style={{ border: `2px solid ${color}30`, color, background: `${color}08`, boxShadow: `0 0 20px ${color}10` }}
-            >
-              {providerName[0]?.toUpperCase() ?? "?"}
-            </div>
-            <p className="text-[20px] font-black mb-1" style={{ color }}>
+          <div className="text-center flex flex-col items-center justify-center">
+            <p className="text-[22px] font-bold mb-2" style={{ color }}>
               {modelName}
             </p>
             <p className="text-xs text-zinc-600 font-medium">
@@ -278,12 +272,12 @@ export default function WorkbenchCard({
 
   return (
     <div
-      className="flex flex-col rounded-2xl transition-all cursor-pointer h-full"
-      style={{ border: `2px solid ${borderColor}`, backgroundColor: "#0c0c0f", boxShadow: glowShadow }}
+      className="flex flex-col transition-all cursor-pointer h-full overflow-hidden"
+      style={{ border: `2px solid ${borderColor}`, borderRadius: "12px", backgroundColor: "#0c0c0f", boxShadow: glowShadow }}
       onClick={() => toggleSelected(slot.slot)}
       title={slot.selected ? "Click to deselect" : "Click to select for broadcast"}
     >
-      {/* Row 1: monitor badge + status + anchor */}
+      {/* Row 1: monitor badge + model name (bold, brand color) + status + anchor */}
       <div className="flex items-center justify-between px-4 pt-3 pb-2 flex-shrink-0">
         <div className="flex items-center gap-3">
           <div
@@ -294,7 +288,7 @@ export default function WorkbenchCard({
           </div>
           <div>
             <p className="text-sm font-black text-zinc-200 tracking-wide">MON {slot.monitorNumber}</p>
-            <p className="text-[11px] font-semibold" style={{ color: meta.color }}>{meta.name}</p>
+            <p className="text-[16px] font-bold truncate max-w-[200px]" style={{ color: meta.color }}>{displayModelName}</p>
           </div>
           {slot.selected && (
             <span className="text-[11px] px-2 py-0.5 rounded-full bg-indigo-500/25 text-indigo-300 font-black">✓ Selected</span>
