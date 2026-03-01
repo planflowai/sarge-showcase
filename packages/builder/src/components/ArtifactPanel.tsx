@@ -159,12 +159,17 @@ function ArtifactPanelInner({
       // Write restored version to disk if we have a file path
       const { projectPath: projPath } = useBuilderStore.getState();
       if (artifactStorePath && projPath) {
+        // Construct absolute path — same logic as handleApplyFile
+        const cleanRelativePath = artifactStorePath.replace(/^[\/\\]+/, '');
+        const fullPath = artifactStorePath.match(/^[A-Z]:/i)
+          ? artifactStorePath.replace(/\\/g, '/')
+          : `${projPath}/${cleanRelativePath}`.replace(/\\/g, '/');
         try {
           const res = await fetch('/api/builder/write-file', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              path: artifactStorePath,
+              path: fullPath,
               content: versionCode,
               projectPath: projPath,
             }),
