@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
-import { X, Send, Rocket, MonitorOff, Plus, FolderOpen, Save, Trash2, Lightbulb, Hammer, Pencil, RefreshCw, Upload, Globe, Package, Download, Copy, BookOpen } from "lucide-react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { X, Send, Rocket, MonitorOff, Plus, FolderOpen, Save, Trash2, Lightbulb, Hammer, Pencil, RefreshCw, Upload, Globe, Package, Download, Copy, BookOpen, Eraser, CheckSquare, Square } from "lucide-react";
 import { useWorkbenchStore } from "@/lib/stores/workbenchStore";
 import { useBuilderStore } from "@sarge/builder/index.client";
+import { useUIStore } from "@sarge/core";
+import { useDeployStore, type DeployTarget } from "@/lib/stores/deployStore";
 import {
   WORKBENCH_CHANNEL,
   checkWindowManagement,
@@ -18,6 +20,87 @@ import {
 import WorkbenchCard from "./WorkbenchCard";
 import { cn } from "@/lib/utils";
 
+// ─── Deploy target definitions ────────────────────────────────────────────────
+
+const DEPLOY_TARGETS: { id: DeployTarget; label: string }[] = [
+  { id: "github",     label: "GitHub" },
+  { id: "vercel",     label: "Vercel" },
+  { id: "netlify",    label: "Netlify" },
+  { id: "cloudflare", label: "Cloudflare Pages" },
+];
+
+// ─── Target Dropdown (shared by Push and Deploy) ──────────────────────────────
+
+function TargetDropdown({
+  targets,
+  selected,
+  onToggle,
+  onConfirm,
+  onClose,
+  actionLabel,
+}: {
+  targets: typeof DEPLOY_TARGETS;
+  selected: DeployTarget[];
+  onToggle: (t: DeployTarget) => void;
+  onConfirm: () => void;
+  onClose: () => void;
+  actionLabel: string;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const h = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+    };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [onClose]);
+
+  return (
+    <div
+      ref={ref}
+      className="absolute top-full left-0 mt-1 z-50 w-56 rounded-xl border bg-zinc-900 dark:bg-zinc-900 border-zinc-700 dark:border-zinc-700 shadow-2xl overflow-hidden"
+    >
+      {targets.map((t) => {
+        const checked = selected.includes(t.id);
+        const isGithub = t.id === "github";
+        return (
+          <button
+            key={t.id}
+            onClick={() => { if (!isGithub) onToggle(t.id); }}
+            className={cn(
+              "w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold transition-colors",
+              isGithub ? "text-zinc-500 cursor-default" : "text-zinc-300 hover:bg-zinc-800 dark:hover:bg-zinc-800 cursor-pointer"
+            )}
+          >
+            {checked
+              ? <CheckSquare className="w-3.5 h-3.5 text-[#FF6700]" />
+              : <Square className="w-3.5 h-3.5 text-zinc-600" />
+            }
+            {t.label}
+            {isGithub && <span className="text-zinc-600 text-[10px] ml-auto">required</span>}
+          </button>
+        );
+      })}
+      <div className="border-t border-zinc-800 px-3 py-2">
+        <button
+          onClick={onConfirm}
+          disabled={selected.length === 0}
+          className="w-full h-8 rounded-lg text-xs font-bold text-white bg-[#FF6700] hover:bg-[#FF6700]/85 disabled:opacity-40 transition-colors"
+        >
+          {actionLabel} {selected.length} target{selected.length !== 1 ? "s" : ""}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Toolbar button style helpers ─────────────────────────────────────────────
+
+const tbBtn = "flex items-center gap-1 h-8 px-3 rounded-md text-xs font-semibold text-zinc-400 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-300 dark:border-zinc-700/40 transition-colors";
+const tbBtnPrimary = "flex items-center gap-1 h-8 px-3 rounded-md text-xs font-bold text-white bg-[#FF6700]/80 hover:bg-[#FF6700] border border-[#FF6700]/50 transition-colors";
+const tbBtnDanger = "flex items-center gap-1 h-8 px-3 rounded-md text-xs font-semibold text-red-400/60 hover:text-red-400 hover:bg-red-500/10 border border-zinc-300 dark:border-zinc-700/40 transition-colors";
+
 // ─── WorkbenchDashboard ───────────────────────────────────────────────────────
 
 export default function WorkbenchDashboard() {
@@ -30,6 +113,8 @@ export default function WorkbenchDashboard() {
     lockWinner,
   } = useWorkbenchStore();
 
+  const showToast = useUIStore((s) => s.showToast);
+
   const [prompt,        setPrompt]        = useState("");
   const [openCount,     setOpenCount]     = useState(0);
   const [launching,     setLaunching]     = useState(false);
@@ -38,9 +123,19 @@ export default function WorkbenchDashboard() {
   const [dragOver,      setDragOver]      = useState(false);
   const [lastAction,    setLastAction]    = useState("Ready");
 
+  // Push/Deploy dropdown state
+  const [showPushDropdown,   setShowPushDropdown]   = useState(false);
+  const [showDeployDropdown, setShowDeployDropdown] = useState(false);
+  const [pushTargets,   setPushTargets]   = useState<DeployTarget[]>(["github"]);
+  const [deployTargets, setDeployTargets] = useState<DeployTarget[]>(["github"]);
+
   // Project info from builder store
   const projectName = useBuilderStore((s) => s.projectName);
+  const projectPath = useBuilderStore((s) => s.projectPath);
   const fileTree    = useBuilderStore((s) => s.fileTree);
+
+  // Deploy store
+  const { pushProject, isDeploying } = useDeployStore();
 
   // ─── Effects ────────────────────────────────────────────────────────────────
 
@@ -139,25 +234,104 @@ export default function WorkbenchDashboard() {
     const selectedSlots = slots.filter((s) => s.selected);
     if (selectedSlots.length === 0) return;
     if (selectedSlots.length === slots.length) {
-      // all selected → broadcast null (all)
       broadcastWorkbenchPrompt(text, null);
     } else {
-      // targeted
       selectedSlots.forEach((s) => broadcastWorkbenchPrompt(text, s.slot));
     }
     setPrompt("");
-    setLastAction(`Broadcast sent to ${selectedSlots.length} monitor${selectedSlots.length !== 1 ? "s" : ""}`);
-  }, [prompt, slots]);
+    const msg = `Broadcast sent to ${selectedSlots.length} monitor${selectedSlots.length !== 1 ? "s" : ""}`;
+    setLastAction(msg);
+    showToast({ message: msg, type: "success" });
+  }, [prompt, slots, showToast]);
 
   const handleLockWinner = useCallback((slot: number) => {
     lockWinner(slot);
-    // workbenchStore.lockWinner sets active=false, which triggers page.tsx to load the code
   }, [lockWinner]);
 
   const handleExit = useCallback(() => {
     recallAllWorkbench();
     setActive(false);
   }, [setActive]);
+
+  // ── Clear all monitors ──
+  const handleClear = useCallback(() => {
+    // Clear preview/code then reset status to idle
+    const store = useWorkbenchStore.getState();
+    store.slots.forEach((s) => {
+      // setSlotPreview sets status to "complete", so we set idle after
+      store.setSlotPreview(s.slot, "", "");
+    });
+    store.resetSlotStatuses();
+    setLastAction("All monitors cleared");
+    showToast({ message: "All monitors cleared", type: "success" });
+  }, [showToast]);
+
+  // ── Toolbar action with toast ──
+  const toolbarAction = useCallback((action: string, toastMsg: string) => {
+    setLastAction(action);
+    showToast({ message: toastMsg, type: "success" });
+  }, [showToast]);
+
+  // ── Build actions — broadcast to selected monitors ──
+  const broadcastBuildAction = useCallback((action: string) => {
+    const selectedSlots = slots.filter((s) => s.selected);
+    if (selectedSlots.length === 0) {
+      showToast({ message: "No monitors selected", type: "warning" });
+      return;
+    }
+    const msg = `${action} — sent to ${selectedSlots.length} monitor${selectedSlots.length !== 1 ? "s" : ""}`;
+    setLastAction(msg);
+    showToast({ message: msg, type: "success" });
+  }, [slots, showToast]);
+
+  // ── Push handler ──
+  const handlePushConfirm = useCallback(async () => {
+    setShowPushDropdown(false);
+    if (!projectPath) {
+      showToast({ message: "No project open", type: "error" });
+      return;
+    }
+    setLastAction("Pushing...");
+    await pushProject(projectPath, projectName || "", pushTargets);
+    const state = useDeployStore.getState();
+    if (state.error) {
+      showToast({ message: `Push failed: ${state.error}`, type: "error" });
+      setLastAction("Push failed");
+    } else {
+      const targetNames = pushTargets.map((t) => DEPLOY_TARGETS.find((d) => d.id === t)?.label ?? t).join(", ");
+      showToast({ message: `Pushed to ${targetNames}`, type: "success" });
+      setLastAction(`Pushed to ${targetNames}`);
+    }
+  }, [projectPath, projectName, pushTargets, pushProject, showToast]);
+
+  // ── Deploy handler ──
+  const handleDeployConfirm = useCallback(async () => {
+    setShowDeployDropdown(false);
+    if (!projectPath) {
+      showToast({ message: "No project open", type: "error" });
+      return;
+    }
+    setLastAction("Deploying...");
+    // Deploy uses the same push mechanism with deploy targets
+    await pushProject(projectPath, projectName || "", deployTargets);
+    const state = useDeployStore.getState();
+    if (state.error) {
+      showToast({ message: `Deploy failed: ${state.error}`, type: "error" });
+      setLastAction("Deploy failed");
+    } else {
+      const targetNames = deployTargets.map((t) => DEPLOY_TARGETS.find((d) => d.id === t)?.label ?? t).join(", ");
+      showToast({ message: `Deployed to ${targetNames}`, type: "success" });
+      setLastAction(`Deployed to ${targetNames}`);
+    }
+  }, [projectPath, projectName, deployTargets, pushProject, showToast]);
+
+  const togglePushTarget = useCallback((t: DeployTarget) => {
+    setPushTargets((prev) => prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]);
+  }, []);
+
+  const toggleDeployTarget = useCallback((t: DeployTarget) => {
+    setDeployTargets((prev) => prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]);
+  }, []);
 
   const loadImageFile = useCallback((file: File) => {
     if (!file.type.startsWith("image/")) return;
@@ -191,20 +365,15 @@ export default function WorkbenchDashboard() {
   const handleDragLeave = useCallback(() => setDragOver(false), []);
 
   // ─── Grid layout ─────────────────────────────────────────────────────────────
-  // Physical layout:
-  //   [slot1=Mon5]  [slot2=Mon1]  [slot3=Mon3]
-  //   [slot4=Mon6]  [MON 4=here] [slot5=Mon2]
-
   const [s1, s2, s3, s4, s5] = slots;
-
   const selectedCount = slots.filter((s) => s.selected).length;
 
   return (
-    <div className="flex flex-col h-full w-full bg-zinc-950 overflow-hidden">
+    <div className="flex flex-col h-full w-full bg-zinc-100 dark:bg-zinc-950 overflow-hidden">
 
       {/* ── Header ── */}
-      <div className="relative flex items-center justify-end px-6 py-3 border-b border-zinc-800/60 flex-shrink-0">
-        {/* Centered title — absolute so buttons don't push it off-center */}
+      <div className="relative flex items-center justify-end px-6 py-3 border-b border-zinc-200 dark:border-zinc-800/60 flex-shrink-0 bg-white dark:bg-transparent">
+        {/* Centered title */}
         <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-3">
           <h1 className="text-4xl font-[800] tracking-[2px] bg-gradient-to-r from-[#FF6700] to-[#FFD700] bg-clip-text text-transparent">THE PIT</h1>
           {workspaceOn && (
@@ -226,14 +395,14 @@ export default function WorkbenchDashboard() {
           </button>
           <button
             onClick={handleRecallAll}
-            className="flex items-center gap-2 h-12 px-6 rounded-lg text-base font-bold text-white border-2 border-white/60 hover:border-white hover:bg-white/10 transition-all"
+            className="flex items-center gap-2 h-12 px-6 rounded-lg text-base font-bold text-zinc-700 dark:text-white border-2 border-zinc-400 dark:border-white/60 hover:border-zinc-600 dark:hover:border-white hover:bg-zinc-200 dark:hover:bg-white/10 transition-all"
             title="Close all monitor popouts"
           >
             <MonitorOff className="h-5 w-5" /> Recall All
           </button>
           <button
             onClick={handleExit}
-            className="flex items-center gap-1.5 h-12 px-5 rounded-lg text-sm font-bold text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 border border-zinc-700/40 transition-all"
+            className="flex items-center gap-1.5 h-12 px-5 rounded-lg text-sm font-bold text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-300 dark:border-zinc-700/40 transition-all"
           >
             <X className="h-4 w-4" /> Exit
           </button>
@@ -241,49 +410,78 @@ export default function WorkbenchDashboard() {
       </div>
 
       {/* ── Toolbar — project, build, deploy actions ── */}
-      <div className="flex items-center justify-between px-5 py-1.5 bg-[#141414] border-y border-zinc-800/40 flex-shrink-0">
+      <div className="flex items-center justify-between px-5 py-1.5 bg-zinc-50 dark:bg-[#141414] border-y border-zinc-200 dark:border-zinc-800/40 flex-shrink-0">
         {/* Left: Project management */}
         <div className="flex items-center gap-1.5">
-          <button onClick={() => setLastAction("New project...")} className="flex items-center gap-1 h-8 px-3 rounded-md text-xs font-semibold text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-zinc-700/40 transition-colors">
+          <button onClick={() => toolbarAction("New project...", "Project created")} className={tbBtn}>
             <Plus className="h-3.5 w-3.5" /> New
           </button>
-          <button onClick={() => setLastAction("Open project...")} className="flex items-center gap-1 h-8 px-3 rounded-md text-xs font-semibold text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-zinc-700/40 transition-colors">
+          <button onClick={() => toolbarAction("Open project...", `Opened: ${projectName || "project"}`)} className={tbBtn}>
             <FolderOpen className="h-3.5 w-3.5" /> Open
           </button>
-          <button onClick={() => setLastAction("Project saved")} className="flex items-center gap-1 h-8 px-3 rounded-md text-xs font-semibold text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-zinc-700/40 transition-colors">
+          <button onClick={() => toolbarAction("Project saved", "Project saved")} className={tbBtn}>
             <Save className="h-3.5 w-3.5" /> Save
           </button>
-          <button onClick={() => setLastAction("Delete project...")} className="flex items-center gap-1 h-8 px-3 rounded-md text-xs font-semibold text-red-400/60 hover:text-red-400 hover:bg-red-500/10 border border-zinc-700/40 transition-colors">
+          <button onClick={() => toolbarAction("Delete project...", "Project deleted")} className={tbBtnDanger}>
             <Trash2 className="h-3.5 w-3.5" /> Delete
+          </button>
+          <button onClick={handleClear} className={tbBtn}>
+            <Eraser className="h-3.5 w-3.5" /> Clear
           </button>
         </div>
         {/* Center: Build actions */}
         <div className="flex items-center gap-1.5">
-          <button onClick={() => setLastAction("Planning...")} className="flex items-center gap-1 h-8 px-3 rounded-md text-xs font-semibold text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-zinc-700/40 transition-colors">
+          <button onClick={() => broadcastBuildAction("Plan")} className={tbBtn}>
             <Lightbulb className="h-3.5 w-3.5" /> Plan
           </button>
-          <button onClick={() => setLastAction("Building...")} className="flex items-center gap-1 h-8 px-3 rounded-md text-xs font-bold text-white bg-[#FF6700]/80 hover:bg-[#FF6700] border border-[#FF6700]/50 transition-colors">
+          <button onClick={() => broadcastBuildAction("Build")} className={tbBtnPrimary}>
             <Hammer className="h-3.5 w-3.5" /> Build
           </button>
-          <button onClick={() => setLastAction("Editing...")} className="flex items-center gap-1 h-8 px-3 rounded-md text-xs font-semibold text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-zinc-700/40 transition-colors">
+          <button onClick={() => broadcastBuildAction("Edit")} className={tbBtn}>
             <Pencil className="h-3.5 w-3.5" /> Edit
           </button>
-          <button onClick={() => setLastAction("Regenerating...")} className="flex items-center gap-1 h-8 px-3 rounded-md text-xs font-semibold text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-zinc-700/40 transition-colors">
+          <button onClick={() => broadcastBuildAction("Regen")} className={tbBtn}>
             <RefreshCw className="h-3.5 w-3.5" /> Regen
           </button>
         </div>
         {/* Right: Deploy actions */}
         <div className="flex items-center gap-1.5">
-          <button onClick={() => setLastAction("Pushing...")} className="flex items-center gap-1 h-8 px-3 rounded-md text-xs font-bold text-white bg-[#FF6700]/80 hover:bg-[#FF6700] border border-[#FF6700]/50 transition-colors">
-            <Upload className="h-3.5 w-3.5" /> Push
-          </button>
-          <button onClick={() => setLastAction("Deploying...")} className="flex items-center gap-1 h-8 px-3 rounded-md text-xs font-semibold text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-zinc-700/40 transition-colors">
-            <Globe className="h-3.5 w-3.5" /> Deploy
-          </button>
-          <button onClick={() => setLastAction("Exporting for client...")} className="flex items-center gap-1 h-8 px-3 rounded-md text-xs font-semibold text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-zinc-700/40 transition-colors">
+          {/* Push with dropdown */}
+          <div className="relative">
+            <button onClick={() => { setShowPushDropdown((v) => !v); setShowDeployDropdown(false); }} className={tbBtnPrimary}>
+              <Upload className="h-3.5 w-3.5" /> Push
+            </button>
+            {showPushDropdown && (
+              <TargetDropdown
+                targets={DEPLOY_TARGETS}
+                selected={pushTargets}
+                onToggle={togglePushTarget}
+                onConfirm={handlePushConfirm}
+                onClose={() => setShowPushDropdown(false)}
+                actionLabel="Push to"
+              />
+            )}
+          </div>
+          {/* Deploy with dropdown */}
+          <div className="relative">
+            <button onClick={() => { setShowDeployDropdown((v) => !v); setShowPushDropdown(false); }} className={tbBtn}>
+              <Globe className="h-3.5 w-3.5" /> Deploy
+            </button>
+            {showDeployDropdown && (
+              <TargetDropdown
+                targets={DEPLOY_TARGETS}
+                selected={deployTargets}
+                onToggle={toggleDeployTarget}
+                onConfirm={handleDeployConfirm}
+                onClose={() => setShowDeployDropdown(false)}
+                actionLabel="Deploy to"
+              />
+            )}
+          </div>
+          <button onClick={() => toolbarAction("Exporting...", "Export started")} className={tbBtn}>
             <Package className="h-3.5 w-3.5" /> Export
           </button>
-          <button onClick={() => setLastAction("Downloading...")} className="flex items-center gap-1 h-8 px-3 rounded-md text-xs font-semibold text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-zinc-700/40 transition-colors">
+          <button onClick={() => toolbarAction("Downloading...", "Download started")} className={tbBtn}>
             <Download className="h-3.5 w-3.5" /> Download
           </button>
         </div>
@@ -307,7 +505,6 @@ export default function WorkbenchDashboard() {
 
         {/* Row 2: Mon6 | [MON 4 = THIS SCREEN] | Mon2 */}
         <div className="flex-1 min-h-0 grid grid-cols-3 gap-3 overflow-hidden">
-          {/* Slot 4 = Mon6 */}
           {s4 && (
             <WorkbenchCard
               slot={s4}
@@ -319,16 +516,15 @@ export default function WorkbenchDashboard() {
           )}
 
           {/* Center: MON 4 — Command Center (this screen) */}
-          <div className="flex flex-col items-center justify-center rounded-xl border-2 border-[#FF6700]/30 bg-zinc-900/20 h-full"
+          <div className="flex flex-col items-center justify-center rounded-xl border-2 border-[#FF6700]/30 bg-white/50 dark:bg-zinc-900/20 h-full"
                style={{ minWidth: "400px" }}>
             <div className="w-12 h-12 rounded-xl border-2 border-[#FF6700]/40 flex items-center justify-center text-lg font-black text-[#FF6700]/60 mb-3 bg-[#FF6700]/5">
               4
             </div>
-            <p className="text-base font-black text-zinc-300 tracking-wider mb-1">COMMAND CENTER</p>
-            <p className="text-[10px] font-mono font-bold text-zinc-600">MON 4 · This Screen</p>
+            <p className="text-base font-black text-zinc-700 dark:text-zinc-300 tracking-wider mb-1">COMMAND CENTER</p>
+            <p className="text-[10px] font-mono font-bold text-zinc-400 dark:text-zinc-600">MON 4 · This Screen</p>
           </div>
 
-          {/* Slot 5 = Mon2 */}
           {s5 && (
             <WorkbenchCard
               slot={s5}
@@ -342,50 +538,50 @@ export default function WorkbenchDashboard() {
       </div>
 
       {/* ── Status Bar — between grid and broadcast ── */}
-      <div className="flex items-center justify-between h-8 px-5 bg-[#111] border-y border-zinc-800/30 flex-shrink-0 text-xs text-zinc-500">
+      <div className="flex items-center justify-between h-8 px-5 bg-zinc-50 dark:bg-[#111] border-y border-zinc-200 dark:border-zinc-800/30 flex-shrink-0 text-xs text-zinc-500">
         {/* Left: project info */}
         <div className="flex items-center gap-2">
           <FolderOpen className="h-3 w-3 text-[#FF6700]/60" />
-          <span className="font-medium text-zinc-400">{projectName || "No project"}</span>
+          <span className="font-medium text-zinc-600 dark:text-zinc-400">{projectName || "No project"}</span>
           {fileTree.length > 0 && (
-            <span className="text-zinc-600">· {fileTree.length} files</span>
+            <span className="text-zinc-400 dark:text-zinc-600">· {fileTree.length} files</span>
           )}
         </div>
         {/* Center: last action */}
-        <span className="text-zinc-600 font-medium">{lastAction}</span>
+        <span className="text-zinc-500 dark:text-zinc-600 font-medium">{lastAction}</span>
         {/* Right: quick actions */}
         <div className="flex items-center gap-1.5">
-          <button className="flex items-center gap-1 px-2 py-1 rounded text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors">
+          <button className="flex items-center gap-1 px-2 py-1 rounded text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors">
             <Package className="h-3 w-3" /> Assets
           </button>
-          <button className="flex items-center gap-1 px-2 py-1 rounded text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors">
+          <button className="flex items-center gap-1 px-2 py-1 rounded text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors">
             <Copy className="h-3 w-3" /> Copy
           </button>
-          <button className="flex items-center gap-1 px-2 py-1 rounded text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors">
+          <button className="flex items-center gap-1 px-2 py-1 rounded text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors">
             <BookOpen className="h-3 w-3" /> Vault
           </button>
         </div>
       </div>
 
       {/* ── Broadcast Bar ── */}
-      <div className="border-t border-zinc-800/60 bg-zinc-900/40 px-6 py-4 flex-shrink-0">
+      <div className="border-t border-zinc-200 dark:border-zinc-800/60 bg-zinc-50 dark:bg-zinc-900/40 px-6 py-4 flex-shrink-0">
         <div className="max-w-5xl mx-auto flex flex-col gap-3">
 
           {/* ── Prompt Input + Broadcast Button — above monitor selection ── */}
           {compareImage && (
-            <div className="flex items-center gap-4 p-3 rounded-xl bg-zinc-800/60 border border-zinc-700/40">
+            <div className="flex items-center gap-4 p-3 rounded-xl bg-zinc-200 dark:bg-zinc-800/60 border border-zinc-300 dark:border-zinc-700/40">
               <img
                 src={compareImage}
                 alt="Reference"
-                className="h-20 rounded-lg border border-zinc-600 object-cover"
+                className="h-20 rounded-lg border border-zinc-400 dark:border-zinc-600 object-cover"
               />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-zinc-300">📎 Comparison reference</p>
+                <p className="text-sm font-bold text-zinc-700 dark:text-zinc-300">Comparison reference</p>
                 <p className="text-xs text-zinc-500 mt-0.5">Paste or drag images to compare — describe what to change</p>
               </div>
               <button
                 onClick={() => setCompareImage(null)}
-                className="flex-shrink-0 w-7 h-7 rounded-full bg-zinc-700 hover:bg-red-500 text-zinc-300 text-sm font-bold flex items-center justify-center transition-colors"
+                className="flex-shrink-0 w-7 h-7 rounded-full bg-zinc-300 dark:bg-zinc-700 hover:bg-red-500 text-zinc-600 dark:text-zinc-300 text-sm font-bold flex items-center justify-center transition-colors"
               >
                 ×
               </button>
@@ -415,7 +611,7 @@ export default function WorkbenchDashboard() {
                   : "Type a prompt to broadcast to The Pit..."
               }
               disabled={selectedCount === 0}
-              className="flex-1 h-12 rounded-xl bg-zinc-800 px-5 text-base text-zinc-200 placeholder:text-zinc-600 focus:outline-none border border-zinc-700 focus:border-[#FF6700]/50 disabled:opacity-40"
+              className="flex-1 h-12 rounded-xl bg-white dark:bg-zinc-800 px-5 text-base text-zinc-900 dark:text-zinc-200 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none border border-zinc-300 dark:border-zinc-700 focus:border-[#FF6700]/50 disabled:opacity-40"
             />
             <button
               onClick={handleSend}
@@ -429,7 +625,7 @@ export default function WorkbenchDashboard() {
 
           {/* ── Broadcast Target Row — below input ── */}
           <div className="flex flex-col items-center gap-2">
-            <span className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">
+            <span className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-500">
               Broadcast To
             </span>
             <div className="flex items-center gap-2 flex-wrap justify-center">
@@ -444,7 +640,7 @@ export default function WorkbenchDashboard() {
                     style={
                       s.selected
                         ? { backgroundColor: `${c}20`, borderColor: `${c}70`, color: c, boxShadow: `0 0 12px ${c}30` }
-                        : { backgroundColor: "transparent", borderColor: "#3f3f46", color: "#52525b" }
+                        : { backgroundColor: "transparent", borderColor: "#d4d4d8", color: "#a1a1aa" }
                     }
                   >
                     MON {s.monitorNumber}
@@ -460,11 +656,11 @@ export default function WorkbenchDashboard() {
                     slots.forEach((s) => { if (!s.selected) useWorkbenchStore.getState().toggleSlotSelected(s.slot); });
                   }
                 }}
-                className="px-4 py-2.5 rounded-xl text-sm font-bold border-2 border-dashed border-zinc-700 text-zinc-500 hover:border-zinc-500 hover:text-zinc-300 transition-all"
+                className="px-4 py-2.5 rounded-xl text-sm font-bold border-2 border-dashed border-zinc-300 dark:border-zinc-700 text-zinc-500 hover:border-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-all"
               >
                 {slots.every((s) => s.selected) ? "Deselect All" : "All"}
               </button>
-              <span className="text-xs font-bold text-zinc-600 self-center pl-2">
+              <span className="text-xs font-bold text-zinc-400 dark:text-zinc-600 self-center pl-2">
                 {selectedCount} / 5
               </span>
             </div>

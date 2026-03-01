@@ -75,7 +75,7 @@ function ModelDropdown({ slot }: { slot: WorkbenchSlot }) {
     <div ref={ref} className="relative flex-1 min-w-0">
       <button
         onClick={handleOpen}
-        className="flex items-center gap-2 w-full h-8 px-3 rounded-lg text-xs font-semibold border bg-zinc-800/60 border-zinc-700/40 hover:border-zinc-500 text-zinc-200 transition-colors"
+        className="flex items-center gap-2 w-full h-8 px-3 rounded-lg text-xs font-semibold border bg-zinc-100 dark:bg-zinc-800/60 border-zinc-300 dark:border-zinc-700/40 hover:border-zinc-400 dark:hover:border-zinc-500 text-zinc-700 dark:text-zinc-200 transition-colors"
       >
         <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: meta.color }} />
         <span className="truncate flex-1 text-left">{displayName}</span>
@@ -83,10 +83,10 @@ function ModelDropdown({ slot }: { slot: WorkbenchSlot }) {
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 mt-1 z-50 w-64 max-h-80 overflow-y-auto rounded-xl border border-zinc-700 bg-zinc-900 shadow-2xl">
+        <div className="absolute top-full left-0 mt-1 z-50 w-64 max-h-80 overflow-y-auto rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-2xl">
 
           {/* ── Local / Ollama ── */}
-          <div className="px-3 py-2 text-[10px] font-black uppercase tracking-widest text-emerald-500 flex items-center gap-2 sticky top-0 bg-zinc-900 border-b border-zinc-800">
+          <div className="px-3 py-2 text-[10px] font-black uppercase tracking-widest text-emerald-500 flex items-center gap-2 sticky top-0 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800">
             <span className="w-2 h-2 rounded-full bg-emerald-400" />
             Local — Ollama
           </div>
@@ -100,7 +100,7 @@ function ModelDropdown({ slot }: { slot: WorkbenchSlot }) {
                 key={m.id}
                 onClick={() => pickModel("ollama", m.id)}
                 className={cn(
-                  "w-full text-left px-4 py-2 text-xs hover:bg-zinc-800 transition-colors",
+                  "w-full text-left px-4 py-2 text-xs hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors",
                   isOllama && slot.model === m.id
                     ? "text-emerald-300 bg-emerald-900/20"
                     : "text-zinc-300"
@@ -115,7 +115,7 @@ function ModelDropdown({ slot }: { slot: WorkbenchSlot }) {
           {CLOUD_PROVIDERS.map((provider) => (
             <div key={provider.id}>
               <div
-                className="px-3 py-2 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 sticky top-0 bg-zinc-900 border-t border-zinc-800"
+                className="px-3 py-2 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 sticky top-0 bg-white dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-800"
                 style={{ color: provider.color }}
               >
                 <span className="w-2 h-2 rounded-full" style={{ backgroundColor: provider.color }} />
@@ -126,7 +126,7 @@ function ModelDropdown({ slot }: { slot: WorkbenchSlot }) {
                   key={model.id}
                   onClick={() => pickModel(provider.id, model.id)}
                   className={cn(
-                    "w-full text-left px-4 py-2 text-xs hover:bg-zinc-800 transition-colors",
+                    "w-full text-left px-4 py-2 text-xs hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors",
                     !isOllama && slot.provider === provider.id && slot.model === model.id
                       ? "text-indigo-300 bg-indigo-900/20"
                       : "text-zinc-300"
@@ -147,7 +147,7 @@ function ModelDropdown({ slot }: { slot: WorkbenchSlot }) {
 
 function WorkbenchProgress({ status, color }: { status: WorkbenchStatus; color: string }) {
   return (
-    <div className="h-1.5 rounded-full bg-zinc-800 overflow-hidden">
+    <div className="h-1.5 rounded-full bg-zinc-200 dark:bg-zinc-800 overflow-hidden">
       {status === "building" && (
         <div
           className="h-full w-full rounded-full"
@@ -190,7 +190,7 @@ function LiveThumbnail({ html, status, color, modelName, providerName }: { html:
   return (
     <div
       ref={containerRef}
-      className="relative bg-zinc-950 rounded-lg overflow-hidden w-full"
+      className="relative bg-zinc-100 dark:bg-zinc-950 rounded-lg overflow-hidden w-full"
       style={{ height: `${IFRAME_H * scale}px` }}
     >
       {html ? (
@@ -226,7 +226,7 @@ function LiveThumbnail({ html, status, color, modelName, providerName }: { html:
             <p className="text-[22px] font-bold mb-2" style={{ color }}>
               {modelName}
             </p>
-            <p className="text-xs text-zinc-600 font-medium">
+            <p className="text-xs text-zinc-400 dark:text-zinc-600 font-medium">
               {status === "building" ? "Generating…" : "Waiting for broadcast..."}
             </p>
           </div>
@@ -296,8 +296,8 @@ export default function WorkbenchCard({
 
   return (
     <div
-      className="flex flex-col transition-all cursor-pointer h-full overflow-hidden"
-      style={{ border: `2px solid ${borderColor}`, borderRadius: "12px", backgroundColor: "#0c0c0f", boxShadow: glowShadow }}
+      className="flex flex-col transition-all cursor-pointer h-full overflow-hidden bg-white dark:bg-[#0c0c0f]"
+      style={{ border: `2px solid ${borderColor}`, borderRadius: "12px", boxShadow: glowShadow }}
       onClick={() => toggleSelected(slot.slot)}
       onContextMenu={handleContextMenu}
       title={slot.selected ? "Click to deselect" : "Click to select for broadcast"}
@@ -312,7 +312,7 @@ export default function WorkbenchCard({
           >
             {slot.monitorNumber}
           </div>
-          <p className="text-sm font-black text-zinc-200 tracking-wide">MON {slot.monitorNumber}</p>
+          <p className="text-sm font-black text-zinc-700 dark:text-zinc-200 tracking-wide">MON {slot.monitorNumber}</p>
           {slot.selected && (
             <span className="text-[11px] px-2 py-0.5 rounded-full bg-indigo-500/25 text-indigo-300 font-black">✓</span>
           )}
@@ -385,18 +385,18 @@ export default function WorkbenchCard({
       {ctxMenu && (
         <div
           ref={ctxRef}
-          className="fixed z-[9999] min-w-[180px] rounded-xl border border-zinc-700 bg-zinc-900 shadow-2xl py-1 overflow-hidden"
+          className="fixed z-[9999] min-w-[180px] rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-2xl py-1 overflow-hidden"
           style={{ top: ctxMenu.y, left: ctxMenu.x }}
           onClick={(e) => e.stopPropagation()}
         >
           <button
-            className="w-full text-left px-4 py-2.5 text-xs font-semibold text-zinc-300 hover:bg-zinc-800 flex items-center gap-2 transition-colors"
+            className="w-full text-left px-4 py-2.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2 transition-colors"
             onClick={() => { onRecall(); setCtxMenu(null); }}
           >
             <RotateCcw className="w-3.5 h-3.5 text-red-400" /> Recall this monitor
           </button>
           <button
-            className="w-full text-left px-4 py-2.5 text-xs font-semibold text-zinc-300 hover:bg-zinc-800 flex items-center gap-2 transition-colors"
+            className="w-full text-left px-4 py-2.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2 transition-colors"
             onClick={() => {
               // Promote: set this slot's model/provider on Mon 1 (anchor)
               const store = useWorkbenchStore.getState();
@@ -410,9 +410,9 @@ export default function WorkbenchCard({
           </button>
           {slot.lastCode && (
             <>
-              <div className="border-t border-zinc-800 my-1" />
+              <div className="border-t border-zinc-200 dark:border-zinc-800 my-1" />
               <button
-                className="w-full text-left px-4 py-2.5 text-xs font-semibold text-zinc-300 hover:bg-zinc-800 flex items-center gap-2 transition-colors"
+                className="w-full text-left px-4 py-2.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2 transition-colors"
                 onClick={() => {
                   // View code — open in new window
                   const w = window.open("", "_blank", "width=800,height=600");
@@ -423,7 +423,7 @@ export default function WorkbenchCard({
                 <Code2 className="w-3.5 h-3.5 text-blue-400" /> View code
               </button>
               <button
-                className="w-full text-left px-4 py-2.5 text-xs font-semibold text-zinc-300 hover:bg-zinc-800 flex items-center gap-2 transition-colors"
+                className="w-full text-left px-4 py-2.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2 transition-colors"
                 onClick={() => {
                   // View preview — open rendered HTML in new window
                   const w = window.open("", "_blank", "width=1024,height=768");
@@ -435,9 +435,9 @@ export default function WorkbenchCard({
               </button>
             </>
           )}
-          <div className="border-t border-zinc-800 my-1" />
+          <div className="border-t border-zinc-200 dark:border-zinc-800 my-1" />
           <button
-            className="w-full text-left px-4 py-2.5 text-xs font-semibold text-zinc-300 hover:bg-zinc-800 flex items-center gap-2 transition-colors"
+            className="w-full text-left px-4 py-2.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2 transition-colors"
             onClick={() => {
               setSlotStatus(slot.slot, "idle");
               setCtxMenu(null);

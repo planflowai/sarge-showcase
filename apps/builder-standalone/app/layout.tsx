@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Header } from "@/components/layout/Header";
+import { GlobalToast } from "@/components/layout/GlobalToast";
 
 export const metadata: Metadata = {
   title: "The Foundry",
@@ -19,6 +20,7 @@ export default function RootLayout({
         <main className="flex-1 min-h-0">
           {children}
         </main>
+        <GlobalToast />
       </body>
     </html>
   );
