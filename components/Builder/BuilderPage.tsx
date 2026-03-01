@@ -624,41 +624,17 @@ Please provide the complete modified version of this component. Make only the re
 
   return (
     <div className="relative flex flex-col h-full w-full bg-zinc-50 dark:bg-zinc-950">
-      {/* Top bar — Thread Guardian + The Pit + actions — fixed position to always show */}
-      <div className="fixed top-4 right-4 z-[100] flex flex-col items-end gap-2">
-        <div className="flex items-center gap-3">
-          {/* Thread Guardian Indicator */}
-          <ThreadGuardianIndicator conversationId="builder-chat" />
-
-          {/* Launch The Pit Button */}
-          <button
-            onClick={launchWorkspace}
-            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#FF6700] to-orange-600 hover:from-[#FF6700]/90 hover:to-orange-500 text-white rounded-lg shadow-lg transition-all text-sm font-bold"
-            title="Launch The Pit — multi-window workspace across your monitors"
-          >
-            <Rocket className="w-4 h-4" />
-            Launch The Pit
-          </button>
-        </div>
-        {/* Pit-related actions — grouped below */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => window.dispatchEvent(new CustomEvent("builder:new-project"))}
-            className="flex items-center gap-1.5 px-4 py-2 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-lg shadow transition-all text-sm font-medium border border-zinc-300 dark:border-zinc-700"
-            title="New Project"
-          >
-            <FolderPlus className="w-4 h-4" />
-            New
-          </button>
-          <button
-            onClick={() => window.dispatchEvent(new CustomEvent("builder:open-project"))}
-            className="flex items-center gap-1.5 px-4 py-2 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-lg shadow transition-all text-sm font-medium border border-zinc-300 dark:border-zinc-700"
-            title="Open Project"
-          >
-            <FolderOpenIcon className="w-4 h-4" />
-            Open
-          </button>
-        </div>
+      {/* The Pit — fixed top LEFT */}
+      <div className="fixed top-4 left-4 z-[100] flex items-center gap-3">
+        <button
+          onClick={launchWorkspace}
+          className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#FF6700] to-orange-600 hover:from-[#FF6700]/90 hover:to-orange-500 text-white rounded-lg shadow-lg transition-all text-sm font-bold"
+          title="Launch The Pit — multi-window workspace across your monitors"
+        >
+          <Rocket className="w-4 h-4" />
+          The Pit
+        </button>
+        <ThreadGuardianIndicator conversationId="builder-chat" />
       </div>
 
       {/* Main content area */}
@@ -691,6 +667,39 @@ Please provide the complete modified version of this component. Make only the re
           className="h-full flex-shrink-0 flex-grow-0 flex flex-col border-r border-zinc-200 dark:border-zinc-800 overflow-hidden"
           style={{ width: `${chatPanelWidth}px`, minWidth: '250px' }}
         >
+          {/* Action bar: New / Open */}
+          <div className="flex-shrink-0 flex items-center gap-2 px-3 py-2 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60">
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent("builder:new-project"))}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-lg text-xs font-medium border border-zinc-300 dark:border-zinc-700 transition-colors"
+              title="New Project"
+            >
+              <FolderPlus className="w-3.5 h-3.5" />
+              New
+            </button>
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent("builder:open-project"))}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-lg text-xs font-medium border border-zinc-300 dark:border-zinc-700 transition-colors"
+              title="Open Project"
+            >
+              <FolderOpenIcon className="w-3.5 h-3.5" />
+              Open
+            </button>
+          </div>
+
+          {/* Project name — centered, prominent, Foundry colors */}
+          {projectName && (
+            <div className="flex-shrink-0 flex items-center justify-center px-3 py-3 border-b border-zinc-200 dark:border-zinc-800 bg-gradient-to-r from-zinc-50 via-orange-50/30 to-zinc-50 dark:from-zinc-900/60 dark:via-[#FF6700]/5 dark:to-zinc-900/60">
+              <span
+                className="flex items-center gap-2 px-4 py-1.5 text-base font-bold text-[#FF6700] cursor-default tracking-wide"
+                title={projectPath || ""}
+              >
+                <FolderOpenIcon className="h-4 w-4 flex-shrink-0 text-[#FF6700]" />
+                <span className="truncate drop-shadow-[0_0_6px_rgba(255,103,0,0.3)]">{projectName}</span>
+              </span>
+            </div>
+          )}
+
           <BuilderChat
             selectedModel={selectedModel}
             selectedProvider={selectedProvider}

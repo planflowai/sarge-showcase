@@ -691,49 +691,17 @@ Please provide the complete modified version of this component. Make only the re
 
   return (
     <div className="relative flex flex-col h-full w-full bg-zinc-50 dark:bg-zinc-950">
-      {/* Top bar — Thread Guardian + The Pit + actions — fixed top right */}
-      <div className="fixed top-4 right-4 z-[100] flex flex-col items-end gap-2">
-        <div className="flex items-center gap-2">
-          <ThreadGuardianIndicator conversationId="builder-chat" />
-
-          <button
-            onClick={launchWorkspace}
-            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#FF6700] to-orange-600 hover:from-[#FF6700]/90 hover:to-orange-500 text-white rounded-lg shadow-lg transition-all text-sm font-bold"
-            title="Launch The Pit — multi-window workspace across your monitors"
-          >
-            <Rocket className="w-4 h-4" />
-            Launch The Pit
-          </button>
-        </div>
-        {/* Pit-related actions — grouped below */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => useProjectCommandStore.getState().open("new")}
-            className="flex items-center gap-1.5 px-4 py-2 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-lg shadow transition-all text-sm font-medium border border-zinc-300 dark:border-zinc-700"
-            title="New Project"
-          >
-            <FolderPlus className="w-4 h-4" />
-            New
-          </button>
-
-          <button
-            onClick={() => useProjectCommandStore.getState().open("grid")}
-            className="flex items-center gap-1.5 px-4 py-2 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-lg shadow transition-all text-sm font-medium border border-zinc-300 dark:border-zinc-700"
-            title="All Projects"
-          >
-            <FolderOpen className="w-4 h-4" />
-            Projects
-          </button>
-
-          <button
-            onClick={() => useAssetLibraryStore.getState().open()}
-            className="flex items-center gap-1.5 px-4 py-2 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-lg shadow transition-all text-sm font-medium border border-zinc-300 dark:border-zinc-700"
-            title="Master Assets Library"
-          >
-            <Package className="w-4 h-4" />
-            Assets
-          </button>
-        </div>
+      {/* The Pit — fixed top LEFT */}
+      <div className="fixed top-1 left-4 z-[100] flex items-center gap-3">
+        <button
+          onClick={launchWorkspace}
+          className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#FF6700] to-orange-600 hover:from-[#FF6700]/90 hover:to-orange-500 text-white rounded-lg shadow-lg transition-all text-sm font-bold"
+          title="Launch The Pit — multi-window workspace across your monitors"
+        >
+          <Rocket className="w-4 h-4" />
+          The Pit
+        </button>
+        <ThreadGuardianIndicator conversationId="builder-chat" />
       </div>
 
       {/* Horizontal toolbar ribbon — full width, below header */}
@@ -756,15 +724,43 @@ Please provide the complete modified version of this component. Make only the re
           className="h-full flex-shrink-0 flex-grow-0 flex flex-col border-r border-zinc-200 dark:border-zinc-800 overflow-hidden"
           style={{ width: `${chatPanelWidth}px`, minWidth: '250px' }}
         >
-          {/* Project badge — only shown when a project is open */}
+          {/* Action bar: New / Projects / Assets — centered with Foundry colors */}
+          <div className="flex-shrink-0 flex items-center justify-center gap-2 px-3 py-2 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60">
+            <button
+              onClick={() => useProjectCommandStore.getState().open("new")}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FF6700]/10 hover:bg-[#FF6700]/20 text-[#FF6700] rounded-lg text-xs font-medium border border-[#FF6700]/30 transition-colors"
+              title="New Project"
+            >
+              <FolderPlus className="w-3.5 h-3.5" />
+              New
+            </button>
+            <button
+              onClick={() => useProjectCommandStore.getState().open("grid")}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FF6700]/10 hover:bg-[#FF6700]/20 text-[#FF6700] rounded-lg text-xs font-medium border border-[#FF6700]/30 transition-colors"
+              title="Projects"
+            >
+              <FolderOpen className="w-3.5 h-3.5" />
+              Projects
+            </button>
+            <button
+              onClick={() => useAssetLibraryStore.getState().open()}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FF6700]/10 hover:bg-[#FF6700]/20 text-[#FF6700] rounded-lg text-xs font-medium border border-[#FF6700]/30 transition-colors"
+              title="Assets Library"
+            >
+              <Package className="w-3.5 h-3.5" />
+              Assets
+            </button>
+          </div>
+
+          {/* Project name — centered, prominent, Foundry colors */}
           {projectName && (
-            <div className="flex-shrink-0 flex items-center px-3 py-2 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60">
+            <div className="flex-shrink-0 flex items-center justify-center px-3 py-3 border-b border-zinc-200 dark:border-zinc-800 bg-gradient-to-r from-zinc-50 via-orange-50/30 to-zinc-50 dark:from-zinc-900/60 dark:via-[#FF6700]/5 dark:to-zinc-900/60">
               <span
-                className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-400/30 max-w-xs cursor-default"
+                className="flex items-center gap-2 px-4 py-1.5 text-base font-bold text-[#FF6700] cursor-default tracking-wide"
                 title={projectPath || ""}
               >
-                <FolderOpen className="h-3 w-3 flex-shrink-0" />
-                <span className="truncate">{projectName}</span>
+                <FolderOpen className="h-4 w-4 flex-shrink-0 text-[#FF6700]" />
+                <span className="truncate drop-shadow-[0_0_6px_rgba(255,103,0,0.3)]">{projectName}</span>
               </span>
             </div>
           )}

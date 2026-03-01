@@ -420,7 +420,8 @@ export const useBuilderChatStore = create<BuilderChatState>()(
       storage: createDebouncedStorage({ debounceMs: 1000 }),
       partialize: (state) => ({
         // Only persist message data, keep last 50 messages
-        messages: state.messages.slice(-50),
+        // Clear isStreaming on persist — streaming is transient and must not survive reload
+        messages: state.messages.slice(-50).map(m => m.isStreaming ? { ...m, isStreaming: false } : m),
         // Don't persist: sending, streaming, currentStreamId, abortController, hydrated, prefilledInput
       }),
     }
