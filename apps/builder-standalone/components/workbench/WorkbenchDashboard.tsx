@@ -164,21 +164,25 @@ export default function WorkbenchDashboard() {
     positionOnMonitor4();
   }, []);
 
-  // Load active builder project into anchor (Mon 1) on mount
+  // Load active builder project into anchor (Mon 1) — wait for store hydration
+  const builderHydrated  = useBuilderStore((s) => s.hydrated);
+  const artifactHydrated = useArtifactStore((s) => s.hydrated);
+  const artifactCode     = useArtifactStore((s) => s.code);
+  const [anchorLoaded, setAnchorLoaded] = useState(false);
+
   useEffect(() => {
+    if (anchorLoaded) return;
+    if (!builderHydrated || !artifactHydrated) return;
     const builderState = useBuilderStore.getState();
-    const artifactState = useArtifactStore.getState();
-    const code = artifactState.code;
+    const code = artifactCode;
     if (builderState.projectPath && code) {
-      // Find the anchor slot (monitorNumber === 1)
-      const anchorSlot = slots.find((s) => s.monitorNumber === 1);
+      const anchorSlot = useWorkbenchStore.getState().slots.find((s) => s.monitorNumber === 1);
       if (anchorSlot && !anchorSlot.previewHtml) {
-        // Set anchor preview to current builder code
         useWorkbenchStore.getState().setSlotPreview(anchorSlot.slot, code, code);
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only on mount
+    setAnchorLoaded(true);
+  }, [builderHydrated, artifactHydrated, artifactCode, anchorLoaded]);
 
   // Poll open window count
   useEffect(() => {
