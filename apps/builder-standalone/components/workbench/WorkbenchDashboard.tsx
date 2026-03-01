@@ -162,7 +162,10 @@ export default function WorkbenchDashboard() {
     initScreens();
   }, []);
 
-  // Mon 1 (anchor) starts empty — builds only when user broadcasts
+  // Mon 4 command center preview — shows the builder's current artifact
+  const artifactHydrated = useArtifactStore((s) => s.hydrated);
+  const artifactCode = useArtifactStore((s) => s.code);
+  const mon4Preview = artifactHydrated ? artifactCode : "";
 
   // Poll open window count
   useEffect(() => {
@@ -553,23 +556,20 @@ export default function WorkbenchDashboard() {
               </div>
               <span className="text-[9px] font-mono font-bold text-zinc-400 dark:text-zinc-600">MON 4 · This Screen</span>
             </div>
-            {/* Live preview — shows anchor (Mon 1) build */}
+            {/* Live preview — current builder project */}
             <div className="flex-1 min-h-0 relative bg-white">
-              {(() => {
-                const anchorCode = s2?.previewHtml || s2?.lastCode || "";
-                return anchorCode ? (
-                  <iframe
-                    srcDoc={anchorCode}
-                    sandbox="allow-scripts"
-                    title="Anchor build preview"
-                    className="absolute inset-0 w-full h-full border-none pointer-events-none"
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-full">
-                    <p className="text-sm font-bold text-zinc-400 dark:text-zinc-600">No build loaded</p>
-                  </div>
-                );
-              })()}
+              {mon4Preview ? (
+                <iframe
+                  srcDoc={mon4Preview}
+                  sandbox="allow-scripts"
+                  title="Current build preview"
+                  className="absolute inset-0 w-full h-full border-none pointer-events-none"
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full bg-zinc-900">
+                  <p className="text-sm font-bold text-zinc-600">No build loaded</p>
+                </div>
+              )}
             </div>
           </div>
 
