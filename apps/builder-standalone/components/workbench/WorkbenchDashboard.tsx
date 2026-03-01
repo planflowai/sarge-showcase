@@ -165,7 +165,8 @@ export default function WorkbenchDashboard() {
   // Mon 4 command center preview — shows the builder's current artifact
   const artifactHydrated = useArtifactStore((s) => s.hydrated);
   const artifactCode = useArtifactStore((s) => s.code);
-  const mon4Preview = artifactHydrated ? artifactCode : "";
+  const artifactStreamingCode = useArtifactStore((s) => s.streamingCode);
+  const mon4Preview = artifactHydrated ? (artifactStreamingCode || artifactCode) : "";
 
   // Poll open window count
   useEffect(() => {
@@ -561,7 +562,7 @@ export default function WorkbenchDashboard() {
               {mon4Preview ? (
                 <iframe
                   srcDoc={mon4Preview}
-                  sandbox="allow-scripts"
+                  sandbox="allow-scripts allow-same-origin"
                   title="Current build preview"
                   className="absolute inset-0 w-full h-full border-none pointer-events-none"
                 />
