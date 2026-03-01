@@ -114,14 +114,14 @@ export function TestModeSidebar() {
     <div className="w-64 border-r border-zinc-300 dark:border-zinc-800 px-3 py-3 flex flex-col overflow-y-auto bg-white dark:bg-zinc-950">
       {/* Header with collapse */}
       <div className="flex items-center justify-between mb-3">
-        <div className="text-xs font-bold uppercase tracking-wider bg-gradient-to-r from-[#FF6700] to-orange-400 bg-clip-text text-transparent">The Foundry</div>
+        <div className="text-xs font-bold uppercase tracking-wider bg-gradient-to-r from-[#FF6700] to-orange-400 bg-clip-text text-transparent">S.A.R.G.E.</div>
         <div className="flex items-center gap-1">
           <Button
             variant="ghost"
             size="sm"
             onClick={hideTestMode}
             className="h-6 px-2 text-[10px] gap-1"
-            title="Back to The Foundry"
+            title="Back to S.A.R.G.E."
           >
             <ArrowLeft className="h-3 w-3" />
           </Button>

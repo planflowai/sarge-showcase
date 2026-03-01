@@ -230,7 +230,7 @@ export function Header() {
         {/* Title Row */}
         <div className="h-14 flex items-center justify-center bg-gradient-to-r from-slate-100 via-orange-50 to-slate-100 dark:from-[#0a0a0a] dark:via-[#141414] dark:to-[#0a0a0a]">
           <div className="flex items-center gap-2.5">
-            <span className="text-xl sm:text-2xl font-black tracking-wider text-[#FF6700]">The Foundry</span>
+            <span className="text-xl sm:text-2xl font-black tracking-wider text-[#FF6700]">S.A.R.G.E.</span>
           </div>
         </div>
         {/* Nav Row */}
@@ -294,15 +294,15 @@ export function Header() {
           </Button>
 
           <div className="flex items-center gap-2.5 relative z-10">
-            {/* Foundry icon */}
+            {/* S.A.R.G.E. icon */}
             <div className="relative">
               <ShieldCheck className="h-6 w-6 text-[#FF6700] drop-shadow-[0_0_6px_rgba(255,103,0,0.5)]" />
               <Zap className="h-2.5 w-2.5 text-amber-400 absolute -right-0.5 -bottom-0.5 drop-shadow-[0_0_3px_rgba(251,191,36,0.8)]" />
             </div>
 
-            {/* The Foundry — brand title */}
+            {/* S.A.R.G.E. — brand title */}
             <h1 className="text-xl sm:text-2xl md:text-3xl font-black tracking-wider">
-              <span className="text-[#FF6700] drop-shadow-[0_0_8px_rgba(255,103,0,0.4)]">The Foundry</span>
+              <span className="text-[#FF6700] drop-shadow-[0_0_8px_rgba(255,103,0,0.4)]">S.A.R.G.E.</span>
             </h1>
           </div>
         </div>

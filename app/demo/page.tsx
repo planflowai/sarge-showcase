@@ -1732,7 +1732,7 @@ function Step1TitleCard({ stats }: { stats: { modules: number; models: number; p
           <div className="flex items-center justify-center gap-4 mb-4">
             <ShieldCheck className="h-16 w-16 text-indigo-400" />
             <h1 className="text-7xl font-black tracking-[12px] bg-gradient-to-r from-[#FF6700] via-orange-400 to-amber-400 bg-clip-text text-transparent">
-              The Foundry
+              S.A.R.G.E.
             </h1>
             <Zap className="h-12 w-12 text-amber-400" />
           </div>
@@ -1806,7 +1806,7 @@ function Step3Solution() {
     <div className="h-full flex items-center justify-center">
       <div className="text-center">
         <h2 className="text-4xl font-black mb-4 text-emerald-400 animate-slideIn">
-          The Foundry is a unified AI operations platform.
+          S.A.R.G.E. is a unified AI operations platform.
         </h2>
         <p className="text-zinc-500 mb-12 animate-slideIn" style={{ animationDelay: "0.1s", opacity: 0, animationFillMode: "forwards" }}>
           16 modules. One interface. Complete AI workflow.
@@ -2116,7 +2116,7 @@ function Step14Closing({ onLaunch }: { onLaunch: () => void }) {
       <div className="text-center max-w-3xl mx-auto">
         <div className="mb-8 animate-scaleIn">
           <h1 className="text-5xl font-black tracking-[8px] bg-gradient-to-r from-[#FF6700] via-orange-400 to-amber-400 bg-clip-text text-transparent mb-4">
-            The Foundry
+            S.A.R.G.E.
           </h1>
           <p className="text-xl text-zinc-400">
             One platform. Every AI capability.
