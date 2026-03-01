@@ -4,7 +4,8 @@ import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import {
   X, Plus, Search, FolderOpen, Loader2, Trash2, Check, RefreshCw,
   Send, ExternalLink, MoreHorizontal, Pencil, Download,
-  ArrowUpDown, Github, Globe, Cloud, ChevronDown, Minus, Link,
+  ArrowUpDown, Github, Globe, Cloud, ChevronDown, ChevronRight, Minus, Link,
+  Users, Play, Shield, Eye, Zap, ClipboardList, BarChart3, Accessibility,
 } from "lucide-react";
 import { useProjectCommandStore, type HubProjectExtended, type DeployTarget } from "../stores/projectCommandStore";
 import { useBuilderStore } from "../stores/builderStore";
@@ -20,6 +21,25 @@ const PLATFORMS: { id: DeployTarget; label: string; icon: typeof Github; color: 
   { id: "netlify", label: "Netlify", icon: Globe, color: "text-teal-400", bgClass: "bg-teal-900/40" },
   { id: "cloudflare", label: "Cloudflare", icon: Cloud, color: "text-orange-400", bgClass: "bg-orange-900/40" },
 ];
+
+// ─── Toggle definitions (inlined — packages/builder can't import from apps/) ─
+
+type ToggleKey = "seo" | "accessibility" | "privacy" | "analytics" | "security" | "performance" | "punchList";
+
+const TOGGLE_DEFS: { key: ToggleKey; label: string; shortLabel: string; description: string; color: string; icon: typeof Shield }[] = [
+  { key: "seo", label: "SEO Optimization", shortLabel: "SEO", description: "Auto meta tags, sitemap, robots.txt", color: "#4285f4", icon: BarChart3 },
+  { key: "accessibility", label: "ADA Accessibility", shortLabel: "A11y", description: "WCAG 2.1 AA compliance check", color: "#22c55e", icon: Accessibility },
+  { key: "privacy", label: "Privacy Compliance", shortLabel: "Privacy", description: "Privacy policy page, cookie consent", color: "#8b5cf6", icon: Shield },
+  { key: "analytics", label: "Client Analytics", shortLabel: "Analytics", description: "Embed Plausible script", color: "#FF6700", icon: Eye },
+  { key: "security", label: "Security Pack", shortLabel: "Security", description: "ReCaptcha, spam filters", color: "#ef4444", icon: Shield },
+  { key: "performance", label: "Performance Boost", shortLabel: "Perf", description: "Image compression, lazy-load", color: "#eab308", icon: Zap },
+  { key: "punchList", label: "Punch List", shortLabel: "Punch", description: "Client revision form after delivery", color: "#00b4d8", icon: ClipboardList },
+];
+
+const DEFAULT_TOGGLES: Record<ToggleKey, boolean> = {
+  seo: true, accessibility: true, privacy: true, analytics: true,
+  security: false, performance: false, punchList: false,
+};
 
 function getUrl(p: HubProjectExtended, id: DeployTarget): string | null {
   if (id === "github") return p.githubUrl;
@@ -52,6 +72,10 @@ function ProjectCard({
   const isDeleteTarget = deleteConfirm?.path === project.path;
   const isPushTarget = pushingProject?.path === project.path;
   const [showMenu, setShowMenu] = useState(false);
+  const [hubExpanded, setHubExpanded] = useState(false);
+  const [hubMeta, setHubMeta] = useState<any>(null);
+  const [hubLoading, setHubLoading] = useState(false);
+  const [hubRunning, setHubRunning] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const renameRef = useRef<HTMLInputElement>(null);
 
@@ -119,6 +143,46 @@ function ProjectCard({
     } catch {
       showToast({ message: "Export failed", type: "error" });
     }
+  };
+
+  // ─── Client Hub expand ────────────────────────────────────────────────────
+  const toggleHub = async () => {
+    if (hubExpanded) { setHubExpanded(false); return; }
+    setHubExpanded(true);
+    if (hubMeta) return; // already fetched
+    setHubLoading(true);
+    try {
+      const res = await fetch(`/api/project/meta?path=${encodeURIComponent(project.path)}`);
+      const data = await res.json();
+      if (data.exists && data.meta) setHubMeta(data.meta);
+    } catch { /* no meta */ }
+    setHubLoading(false);
+  };
+
+  const handleRunToggle = async (key: string) => {
+    setHubRunning(key);
+    try {
+      if (key === "seo") {
+        const res = await fetch("/api/seo/optimize", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ projectPath: project.path }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast({ message: data.summary || "SEO optimized", type: "success" });
+        } else if (data.skipped) {
+          showToast({ message: data.reason || "SEO skipped", type: "info" });
+        } else {
+          showToast({ message: data.error || "SEO failed", type: "error" });
+        }
+      } else {
+        showToast({ message: `${key} — coming soon`, type: "info" });
+      }
+    } catch {
+      showToast({ message: `${key} action failed`, type: "error" });
+    }
+    setHubRunning(null);
   };
 
   // ─── Delete confirmation view ──────────────────────────────────────────────
@@ -301,6 +365,91 @@ function ProjectCard({
         })}
       </div>
 
+      {/* ── Client Hub expand panel ── */}
+      {hubExpanded && (
+        <div className="rounded-xl border border-indigo-500/30 bg-indigo-950/20 p-4 space-y-3">
+          {hubLoading ? (
+            <div className="flex items-center gap-2 py-3 justify-center">
+              <Loader2 className="h-4 w-4 animate-spin text-indigo-400" />
+              <span className="text-xs text-zinc-400">Loading project meta...</span>
+            </div>
+          ) : !hubMeta ? (
+            <p className="text-xs text-zinc-500 text-center py-2">
+              No project.json found — create one via the onboarding flow.
+            </p>
+          ) : (
+            <>
+              {/* Client info row */}
+              <div className="flex items-center gap-3 text-xs flex-wrap">
+                {hubMeta.clientName && (
+                  <span className="flex items-center gap-1 text-zinc-300">
+                    <Users className="h-3 w-3 text-zinc-500" />
+                    {hubMeta.clientName}
+                  </span>
+                )}
+                {hubMeta.domain && (
+                  <span className="flex items-center gap-1 text-zinc-300">
+                    <Globe className="h-3 w-3 text-zinc-500" />
+                    {hubMeta.domain}
+                  </span>
+                )}
+                {hubMeta.clientEmail && (
+                  <span className="text-zinc-500">{hubMeta.clientEmail}</span>
+                )}
+              </div>
+
+              {/* Toggle pills + Run Now */}
+              <div className="space-y-1.5">
+                {TOGGLE_DEFS.map((t) => {
+                  const isOn = hubMeta.toggles?.[t.key] ?? false;
+                  const isRunningThis = hubRunning === t.key;
+                  const TIcon = t.icon;
+                  return (
+                    <div
+                      key={t.key}
+                      className={cn(
+                        "flex items-center gap-2.5 px-3 py-2 rounded-lg border transition-colors",
+                        isOn
+                          ? "bg-zinc-800/60 border-zinc-700"
+                          : "bg-zinc-900/30 border-zinc-800/50 opacity-50"
+                      )}
+                    >
+                      <TIcon className="h-3.5 w-3.5 flex-shrink-0" style={{ color: isOn ? t.color : "#52525b" }} />
+                      <span className={cn("text-xs font-semibold flex-1", isOn ? "text-zinc-200" : "text-zinc-600")}>
+                        {t.label}
+                      </span>
+                      <span
+                        className="px-1.5 py-0.5 rounded text-[9px] font-bold"
+                        style={{
+                          backgroundColor: isOn ? `${t.color}20` : "transparent",
+                          color: isOn ? t.color : "#52525b",
+                        }}
+                      >
+                        {isOn ? "ON" : "OFF"}
+                      </span>
+                      {isOn && (
+                        <button
+                          onClick={() => handleRunToggle(t.key)}
+                          disabled={!!hubRunning}
+                          className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold bg-zinc-700 hover:bg-zinc-600 text-zinc-300 disabled:opacity-40 transition-colors"
+                        >
+                          {isRunningThis ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Play className="h-3 w-3" />
+                          )}
+                          Run
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
       {/* Actions */}
       <div className="flex items-center gap-2.5 mt-auto pt-1">
         <button
@@ -319,6 +468,19 @@ function ProjectCard({
             Push
           </button>
         )}
+        <button
+          onClick={toggleHub}
+          className={cn(
+            "flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-bold transition-colors",
+            hubExpanded
+              ? "bg-indigo-600/80 text-white"
+              : "bg-zinc-700/80 hover:bg-zinc-600 text-zinc-300"
+          )}
+          title="Client Hub"
+        >
+          <Users className="h-4 w-4" />
+          {hubExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+        </button>
 
         {/* ··· menu */}
         <div className="relative" ref={menuRef}>
@@ -376,6 +538,8 @@ export default function ProjectCommandCenter() {
   const [newName, setNewName] = useState("");
   const [newTemplateId, setNewTemplateId] = useState("blank-html");
   const [isCreating, setIsCreating] = useState(false);
+  const [newToggles, setNewToggles] = useState<Record<ToggleKey, boolean>>({ ...DEFAULT_TOGGLES });
+  const [togglesExpanded, setTogglesExpanded] = useState(false);
 
   // Escape to close
   useEffect(() => {
@@ -387,7 +551,7 @@ export default function ProjectCommandCenter() {
 
   // Reset new project form when switching to new view
   useEffect(() => {
-    if (view === "new") { setNewName(""); setNewTemplateId("blank-html"); }
+    if (view === "new") { setNewName(""); setNewTemplateId("blank-html"); setNewToggles({ ...DEFAULT_TOGGLES }); setTogglesExpanded(false); }
   }, [view]);
 
   // ─── Filtered + sorted projects ─────────────────────────────────────────
@@ -444,6 +608,7 @@ export default function ProjectCommandCenter() {
           templateId: newTemplateId,
           projectPath: `${baseDir}/${name}`,
           projectName: name,
+          toggles: newToggles,
         }),
       });
       const data = await res.json();
@@ -468,7 +633,7 @@ export default function ProjectCommandCenter() {
     } finally {
       setIsCreating(false);
     }
-  }, [newName, newTemplateId, baseDir, setProject, close, showToast]);
+  }, [newName, newTemplateId, newToggles, baseDir, setProject, close, showToast]);
 
   if (!isOpen) return null;
 
@@ -659,6 +824,63 @@ export default function ProjectCommandCenter() {
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* Client Features toggles */}
+              <div>
+                <button
+                  onClick={() => setTogglesExpanded(!togglesExpanded)}
+                  className="flex items-center gap-2 w-full text-left"
+                >
+                  {togglesExpanded ? (
+                    <ChevronDown className="h-3.5 w-3.5 text-zinc-500" />
+                  ) : (
+                    <ChevronRight className="h-3.5 w-3.5 text-zinc-500" />
+                  )}
+                  <span className="text-xs uppercase tracking-wider font-semibold text-zinc-500">
+                    Client Features
+                  </span>
+                  <span className="text-[10px] text-zinc-600 ml-1">
+                    ({Object.values(newToggles).filter(Boolean).length} active)
+                  </span>
+                </button>
+                {togglesExpanded && (
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    {TOGGLE_DEFS.map((t) => {
+                      const isOn = newToggles[t.key];
+                      const TIcon = t.icon;
+                      return (
+                        <button
+                          key={t.key}
+                          onClick={() => setNewToggles((prev) => ({ ...prev, [t.key]: !prev[t.key] }))}
+                          className={cn(
+                            "flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left transition-all",
+                            isOn
+                              ? "border-zinc-600 bg-zinc-800/80"
+                              : "border-zinc-800 bg-zinc-900/40 opacity-60 hover:opacity-80"
+                          )}
+                        >
+                          <TIcon className="h-4 w-4 flex-shrink-0" style={{ color: isOn ? t.color : "#52525b" }} />
+                          <div className="flex-1 min-w-0">
+                            <span className={cn("text-xs font-bold block", isOn ? "text-zinc-200" : "text-zinc-500")}>
+                              {t.label}
+                            </span>
+                            <span className="text-[10px] text-zinc-600 block leading-tight">{t.description}</span>
+                          </div>
+                          <div
+                            className={cn(
+                              "w-8 h-4.5 rounded-full flex items-center transition-colors flex-shrink-0",
+                              isOn ? "justify-end" : "justify-start"
+                            )}
+                            style={{ backgroundColor: isOn ? t.color : "#27272a" }}
+                          >
+                            <div className="w-3.5 h-3.5 rounded-full bg-white mx-0.5 shadow" />
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* Create button */}

@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
     'unknown';
 
   try {
-    const { templateId, projectPath, projectName, path: altPath, name: altName } = await request.json();
+    const { templateId, projectPath, projectName, path: altPath, name: altName, toggles } = await request.json();
 
     // Support both parameter naming conventions
     const finalPath = projectPath || altPath;
@@ -142,6 +142,34 @@ export async function POST(request: NextRequest) {
       // Write file
       console.log('[create-project] Writing file:', filePath);
       await fs.writeFile(filePath, file.content, 'utf-8');
+    }
+
+    // Write project.json if toggles provided
+    if (toggles && typeof toggles === 'object') {
+      const projectMeta = {
+        name: finalName || path.basename(normalizedPath),
+        clientName: '',
+        clientEmail: '',
+        domain: '',
+        createdAt: new Date().toISOString(),
+        toggles: {
+          seo: toggles.seo ?? true,
+          accessibility: toggles.accessibility ?? true,
+          privacy: toggles.privacy ?? true,
+          analytics: toggles.analytics ?? true,
+          security: toggles.security ?? false,
+          performance: toggles.performance ?? false,
+          punchList: toggles.punchList ?? false,
+        },
+        deployUrls: { github: '', vercel: '', netlify: '', cloudflare: '' },
+        revisions: { round: 0, maxRounds: 3, items: [] },
+        template: template.name,
+      };
+      await fs.writeFile(
+        path.join(normalizedPath, 'project.json'),
+        JSON.stringify(projectMeta, null, 2),
+        'utf-8'
+      );
     }
 
     // Create BUILDER_LOG.md

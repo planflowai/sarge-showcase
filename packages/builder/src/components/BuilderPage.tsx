@@ -17,7 +17,7 @@ import { flattenFileTree, useUIStore } from "@sarge/core";
 import { pushProject } from "../lib/pushProject";
 import { applyEditBlocks, type EditBlock, getDiffSummary } from "../lib/editBlockParser";
 import { useWorkspaceStore, launchWorkspace, recallWorkspace } from "../stores/workspaceStore";
-import { LayoutGrid, X, Plus, Save, Terminal as TerminalIcon, Loader2, FolderOpen, Rocket, FolderPlus, Package } from "lucide-react";
+import { LayoutGrid, X, Plus, Save, Terminal as TerminalIcon, Loader2, FolderOpen, Rocket, FolderPlus, Package, User, Globe, CheckCircle2, Circle } from "lucide-react";
 import { ThreadGuardianIndicator } from "@sarge/chat";
 import ProjectCommandCenter from "./ProjectCommandCenter";
 import AssetLibrary from "./AssetLibrary";
@@ -112,6 +112,16 @@ export default function BuilderPage({ deployContent }: { deployContent?: React.R
   // Save progress state (formerly in BuilderSidebar footer)
   const [isSavingProgress, setIsSavingProgress] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // Project meta (for status bar — toggles, client info)
+  const [projectMeta, setProjectMeta] = useState<any>(null);
+  useEffect(() => {
+    if (!projectPath) { setProjectMeta(null); return; }
+    fetch(`/api/project/meta?path=${encodeURIComponent(projectPath)}`)
+      .then((r) => r.json())
+      .then((data) => { if (data.exists && data.meta) setProjectMeta(data.meta); else setProjectMeta(null); })
+      .catch(() => setProjectMeta(null));
+  }, [projectPath]);
 
   // Document store for project management (multi-file projects)
   const { currentProject: docProject, hydrated: docHydrated, hydrate: hydrateDocuments } = useBuilderDocumentStore();
@@ -762,6 +772,75 @@ Please provide the complete modified version of this component. Make only the re
                 <FolderOpen className="h-4 w-4 flex-shrink-0 text-[#FF6700]" />
                 <span className="truncate drop-shadow-[0_0_6px_rgba(255,103,0,0.3)]">{projectName}</span>
               </span>
+            </div>
+          )}
+
+          {/* Project Status Bar — shows when project has project.json */}
+          {projectMeta && (
+            <div className="flex items-center gap-3 px-4 py-1.5 bg-zinc-100 dark:bg-zinc-900/80 border-b border-zinc-200 dark:border-zinc-800 text-xs overflow-x-auto flex-shrink-0">
+              {projectMeta.clientName && (
+                <>
+                  <span className="flex items-center gap-1 text-zinc-500 whitespace-nowrap">
+                    <User className="w-3 h-3" />
+                    {projectMeta.clientName}
+                  </span>
+                  <div className="w-px h-3 bg-zinc-300 dark:bg-zinc-700" />
+                </>
+              )}
+              {projectMeta.domain && (
+                <>
+                  <span className="flex items-center gap-1 text-zinc-500 whitespace-nowrap">
+                    <Globe className="w-3 h-3" />
+                    {projectMeta.domain}
+                  </span>
+                  <div className="w-px h-3 bg-zinc-300 dark:bg-zinc-700" />
+                </>
+              )}
+              {projectMeta.toggles && (
+                <div className="flex items-center gap-1">
+                  {[
+                    { key: "seo", label: "SEO", color: "#4285f4" },
+                    { key: "accessibility", label: "A11y", color: "#22c55e" },
+                    { key: "privacy", label: "Privacy", color: "#8b5cf6" },
+                    { key: "analytics", label: "Analytics", color: "#FF6700" },
+                    { key: "security", label: "Security", color: "#ef4444" },
+                    { key: "performance", label: "Perf", color: "#eab308" },
+                    { key: "punchList", label: "Punch", color: "#00b4d8" },
+                  ]
+                    .filter((t) => projectMeta.toggles[t.key])
+                    .map((t) => (
+                      <span
+                        key={t.key}
+                        className="px-1.5 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap"
+                        style={{ backgroundColor: `${t.color}20`, color: t.color }}
+                      >
+                        {t.label}
+                      </span>
+                    ))}
+                </div>
+              )}
+              {projectMeta.deployUrls && (
+                <>
+                  <div className="w-px h-3 bg-zinc-300 dark:bg-zinc-700" />
+                  <div className="flex items-center gap-2">
+                    {[
+                      { key: "github", label: "GH" },
+                      { key: "vercel", label: "VR" },
+                      { key: "netlify", label: "NF" },
+                      { key: "cloudflare", label: "CF" },
+                    ].map((d) => (
+                      <span key={d.key} className="flex items-center gap-0.5 whitespace-nowrap" title={projectMeta.deployUrls[d.key] || `${d.label}: not linked`}>
+                        {projectMeta.deployUrls[d.key] ? (
+                          <CheckCircle2 className="w-3 h-3 text-green-500" />
+                        ) : (
+                          <Circle className="w-3 h-3 text-zinc-600" />
+                        )}
+                        <span className={projectMeta.deployUrls[d.key] ? "text-zinc-400" : "text-zinc-600"}>{d.label}</span>
+                      </span>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           )}
 
