@@ -148,7 +148,7 @@ export default function StreamingMessageRenderer({
         const next = { ...prev };
         let changed = false;
         parsed.edits.forEach((edit) => {
-          if (!prev[edit.filePath]) {
+          if (!prev[edit.filePath] || prev[edit.filePath] === "streaming") {
             next[edit.filePath] = "pending";
             changed = true;
           }
