@@ -3,7 +3,6 @@
 import { useMemo, useState, useEffect, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import type { Components } from "react-markdown";
-import { Check, X, Loader2, FileCode, FilePlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { parseStreamingContent, type ParsedEdit } from "@/lib/parseStreamingContent";
 
@@ -48,18 +47,49 @@ function FileLine({
 
   return (
     <div className="flex items-center gap-3 py-2 text-sm">
-      {/* Status icon */}
-      {status === "streaming" ? (
-        <Loader2 className="h-5 w-5 text-blue-400 animate-spin flex-shrink-0" />
-      ) : status === "applied" ? (
-        <Check className="h-5 w-5 text-emerald-400 flex-shrink-0" />
-      ) : status === "rejected" || status === "error" ? (
-        <X className="h-5 w-5 text-red-400 flex-shrink-0" />
-      ) : edit.isNew ? (
-        <FilePlus className="h-5 w-5 text-emerald-400 flex-shrink-0" />
-      ) : (
-        <FileCode className="h-5 w-5 text-blue-400 flex-shrink-0" />
-      )}
+      {/* Forge status icon */}
+      <div className="flex-shrink-0 w-[36px] h-[36px] flex items-center justify-center">
+        {status === "streaming" ? (
+          <div className="forge-hammer mini">
+            <div className="hammer"><div className="head"></div><div className="handle"></div></div>
+            <div className="anvil"></div>
+            <div className="spark"></div><div className="spark"></div><div className="spark"></div>
+            <div className="spark"></div><div className="spark"></div><div className="spark"></div>
+            <div className="anvil-glow"></div>
+          </div>
+        ) : status === "applied" ? (
+          <div className="forge-done mini">
+            <div className="circle"><div className="check"></div></div>
+            <div className="done-sparks">
+              <span></span><span></span><span></span>
+              <span></span><span></span><span></span>
+            </div>
+          </div>
+        ) : status === "error" ? (
+          <div className="forge-failed mini">
+            <div className="circle"><div className="x-mark"></div></div>
+            <div className="smoke">
+              <div className="smoke-puff"></div>
+              <div className="smoke-puff"></div>
+              <div className="smoke-puff"></div>
+            </div>
+          </div>
+        ) : status === "rejected" ? (
+          <div className="forge-failed mini">
+            <div className="circle"><div className="x-mark"></div></div>
+            <div className="smoke">
+              <div className="smoke-puff"></div>
+              <div className="smoke-puff"></div>
+              <div className="smoke-puff"></div>
+            </div>
+          </div>
+        ) : (
+          <div className="ember-ring mini">
+            <div className="ring"></div>
+            <div className="core"></div>
+          </div>
+        )}
+      </div>
 
       {/* File name */}
       <span className={cn(
@@ -70,35 +100,33 @@ function FileLine({
       </span>
 
       {/* Line count */}
-      <span className="text-xs text-emerald-500">+{edit.lineCount}</span>
+      <span className="text-xs" style={{ color: "#FF6700" }}>+{edit.lineCount}</span>
 
       {/* Status label or actions */}
       {status === "streaming" && isStreaming && (
-        <span className="text-sm text-blue-400 animate-pulse ml-auto">Writing...</span>
+        <span className="text-sm ml-auto" style={{ color: "#FF6700" }}>Forging...</span>
       )}
       {status === "streaming" && !isStreaming && (
-        <span className="text-sm text-emerald-400 flex items-center gap-1 ml-auto">
-          <Check className="h-4 w-4" />
-          Done
-        </span>
+        <span className="text-sm ml-auto" style={{ color: "#FF6700" }}>Forged ⚒️</span>
       )}
       {status === "applied" && (
-        <span className="text-sm text-emerald-400 ml-auto">Applied</span>
+        <span className="text-sm ml-auto" style={{ color: "#FF6700" }}>Forged ⚒️</span>
       )}
       {status === "rejected" && (
         <span className="text-sm text-red-400 ml-auto">Rejected</span>
       )}
       {status === "error" && (
-        <span className="text-sm text-red-400 ml-auto">Failed</span>
+        <span className="text-sm ml-auto" style={{ color: "#dc2626" }}>Cracked</span>
       )}
       {status === "pending" && (
         <span className="flex items-center gap-3 ml-auto">
           <button
             onClick={handleApply}
             disabled={isApplying}
-            className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 disabled:opacity-50"
+            className="text-xs font-semibold disabled:opacity-50"
+            style={{ color: "#FF6700" }}
           >
-            {isApplying ? "Applying..." : "Apply"}
+            {isApplying ? "Forging..." : "Apply"}
           </button>
           <button
             onClick={onReject}
@@ -269,13 +297,12 @@ export default function StreamingMessageRenderer({
 
       {/* Streaming indicator when no content yet */}
       {isStreaming && uniqueEdits.length === 0 && !parsed.explanationBefore && (
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" style={{ animationDelay: "150ms" }} />
-            <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" style={{ animationDelay: "300ms" }} />
-          </span>
-          <span className="text-xs text-zinc-500">Thinking...</span>
+        <div className="flex items-center gap-3">
+          <div className="ember-ring micro">
+            <div className="ring"></div>
+            <div className="core"></div>
+          </div>
+          <span className="text-xs" style={{ color: "#FF6700" }}>Stoking the forge...</span>
         </div>
       )}
     </div>

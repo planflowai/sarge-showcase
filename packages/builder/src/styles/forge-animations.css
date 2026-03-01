@@ -1,0 +1,754 @@
+/* ============================================
+   SARGE FORGE — Animation Toolkit
+   Forge-themed loading/status indicators
+   ============================================ */
+
+/* ============================================
+   ANIMATION 1: FORGE HAMMER
+   For: File writing / applying to disk
+   ============================================ */
+.forge-hammer {
+  width: 80px;
+  height: 80px;
+  position: relative;
+}
+
+.forge-hammer .anvil {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 44px;
+  height: 14px;
+  background: linear-gradient(180deg, #555 0%, #333 100%);
+  border-radius: 3px 3px 1px 1px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+
+.forge-hammer .anvil::before {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 28px;
+  height: 6px;
+  background: #2a2a2a;
+  border-radius: 0 0 2px 2px;
+}
+
+.forge-hammer .hammer {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform-origin: 80% 100%;
+  animation: hammerStrike 0.8s ease-in-out infinite;
+}
+
+.forge-hammer .hammer .handle {
+  width: 4px;
+  height: 30px;
+  background: linear-gradient(180deg, #8B6914, #6B4F12);
+  border-radius: 2px;
+  margin-left: -2px;
+}
+
+.forge-hammer .hammer .head {
+  width: 22px;
+  height: 12px;
+  background: linear-gradient(180deg, #777 0%, #444 100%);
+  border-radius: 2px;
+  position: absolute;
+  top: -2px;
+  left: -12px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+}
+
+.forge-hammer .spark {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #FF6700;
+  bottom: 22px;
+  left: 50%;
+  opacity: 0;
+  box-shadow: 0 0 6px #FF6700, 0 0 12px #FF4500;
+}
+
+.forge-hammer .spark:nth-child(3) { animation: sparkFly1 0.8s ease-out infinite 0.15s; }
+.forge-hammer .spark:nth-child(4) { animation: sparkFly2 0.8s ease-out infinite 0.18s; }
+.forge-hammer .spark:nth-child(5) { animation: sparkFly3 0.8s ease-out infinite 0.12s; }
+.forge-hammer .spark:nth-child(6) { animation: sparkFly4 0.8s ease-out infinite 0.2s; }
+.forge-hammer .spark:nth-child(7) { animation: sparkFly5 0.8s ease-out infinite 0.16s; }
+.forge-hammer .spark:nth-child(8) { animation: sparkFly6 0.8s ease-out infinite 0.14s; }
+
+.forge-hammer .anvil-glow {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 4px;
+  background: #FF6700;
+  border-radius: 50%;
+  filter: blur(4px);
+  opacity: 0;
+  animation: anvilGlow 0.8s ease-in-out infinite;
+}
+
+@keyframes hammerStrike {
+  0% { transform: rotate(-35deg) translateX(-50%); }
+  40% { transform: rotate(-35deg) translateX(-50%); }
+  55% { transform: rotate(8deg) translateX(-50%); }
+  65% { transform: rotate(8deg) translateX(-50%); }
+  80% { transform: rotate(-35deg) translateX(-50%); }
+  100% { transform: rotate(-35deg) translateX(-50%); }
+}
+
+@keyframes anvilGlow {
+  0%, 40% { opacity: 0; }
+  55% { opacity: 0.9; }
+  75% { opacity: 0.3; }
+  100% { opacity: 0; }
+}
+
+@keyframes sparkFly1 {
+  0%, 50% { opacity: 0; transform: translate(0, 0) scale(1); }
+  55% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-22px, -28px) scale(0.3); }
+}
+@keyframes sparkFly2 {
+  0%, 50% { opacity: 0; transform: translate(0, 0) scale(1); }
+  55% { opacity: 1; }
+  100% { opacity: 0; transform: translate(18px, -32px) scale(0.2); }
+}
+@keyframes sparkFly3 {
+  0%, 50% { opacity: 0; transform: translate(0, 0) scale(1); }
+  55% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-30px, -18px) scale(0.4); }
+}
+@keyframes sparkFly4 {
+  0%, 50% { opacity: 0; transform: translate(0, 0) scale(1); }
+  55% { opacity: 1; }
+  100% { opacity: 0; transform: translate(26px, -22px) scale(0.3); }
+}
+@keyframes sparkFly5 {
+  0%, 50% { opacity: 0; transform: translate(0, 0) scale(1); }
+  55% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-14px, -35px) scale(0.2); }
+}
+@keyframes sparkFly6 {
+  0%, 50% { opacity: 0; transform: translate(0, 0) scale(1); }
+  55% { opacity: 1; }
+  100% { opacity: 0; transform: translate(10px, -40px) scale(0.3); }
+}
+
+/* ============================================
+   ANIMATION 2: MOLTEN POUR (pours DOWN)
+   For: Streaming / generating code
+   ============================================ */
+.molten-pour {
+  width: 70px;
+  height: 80px;
+  position: relative;
+}
+
+.molten-pour .crucible {
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 30px;
+  height: 20px;
+  border: 3px solid #555;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  transform-origin: 85% 50%;
+  animation: pourTilt 2.2s ease-in-out infinite;
+}
+
+.molten-pour .crucible .molten-fill {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  right: 2px;
+  bottom: 2px;
+  background: linear-gradient(180deg, #FF8C00, #FF6700, #FF4500);
+  border-radius: 0 0 5px 5px;
+  box-shadow: 0 0 8px rgba(255, 103, 0, 0.6);
+}
+
+.molten-pour .crucible .lip {
+  position: absolute;
+  top: -1px;
+  right: -4px;
+  width: 8px;
+  height: 3px;
+  background: #555;
+  border-radius: 0 2px 2px 0;
+}
+
+.molten-pour .stream {
+  position: absolute;
+  top: 18px;
+  left: 58%;
+  width: 5px;
+  height: 0;
+  background: linear-gradient(180deg, #FF8C00, #FF6700, #FF4500, transparent);
+  border-radius: 2px 2px 4px 4px;
+  animation: pourStreamDown 2.2s ease-in-out infinite;
+  box-shadow: 0 0 10px rgba(255, 103, 0, 0.5), 0 0 20px rgba(255, 69, 0, 0.2);
+}
+
+.molten-pour .stream-drips {
+  position: absolute;
+  top: 18px;
+  left: 58%;
+  width: 5px;
+}
+
+.molten-pour .drip {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #FF6700;
+  opacity: 0;
+  box-shadow: 0 0 6px #FF6700;
+}
+
+.molten-pour .drip:nth-child(1) { animation: dripFall 2.2s ease-in infinite 0.6s; left: 0; }
+.molten-pour .drip:nth-child(2) { animation: dripFall 2.2s ease-in infinite 0.9s; left: 2px; }
+.molten-pour .drip:nth-child(3) { animation: dripFall 2.2s ease-in infinite 1.2s; left: -1px; }
+
+.molten-pour .mold {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 34px;
+  height: 14px;
+  border: 2px solid #444;
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  overflow: hidden;
+  background: #1a1a1a;
+}
+
+.molten-pour .mold::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -4px;
+  right: -4px;
+  height: 2px;
+  background: #444;
+  border-radius: 2px;
+}
+
+.molten-pour .mold-fill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 0;
+  background: linear-gradient(180deg, #FF8C00, #FF6700);
+  animation: moldFillUp 2.2s ease-in-out infinite;
+  box-shadow: 0 -3px 8px rgba(255, 103, 0, 0.4);
+}
+
+.molten-pour .mold-glow {
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 24px;
+  height: 6px;
+  background: #FF6700;
+  border-radius: 50%;
+  filter: blur(6px);
+  opacity: 0;
+  animation: moldGlow 2.2s ease-in-out infinite;
+}
+
+.molten-pour .pour-sparks {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.molten-pour .pour-spark {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: #FFa500;
+  opacity: 0;
+  box-shadow: 0 0 4px #FF6700;
+}
+
+.molten-pour .pour-spark:nth-child(1) { animation: pourSparkFly 2.2s ease-out infinite 0.5s; --psx: -12px; --psy: -6px; }
+.molten-pour .pour-spark:nth-child(2) { animation: pourSparkFly 2.2s ease-out infinite 0.7s; --psx: 10px; --psy: -8px; }
+.molten-pour .pour-spark:nth-child(3) { animation: pourSparkFly 2.2s ease-out infinite 0.9s; --psx: -8px; --psy: 4px; }
+.molten-pour .pour-spark:nth-child(4) { animation: pourSparkFly 2.2s ease-out infinite 1.1s; --psx: 14px; --psy: -3px; }
+
+@keyframes pourTilt {
+  0%, 15% { transform: translateX(-50%) rotate(0deg); }
+  30%, 70% { transform: translateX(-50%) rotate(55deg); }
+  85%, 100% { transform: translateX(-50%) rotate(0deg); }
+}
+
+@keyframes pourStreamDown {
+  0%, 15% { height: 0; opacity: 0; top: 18px; }
+  30% { height: 34px; opacity: 1; top: 24px; }
+  70% { height: 34px; opacity: 1; top: 24px; }
+  85% { height: 0; opacity: 0; top: 18px; }
+  100% { height: 0; opacity: 0; top: 18px; }
+}
+
+@keyframes dripFall {
+  0% { opacity: 0; transform: translateY(0); }
+  10% { opacity: 1; }
+  60% { opacity: 1; transform: translateY(32px); }
+  70% { opacity: 0; transform: translateY(36px); }
+  100% { opacity: 0; transform: translateY(0); }
+}
+
+@keyframes moldFillUp {
+  0%, 25% { height: 0; }
+  75% { height: 100%; }
+  90%, 100% { height: 0; }
+}
+
+@keyframes moldGlow {
+  0%, 25% { opacity: 0; }
+  50% { opacity: 0.6; }
+  75% { opacity: 0.8; }
+  90%, 100% { opacity: 0; }
+}
+
+@keyframes pourSparkFly {
+  0%, 40% { opacity: 0; transform: translate(0, 0) scale(1); }
+  45% { opacity: 1; }
+  80% { opacity: 0; transform: translate(var(--psx), var(--psy)) scale(0.3); }
+  100% { opacity: 0; }
+}
+
+/* ============================================
+   ANIMATION 3: FORGE EMBER RING
+   For: Processing / analyzing
+   ============================================ */
+.ember-ring {
+  width: 48px;
+  height: 48px;
+  position: relative;
+}
+
+.ember-ring .ring {
+  width: 48px;
+  height: 48px;
+  border: 3px solid #222;
+  border-top: 3px solid #FF6700;
+  border-right: 3px solid #FF4500;
+  border-radius: 50%;
+  animation: emberSpin 1s linear infinite;
+  box-shadow: 0 0 12px rgba(255, 103, 0, 0.2), inset 0 0 12px rgba(255, 103, 0, 0.05);
+}
+
+.ember-ring .core {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 8px;
+  background: #FF6700;
+  border-radius: 50%;
+  animation: emberPulse 1s ease-in-out infinite;
+  box-shadow: 0 0 10px #FF6700, 0 0 20px rgba(255, 103, 0, 0.3);
+}
+
+@keyframes emberSpin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes emberPulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
+  50% { transform: translate(-50%, -50%) scale(1.4); opacity: 1; }
+}
+
+/* ============================================
+   ANIMATION 4: BELLOWS BREATHE
+   For: Waiting / idle / loading context
+   ============================================ */
+.bellows {
+  width: 70px;
+  height: 55px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bellows .body {
+  width: 36px;
+  height: 26px;
+  position: relative;
+}
+
+.bellows .top-plate, .bellows .bottom-plate {
+  position: absolute;
+  left: 0;
+  width: 36px;
+  height: 5px;
+  background: linear-gradient(90deg, #6B4F12, #8B6914, #6B4F12);
+  border-radius: 2px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.bellows .top-plate {
+  top: 0;
+  animation: bellowsTop 1.5s ease-in-out infinite;
+}
+
+.bellows .bottom-plate {
+  bottom: 0;
+  animation: bellowsBottom 1.5s ease-in-out infinite;
+}
+
+.bellows .accordion {
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  left: 3px;
+  right: 3px;
+  overflow: hidden;
+}
+
+.bellows .fold {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #555;
+  border-radius: 1px;
+}
+
+.bellows .fold:nth-child(1) { top: 15%; animation: foldMove 1.5s ease-in-out infinite; }
+.bellows .fold:nth-child(2) { top: 35%; animation: foldMove 1.5s ease-in-out infinite 0.05s; }
+.bellows .fold:nth-child(3) { top: 55%; animation: foldMove 1.5s ease-in-out infinite 0.1s; }
+.bellows .fold:nth-child(4) { top: 75%; animation: foldMove 1.5s ease-in-out infinite 0.15s; }
+
+.bellows .nozzle {
+  position: absolute;
+  right: -16px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 7px;
+  background: linear-gradient(90deg, #555, #444, #333);
+  border-radius: 0 4px 4px 0;
+  box-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+}
+
+.bellows .nozzle::before {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 4px;
+  background: #333;
+  border-radius: 0 2px 2px 0;
+}
+
+.bellows .air-puff {
+  position: absolute;
+  right: -34px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.bellows .puff {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 103, 0, 0.3), transparent);
+  opacity: 0;
+}
+
+.bellows .puff:nth-child(1) {
+  width: 10px; height: 10px;
+  top: -5px; left: 0;
+  animation: puffOut 1.5s ease-out infinite 0.3s;
+}
+.bellows .puff:nth-child(2) {
+  width: 8px; height: 8px;
+  top: -2px; left: 4px;
+  animation: puffOut 1.5s ease-out infinite 0.4s;
+}
+.bellows .puff:nth-child(3) {
+  width: 12px; height: 12px;
+  top: -6px; left: -2px;
+  animation: puffOut 1.5s ease-out infinite 0.5s;
+}
+
+.bellows .heat-wave {
+  position: absolute;
+  right: -28px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  opacity: 0;
+}
+
+.bellows .heat-wave span {
+  position: absolute;
+  width: 2px;
+  height: 10px;
+  background: rgba(255, 103, 0, 0.4);
+  border-radius: 1px;
+  animation: heatRise 1.5s ease-out infinite;
+}
+
+.bellows .heat-wave span:nth-child(1) { left: 2px; animation-delay: 0.35s; }
+.bellows .heat-wave span:nth-child(2) { left: 7px; animation-delay: 0.45s; height: 8px; }
+.bellows .heat-wave span:nth-child(3) { left: 12px; animation-delay: 0.55s; height: 12px; }
+
+@keyframes bellowsTop {
+  0%, 100% { transform: translateY(5px); }
+  50% { transform: translateY(0); }
+}
+
+@keyframes bellowsBottom {
+  0%, 100% { transform: translateY(-5px); }
+  50% { transform: translateY(0); }
+}
+
+@keyframes foldMove {
+  0%, 100% { opacity: 1; transform: scaleY(1); }
+  50% { opacity: 0.4; transform: scaleY(0.6); }
+}
+
+@keyframes puffOut {
+  0%, 30% { opacity: 0; transform: scale(0.5) translateX(0); }
+  40% { opacity: 0.6; transform: scale(1) translateX(4px); }
+  100% { opacity: 0; transform: scale(1.8) translateX(18px); }
+}
+
+@keyframes heatRise {
+  0%, 30% { opacity: 0; transform: translateY(0) scaleY(0.5); }
+  40% { opacity: 0.5; }
+  100% { opacity: 0; transform: translateY(-14px) scaleY(1.2); }
+}
+
+/* ============================================
+   ANIMATION 5: FORGED COMPLETE (Done state)
+   ============================================ */
+.forge-done {
+  width: 48px;
+  height: 48px;
+  position: relative;
+}
+
+.forge-done .circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(255, 103, 0, 0.1);
+  border: 2px solid #FF6700;
+  animation: doneAppear 0.6s ease-out forwards;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.forge-done .check {
+  width: 20px;
+  height: 12px;
+  border-bottom: 3px solid #FF6700;
+  border-left: 3px solid #FF6700;
+  transform: rotate(-45deg) translate(2px, -2px);
+  opacity: 0;
+  animation: checkDraw 0.3s ease-out 0.3s forwards;
+}
+
+.forge-done .done-sparks span {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: #FF6700;
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  opacity: 0;
+  box-shadow: 0 0 6px #FF6700;
+}
+
+.forge-done .done-sparks span:nth-child(1) { animation: doneSpark 0.6s ease-out 0.25s forwards; --dx: -20px; --dy: -18px; }
+.forge-done .done-sparks span:nth-child(2) { animation: doneSpark 0.6s ease-out 0.3s forwards; --dx: 22px; --dy: -14px; }
+.forge-done .done-sparks span:nth-child(3) { animation: doneSpark 0.6s ease-out 0.28s forwards; --dx: -16px; --dy: 20px; }
+.forge-done .done-sparks span:nth-child(4) { animation: doneSpark 0.6s ease-out 0.32s forwards; --dx: 18px; --dy: 16px; }
+.forge-done .done-sparks span:nth-child(5) { animation: doneSpark 0.6s ease-out 0.26s forwards; --dx: 0px; --dy: -24px; }
+.forge-done .done-sparks span:nth-child(6) { animation: doneSpark 0.6s ease-out 0.34s forwards; --dx: -24px; --dy: 4px; }
+
+@keyframes doneAppear {
+  0% { transform: scale(0.5); opacity: 0; }
+  60% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes checkDraw {
+  0% { opacity: 0; width: 0; }
+  100% { opacity: 1; width: 20px; }
+}
+
+@keyframes doneSpark {
+  0% { opacity: 1; transform: translate(0, 0) scale(1); }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0); }
+}
+
+/* ============================================
+   ANIMATION 6: FORGE CRACK (Error/Failed)
+   ============================================ */
+.forge-failed {
+  width: 48px;
+  height: 48px;
+  position: relative;
+}
+
+.forge-failed .circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(220, 38, 38, 0.1);
+  border: 2px solid #dc2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: failShake 0.5s ease-out;
+}
+
+.forge-failed .x-mark {
+  position: relative;
+  width: 18px;
+  height: 18px;
+}
+
+.forge-failed .x-mark::before,
+.forge-failed .x-mark::after {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 3px;
+  background: #dc2626;
+  top: 50%;
+  left: 50%;
+  border-radius: 2px;
+}
+
+.forge-failed .x-mark::before { transform: translate(-50%, -50%) rotate(45deg); }
+.forge-failed .x-mark::after { transform: translate(-50%, -50%) rotate(-45deg); }
+
+.forge-failed .smoke {
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.forge-failed .smoke-puff {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(100, 100, 100, 0.4);
+  opacity: 0;
+}
+
+.forge-failed .smoke-puff:nth-child(1) { animation: smokeDrift 1.5s ease-out 0.3s infinite; left: -4px; }
+.forge-failed .smoke-puff:nth-child(2) { animation: smokeDrift 1.5s ease-out 0.6s infinite; left: 2px; width: 5px; height: 5px; }
+.forge-failed .smoke-puff:nth-child(3) { animation: smokeDrift 1.5s ease-out 0.9s infinite; left: -1px; width: 4px; height: 4px; }
+
+@keyframes failShake {
+  0%, 100% { transform: translateX(0); }
+  15% { transform: translateX(-4px); }
+  30% { transform: translateX(4px); }
+  45% { transform: translateX(-3px); }
+  60% { transform: translateX(3px); }
+  75% { transform: translateX(-1px); }
+}
+
+@keyframes smokeDrift {
+  0% { opacity: 0; transform: translateY(0) scale(0.5); }
+  20% { opacity: 0.5; }
+  100% { opacity: 0; transform: translateY(-20px) translateX(6px) scale(1.5); }
+}
+
+/* ============================================
+   MINI VARIANTS — for inline file cards
+   ============================================ */
+.forge-hammer.mini { width: 36px; height: 36px; }
+.forge-hammer.mini .anvil { width: 22px; height: 7px; bottom: 4px; }
+.forge-hammer.mini .anvil::before { width: 14px; height: 3px; bottom: -3px; }
+.forge-hammer.mini .hammer { top: 2px; }
+.forge-hammer.mini .hammer .handle { width: 2px; height: 14px; }
+.forge-hammer.mini .hammer .head { width: 11px; height: 6px; top: -1px; left: -6px; }
+.forge-hammer.mini .spark { width: 2px; height: 2px; bottom: 11px; }
+.forge-hammer.mini .anvil-glow { bottom: 9px; width: 10px; height: 2px; }
+
+.molten-pour.mini { width: 32px; height: 36px; }
+.molten-pour.mini .crucible { width: 16px; height: 11px; border-width: 2px; top: 2px; }
+.molten-pour.mini .crucible .molten-fill { top: 1px; left: 1px; right: 1px; bottom: 1px; border-radius: 0 0 3px 3px; }
+.molten-pour.mini .crucible .lip { width: 5px; height: 2px; top: -1px; right: -3px; }
+.molten-pour.mini .stream { width: 3px; top: 10px; left: 56%; }
+.molten-pour.mini .mold { width: 18px; height: 8px; bottom: 2px; }
+.molten-pour.mini .mold::before { left: -2px; right: -2px; }
+.molten-pour.mini .mold-glow { width: 12px; height: 3px; filter: blur(3px); bottom: 1px; }
+.molten-pour.mini .stream-drips { display: none; }
+.molten-pour.mini .pour-sparks { display: none; }
+
+.ember-ring.mini { width: 28px; height: 28px; }
+.ember-ring.mini .ring { width: 28px; height: 28px; border-width: 2px; }
+.ember-ring.mini .core { width: 5px; height: 5px; }
+
+.bellows.mini { width: 36px; height: 28px; }
+.bellows.mini .body { width: 20px; height: 14px; }
+.bellows.mini .top-plate, .bellows.mini .bottom-plate { width: 20px; height: 3px; }
+.bellows.mini .fold { height: 1px; }
+.bellows.mini .nozzle { width: 8px; height: 4px; right: -8px; }
+.bellows.mini .nozzle::before { width: 2px; height: 2px; }
+.bellows.mini .air-puff { right: -18px; }
+.bellows.mini .heat-wave { display: none; }
+
+.forge-done.mini { width: 28px; height: 28px; }
+.forge-done.mini .circle { width: 28px; height: 28px; }
+.forge-done.mini .check { width: 12px; height: 7px; border-width: 2px; }
+.forge-done.mini .done-sparks span { width: 3px; height: 3px; }
+
+.forge-failed.mini { width: 28px; height: 28px; }
+.forge-failed.mini .circle { width: 28px; height: 28px; }
+.forge-failed.mini .x-mark { width: 10px; height: 10px; }
+.forge-failed.mini .x-mark::before, .forge-failed.mini .x-mark::after { width: 10px; height: 2px; }
+.forge-failed.mini .smoke-puff { width: 4px; height: 4px; }
+
+/* ============================================
+   MICRO VARIANTS — for progress strip
+   ============================================ */
+.ember-ring.micro { width: 20px; height: 20px; }
+.ember-ring.micro .ring { width: 20px; height: 20px; border-width: 2px; }
+.ember-ring.micro .core { width: 4px; height: 4px; }
+
+.molten-pour.micro { width: 20px; height: 24px; }
+.molten-pour.micro .crucible { width: 10px; height: 7px; border-width: 1.5px; top: 1px; }
+.molten-pour.micro .crucible .molten-fill { border-radius: 0 0 2px 2px; }
+.molten-pour.micro .crucible .lip { display: none; }
+.molten-pour.micro .stream { width: 2px; top: 7px; }
+.molten-pour.micro .mold { width: 12px; height: 5px; bottom: 1px; border-width: 1.5px; }
+.molten-pour.micro .mold::before { display: none; }
+.molten-pour.micro .mold-glow { display: none; }
+.molten-pour.micro .stream-drips { display: none; }
+.molten-pour.micro .pour-sparks { display: none; }

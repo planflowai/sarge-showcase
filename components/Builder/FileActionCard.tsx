@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { FileCode, Check, X, GitCompare, Loader2, CheckCircle, XCircle } from "lucide-react";
+import { Check, X, GitCompare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -61,7 +61,7 @@ export default function FileActionCard({
   const getStatusStyles = () => {
     switch (status) {
       case "applied":
-        return "bg-green-50 dark:bg-green-500/5 border-green-200 dark:border-green-500/30";
+        return "bg-[#FF6700]/5 border-[#FF6700]/30";
       case "rejected":
         return "bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700 opacity-60";
       default:
@@ -79,11 +79,18 @@ export default function FileActionCard({
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2.5 border-b border-zinc-200 dark:border-zinc-700">
         <div className="flex items-center gap-2 min-w-0">
-          <FileCode className={cn(
-            "h-4 w-4 flex-shrink-0",
-            status === "applied" ? "text-green-500" :
-            status === "rejected" ? "text-zinc-400" : "text-indigo-500"
-          )} />
+          <div className="flex-shrink-0 w-4 h-4 flex items-center justify-center">
+            {status === "applied" ? (
+              <span className="text-xs font-bold" style={{ color: "#FF6700" }}>✓</span>
+            ) : status === "rejected" ? (
+              <span className="text-xs text-zinc-400">✕</span>
+            ) : (
+              <div className="ember-ring micro">
+                <div className="ring"></div>
+                <div className="core"></div>
+              </div>
+            )}
+          </div>
           <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200 truncate">
             {fileName}
           </span>
@@ -95,7 +102,7 @@ export default function FileActionCard({
         {/* Line changes */}
         <div className="flex items-center gap-2 text-xs flex-shrink-0 ml-2">
           {addedLines > 0 && (
-            <span className="text-green-600 dark:text-green-400 font-mono">+{addedLines}</span>
+            <span className="font-mono" style={{ color: "#FF6700" }}>+{addedLines}</span>
           )}
           {removedLines > 0 && (
             <span className="text-red-500 dark:text-red-400 font-mono">-{removedLines}</span>
@@ -104,7 +111,7 @@ export default function FileActionCard({
             <span className="text-zinc-500 font-mono">~modified</span>
           )}
           {!originalContent && (
-            <span className="text-green-600 dark:text-green-400 font-mono">new file</span>
+            <span className="font-mono" style={{ color: "#FF6700" }}>new file</span>
           )}
         </div>
       </div>
@@ -116,7 +123,8 @@ export default function FileActionCard({
             <Button
               size="sm"
               onClick={handleApply}
-              className="h-7 gap-1.5 px-3 text-xs bg-green-600 hover:bg-green-700 text-white"
+              className="h-7 gap-1.5 px-3 text-xs text-white"
+              style={{ backgroundColor: "#FF6700" }}
             >
               <Check className="h-3.5 w-3.5" />
               Apply
@@ -143,22 +151,24 @@ export default function FileActionCard({
         )}
 
         {status === "applying" && (
-          <div className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span>Writing to disk...</span>
+          <div className="flex items-center gap-2 text-sm" style={{ color: "#FF6700" }}>
+            <div className="forge-hammer micro">
+              <div className="hammer"><div className="head"></div><div className="handle"></div></div>
+              <div className="anvil"></div>
+              <div className="spark"></div><div className="spark"></div><div className="spark"></div>
+            </div>
+            <span>Forging...</span>
           </div>
         )}
 
         {status === "applied" && (
-          <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
-            <CheckCircle className="h-4 w-4" />
-            <span>Done — applied to {fileName}</span>
+          <div className="flex items-center gap-2 text-sm" style={{ color: "#FF6700" }}>
+            <span>Forged ⚒️ — {fileName}</span>
           </div>
         )}
 
         {status === "rejected" && (
           <div className="flex items-center gap-2 text-sm text-zinc-500">
-            <XCircle className="h-4 w-4" />
             <span>Changes rejected</span>
           </div>
         )}

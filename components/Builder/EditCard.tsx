@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { FileCode, FilePlus, Check, X, ChevronDown, ChevronUp, Loader2, Eye } from "lucide-react";
+import { ChevronDown, ChevronUp, Eye, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -58,9 +58,9 @@ export default function EditCard({
   }, [autoApply, status, isApplying, handleApply, filePath]);
 
   const statusColors = {
-    streaming: "border-blue-500/50 bg-blue-500/5",
+    streaming: "border-[#FF6700]/50 bg-[#FF6700]/5",
     pending: "border-zinc-700 bg-zinc-800/50",
-    applied: "border-emerald-500/50 bg-emerald-500/5",
+    applied: "border-[#FF6700]/50 bg-[#FF6700]/5",
     rejected: "border-red-500/30 bg-red-500/5 opacity-60",
   };
 
@@ -74,18 +74,29 @@ export default function EditCard({
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-3 min-w-0 flex-1">
-          {/* Status indicator */}
-          {status === "streaming" ? (
-            <Loader2 className="h-5 w-5 text-blue-400 animate-spin flex-shrink-0" />
-          ) : status === "applied" ? (
-            <Check className="h-5 w-5 text-emerald-400 flex-shrink-0" />
-          ) : status === "rejected" ? (
-            <X className="h-5 w-5 text-red-400 flex-shrink-0" />
-          ) : isNew ? (
-            <FilePlus className="h-5 w-5 text-emerald-400 flex-shrink-0" />
-          ) : (
-            <FileCode className="h-5 w-5 text-blue-400 flex-shrink-0" />
-          )}
+          {/* Forge status indicator */}
+          <div className="flex-shrink-0 w-[24px] h-[24px] flex items-center justify-center">
+            {status === "streaming" ? (
+              <div className="forge-hammer micro">
+                <div className="hammer"><div className="head"></div><div className="handle"></div></div>
+                <div className="anvil"></div>
+                <div className="spark"></div><div className="spark"></div><div className="spark"></div>
+              </div>
+            ) : status === "applied" ? (
+              <div className="forge-done micro">
+                <div className="circle"><div className="check"></div></div>
+              </div>
+            ) : status === "rejected" ? (
+              <div className="forge-failed micro">
+                <div className="circle"><div className="x-mark"></div></div>
+              </div>
+            ) : (
+              <div className="ember-ring micro">
+                <div className="ring"></div>
+                <div className="core"></div>
+              </div>
+            )}
+          </div>
 
           {/* File info */}
           <div className="flex flex-col min-w-0">
@@ -116,11 +127,10 @@ export default function EditCard({
         {/* Actions */}
         <div className="flex items-center gap-1.5 flex-shrink-0">
           {isStreaming ? (
-            <span className="text-sm text-blue-400 animate-pulse">Writing...</span>
+            <span className="text-sm animate-pulse" style={{ color: "#FF6700" }}>Forging...</span>
           ) : status === "pending" || status === "streaming" ? (
-            <span className="text-sm text-emerald-400 flex items-center gap-1">
-              <Check className="h-4 w-4" />
-              Done
+            <span className="text-sm" style={{ color: "#FF6700" }}>
+              Forged ⚒️
             </span>
           ) : null}
 
@@ -149,23 +159,17 @@ export default function EditCard({
                 size="sm"
                 onClick={handleApply}
                 disabled={isApplying}
-                className="h-7 px-3 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="h-7 px-3 text-xs text-white"
+                style={{ backgroundColor: "#FF6700" }}
               >
-                {isApplying ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <>
-                    <Check className="h-3.5 w-3.5 mr-1" />
-                    Apply
-                  </>
-                )}
+                {isApplying ? "Forging..." : "Apply"}
               </Button>
             </>
           )}
 
           {status === "applied" && (
-            <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400">
-              Applied
+            <span className="text-[10px] px-2 py-0.5 rounded" style={{ backgroundColor: "rgba(255,103,0,0.2)", color: "#FF6700" }}>
+              Forged ⚒️
             </span>
           )}
 
