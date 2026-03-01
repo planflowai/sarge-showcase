@@ -667,7 +667,7 @@ export default function BuilderSidebar({
       // ── Commands / Prompts popover ───────────────────────────────────────────
       case "prompts":
         return (
-          <div className="w-[600px] flex flex-col max-h-[80vh]">
+          <div className="w-[1100px] flex flex-col max-h-[85vh]">
             <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-200 dark:border-zinc-700">
               <div>
                 <h2 className="text-base font-bold text-zinc-900 dark:text-zinc-100">AI Commands</h2>
@@ -697,39 +697,35 @@ export default function BuilderSidebar({
                       <span className="text-xs text-zinc-400 ml-auto bg-zinc-200 dark:bg-zinc-700 px-2 py-0.5 rounded-full font-medium">{prompts.length}</span>
                     </button>
                     {isExpanded && prompts.length > 0 && (
-                      <div className="space-y-2 mt-2 ml-2 mr-2">
+                      <div className="grid grid-cols-3 gap-2 mt-2 mx-2">
                         {prompts.map((prompt) => (
                           <div key={prompt.id}
-                            className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-700/60 bg-zinc-50 dark:bg-zinc-800/40 hover:border-indigo-400/50 dark:hover:border-indigo-500/40 hover:bg-indigo-50/30 dark:hover:bg-indigo-900/10 transition-all group">
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1.5">
-                                  <span className="text-sm font-bold text-zinc-800 dark:text-zinc-200">{prompt.title}</span>
-                                  {prompt.complexity && (
-                                    <span className={cn("px-2 py-0.5 text-[9px] font-bold rounded-full flex-shrink-0", getComplexityColor(prompt.complexity))}>
-                                      {prompt.complexity === "simple" ? "EASY" : prompt.complexity === "medium" ? "MED" : "ADV"}
-                                    </span>
-                                  )}
-                                </div>
-                                <p className="text-xs text-zinc-500 leading-relaxed">
-                                  {prompt.previewHint || prompt.prompt.slice(0, 120)}
-                                </p>
-                              </div>
-                              <div className="flex items-center gap-2 flex-shrink-0 mt-0.5">
-                                {prompt.isCustom && (
-                                  <button onClick={(e) => { e.stopPropagation(); removeCustomPrompt(prompt.id); }}
-                                    className="p-1.5 text-zinc-400 hover:text-red-500 transition-colors rounded"
-                                    title="Delete prompt">
-                                    <Trash2 className="h-4 w-4" />
-                                  </button>
-                                )}
-                                <button
-                                  onClick={() => handlePromptClick(prompt)}
-                                  className="px-4 py-2 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white transition-colors whitespace-nowrap"
-                                >
-                                  Send
+                            className="p-3 rounded-xl border border-zinc-200 dark:border-zinc-700/60 bg-zinc-50 dark:bg-zinc-800/40 hover:border-indigo-400/50 dark:hover:border-indigo-500/40 hover:bg-indigo-50/30 dark:hover:bg-indigo-900/10 transition-all group flex flex-col">
+                            <div className="flex items-center gap-2 mb-1.5">
+                              <span className="text-sm font-bold text-zinc-800 dark:text-zinc-200 truncate">{prompt.title}</span>
+                              {prompt.complexity && (
+                                <span className={cn("px-2 py-0.5 text-[9px] font-bold rounded-full flex-shrink-0", getComplexityColor(prompt.complexity))}>
+                                  {prompt.complexity === "simple" ? "EASY" : prompt.complexity === "medium" ? "MED" : "ADV"}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-zinc-500 leading-relaxed flex-1 line-clamp-2">
+                              {prompt.previewHint || prompt.prompt.slice(0, 80)}
+                            </p>
+                            <div className="flex items-center justify-between mt-2 pt-2 border-t border-zinc-200/50 dark:border-zinc-700/30">
+                              {prompt.isCustom ? (
+                                <button onClick={(e) => { e.stopPropagation(); removeCustomPrompt(prompt.id); }}
+                                  className="p-1 text-zinc-400 hover:text-red-500 transition-colors rounded"
+                                  title="Delete prompt">
+                                  <Trash2 className="h-3.5 w-3.5" />
                                 </button>
-                              </div>
+                              ) : <span />}
+                              <button
+                                onClick={() => handlePromptClick(prompt)}
+                                className="px-4 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white transition-colors whitespace-nowrap"
+                              >
+                                Send
+                              </button>
                             </div>
                           </div>
                         ))}
@@ -945,7 +941,7 @@ export default function BuilderSidebar({
           id="builder-toolbar-popover"
           className="fixed z-[200] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-2xl overflow-hidden"
           style={{
-            left: Math.min(popoverRect.left, window.innerWidth - 500),
+            left: Math.min(popoverRect.left, window.innerWidth - 1150),
             top: popoverRect.bottom + 4,
           }}
         >
