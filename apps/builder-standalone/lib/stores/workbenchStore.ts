@@ -28,7 +28,7 @@ const DEFAULT_SLOTS: WorkbenchSlot[] = [
   { slot: 1, monitorNumber: 5, provider: "anthropic", model: "claude-sonnet-4-5-20250929", status: "idle", previewHtml: "", lastCode: "", selected: true, tokenCount: 0, tokensPerSec: 0, startedAt: 0, completedAt: 0, errorMsg: "" },
   { slot: 2, monitorNumber: 1, provider: "openai",    model: "gpt-4o",                    status: "idle", previewHtml: "", lastCode: "", selected: true, tokenCount: 0, tokensPerSec: 0, startedAt: 0, completedAt: 0, errorMsg: "" },
   { slot: 3, monitorNumber: 3, provider: "google",    model: "gemini-2.5-pro",             status: "idle", previewHtml: "", lastCode: "", selected: true, tokenCount: 0, tokensPerSec: 0, startedAt: 0, completedAt: 0, errorMsg: "" },
-  { slot: 4, monitorNumber: 6, provider: "xai",       model: "grok-3-beta",               status: "idle", previewHtml: "", lastCode: "", selected: true, tokenCount: 0, tokensPerSec: 0, startedAt: 0, completedAt: 0, errorMsg: "" },
+  { slot: 4, monitorNumber: 6, provider: "xai",       model: "grok-3",                    status: "idle", previewHtml: "", lastCode: "", selected: true, tokenCount: 0, tokensPerSec: 0, startedAt: 0, completedAt: 0, errorMsg: "" },
   { slot: 5, monitorNumber: 2, provider: "deepseek",  model: "deepseek-chat",              status: "idle", previewHtml: "", lastCode: "", selected: true, tokenCount: 0, tokensPerSec: 0, startedAt: 0, completedAt: 0, errorMsg: "" },
 ];
 

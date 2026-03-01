@@ -200,7 +200,7 @@ export const providers: ProviderConfig[] = [
     supportsVoice: true,
     models: [
       {
-        id: "grok-3-beta",
+        id: "grok-3",
         name: "Grok 3",
         provider: "xai",
         maxTokens: 4096,
@@ -210,8 +210,18 @@ export const providers: ProviderConfig[] = [
         isEnabled: true,
       },
       {
-        id: "grok-3-mini-beta",
+        id: "grok-3-mini",
         name: "Grok 3 Mini",
+        provider: "xai",
+        maxTokens: 4096,
+        temperature: 0.7,
+        topP: 1,
+        contextWindow: 131072,
+        isEnabled: true,
+      },
+      {
+        id: "grok-4-0709",
+        name: "Grok 4",
         provider: "xai",
         maxTokens: 4096,
         temperature: 0.7,

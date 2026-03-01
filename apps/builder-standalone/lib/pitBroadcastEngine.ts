@@ -81,7 +81,15 @@ async function streamSlot(
   store.setSlotStarted(slot.slot);
 
   const source = slot.provider === "ollama" || slot.provider === "lmstudio" ? "local" : slot.provider;
-  const fullPrompt = `${PIT_SYSTEM_PROMPT}\n\nUser request: ${prompt}`;
+
+  // Include existing code as context so the model can modify instead of rebuilding
+  const existingCode = slot.lastCode || slot.previewHtml || "";
+  let fullPrompt: string;
+  if (existingCode) {
+    fullPrompt = `${PIT_SYSTEM_PROMPT}\n\nHere is the current code you previously generated:\n\`\`\`html\n${existingCode}\n\`\`\`\n\nUser request: ${prompt}\n\nIMPORTANT: Modify the existing code above based on the user's request. Output the COMPLETE updated file.`;
+  } else {
+    fullPrompt = `${PIT_SYSTEM_PROMPT}\n\nUser request: ${prompt}`;
+  }
 
   try {
     const res = await fetch("/api/test/stream", {
