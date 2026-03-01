@@ -70,5 +70,12 @@ module.exports = {
       cwd: "L:\\ai_builder\\ai_builderv2\\apps\\forensic-standalone",
       env: { NODE_ENV: "development" },
     },
+    {
+      name: "trading-standalone",
+      script: "cmd",
+      args: "/c npm run dev",
+      cwd: "L:\\ai_builder\\ai_builderv2\\apps\\trading-standalone",
+      env: { NODE_ENV: "development" },
+    },
   ],
 };
