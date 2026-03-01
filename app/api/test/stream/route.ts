@@ -405,13 +405,17 @@ async function streamOpenAI(model: string, messages: { role: string; content: an
 // ── xAI (Grok) — OpenAI-compatible SSE streaming (no vision) ───────────
 async function streamXAI(model: string, messages: { role: string; content: string }[]) {
   const apiKey = process.env.XAI_API_KEY || process.env.GROK_API_KEY || '';
+  const isGrok4 = model.includes('grok-4');
+  const tokenParam = isGrok4
+    ? { max_completion_tokens: 4096 }
+    : { max_tokens: 4096 };
   const res = await fetch('https://api.x.ai/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey}`,
     },
-    body: JSON.stringify({ model, messages, max_tokens: 4096, stream: true }),
+    body: JSON.stringify({ model, messages, ...tokenParam, stream: true }),
   });
 
   if (!res.ok || !res.body) {

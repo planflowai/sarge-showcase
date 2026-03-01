@@ -70,6 +70,16 @@ export const providers: ProviderConfig[] = [
     supportsVoice: true,
     models: [
       {
+        id: "gpt-5.2",
+        name: "GPT-5.2",
+        provider: "openai",
+        maxTokens: 32768,
+        temperature: 0.7,
+        topP: 1,
+        contextWindow: 1047576,
+        isEnabled: true,
+      },
+      {
         id: "gpt-4.1",
         name: "GPT-4.1",
         provider: "openai",
