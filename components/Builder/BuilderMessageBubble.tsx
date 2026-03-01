@@ -252,6 +252,7 @@ export default function BuilderMessageBubble({
 
   // Handle apply for a file proposal
   const handleApplyFile = async (proposal: FileEditProposal) => {
+    console.log('🔵 APPLY TRIGGERED for:', proposal.filePath);
     if (!projectPath) return;
 
     const cleanRelativePath = proposal.filePath.replace(/^[\/\\]+/, '');
