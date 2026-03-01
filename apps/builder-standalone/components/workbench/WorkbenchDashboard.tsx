@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { X, Send, Rocket, MonitorOff, Plus, FolderOpen, Save, Trash2, Lightbulb, Hammer, Pencil, RefreshCw, Upload, Globe, Package, Download, Copy, BookOpen, Eraser, CheckSquare, Square } from "lucide-react";
 import { useWorkbenchStore } from "@/lib/stores/workbenchStore";
-import { useBuilderStore } from "@sarge/builder/index.client";
+import { useBuilderStore, useArtifactStore } from "@sarge/builder/index.client";
 import { useUIStore } from "@sarge/core";
 import { useDeployStore, type DeployTarget } from "@/lib/stores/deployStore";
 import {
@@ -163,6 +163,22 @@ export default function WorkbenchDashboard() {
     };
     positionOnMonitor4();
   }, []);
+
+  // Load active builder project into anchor (Mon 1) on mount
+  useEffect(() => {
+    const builderState = useBuilderStore.getState();
+    const artifactState = useArtifactStore.getState();
+    const code = artifactState.code;
+    if (builderState.projectPath && code) {
+      // Find the anchor slot (monitorNumber === 1)
+      const anchorSlot = slots.find((s) => s.monitorNumber === 1);
+      if (anchorSlot && !anchorSlot.previewHtml) {
+        // Set anchor preview to current builder code
+        useWorkbenchStore.getState().setSlotPreview(anchorSlot.slot, code, code);
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only on mount
 
   // Poll open window count
   useEffect(() => {
@@ -528,7 +544,9 @@ export default function WorkbenchDashboard() {
             <div className="w-12 h-12 rounded-xl border-2 border-[#FF6700]/40 flex items-center justify-center text-lg font-black text-[#FF6700]/60 mb-3 bg-[#FF6700]/5">
               4
             </div>
-            <p className="text-base font-black text-zinc-700 dark:text-zinc-300 tracking-wider mb-1">COMMAND CENTER</p>
+            <p className="text-base font-black text-zinc-700 dark:text-zinc-300 tracking-wider mb-1">
+              {projectName ? `${projectName} · Command Center` : "COMMAND CENTER"}
+            </p>
             <p className="text-[10px] font-mono font-bold text-zinc-400 dark:text-zinc-600">MON 4 · This Screen</p>
           </div>
 
