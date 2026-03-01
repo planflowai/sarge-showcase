@@ -271,7 +271,7 @@ export function LauncherDashboard() {
 
   return (
     <div className="h-full overflow-y-auto bg-white dark:bg-[#0a0a0a]">
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-[2400px] mx-auto px-8 py-8">
         {/* Header */}
         <div className="text-center mb-8">
           <h1
@@ -342,7 +342,7 @@ export function LauncherDashboard() {
         )}
 
         {/* App Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {APPS.map((app) => {
             const status = statuses[app.name];
             const isOnline = status?.status === "online";
@@ -366,30 +366,30 @@ export function LauncherDashboard() {
               >
                 {/* Top accent line */}
                 <div
-                  className="h-1 w-full"
+                  className="h-1.5 w-full"
                   style={{
                     backgroundColor: isOnline || isSelf ? app.color : "transparent",
                   }}
                 />
 
-                <div className="p-4">
+                <div className="p-6">
                   {/* Header row */}
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-3">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-4">
                       <div
-                        className="w-10 h-10 rounded-lg flex items-center justify-center"
+                        className="w-12 h-12 rounded-lg flex items-center justify-center"
                         style={{
                           backgroundColor: `${app.color}18`,
                           color: app.color,
                         }}
                       >
-                        <Icon className="w-5 h-5" />
+                        <Icon className="w-6 h-6" />
                       </div>
                       <div>
-                        <h3 className="font-bold text-[18px] leading-tight text-zinc-900 dark:text-white">
+                        <h3 className="font-bold text-[20px] leading-tight text-zinc-900 dark:text-white">
                           {app.label}
                         </h3>
-                        <span className="text-xs font-mono text-zinc-400">
+                        <span className="text-sm font-mono text-zinc-400">
                           :{app.port}
                         </span>
                       </div>
@@ -409,13 +409,13 @@ export function LauncherDashboard() {
                   </div>
 
                   {/* Description */}
-                  <p className="text-xs text-zinc-500 dark:text-zinc-500 mb-3">
+                  <p className="text-sm text-zinc-500 dark:text-zinc-500 mb-4">
                     {app.description}
                   </p>
 
                   {/* Stats (when running) */}
                   {(isOnline || isSelf) && status && (
-                    <div className="flex items-center gap-3 text-xs text-zinc-400 mb-3 font-mono">
+                    <div className="flex items-center gap-3 text-sm text-zinc-400 mb-4 font-mono">
                       <span>CPU {status.cpu}%</span>
                       <span>&middot;</span>
                       <span>{formatMemory(status.memory)}</span>

@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { exec } from "child_process";
 import { promisify } from "util";
+import { join } from "path";
 
 const execAsync = promisify(exec);
+
+// Ecosystem config at monorepo root
+const ECOSYSTEM = join(process.cwd(), "..", "..", "ecosystem.config.cjs").replace(/\\/g, "/");
 
 const VALID_APPS = new Set([
   "beast",
@@ -51,8 +55,17 @@ export async function POST(req: Request) {
     }
 
     // Sanitize: appName is validated against VALID_APPS set above
-    const cmd = `pm2 ${action} ${appName}`;
-    await execAsync(cmd, { timeout: 15000 });
+    if (action === "start") {
+      // Try direct start first (works if process is registered in PM2)
+      try {
+        await execAsync(`pm2 start ${appName}`, { timeout: 15000 });
+      } catch {
+        // Process not registered — start via ecosystem config
+        await execAsync(`pm2 start "${ECOSYSTEM}" --only ${appName}`, { timeout: 20000 });
+      }
+    } else {
+      await execAsync(`pm2 stop ${appName}`, { timeout: 15000 });
+    }
 
     // Brief pause then get new status
     await new Promise((r) => setTimeout(r, 1000));

@@ -363,7 +363,7 @@ export function EnvManager() {
 
   return (
     <div className="h-full overflow-y-auto bg-white dark:bg-[#0a0a0a]">
-      <div className="max-w-6xl mx-auto px-6 py-8">
+      <div className="max-w-[2400px] mx-auto px-6 py-8">
         {/* Header */}
         <div className="text-center mb-6">
           <div className="flex items-center justify-center gap-3 mb-2">
@@ -428,7 +428,7 @@ export function EnvManager() {
 
               {/* Cards grid */}
               {!isCollapsed && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-5 gap-3">
                   {catKeys.map((envKey) => {
                     const isRevealed = revealed[envKey.key] !== undefined;
                     const isEditing = editing === envKey.key;
