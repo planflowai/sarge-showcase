@@ -268,15 +268,14 @@ export default function WorkbenchDashboard() {
             />
           )}
 
-          {/* Center: MON 4 placeholder */}
-          <div className="flex flex-col items-center justify-center rounded-xl border border-zinc-800/40 bg-zinc-900/20 h-full"
+          {/* Center: MON 4 — Command Center (this screen) */}
+          <div className="flex flex-col items-center justify-center rounded-xl border-2 border-[#FF6700]/30 bg-zinc-900/20 h-full"
                style={{ minWidth: "400px" }}>
-            <div className="w-10 h-10 rounded-xl border-2 border-zinc-700/40 flex items-center justify-center text-lg font-black text-zinc-600 mb-2">
+            <div className="w-12 h-12 rounded-xl border-2 border-[#FF6700]/40 flex items-center justify-center text-lg font-black text-[#FF6700]/60 mb-3 bg-[#FF6700]/5">
               4
             </div>
-            <p className="text-[10px] font-mono font-bold text-zinc-600">MON 4</p>
-            <p className="text-[9px] text-zinc-700 mt-0.5">Command Center</p>
-            <p className="text-[9px] text-zinc-700">(This Screen)</p>
+            <p className="text-base font-black text-zinc-300 tracking-wider mb-1">COMMAND CENTER</p>
+            <p className="text-[10px] font-mono font-bold text-zinc-600">MON 4 · This Screen</p>
           </div>
 
           {/* Slot 5 = Mon2 */}
@@ -292,11 +291,67 @@ export default function WorkbenchDashboard() {
         </div>
       </div>
 
-      {/* ── Prompt Bar ── */}
+      {/* ── Broadcast Bar ── */}
       <div className="border-t border-zinc-800/60 bg-zinc-900/40 px-6 py-4 flex-shrink-0">
         <div className="max-w-5xl mx-auto flex flex-col gap-3">
 
-          {/* ── Broadcast Target Row — centered, big ── */}
+          {/* ── Prompt Input + Broadcast Button — above monitor selection ── */}
+          {compareImage && (
+            <div className="flex items-center gap-4 p-3 rounded-xl bg-zinc-800/60 border border-zinc-700/40">
+              <img
+                src={compareImage}
+                alt="Reference"
+                className="h-20 rounded-lg border border-zinc-600 object-cover"
+              />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-zinc-300">📎 Comparison reference</p>
+                <p className="text-xs text-zinc-500 mt-0.5">Paste or drag images to compare — describe what to change</p>
+              </div>
+              <button
+                onClick={() => setCompareImage(null)}
+                className="flex-shrink-0 w-7 h-7 rounded-full bg-zinc-700 hover:bg-red-500 text-zinc-300 text-sm font-bold flex items-center justify-center transition-colors"
+              >
+                ×
+              </button>
+            </div>
+          )}
+
+          <div
+            className={cn(
+              "flex gap-3 transition-all",
+              dragOver && "ring-2 ring-[#FF6700]/60 bg-[#FF6700]/5 rounded-2xl"
+            )}
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+          >
+            <input
+              type="text"
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleSend(); } }}
+              onPaste={handlePaste}
+              placeholder={
+                dragOver
+                  ? "Drop image here…"
+                  : selectedCount === 0
+                  ? "Select monitors below to broadcast…"
+                  : "Type a prompt to broadcast to The Pit..."
+              }
+              disabled={selectedCount === 0}
+              className="flex-1 h-12 rounded-xl bg-zinc-800 px-5 text-base text-zinc-200 placeholder:text-zinc-600 focus:outline-none border border-zinc-700 focus:border-[#FF6700]/50 disabled:opacity-40"
+            />
+            <button
+              onClick={handleSend}
+              disabled={!prompt.trim() || selectedCount === 0}
+              className="px-8 h-12 rounded-xl text-white font-black text-sm bg-[#FF6700] hover:bg-[#FF6700]/85 disabled:opacity-30 disabled:hover:bg-[#FF6700] transition-all hover:scale-105 flex items-center gap-2 flex-shrink-0"
+            >
+              <Send className="h-4 w-4" />
+              Broadcast
+            </button>
+          </div>
+
+          {/* ── Broadcast Target Row — below input ── */}
           <div className="flex flex-col items-center gap-2">
             <span className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">
               Broadcast To
@@ -337,63 +392,6 @@ export default function WorkbenchDashboard() {
                 {selectedCount} / 5
               </span>
             </div>
-          </div>
-
-          {/* Comparison image preview */}
-          {compareImage && (
-            <div className="flex items-center gap-4 p-3 rounded-xl bg-zinc-800/60 border border-zinc-700/40">
-              <img
-                src={compareImage}
-                alt="Reference"
-                className="h-20 rounded-lg border border-zinc-600 object-cover"
-              />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-zinc-300">📎 Comparison reference</p>
-                <p className="text-xs text-zinc-500 mt-0.5">Paste or drag images to compare — describe what to change</p>
-              </div>
-              <button
-                onClick={() => setCompareImage(null)}
-                className="flex-shrink-0 w-7 h-7 rounded-full bg-zinc-700 hover:bg-red-500 text-zinc-300 text-sm font-bold flex items-center justify-center transition-colors"
-              >
-                ×
-              </button>
-            </div>
-          )}
-
-          {/* Input row — drag/drop target */}
-          <div
-            className={cn(
-              "flex gap-3 rounded-2xl transition-all",
-              dragOver && "ring-2 ring-indigo-500/60 bg-indigo-500/5"
-            )}
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-          >
-            <textarea
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-              onPaste={handlePaste}
-              placeholder={
-                dragOver
-                  ? "Drop image here…"
-                  : selectedCount === 0
-                  ? "Select monitors above to broadcast…"
-                  : `Send to ${selectedCount === slots.length ? "all 5 monitors" : `${selectedCount} monitor${selectedCount !== 1 ? "s" : ""}`}… (Enter to send — paste/drop screenshot to compare)`
-              }
-              rows={2}
-              disabled={selectedCount === 0}
-              className="flex-1 resize-none rounded-2xl bg-zinc-800 px-5 py-3 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none border border-zinc-700 focus:border-zinc-500 disabled:opacity-40 min-h-[52px] max-h-[120px]"
-            />
-            <button
-              onClick={handleSend}
-              disabled={!prompt.trim() || selectedCount === 0}
-              className="px-6 rounded-2xl text-white font-black text-sm bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 disabled:hover:bg-indigo-600 transition-all hover:scale-105 flex items-center gap-2"
-            >
-              <Send className="h-4 w-4" />
-              {selectedCount === slots.length ? "Send to All" : "Send"}
-            </button>
           </div>
 
         </div>

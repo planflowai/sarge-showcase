@@ -271,23 +271,6 @@ export function Header() {
               )}
             </button>
 
-            {/* The Pit toggle — only on builder page */}
-            {pathname === "/" && (
-              <button
-                onClick={() => setWorkbenchActive(!workbenchActive)}
-                title={workbenchActive ? "Exit The Pit" : "Launch The Pit"}
-                className={cn(
-                  "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-bold transition-all duration-300 border",
-                  workbenchActive
-                    ? "bg-purple-600/30 border-purple-500/60 text-purple-300 ring-1 ring-purple-500/40"
-                    : "bg-zinc-200/80 dark:bg-zinc-800/60 border-zinc-400 dark:border-zinc-600/50 text-zinc-600 dark:text-zinc-400 hover:bg-purple-500/10 hover:text-purple-300 hover:border-purple-500/30"
-                )}
-              >
-                <Wrench className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">{workbenchActive ? "Exit" : "The Pit"}</span>
-              </button>
-            )}
-
             {/* Separator */}
             <div className="h-5 w-px bg-zinc-300 dark:bg-zinc-700" />
 

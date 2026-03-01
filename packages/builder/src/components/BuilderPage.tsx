@@ -694,9 +694,9 @@ Please provide the complete modified version of this component. Make only the re
       {/* The Pit — fixed top LEFT */}
       <div className="fixed top-1 left-4 z-[100] flex items-center gap-3">
         <button
-          onClick={launchWorkspace}
+          onClick={() => window.dispatchEvent(new CustomEvent("pit:launch"))}
           className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#FF6700] to-orange-600 hover:from-[#FF6700]/90 hover:to-orange-500 text-white rounded-lg shadow-lg transition-all text-sm font-bold"
-          title="Launch The Pit — multi-window workspace across your monitors"
+          title="Launch The Pit — 5-monitor workspace + dashboard"
         >
           <Rocket className="w-4 h-4" />
           The Pit

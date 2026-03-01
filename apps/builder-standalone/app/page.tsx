@@ -47,6 +47,13 @@ export default function Home() {
     clearLocked();
   }, [lockedCode, clearLocked]);
 
+  // Listen for pit:launch event from BuilderPage orange button
+  useEffect(() => {
+    const handler = () => useWorkbenchStore.getState().setActive(true);
+    window.addEventListener("pit:launch", handler);
+    return () => window.removeEventListener("pit:launch", handler);
+  }, []);
+
   // Auto-create a conversation so ChatView has a valid conversationId
   const initRef = useRef(false);
   useEffect(() => {

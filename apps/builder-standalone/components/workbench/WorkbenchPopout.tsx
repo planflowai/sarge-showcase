@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { WORKBENCH_CHANNEL } from "@/lib/workbenchPopoutManager";
+import { providers } from "@sarge/core";
 
 // ─── Provider styling ─────────────────────────────────────────────────────────
 
@@ -92,6 +93,12 @@ export function WorkbenchPopout({ slotNum, monitorNumber, provider: initProvider
 
   const color        = PROVIDER_COLORS[activeProvider] ?? "#71717a";
   const providerName = PROVIDER_NAMES[activeProvider]  ?? activeProvider;
+
+  // Resolve full model display name
+  const cloudProvider = providers.find((p) => p.id === activeProvider);
+  const cloudModel    = cloudProvider?.models.find((m) => m.id === activeModel);
+  const isLocal       = activeProvider === "ollama" || activeProvider === "lmstudio";
+  const displayName   = isLocal ? (activeModel || "Local Model") : (cloudModel?.name ?? activeModel ?? "Unknown Model");
 
   // ─── Send prompt to AI ──────────────────────────────────────────────────────
   const handlePrompt = useCallback(async (prompt: string) => {
@@ -238,8 +245,8 @@ export function WorkbenchPopout({ slotNum, monitorNumber, provider: initProvider
             {providerName}
           </div>
           {/* Full model name */}
-          <span className="text-sm font-semibold text-zinc-200 truncate max-w-[280px]" title={activeModel}>
-            {activeModel}
+          <span className="text-sm font-black text-zinc-200 truncate max-w-[360px]" title={activeModel}>
+            {displayName}
           </span>
           {/* Live indicator */}
           {streaming && (
@@ -267,15 +274,10 @@ export function WorkbenchPopout({ slotNum, monitorNumber, provider: initProvider
         ) : (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
-              <div
-                className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4 text-4xl font-black"
-                style={{ color, border: `2px solid ${color}25`, boxShadow: `0 0 40px ${color}15` }}
-              >
-                {(providerName[0] ?? "?").toUpperCase()}
-              </div>
-              <p className="text-base font-bold text-zinc-500">{providerName}</p>
-              <p className="text-xs text-zinc-600 mt-1">{activeModel}</p>
-              <p className="text-xs text-zinc-700 mt-3">Waiting for prompt from command center...</p>
+              <p className="text-[28px] font-black mb-2" style={{ color }}>
+                {displayName}
+              </p>
+              <p className="text-sm text-zinc-600">Waiting for prompt from command center...</p>
             </div>
           </div>
         )}

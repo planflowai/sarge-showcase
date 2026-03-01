@@ -166,7 +166,7 @@ function WorkbenchProgress({ status, color }: { status: WorkbenchStatus; color: 
 
 // ─── Live Thumbnail (fills full card width dynamically) ───────────────────────
 
-function LiveThumbnail({ html, status, color }: { html: string; status: WorkbenchStatus; color: string }) {
+function LiveThumbnail({ html, status, color, modelName, providerName }: { html: string; status: WorkbenchStatus; color: string; modelName: string; providerName: string }) {
   const IFRAME_W = 1280;
   const IFRAME_H = 800;
   const containerRef = useRef<HTMLDivElement>(null);
@@ -223,13 +223,16 @@ function LiveThumbnail({ html, status, color }: { html: string; status: Workbenc
         <div className="flex items-center justify-center h-full min-h-[120px]">
           <div className="text-center">
             <div
-              className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-2 text-2xl font-black"
-              style={{ border: `2px solid ${color}30`, color: `${color}50` }}
+              className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3 text-xl font-black"
+              style={{ border: `2px solid ${color}30`, color, background: `${color}08`, boxShadow: `0 0 20px ${color}10` }}
             >
-              {status === "building" ? "⚡" : "◻"}
+              {providerName[0]?.toUpperCase() ?? "?"}
             </div>
+            <p className="text-[20px] font-black mb-1" style={{ color }}>
+              {modelName}
+            </p>
             <p className="text-xs text-zinc-600 font-medium">
-              {status === "building" ? "Generating…" : "No preview yet"}
+              {status === "building" ? "Generating…" : "Waiting for broadcast..."}
             </p>
           </div>
         </div>
@@ -258,24 +261,34 @@ export default function WorkbenchCard({
   const toggleSelected = useWorkbenchStore((s) => s.toggleSlotSelected);
   const meta      = PROVIDER_META[slot.provider] ?? { color: "#71717a", name: slot.provider };
   const statusCfg = STATUS_CONFIG[slot.status];
-  const borderColor  = slot.selected ? `${meta.color}70` : `${meta.color}22`;
+
+  // Monitor 1 gets gold border, others get model brand color
+  const isAnchor     = slot.monitorNumber === 1;
+  const cardBorder   = isAnchor ? "#FFD700" : meta.color;
+  const borderColor  = `${cardBorder}${slot.selected ? "90" : "50"}`;
   const glowShadow   = slot.status === "building"
-    ? `0 0 24px ${meta.color}25`
-    : slot.selected ? `0 0 12px ${meta.color}15` : "none";
+    ? `0 0 24px ${cardBorder}30`
+    : slot.selected ? `0 0 12px ${cardBorder}20` : "none";
+
+  // Resolve display model name from cloud providers
+  const cloudProvider = CLOUD_PROVIDERS.find((p) => p.id === slot.provider);
+  const cloudModel    = cloudProvider?.models.find((m) => m.id === slot.model);
+  const isOllama      = slot.provider === "ollama" || slot.provider === "lmstudio";
+  const displayModelName = isOllama ? (slot.model || "No model") : (cloudModel?.name ?? slot.model ?? "No model");
 
   return (
     <div
-      className="flex flex-col rounded-2xl border transition-all cursor-pointer h-full"
-      style={{ borderColor, backgroundColor: "#0c0c0f", boxShadow: glowShadow }}
+      className="flex flex-col rounded-2xl transition-all cursor-pointer h-full"
+      style={{ border: `2px solid ${borderColor}`, backgroundColor: "#0c0c0f", boxShadow: glowShadow }}
       onClick={() => toggleSelected(slot.slot)}
       title={slot.selected ? "Click to deselect" : "Click to select for broadcast"}
     >
-      {/* Row 1: monitor badge + status */}
+      {/* Row 1: monitor badge + status + anchor */}
       <div className="flex items-center justify-between px-4 pt-3 pb-2 flex-shrink-0">
         <div className="flex items-center gap-3">
           <div
             className="w-9 h-9 rounded-xl flex items-center justify-center text-base font-black flex-shrink-0"
-            style={{ border: `2px solid ${meta.color}50`, color: meta.color, background: `${meta.color}12` }}
+            style={{ border: `2px solid ${cardBorder}50`, color: cardBorder, background: `${cardBorder}12` }}
           >
             {slot.monitorNumber}
           </div>
@@ -287,9 +300,16 @@ export default function WorkbenchCard({
             <span className="text-[11px] px-2 py-0.5 rounded-full bg-indigo-500/25 text-indigo-300 font-black">✓ Selected</span>
           )}
         </div>
-        <div className="flex items-center gap-1.5">
-          <span className={cn("w-2 h-2 rounded-full", statusCfg.dotCls)} />
-          <span className="text-[11px] font-bold tracking-widest text-zinc-400">{statusCfg.label}</span>
+        <div className="flex items-center gap-2">
+          {isAnchor && (
+            <span className="text-[9px] px-2 py-0.5 rounded-full font-black tracking-wider" style={{ backgroundColor: "#FFD70020", color: "#FFD700", border: "1px solid #FFD70040" }}>
+              ANCHOR
+            </span>
+          )}
+          <div className="flex items-center gap-1.5">
+            <span className={cn("w-2 h-2 rounded-full", statusCfg.dotCls)} />
+            <span className="text-[11px] font-bold tracking-widest text-zinc-400">{statusCfg.label}</span>
+          </div>
         </div>
       </div>
 
@@ -300,7 +320,7 @@ export default function WorkbenchCard({
 
       {/* Row 3: Thumbnail — fills card width */}
       <div className="px-4 pb-3 flex-1 min-h-0" onClick={(e) => e.stopPropagation()}>
-        <LiveThumbnail html={slot.previewHtml} status={slot.status} color={meta.color} />
+        <LiveThumbnail html={slot.previewHtml} status={slot.status} color={meta.color} modelName={displayModelName} providerName={meta.name} />
       </div>
 
       {/* Row 4: Progress bar */}
