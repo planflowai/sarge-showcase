@@ -571,21 +571,23 @@ export default function WorkbenchDashboard() {
               </div>
               <span className="text-[9px] font-mono font-bold text-zinc-400 dark:text-zinc-600">MON 4 · This Screen</span>
             </div>
-            {/* Live preview of current build */}
+            {/* Live preview — shows anchor (Mon 1) build */}
             <div className="flex-1 min-h-0 relative bg-white">
-              {artifactCode ? (
-                <iframe
-                  srcDoc={artifactCode}
-                  sandbox="allow-scripts"
-                  title="Current build preview"
-                  className="absolute inset-0 w-full h-full border-none pointer-events-none"
-                  style={{ transform: "scale(1)", transformOrigin: "top left", width: "100%", height: "100%" }}
-                />
-              ) : (
-                <div className="flex items-center justify-center h-full">
-                  <p className="text-sm font-bold text-zinc-400 dark:text-zinc-600">No build loaded</p>
-                </div>
-              )}
+              {(() => {
+                const anchorCode = s2?.previewHtml || s2?.lastCode || "";
+                return anchorCode ? (
+                  <iframe
+                    srcDoc={anchorCode}
+                    sandbox="allow-scripts"
+                    title="Anchor build preview"
+                    className="absolute inset-0 w-full h-full border-none pointer-events-none"
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <p className="text-sm font-bold text-zinc-400 dark:text-zinc-600">No build loaded</p>
+                  </div>
+                );
+              })()}
             </div>
           </div>
 
