@@ -17,6 +17,7 @@ import {
   broadcastWorkbenchPrompt,
   getWorkbenchOpenCount,
 } from "@/lib/workbenchPopoutManager";
+import { broadcastToAllMonitors, abortAllStreams } from "@/lib/pitBroadcastEngine";
 import WorkbenchCard from "./WorkbenchCard";
 import { cn } from "@/lib/utils";
 
@@ -208,6 +209,7 @@ export default function WorkbenchDashboard() {
   }, [slots]);
 
   const handleRecallAll = useCallback(() => {
+    abortAllStreams();
     recallAllWorkbench();
     setWorkspaceOn(false);
     setOpenCount(0);
@@ -233,16 +235,15 @@ export default function WorkbenchDashboard() {
     if (!text) return;
     const selectedSlots = slots.filter((s) => s.selected);
     if (selectedSlots.length === 0) return;
-    if (selectedSlots.length === slots.length) {
-      broadcastWorkbenchPrompt(text, null);
-    } else {
-      selectedSlots.forEach((s) => broadcastWorkbenchPrompt(text, s.slot));
-    }
+
+    // Fire parallel streaming builds from the dashboard
+    const count = broadcastToAllMonitors(text, projectPath, projectName);
+
     setPrompt("");
-    const msg = `Broadcast sent to ${selectedSlots.length} monitor${selectedSlots.length !== 1 ? "s" : ""}`;
+    const msg = `Broadcast sent to ${count} monitor${count !== 1 ? "s" : ""}`;
     setLastAction(msg);
     showToast({ message: msg, type: "success" });
-  }, [prompt, slots, showToast]);
+  }, [prompt, slots, showToast, projectPath, projectName]);
 
   const handleLockWinner = useCallback((slot: number) => {
     lockWinner(slot);
@@ -255,6 +256,7 @@ export default function WorkbenchDashboard() {
 
   // ── Clear all monitors ──
   const handleClear = useCallback(() => {
+    abortAllStreams();
     // Clear preview/code then reset status to idle
     const store = useWorkbenchStore.getState();
     store.slots.forEach((s) => {
@@ -273,16 +275,21 @@ export default function WorkbenchDashboard() {
   }, [showToast]);
 
   // ── Build actions — broadcast to selected monitors ──
-  const broadcastBuildAction = useCallback((action: string) => {
+  const broadcastBuildAction = useCallback((action: string, promptPrefix: string) => {
     const selectedSlots = slots.filter((s) => s.selected);
     if (selectedSlots.length === 0) {
       showToast({ message: "No monitors selected", type: "warning" });
       return;
     }
-    const msg = `${action} — sent to ${selectedSlots.length} monitor${selectedSlots.length !== 1 ? "s" : ""}`;
+    // Use the current prompt text or a default instruction
+    const userText = prompt.trim() || "a modern landing page with hero section, features grid, and dark mode";
+    const fullPrompt = `${promptPrefix}: ${userText}`;
+    const count = broadcastToAllMonitors(fullPrompt, projectPath, projectName);
+    setPrompt("");
+    const msg = `${action} — sent to ${count} monitor${count !== 1 ? "s" : ""}`;
     setLastAction(msg);
     showToast({ message: msg, type: "success" });
-  }, [slots, showToast]);
+  }, [slots, prompt, showToast, projectPath, projectName]);
 
   // ── Push handler ──
   const handlePushConfirm = useCallback(async () => {
@@ -431,16 +438,16 @@ export default function WorkbenchDashboard() {
         </div>
         {/* Center: Build actions */}
         <div className="flex items-center gap-1.5">
-          <button onClick={() => broadcastBuildAction("Plan")} className={tbBtn}>
+          <button onClick={() => broadcastBuildAction("Plan", "Plan the architecture and structure for")} className={tbBtn}>
             <Lightbulb className="h-3.5 w-3.5" /> Plan
           </button>
-          <button onClick={() => broadcastBuildAction("Build")} className={tbBtnPrimary}>
+          <button onClick={() => broadcastBuildAction("Build", "Build")} className={tbBtnPrimary}>
             <Hammer className="h-3.5 w-3.5" /> Build
           </button>
-          <button onClick={() => broadcastBuildAction("Edit")} className={tbBtn}>
+          <button onClick={() => broadcastBuildAction("Edit", "Edit and improve the existing code for")} className={tbBtn}>
             <Pencil className="h-3.5 w-3.5" /> Edit
           </button>
-          <button onClick={() => broadcastBuildAction("Regen")} className={tbBtn}>
+          <button onClick={() => broadcastBuildAction("Regen", "Regenerate from scratch")} className={tbBtn}>
             <RefreshCw className="h-3.5 w-3.5" /> Regen
           </button>
         </div>

@@ -2,9 +2,11 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { MonitorUp, MonitorOff, Trophy, ChevronDown, RotateCcw, Eye, Code2, Star } from "lucide-react";
-import { recallWorkbenchSlot } from "@/lib/workbenchPopoutManager";
+import { recallWorkbenchSlot, sendWorkbenchConfig } from "@/lib/workbenchPopoutManager";
 import { useWorkbenchStore, type WorkbenchSlot, type WorkbenchStatus } from "@/lib/stores/workbenchStore";
-import { sendWorkbenchConfig } from "@/lib/workbenchPopoutManager";
+import { promoteToAnchor } from "@/lib/pitBroadcastEngine";
+import { useBuilderStore } from "@sarge/builder/index.client";
+import { useUIStore } from "@sarge/core";
 import { providers, fetchOllamaModels } from "@sarge/core";
 import type { LocalModel } from "@sarge/core";
 import { cn } from "@/lib/utils";
@@ -24,7 +26,30 @@ const STATUS_CONFIG: Record<WorkbenchStatus, { label: string; dotCls: string }> 
   idle:     { label: "IDLE",     dotCls: "bg-zinc-500" },
   building: { label: "BUILDING", dotCls: "bg-amber-400 animate-pulse" },
   complete: { label: "COMPLETE", dotCls: "bg-emerald-400" },
+  error:    { label: "ERROR",    dotCls: "bg-red-500" },
 };
+
+// ─── Metrics display ──────────────────────────────────────────────────────────
+
+function formatMetrics(slot: WorkbenchSlot): string {
+  if (slot.status === "building") {
+    if (slot.tokenCount > 0) {
+      return `${slot.tokenCount.toLocaleString()} tokens · ${slot.tokensPerSec} tok/s`;
+    }
+    return "Starting...";
+  }
+  if (slot.status === "complete" && slot.completedAt && slot.startedAt) {
+    const elapsed = (slot.completedAt - slot.startedAt) / 1000;
+    if (elapsed >= 60) {
+      return `Complete · ${(elapsed / 60).toFixed(1)}min`;
+    }
+    return `Complete · ${elapsed.toFixed(1)}s`;
+  }
+  if (slot.status === "error") {
+    return slot.errorMsg ? slot.errorMsg.slice(0, 60) : "Failed";
+  }
+  return "";
+}
 
 // ─── Model Dropdown (cloud + local) ─────────────────────────────────────────
 
@@ -226,8 +251,11 @@ function LiveThumbnail({ html, status, color, modelName, providerName }: { html:
             <p className="text-[22px] font-bold mb-2" style={{ color }}>
               {modelName}
             </p>
-            <p className="text-xs text-zinc-400 dark:text-zinc-600 font-medium">
-              {status === "building" ? "Generating…" : "Waiting for broadcast..."}
+            <p className={cn(
+              "text-xs font-medium",
+              status === "error" ? "text-red-400" : "text-zinc-400 dark:text-zinc-600"
+            )}>
+              {status === "building" ? "Generating…" : status === "error" ? "Build failed" : "Waiting for broadcast..."}
             </p>
           </div>
         </div>
@@ -255,6 +283,9 @@ export default function WorkbenchCard({
 }: WorkbenchCardProps) {
   const toggleSelected = useWorkbenchStore((s) => s.toggleSlotSelected);
   const setSlotStatus  = useWorkbenchStore((s) => s.setSlotStatus);
+  const showToast      = useUIStore((s) => s.showToast);
+  const projectPath    = useBuilderStore((s) => s.projectPath);
+  const projectName    = useBuilderStore((s) => s.projectName);
   const meta      = PROVIDER_META[slot.provider] ?? { color: "#71717a", name: slot.provider };
   const statusCfg = STATUS_CONFIG[slot.status];
 
@@ -333,6 +364,20 @@ export default function WorkbenchCard({
         </div>
       </div>
 
+      {/* Metrics bar — shows token count during build, completion time when done */}
+      {(slot.status === "building" || slot.status === "complete" || slot.status === "error") && (
+        <div className="px-4 pb-1 flex-shrink-0">
+          <p className={cn(
+            "text-[11px] font-mono font-semibold truncate",
+            slot.status === "building" ? "text-amber-400" :
+            slot.status === "error" ? "text-red-400" :
+            "text-emerald-400"
+          )}>
+            {formatMetrics(slot)}
+          </p>
+        </div>
+      )}
+
       {/* Row 2: Model selector (cloud + local) */}
       <div className="px-4 pb-3 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
         <ModelDropdown slot={slot} />
@@ -397,12 +442,14 @@ export default function WorkbenchCard({
           </button>
           <button
             className="w-full text-left px-4 py-2.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2 transition-colors"
-            onClick={() => {
-              // Promote: set this slot's model/provider on Mon 1 (anchor)
-              const store = useWorkbenchStore.getState();
-              store.setSlotProvider(1, slot.provider);
-              store.setSlotModel(1, slot.model);
-              sendWorkbenchConfig(1, slot.provider, slot.model);
+            onClick={async () => {
+              // Promote: copy this slot's code to anchor (Mon 1)
+              const ok = await promoteToAnchor(slot.slot, projectPath, projectName);
+              if (ok) {
+                showToast({ message: `Mon ${slot.monitorNumber} promoted to anchor`, type: "success" });
+              } else {
+                showToast({ message: "Promote failed — no project open or no code", type: "error" });
+              }
               setCtxMenu(null);
             }}
           >
