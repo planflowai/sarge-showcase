@@ -54,6 +54,18 @@ export default function Home() {
     return () => window.removeEventListener("pit:launch", handler);
   }, []);
 
+  // Safety net: if the Pit was active (sessionStorage) but the store lost it
+  // (e.g., HMR, dev reload, module re-init), restore it immediately
+  useEffect(() => {
+    try {
+      if (!isWorkbenchPopout && !isPopout && sessionStorage.getItem("pit-active") === "1") {
+        if (!useWorkbenchStore.getState().active) {
+          useWorkbenchStore.getState().setActive(true);
+        }
+      }
+    } catch { /* ok */ }
+  }, [isWorkbenchPopout, isPopout]);
+
   // Auto-create a conversation so ChatView has a valid conversationId
   const initRef = useRef(false);
   useEffect(() => {

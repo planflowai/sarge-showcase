@@ -10,6 +10,7 @@ import {
   WORKBENCH_CHANNEL,
   checkWindowManagement,
   prefetchScreens,
+  getScreenForMonitor,
   launchWorkbenchSlot,
   recallWorkbenchSlot,
   recallAllWorkbench,
@@ -142,29 +143,23 @@ export default function WorkbenchDashboard() {
 
   // Pre-cache screen layout on mount + position main window on Monitor 4
   useEffect(() => {
-    checkWindowManagement().then((s) => {
-      if (s === "granted" || s === "prompt") prefetchScreens();
-    });
+    const initScreens = async () => {
+      const status = await checkWindowManagement();
+      if (status === "granted" || status === "prompt") {
+        await prefetchScreens();
+      }
 
-    // Attempt to move this window to Monitor 4 — only on first launch, not refresh
-    if (!sessionStorage.getItem("pit-positioned")) {
-      const positionOnMonitor4 = async () => {
-        try {
-          if (!("getScreenDetails" in window)) return;
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const details = await (window as any).getScreenDetails();
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const screens = details.screens as any[];
-          if (screens.length >= 4) {
-            const mon4 = screens[3];
-            window.moveTo(mon4.left, mon4.top);
-            window.resizeTo(mon4.width, mon4.height);
-          }
-          sessionStorage.setItem("pit-positioned", "1");
-        } catch { /* permission denied or API unsupported — silent fail */ }
-      };
-      positionOnMonitor4();
-    }
+      // Position dashboard on Mon 4 using the same grid detection as popouts
+      if (!sessionStorage.getItem("pit-positioned")) {
+        const mon4 = getScreenForMonitor(4);
+        if (mon4) {
+          window.moveTo(mon4.availLeft, mon4.availTop);
+          window.resizeTo(mon4.availWidth, mon4.availHeight);
+        }
+        sessionStorage.setItem("pit-positioned", "1");
+      }
+    };
+    initScreens();
   }, []);
 
   // Load active builder project into anchor (Mon 1) — wait for store hydration
@@ -217,13 +212,16 @@ export default function WorkbenchDashboard() {
 
   // ─── Handlers ────────────────────────────────────────────────────────────────
 
-  const handleLaunchAll = useCallback(() => {
+  const handleLaunchAll = useCallback(async () => {
     setLaunching(true);
     let opened = 0;
-    slots.forEach((s, i) => {
+    for (let i = 0; i < slots.length; i++) {
+      const s = slots[i];
       const ok = launchWorkbenchSlot(s.slot, s.monitorNumber, s.provider, s.model, i);
       if (ok) opened++;
-    });
+      // Stagger openings to prevent popup-blocker and focus-steal glitches
+      if (i < slots.length - 1) await new Promise((r) => setTimeout(r, 150));
+    }
     if (opened > 0) {
       setWorkspaceOn(true);
       setOpenCount(opened);
@@ -317,43 +315,59 @@ export default function WorkbenchDashboard() {
   // ── Push handler ──
   const handlePushConfirm = useCallback(async () => {
     setShowPushDropdown(false);
+    const toast = useUIStore.getState().showToast;
     if (!projectPath) {
-      showToast({ message: "No project open", type: "error" });
+      toast({ message: "No project open — load a project first", type: "error", duration: 6000 });
       return;
     }
-    setLastAction("Pushing...");
-    await pushProject(projectPath, projectName || "", pushTargets);
-    const state = useDeployStore.getState();
-    if (state.error) {
-      showToast({ message: `Push failed: ${state.error}`, type: "error" });
-      setLastAction("Push failed");
-    } else {
-      const targetNames = pushTargets.map((t) => DEPLOY_TARGETS.find((d) => d.id === t)?.label ?? t).join(", ");
-      showToast({ message: `Pushed to ${targetNames}`, type: "success" });
-      setLastAction(`Pushed to ${targetNames}`);
+    const targetNames = pushTargets.map((t) => DEPLOY_TARGETS.find((d) => d.id === t)?.label ?? t).join(", ");
+    setLastAction(`Pushing to ${targetNames}...`);
+    toast({ message: `Pushing ${projectName || "project"} to ${targetNames}...`, type: "info", duration: 8000 });
+    try {
+      await pushProject(projectPath, projectName || "", pushTargets);
+      const state = useDeployStore.getState();
+      if (state.error) {
+        toast({ message: `Push failed: ${state.error}`, type: "error", duration: 8000 });
+        setLastAction("Push failed");
+      } else if (state.lastPush?.message === "No changes to push") {
+        toast({ message: `No changes to push for ${projectName || "project"}`, type: "warning", duration: 6000 });
+        setLastAction("No changes to push");
+      } else {
+        toast({ message: `Successfully pushed ${projectName || "project"} to ${targetNames}`, type: "success", duration: 6000 });
+        setLastAction(`Pushed to ${targetNames}`);
+      }
+    } catch (err: any) {
+      toast({ message: `Push error: ${err?.message || "Unknown error"}`, type: "error", duration: 8000 });
+      setLastAction("Push error");
     }
-  }, [projectPath, projectName, pushTargets, pushProject, showToast]);
+  }, [projectPath, projectName, pushTargets, pushProject]);
 
   // ── Deploy handler ──
   const handleDeployConfirm = useCallback(async () => {
     setShowDeployDropdown(false);
+    const toast = useUIStore.getState().showToast;
     if (!projectPath) {
-      showToast({ message: "No project open", type: "error" });
+      toast({ message: "No project open — load a project first", type: "error", duration: 6000 });
       return;
     }
-    setLastAction("Deploying...");
-    // Deploy uses the same push mechanism with deploy targets
-    await pushProject(projectPath, projectName || "", deployTargets);
-    const state = useDeployStore.getState();
-    if (state.error) {
-      showToast({ message: `Deploy failed: ${state.error}`, type: "error" });
-      setLastAction("Deploy failed");
-    } else {
-      const targetNames = deployTargets.map((t) => DEPLOY_TARGETS.find((d) => d.id === t)?.label ?? t).join(", ");
-      showToast({ message: `Deployed to ${targetNames}`, type: "success" });
-      setLastAction(`Deployed to ${targetNames}`);
+    const targetNames = deployTargets.map((t) => DEPLOY_TARGETS.find((d) => d.id === t)?.label ?? t).join(", ");
+    setLastAction(`Deploying to ${targetNames}...`);
+    toast({ message: `Deploying ${projectName || "project"} to ${targetNames}...`, type: "info", duration: 8000 });
+    try {
+      await pushProject(projectPath, projectName || "", deployTargets);
+      const state = useDeployStore.getState();
+      if (state.error) {
+        toast({ message: `Deploy failed: ${state.error}`, type: "error", duration: 8000 });
+        setLastAction("Deploy failed");
+      } else {
+        toast({ message: `Successfully deployed ${projectName || "project"} to ${targetNames}`, type: "success", duration: 6000 });
+        setLastAction(`Deployed to ${targetNames}`);
+      }
+    } catch (err: any) {
+      toast({ message: `Deploy error: ${err?.message || "Unknown error"}`, type: "error", duration: 8000 });
+      setLastAction("Deploy error");
     }
-  }, [projectPath, projectName, deployTargets, pushProject, showToast]);
+  }, [projectPath, projectName, deployTargets, pushProject]);
 
   const togglePushTarget = useCallback((t: DeployTarget) => {
     setPushTargets((prev) => prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]);
@@ -519,7 +533,7 @@ export default function WorkbenchDashboard() {
 
       {/* ── Monitor Grid ── */}
       <div className="flex-1 min-h-0 p-4 flex flex-col gap-3 overflow-hidden">
-        {/* Row 1: Mon5 | Mon1 | Mon3 */}
+        {/* Row 1: Mon5 | Mon1 (ANCHOR) | Mon3 */}
         <div className="flex-1 min-h-0 grid grid-cols-3 gap-3 overflow-hidden">
           {[s1, s2, s3].map((slot, i) => slot && (
             <WorkbenchCard
@@ -545,16 +559,34 @@ export default function WorkbenchDashboard() {
             />
           )}
 
-          {/* Center: MON 4 — Command Center (this screen) */}
-          <div className="flex flex-col items-center justify-center rounded-xl border-2 border-[#FF6700]/30 bg-white/50 dark:bg-zinc-900/20 h-full"
-               style={{ minWidth: "400px" }}>
-            <div className="w-12 h-12 rounded-xl border-2 border-[#FF6700]/40 flex items-center justify-center text-lg font-black text-[#FF6700]/60 mb-3 bg-[#FF6700]/5">
-              4
+          {/* Center: MON 4 — Command Center with live build preview */}
+          <div className="relative flex flex-col rounded-xl border-2 border-[#FF6700]/30 bg-white/50 dark:bg-zinc-900/20 h-full overflow-hidden">
+            {/* Header bar */}
+            <div className="flex items-center justify-between px-3 py-1.5 flex-shrink-0 border-b border-[#FF6700]/15">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-md border border-[#FF6700]/40 flex items-center justify-center text-xs font-black text-[#FF6700]/60 bg-[#FF6700]/5">4</div>
+                <span className="text-xs font-black text-zinc-600 dark:text-zinc-400 tracking-wider">
+                  {projectName ? `${projectName} · Command Center` : "COMMAND CENTER"}
+                </span>
+              </div>
+              <span className="text-[9px] font-mono font-bold text-zinc-400 dark:text-zinc-600">MON 4 · This Screen</span>
             </div>
-            <p className="text-base font-black text-zinc-700 dark:text-zinc-300 tracking-wider mb-1">
-              {projectName ? `${projectName} · Command Center` : "COMMAND CENTER"}
-            </p>
-            <p className="text-[10px] font-mono font-bold text-zinc-400 dark:text-zinc-600">MON 4 · This Screen</p>
+            {/* Live preview of current build */}
+            <div className="flex-1 min-h-0 relative bg-white">
+              {artifactCode ? (
+                <iframe
+                  srcDoc={artifactCode}
+                  sandbox="allow-scripts"
+                  title="Current build preview"
+                  className="absolute inset-0 w-full h-full border-none pointer-events-none"
+                  style={{ transform: "scale(1)", transformOrigin: "top left", width: "100%", height: "100%" }}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-sm font-bold text-zinc-400 dark:text-zinc-600">No build loaded</p>
+                </div>
+              )}
+            </div>
           </div>
 
           {s5 && (

@@ -69,7 +69,7 @@ export async function prefetchScreens(): Promise<boolean> {
   }
 }
 
-function getScreenForMonitor(mon: number): ScreenDetailed | undefined {
+export function getScreenForMonitor(mon: number): ScreenDetailed | undefined {
   if (!gridScreens) return undefined;
   const pos = MONITOR_GRID[mon];
   if (!pos) return undefined;
