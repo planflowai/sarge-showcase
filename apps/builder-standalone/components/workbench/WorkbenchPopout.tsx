@@ -231,32 +231,32 @@ export function WorkbenchPopout({ slotNum, monitorNumber, provider: initProvider
   return (
     <div className="fixed inset-0 z-[9999] flex flex-col overflow-hidden" style={{ backgroundColor: "#09090b" }}>
 
-      {/* Header — full model name prominently displayed */}
+      {/* Header — model name centered, provider left, mon/slot right */}
       <div
-        className="flex items-center justify-between px-4 py-2.5 flex-shrink-0"
+        className="relative flex items-center justify-between px-5 py-3 flex-shrink-0"
         style={{ borderBottom: `1px solid ${color}25`, background: `linear-gradient(to right, ${color}08, transparent)` }}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-shrink-0">
           {/* Provider color pill */}
           <div
-            className="px-2.5 py-1 rounded-md text-xs font-black uppercase tracking-widest flex-shrink-0"
+            className="px-2.5 py-1 rounded-md text-sm font-black uppercase tracking-widest flex-shrink-0"
             style={{ background: `${color}18`, border: `1px solid ${color}35`, color }}
           >
             {providerName}
           </div>
-          {/* Full model name */}
-          <span className="text-sm font-black text-zinc-200 truncate max-w-[360px]" title={activeModel}>
-            {displayName}
-          </span>
           {/* Live indicator */}
           {streaming && (
             <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-              <span className="text-[9px] font-bold text-amber-400 uppercase tracking-wider">Generating</span>
+              <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">Generating</span>
             </div>
           )}
         </div>
-        <span className="text-[10px] font-mono font-bold text-zinc-600">
+        {/* Centered model name */}
+        <span className="absolute left-1/2 -translate-x-1/2 text-2xl font-[800] tracking-wide" style={{ color }} title={activeModel}>
+          {displayName}
+        </span>
+        <span className="text-xs font-mono font-bold text-zinc-600 flex-shrink-0">
           MON {monitorNumber} · SLOT {slotNum}
         </span>
       </div>
@@ -274,10 +274,10 @@ export function WorkbenchPopout({ slotNum, monitorNumber, provider: initProvider
         ) : (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
-              <p className="text-[28px] font-black mb-2" style={{ color }}>
+              <p className="text-[36px] font-[800] mb-3" style={{ color }}>
                 {displayName}
               </p>
-              <p className="text-sm text-zinc-600">Waiting for prompt from command center...</p>
+              <p className="text-base text-zinc-600">Waiting for prompt from command center...</p>
             </div>
           </div>
         )}
