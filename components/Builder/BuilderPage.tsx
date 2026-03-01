@@ -357,9 +357,12 @@ export default function BuilderPage({ deployContent }: { deployContent?: React.R
       setIsStreaming(false);
       // Streaming ended - PERSIST the new code as the artifact via store
       // This prevents reverting to the old code AND survives navigation
-      if (code) {
+      if (code && code.trim()) {
         finalizeStreaming();
         updateCurrentContent(code);
+      } else {
+        // No code produced (error or empty response) — just clear streaming state
+        useArtifactStore.getState().finalizeStreaming();
       }
       // Reset start time when streaming ends
       setGenerationStartTime(null);
@@ -621,40 +624,41 @@ Please provide the complete modified version of this component. Make only the re
 
   return (
     <div className="relative flex flex-col h-full w-full bg-zinc-50 dark:bg-zinc-950">
-      {/* Top bar - Thread Guardian + Launch Workspace - fixed position to always show */}
-      <div className="fixed top-4 right-4 z-[100] flex items-center gap-3">
-        {/* Thread Guardian Indicator */}
-        <ThreadGuardianIndicator conversationId="builder-chat" />
+      {/* Top bar — Thread Guardian + The Pit + actions — fixed position to always show */}
+      <div className="fixed top-4 right-4 z-[100] flex flex-col items-end gap-2">
+        <div className="flex items-center gap-3">
+          {/* Thread Guardian Indicator */}
+          <ThreadGuardianIndicator conversationId="builder-chat" />
 
-        {/* Launch Workspace Button */}
-        <button
-          onClick={launchWorkspace}
-          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-lg shadow-lg transition-all text-sm font-medium"
-          title="Launch multi-window workspace across your monitors"
-        >
-          <Rocket className="w-4 h-4" />
-          Launch Workspace
-        </button>
-
-        {/* New Project */}
-        <button
-          onClick={() => window.dispatchEvent(new CustomEvent("builder:new-project"))}
-          className="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg shadow-lg transition-all text-sm font-medium"
-          title="New Project"
-        >
-          <FolderPlus className="w-4 h-4" />
-          New
-        </button>
-
-        {/* Open Project */}
-        <button
-          onClick={() => window.dispatchEvent(new CustomEvent("builder:open-project"))}
-          className="flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg shadow-lg transition-all text-sm font-medium"
-          title="Open Project"
-        >
-          <FolderOpenIcon className="w-4 h-4" />
-          Open
-        </button>
+          {/* Launch The Pit Button */}
+          <button
+            onClick={launchWorkspace}
+            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#FF6700] to-orange-600 hover:from-[#FF6700]/90 hover:to-orange-500 text-white rounded-lg shadow-lg transition-all text-sm font-bold"
+            title="Launch The Pit — multi-window workspace across your monitors"
+          >
+            <Rocket className="w-4 h-4" />
+            Launch The Pit
+          </button>
+        </div>
+        {/* Pit-related actions — grouped below */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent("builder:new-project"))}
+            className="flex items-center gap-1.5 px-4 py-2 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-lg shadow transition-all text-sm font-medium border border-zinc-300 dark:border-zinc-700"
+            title="New Project"
+          >
+            <FolderPlus className="w-4 h-4" />
+            New
+          </button>
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent("builder:open-project"))}
+            className="flex items-center gap-1.5 px-4 py-2 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-lg shadow transition-all text-sm font-medium border border-zinc-300 dark:border-zinc-700"
+            title="Open Project"
+          >
+            <FolderOpenIcon className="w-4 h-4" />
+            Open
+          </button>
+        </div>
       </div>
 
       {/* Main content area */}

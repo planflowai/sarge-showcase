@@ -219,7 +219,7 @@ export function Header() {
         {/* Title Row */}
         <div className="h-14 flex items-center justify-center bg-gradient-to-r from-slate-100 via-indigo-50 to-slate-100 dark:from-zinc-900 dark:via-indigo-950/20 dark:to-zinc-900">
           <div className="flex items-center gap-2.5">
-            <span className="text-base sm:text-lg font-semibold tracking-wide text-slate-700 dark:text-slate-300">S.A.R.G.E.</span>
+            <span className="text-xl sm:text-2xl font-black tracking-wider text-[#FF6700]">The Foundry</span>
           </div>
         </div>
         {/* Nav Row */}

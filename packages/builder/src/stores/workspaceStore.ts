@@ -440,7 +440,7 @@ export function launchWorkspace() {
     console.warn('[Workspace] Preview window blocked by popup blocker. Please allow popups for this site.');
     showToast({
       type: 'warning',
-      message: 'Preview window blocked - Allow popups for localhost:5000 and click "Launch Workspace" again.',
+      message: 'Preview window blocked - Allow popups for localhost:5000 and click "Launch The Pit" again.',
       duration: 8000,
     });
     // Still continue - Studio is open at least

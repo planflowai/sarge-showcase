@@ -914,7 +914,7 @@ export default function SettingsPage() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <p className="text-xs font-medium text-zinc-600 dark:text-zinc-500">Set a 4-6 digit PIN to lock the workbench.</p>
+                  <p className="text-xs font-medium text-zinc-600 dark:text-zinc-500">Set a 4-6 digit PIN to lock The Foundry.</p>
                   <div className="flex gap-2">
                     <Input type="password" inputMode="numeric" maxLength={6} value={newPin} onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ""))} placeholder="PIN" className={`w-24 text-center ${inputCls}`} />
                     <Input type="password" inputMode="numeric" maxLength={6} value={confirmNewPin} onChange={(e) => setConfirmNewPin(e.target.value.replace(/\D/g, ""))} placeholder="Confirm" className={`w-24 text-center ${inputCls}`} />

@@ -163,7 +163,7 @@ export function ForensicSidebar({ collapsed, onToggle }: { collapsed: boolean; o
           className="w-full justify-center gap-2 text-sm font-bold bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-600 dark:hover:bg-emerald-500"
         >
           <X className="h-4 w-4" />
-          Back to Workbench
+          Back to The Foundry
         </Button>
         <Button
           variant="outline"

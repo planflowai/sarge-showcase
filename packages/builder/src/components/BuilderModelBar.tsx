@@ -170,20 +170,8 @@ export default function BuilderModelBar({
           );
         })}
 
-        {/* AI Mode badge */}
-        <Link
-          href="/settings"
-          className={cn(
-            "flex-shrink-0 flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-medium transition-all hover:ring-1 hover:ring-zinc-500 ml-auto",
-            executionMode === "local" && "bg-emerald-500/20 text-emerald-500 dark:text-emerald-400",
-            executionMode === "cloud" && "bg-violet-500/20 text-violet-500 dark:text-violet-400",
-            executionMode === "hybrid" && "bg-amber-500/20 text-amber-500 dark:text-amber-400"
-          )}
-          title="AI Orchestration Mode"
-        >
-          <Zap className="h-2.5 w-2.5" />
-          {aiModeDisplayName()}
-        </Link>
+        {/* Spacer to push model selector right */}
+        <div className="flex-1" />
       </div>
 
       {/* Model selector row — click to open model panel */}

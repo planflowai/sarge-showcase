@@ -228,13 +228,13 @@ export function Header() {
     return (
       <div className="flex flex-col border-b border-border">
         {/* Title Row */}
-        <div className="h-14 flex items-center justify-center bg-gradient-to-r from-slate-100 via-indigo-50 to-slate-100 dark:from-zinc-900 dark:via-indigo-950/20 dark:to-zinc-900">
+        <div className="h-14 flex items-center justify-center bg-gradient-to-r from-slate-100 via-orange-50 to-slate-100 dark:from-[#0a0a0a] dark:via-[#141414] dark:to-[#0a0a0a]">
           <div className="flex items-center gap-2.5">
-            <span className="text-base sm:text-lg font-semibold tracking-wide text-slate-700 dark:text-slate-300">S.A.R.G.E.</span>
+            <span className="text-xl sm:text-2xl font-black tracking-wider text-[#FF6700]">The Foundry</span>
           </div>
         </div>
         {/* Nav Row */}
-        <div className="h-11 bg-zinc-100 dark:bg-zinc-900/50 flex items-center px-4" />
+        <div className="h-12 bg-zinc-100 dark:bg-[#0a0a0a] flex items-center px-4" />
       </div>
     );
   }
@@ -282,7 +282,7 @@ export function Header() {
 
       <div className="flex flex-col border-b border-border">
         {/* Row 1: Main Title - Centered */}
-        <div className="h-14 flex items-center justify-center bg-gradient-to-r from-slate-100 via-indigo-50 to-slate-100 dark:from-zinc-900 dark:via-indigo-950/20 dark:to-zinc-900 relative border-b border-slate-200 dark:border-zinc-800 shadow-sm">
+        <div className="h-14 flex items-center justify-center bg-gradient-to-r from-slate-100 via-orange-50 to-slate-100 dark:from-zinc-900 dark:via-zinc-800/60 dark:to-zinc-900 relative border-b border-slate-200 dark:border-zinc-800 shadow-sm">
           {/* Mobile hamburger */}
           <Button
             variant="ghost"
@@ -294,35 +294,23 @@ export function Header() {
           </Button>
 
           <div className="flex items-center gap-2.5 relative z-10">
-            {/* Shield icon - sleek and minimal */}
+            {/* Foundry icon */}
             <div className="relative">
-              <ShieldCheck className="h-6 w-6 text-indigo-600 dark:text-indigo-400 drop-shadow-sm" />
-              <Zap className="h-2.5 w-2.5 text-amber-500 dark:text-amber-400 absolute -right-0.5 -bottom-0.5 drop-shadow-[0_0_3px_rgba(245,158,11,0.8)]" />
+              <ShieldCheck className="h-6 w-6 text-[#FF6700] drop-shadow-[0_0_6px_rgba(255,103,0,0.5)]" />
+              <Zap className="h-2.5 w-2.5 text-amber-400 absolute -right-0.5 -bottom-0.5 drop-shadow-[0_0_3px_rgba(251,191,36,0.8)]" />
             </div>
 
-            {/* Main title with emphasized first letters */}
-            <h1 className="text-base sm:text-lg md:text-xl font-semibold tracking-wide">
-              <span className="text-indigo-700 dark:text-indigo-400 font-black text-xl sm:text-2xl md:text-3xl">S</span>
-              <span className="text-slate-700 dark:text-slate-300">ynthetic </span>
-              <span className="text-indigo-700 dark:text-indigo-400 font-black text-xl sm:text-2xl md:text-3xl">A</span>
-              <span className="text-slate-700 dark:text-slate-300">dversarial </span>
-              <span className="text-indigo-700 dark:text-indigo-400 font-black text-xl sm:text-2xl md:text-3xl">R</span>
-              <span className="text-slate-700 dark:text-slate-300">easoning </span>
-              <span className="text-slate-600 dark:text-slate-400 font-semibold">&</span>
-              <span className="text-slate-700 dark:text-slate-300"> </span>
-              <span className="text-indigo-700 dark:text-indigo-400 font-black text-xl sm:text-2xl md:text-3xl">G</span>
-              <span className="text-slate-700 dark:text-slate-300">uarding </span>
-              <span className="text-indigo-700 dark:text-indigo-400 font-black text-xl sm:text-2xl md:text-3xl">E</span>
-              <span className="text-slate-700 dark:text-slate-300">ngine</span>
-              <span className="text-slate-500 dark:text-slate-500 font-normal text-sm sm:text-base ml-2">w/ AI Builder</span>
+            {/* The Foundry — brand title */}
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-black tracking-wider">
+              <span className="text-[#FF6700] drop-shadow-[0_0_8px_rgba(255,103,0,0.4)]">The Foundry</span>
             </h1>
           </div>
         </div>
 
         {/* Row 2: Navigation + Icons on same line */}
-        <div className="h-11 bg-gradient-to-r from-zinc-100 via-zinc-50 to-zinc-100 dark:from-zinc-900/80 dark:via-zinc-800/50 dark:to-zinc-900/80 flex items-center px-4 border-t border-zinc-200/50 dark:border-zinc-700/30">
+        <div className="h-12 bg-zinc-100 dark:bg-[#0a0a0a] flex items-center px-4 border-t border-zinc-200/50 dark:border-zinc-800/50">
           {/* Navigation Items */}
-          <div className="flex items-center justify-start gap-0.5 min-w-0 overflow-x-auto scrollbar-hide">
+          <div className="flex items-center justify-start gap-1 min-w-0 overflow-x-auto scrollbar-hide">
             {NAV_ITEMS.map((item) => {
               const isActive = activeMode === item.id;
 
@@ -331,10 +319,10 @@ export function Header() {
                   key={item.id}
                   onClick={() => handleNavClick(item.id)}
                   className={cn(
-                    "group flex flex-shrink-0 items-center gap-1.5 px-2.5 py-2 rounded-md text-sm font-black transition-all duration-200 border",
+                    "group flex flex-shrink-0 items-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 border",
                     isActive
                       ? `${item.bgActive} ${item.activeColor} shadow-sm`
-                      : "border-transparent text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200/80 dark:hover:bg-zinc-700/60"
+                      : "border-transparent text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200/80 dark:hover:bg-zinc-800/60"
                   )}
                 >
                   <span className="text-base leading-none">{item.emoji}</span>

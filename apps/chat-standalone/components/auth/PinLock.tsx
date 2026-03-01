@@ -125,7 +125,7 @@ export function PinLock({ children }: { children: React.ReactNode }) {
           </div>
           <div className="flex items-center gap-2">
             <Terminal className="h-4 w-4 text-emerald-400" />
-            <h1 className="text-lg font-bold bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent">S.A.R.G.E.</h1>
+            <h1 className="text-lg font-bold bg-gradient-to-r from-[#FF6700] to-orange-400 bg-clip-text text-transparent">The Foundry</h1>
           </div>
         </div>
 

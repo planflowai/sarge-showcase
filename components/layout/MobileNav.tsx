@@ -27,7 +27,7 @@ export function MobileNav({ open, onOpenChange }: MobileNavProps) {
         <div className="flex h-14 items-center gap-2 px-4">
           <Sparkles className="h-5 w-5 text-indigo-400" />
           <span className="text-lg font-bold tracking-wider text-white">
-            AI WORKBENCH
+            THE FOUNDRY
           </span>
         </div>
 

@@ -153,6 +153,14 @@ function ArtifactPanelInner({
     if (isAtLatest) return;
     const versionCode = versions[currentVersionIndex]?.code;
     if (versionCode) {
+      // Force-clear any stuck streaming state before restoring
+      const { isStreaming: wasStreaming } = useArtifactStore.getState();
+      if (wasStreaming) {
+        console.log('[ArtifactPanel] Clearing stuck streaming state before restore');
+        useArtifactStore.getState().setIsStreaming(false);
+        useArtifactStore.getState().setStreamingCode('');
+      }
+
       // Restore: make this version the new current code
       setArtifactCode(versionCode, artifactStorePath ?? null, null);
 

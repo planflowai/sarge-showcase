@@ -243,37 +243,53 @@ export const useBuilderChatStore = create<BuilderChatState>()(
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+      // Streaming inactivity timeout: abort if no data received for 120 seconds
+      const STREAM_INACTIVITY_TIMEOUT_MS = 120_000;
+      let lastChunkTime = Date.now();
+      const inactivityTimer = setInterval(() => {
+        if (Date.now() - lastChunkTime > STREAM_INACTIVITY_TIMEOUT_MS) {
+          console.warn('[BuilderChat] Streaming timeout — no data for 120s, aborting');
+          clearInterval(inactivityTimer);
+          abortController.abort();
+        }
+      }, 5_000);
 
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split("\n").filter(line => line.trim());
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          lastChunkTime = Date.now();
 
-        for (const line of lines) {
-          try {
-            const data = JSON.parse(line);
-            // Capture reasoning/thinking tokens (DeepSeek R1)
-            if (data.message?.reasoning_content) {
-              totalThinking += data.message.reasoning_content;
-              const messages = get().messages.map(m =>
-                m.id === assistantId ? { ...m, thinking: totalThinking } : m
-              );
-              set({ messages });
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split("\n").filter(line => line.trim());
+
+          for (const line of lines) {
+            try {
+              const data = JSON.parse(line);
+              // Capture reasoning/thinking tokens (DeepSeek R1)
+              if (data.message?.reasoning_content) {
+                totalThinking += data.message.reasoning_content;
+                const messages = get().messages.map(m =>
+                  m.id === assistantId ? { ...m, thinking: totalThinking } : m
+                );
+                set({ messages });
+              }
+              if (data.message?.content) {
+                totalContent += data.message.content;
+                tokenCount++;
+                updateStreamingMessage(assistantId, totalContent);
+              }
+              // Handle done signal from Ollama
+              if (data.done && data.eval_count) {
+                tokenCount = data.eval_count;
+              }
+            } catch {
+              // Not valid JSON, might be partial
             }
-            if (data.message?.content) {
-              totalContent += data.message.content;
-              tokenCount++;
-              updateStreamingMessage(assistantId, totalContent);
-            }
-            // Handle done signal from Ollama
-            if (data.done && data.eval_count) {
-              tokenCount = data.eval_count;
-            }
-          } catch {
-            // Not valid JSON, might be partial
           }
         }
+      } finally {
+        clearInterval(inactivityTimer);
       }
 
       const latencyMs = Date.now() - startTime;

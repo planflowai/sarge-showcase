@@ -979,15 +979,15 @@ export default function BuilderSidebar({ selectedModel, selectedProvider, onMode
       {/* End scrollable content area */}
 
       {/* Footer - compact horizontal row */}
-      <div className="flex-shrink-0 px-2 py-1.5 border-t border-zinc-300 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900">
-        <div className="flex items-center gap-1">
+      <div className="flex-shrink-0 px-2 py-2 border-t border-zinc-300 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900">
+        <div className="flex items-center gap-2">
           {/* New Build button */}
           <button
             onClick={onNewBuild}
-            className="flex items-center gap-1 flex-1 text-[10px] font-medium transition-colors rounded px-2 py-1 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/30 border border-purple-300 dark:border-purple-700"
+            className="flex items-center gap-1.5 flex-1 text-xs font-medium transition-colors rounded-lg px-3 py-2 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/30 border border-purple-300 dark:border-purple-700"
             title="New Build"
           >
-            <Plus className="h-3 w-3" />
+            <Plus className="h-4 w-4" />
             <span>New</span>
           </button>
 
@@ -997,7 +997,7 @@ export default function BuilderSidebar({ selectedModel, selectedProvider, onMode
               onClick={handleSaveProgress}
               disabled={isSavingProgress}
               className={cn(
-                "flex items-center gap-1 flex-1 text-[10px] font-medium transition-colors rounded px-2 py-1",
+                "flex items-center gap-1.5 flex-1 text-xs font-medium transition-colors rounded-lg px-3 py-2",
                 saveSuccess
                   ? "text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30"
                   : "text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/30"
@@ -1005,9 +1005,9 @@ export default function BuilderSidebar({ selectedModel, selectedProvider, onMode
               title={saveSuccess ? "Progress Saved!" : "Save Progress"}
             >
               {isSavingProgress ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <Save className="h-3 w-3" />
+                <Save className="h-4 w-4" />
               )}
               <span>{saveSuccess ? "Saved" : "Save"}</span>
             </button>
@@ -1017,16 +1017,16 @@ export default function BuilderSidebar({ selectedModel, selectedProvider, onMode
           <button
             onClick={onTerminalToggle}
             className={cn(
-              "flex items-center gap-1 flex-1 text-[10px] font-medium transition-colors rounded px-2 py-1",
+              "flex items-center gap-1.5 flex-1 text-xs font-medium transition-colors rounded-lg px-3 py-2",
               terminalOpen
                 ? "text-cyan-600 dark:text-cyan-400 bg-cyan-100 dark:bg-cyan-900/30"
                 : "text-zinc-500 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
             )}
             title="Terminal"
           >
-            <Terminal className="h-3 w-3" />
+            <Terminal className="h-4 w-4" />
             <span>Term</span>
-            {terminalOpen && <span className="text-[8px] font-bold">●</span>}
+            {terminalOpen && <span className="text-[9px] font-bold">●</span>}
           </button>
         </div>
       </div>

@@ -55,7 +55,7 @@ export function exportChatToPDF(messages: Message[], title?: string) {
   let y = 20;
 
   doc.setFontSize(16);
-  doc.text(title || "AI Workbench - Chat Export", margin, y);
+  doc.text(title || "The Foundry - Chat Export", margin, y);
   y += 10;
 
   doc.setFontSize(8);

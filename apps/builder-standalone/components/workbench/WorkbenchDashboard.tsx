@@ -202,7 +202,7 @@ export default function WorkbenchDashboard() {
             <span className="text-base">🔧</span>
           </div>
           <div>
-            <h1 className="text-sm font-bold text-white tracking-wide">Workbench</h1>
+            <h1 className="text-sm font-bold text-white tracking-wide">The Pit</h1>
             <p className="text-[10px] text-zinc-500">5-Monitor Builder Command Center</p>
           </div>
           {workspaceOn && (

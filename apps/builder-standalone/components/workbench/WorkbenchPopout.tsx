@@ -27,7 +27,7 @@ const PROVIDER_NAMES: Record<string, string> = {
 
 // ─── Builder system prompt ────────────────────────────────────────────────────
 
-const BUILDER_SYSTEM = `You are a code builder assistant inside AI Builder Workbench.
+const BUILDER_SYSTEM = `You are a code builder assistant inside The Foundry.
 
 RULES:
 - ALWAYS generate complete, self-contained single HTML files.
@@ -289,7 +289,7 @@ export function WorkbenchPopout({ slotNum, monitorNumber, provider: initProvider
         <span className="text-zinc-500">
           {streaming ? "⚡ Generating..." : messages.length > 0 ? `✓ ${messages.length} exchanges` : "Ready"}
         </span>
-        <span style={{ color: `${color}50` }}>SARGE Forge Workbench</span>
+        <span style={{ color: `${color}50` }}>The Foundry — The Pit</span>
       </div>
     </div>
   );

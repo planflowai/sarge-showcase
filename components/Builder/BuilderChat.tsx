@@ -739,36 +739,36 @@ export default function BuilderChat({
             </div>
 
             {/* Center group: Mode toggles */}
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               {/* Plan/Build Mode Toggle */}
               <div
-                className="flex items-center h-8 rounded-md border border-zinc-300 dark:border-zinc-700 overflow-hidden"
+                className="flex items-center h-10 rounded-lg border border-zinc-300 dark:border-zinc-700 overflow-hidden"
                 title={builderMode === "plan" ? "Plan mode: AI will discuss and plan" : "Build mode: AI will write files"}
               >
                 <button
                   onClick={() => toggleMode()}
                   disabled={sending}
                   className={cn(
-                    "flex items-center gap-1 px-2 h-full text-[11px] font-medium transition-colors",
+                    "flex items-center gap-1.5 px-3 h-full text-sm font-medium transition-colors",
                     builderMode === "plan"
                       ? "bg-amber-500/20 text-amber-600 dark:text-amber-400"
                       : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
                   )}
                 >
-                  <MessageSquare className="h-3 w-3" />
+                  <MessageSquare className="h-4 w-4" />
                   Plan
                 </button>
                 <button
                   onClick={() => toggleMode()}
                   disabled={sending}
                   className={cn(
-                    "flex items-center gap-1 px-2 h-full text-[11px] font-medium transition-colors",
+                    "flex items-center gap-1.5 px-3 h-full text-sm font-medium transition-colors",
                     builderMode === "build"
                       ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
                       : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
                   )}
                 >
-                  <Hammer className="h-3 w-3" />
+                  <Hammer className="h-4 w-4" />
                   Build
                 </button>
               </div>
@@ -776,33 +776,33 @@ export default function BuilderChat({
               {/* Edit/Generate Mode Toggle - only shown when in Build mode and there's existing code */}
               {builderMode === "build" && artifactCode && artifactCode.trim().length > 50 && (
                 <div
-                  className="flex items-center h-8 rounded-md border border-zinc-300 dark:border-zinc-700 overflow-hidden"
+                  className="flex items-center h-10 rounded-lg border border-zinc-300 dark:border-zinc-700 overflow-hidden"
                   title={editMode === "edit" ? "Edit mode: surgical changes" : "Generate mode: regenerate file"}
                 >
                   <button
                     onClick={() => toggleEditMode()}
                     disabled={sending}
                     className={cn(
-                      "flex items-center gap-1 px-2 h-full text-[11px] font-medium transition-colors",
+                      "flex items-center gap-1.5 px-3 h-full text-sm font-medium transition-colors",
                       editMode === "edit"
                         ? "bg-blue-500/20 text-blue-600 dark:text-blue-400"
                         : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
                     )}
                   >
-                    <Pencil className="h-3 w-3" />
+                    <Pencil className="h-4 w-4" />
                     Edit
                   </button>
                   <button
                     onClick={() => toggleEditMode()}
                     disabled={sending}
                     className={cn(
-                      "flex items-center gap-1 px-2 h-full text-[11px] font-medium transition-colors",
+                      "flex items-center gap-1.5 px-3 h-full text-sm font-medium transition-colors",
                       editMode === "generate"
                         ? "bg-purple-500/20 text-purple-600 dark:text-purple-400"
                         : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
                     )}
                   >
-                    <RefreshCw className="h-3 w-3" />
+                    <RefreshCw className="h-4 w-4" />
                     Regen
                   </button>
                 </div>
@@ -815,7 +815,7 @@ export default function BuilderChat({
                   disabled={sending}
                   title={autoApply ? "Auto Apply: ON (files apply immediately)" : "Auto Apply: OFF (click to apply)"}
                   className={cn(
-                    "px-2 h-8 rounded-md border text-[11px] font-medium transition-colors",
+                    "px-3 h-10 rounded-lg border text-sm font-medium transition-colors",
                     autoApply
                       ? "bg-green-500/20 border-green-500/50 text-green-600 dark:text-green-400"
                       : "border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
@@ -833,22 +833,22 @@ export default function BuilderChat({
             {sending ? (
               <Button
                 onClick={abortStream}
-                className="h-8 px-3 gap-1.5 bg-red-600 hover:bg-red-700 text-white"
+                className="h-10 px-5 gap-2 bg-red-600 hover:bg-red-700 text-white rounded-lg"
                 title="Stop generation"
               >
-                <StopCircle className="h-3.5 w-3.5" />
-                <span className="text-[11px] font-medium">Stop</span>
+                <StopCircle className="h-4 w-4" />
+                <span className="text-sm font-bold">Stop</span>
               </Button>
             ) : (
               <Button
                 onClick={handleSend}
                 onContextMenu={handleSendButtonContextMenu}
                 disabled={noModel || !input.trim()}
-                className="h-8 px-3 gap-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white"
+                className="h-10 px-5 gap-2 bg-[#FF6700] hover:bg-[#e65d00] disabled:opacity-50 text-white rounded-lg"
                 title="Send message (right-click to save as prompt)"
               >
-                <Send className="h-3.5 w-3.5" />
-                <span className="text-[11px] font-medium">Send</span>
+                <Send className="h-4 w-4" />
+                <span className="text-sm font-bold">Send</span>
               </Button>
             )}
           </div>
@@ -861,9 +861,9 @@ export default function BuilderChat({
                 size="sm"
                 onClick={clearMessages}
                 disabled={sending}
-                className="h-6 gap-1 px-2 text-[10px] text-zinc-500 hover:text-red-400 disabled:opacity-50"
+                className="h-7 gap-1.5 px-3 text-xs text-zinc-500 hover:text-red-400 disabled:opacity-50"
               >
-                <X className="h-3 w-3" /> Clear chat
+                <X className="h-3.5 w-3.5" /> Clear chat
               </Button>
             </div>
           )}

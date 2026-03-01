@@ -42,7 +42,7 @@ export default function Home() {
   // When Lock Winner fires: inject code into artifact panel then clear
   useEffect(() => {
     if (!lockedCode) return;
-    useArtifactStore.getState().setCode(lockedCode, null, "Workbench Winner");
+    useArtifactStore.getState().setCode(lockedCode, null, "Pit Winner");
     useArtifactStore.getState().setActiveTab("preview");
     clearLocked();
   }, [lockedCode, clearLocked]);

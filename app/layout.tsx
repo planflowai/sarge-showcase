@@ -14,8 +14,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "S.A.R.G.E. w/ AI Builder",
-  description: "Synthetic Adversarial Reasoning & Guarding Engine w/ AI Builder",
+  title: "The Foundry — AI Builder",
+  description: "The Foundry — AI-powered multi-model code builder",
 };
 
 export default function RootLayout({
@@ -29,7 +29,7 @@ export default function RootLayout({
         <ThemeProvider>
           <PinLock>
             <div className="flex flex-col h-dvh overflow-hidden">
-              {/* Header with S.A.R.G.E. title + navigation */}
+              {/* Header with The Foundry title + navigation */}
               <Header />
               {/* Main content area with optional sidebar */}
               <div className="flex flex-1 overflow-hidden">

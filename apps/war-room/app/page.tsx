@@ -568,7 +568,7 @@ export default function WarRoom() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={
-              !workspaceActive ? "Launch workspace to begin broadcasting..."
+              !workspaceActive ? "Launch The Pit to begin broadcasting..."
                 : sendMode === "broadcast" ? `Broadcast to ${openCount} monitors — Enter to send`
                 : directTarget ? `Direct to ${slots.find((s) => s.id === directTarget)?.label} — Enter to send`
                 : "Click a card to select target..."

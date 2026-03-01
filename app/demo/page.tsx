@@ -1731,15 +1731,15 @@ function Step1TitleCard({ stats }: { stats: { modules: number; models: number; p
         <div className="mb-8 animate-scaleIn">
           <div className="flex items-center justify-center gap-4 mb-4">
             <ShieldCheck className="h-16 w-16 text-indigo-400" />
-            <h1 className="text-7xl font-black tracking-[12px] bg-gradient-to-r from-indigo-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">
-              S.A.R.G.E.
+            <h1 className="text-7xl font-black tracking-[12px] bg-gradient-to-r from-[#FF6700] via-orange-400 to-amber-400 bg-clip-text text-transparent">
+              The Foundry
             </h1>
             <Zap className="h-12 w-12 text-amber-400" />
           </div>
         </div>
 
         <p className="text-2xl text-zinc-300 tracking-[4px] uppercase mb-4 animate-slideIn" style={{ animationDelay: "0.3s", opacity: 0, animationFillMode: "forwards" }}>
-          Synthetic Adversarial Reasoning & Guarding Engine
+          AI-Powered Multi-Model Code Builder
         </p>
 
         <p className="text-lg text-zinc-500 mb-12 animate-slideIn" style={{ animationDelay: "0.5s", opacity: 0, animationFillMode: "forwards" }}>
@@ -1806,7 +1806,7 @@ function Step3Solution() {
     <div className="h-full flex items-center justify-center">
       <div className="text-center">
         <h2 className="text-4xl font-black mb-4 text-emerald-400 animate-slideIn">
-          S.A.R.G.E. is a unified AI operations platform.
+          The Foundry is a unified AI operations platform.
         </h2>
         <p className="text-zinc-500 mb-12 animate-slideIn" style={{ animationDelay: "0.1s", opacity: 0, animationFillMode: "forwards" }}>
           16 modules. One interface. Complete AI workflow.
@@ -2115,8 +2115,8 @@ function Step14Closing({ onLaunch }: { onLaunch: () => void }) {
     <div className="h-full flex items-center justify-center">
       <div className="text-center max-w-3xl mx-auto">
         <div className="mb-8 animate-scaleIn">
-          <h1 className="text-5xl font-black tracking-[8px] bg-gradient-to-r from-indigo-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent mb-4">
-            S.A.R.G.E.
+          <h1 className="text-5xl font-black tracking-[8px] bg-gradient-to-r from-[#FF6700] via-orange-400 to-amber-400 bg-clip-text text-transparent mb-4">
+            The Foundry
           </h1>
           <p className="text-xl text-zinc-400">
             One platform. Every AI capability.

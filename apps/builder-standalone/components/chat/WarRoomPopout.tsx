@@ -303,7 +303,7 @@ export function WarRoomPopout({
         <span className="text-zinc-600">
           {streaming ? "Streaming..." : messages.length > 0 ? `${messages.length} messages` : "Ready"}
         </span>
-        <span style={{ color: `${color}60` }}>S.A.R.G.E. Workbench</span>
+        <span style={{ color: `${color}60` }}>The Foundry — The Pit</span>
       </div>
 
       <style jsx>{`

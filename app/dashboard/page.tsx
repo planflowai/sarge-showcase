@@ -1,7 +1,7 @@
 "use client";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const FOOTER_TAGLINE = "S.A.R.G.E. Platform Architecture · Built in 7 Weeks · One Person · Zero Prior Coding Experience";
+const FOOTER_TAGLINE = "The Foundry Platform Architecture · Built in 7 Weeks · One Person · Zero Prior Coding Experience";
 const OLLAMA_URL = process.env.NEXT_PUBLIC_OLLAMA_URL || "http://localhost:11434";
 /** Update these when adding new API routes or stores */
 const API_ROUTES_COUNT = 42;
@@ -140,13 +140,13 @@ export default function DashboardPage() {
 
           {/* Header */}
           <div className="text-center mb-4 relative">
-            <h1 className="text-4xl font-black tracking-[6px] bg-gradient-to-r from-[#a78bfa] via-[#7c3aed] to-[#06b6d4] bg-clip-text text-transparent mb-1">
-              S.A.R.G.E.
+            <h1 className="text-4xl font-black tracking-[6px] bg-gradient-to-r from-[#FF6700] via-orange-500 to-amber-400 bg-clip-text text-transparent mb-1">
+              The Foundry
             </h1>
             <div className="text-sm text-muted-foreground tracking-[3px] uppercase font-bold">
-              Synthetic Adversarial Reasoning & Guarding Engine
+              AI-Powered Multi-Model Code Builder
             </div>
-            <div className="absolute bottom-[-8px] left-1/2 -translate-x-1/2 w-[150px] h-[2px] bg-gradient-to-r from-transparent via-[#7c3aed] to-transparent" />
+            <div className="absolute bottom-[-8px] left-1/2 -translate-x-1/2 w-[150px] h-[2px] bg-gradient-to-r from-transparent via-[#FF6700] to-transparent" />
           </div>
 
           {/* Stats */}

@@ -8,7 +8,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "S.A.R.G.E. War Room",
+  title: "The Foundry — War Room",
   description: "War Room — 6-monitor cockpit, Monitor 4",
 };
 

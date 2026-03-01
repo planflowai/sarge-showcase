@@ -119,14 +119,14 @@ export default function SessionActivity({
       {/* Header */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex items-center justify-between px-3 py-2 hover:bg-zinc-800/50 transition-colors"
+        className="flex items-center justify-between px-3 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800/50 transition-colors"
       >
         <div className="flex items-center gap-2">
-          <Activity className="h-4 w-4 text-indigo-400" />
-          <span className="text-xs font-medium text-zinc-300">Session Activity</span>
+          <Activity className="h-4 w-4 text-zinc-500 dark:text-zinc-400" />
+          <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">Session Activity</span>
           {(appliedChanges > 0 || userMessages > 0) && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400">
-              {appliedChanges > 0 ? `${appliedChanges} changes` : `${userMessages} messages`}
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-zinc-200 dark:bg-zinc-700/50 text-zinc-600 dark:text-zinc-400 font-medium">
+              {appliedChanges > 0 ? `${appliedChanges} changes` : `${userMessages} msgs`}
             </span>
           )}
         </div>

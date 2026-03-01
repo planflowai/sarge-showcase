@@ -44,7 +44,7 @@ const NAV_ITEMS: NavItem[] = [
     href: "/chat",
     activeColor: "text-white",
     bgActive:
-      "bg-amber-900/60 border-amber-500/80 text-amber-100 shadow-[0_0_14px_rgba(245,158,11,0.25)]",
+      "bg-zinc-700/60 border-zinc-500/80 text-zinc-100 shadow-sm",
   },
   {
     id: "builder",
@@ -53,7 +53,7 @@ const NAV_ITEMS: NavItem[] = [
     href: "/",
     activeColor: "text-white",
     bgActive:
-      "bg-orange-900/60 border-orange-500/80 text-orange-100 shadow-[0_0_14px_rgba(249,115,22,0.25)]",
+      "bg-[#FF6700]/20 border-[#FF6700]/80 text-orange-100 shadow-[0_0_14px_rgba(255,103,0,0.25)]",
   },
 ];
 
@@ -114,7 +114,7 @@ export function Header() {
         <div className="h-14 flex items-center justify-center bg-gradient-to-r from-slate-100 via-indigo-50 to-slate-100 dark:from-zinc-900 dark:via-indigo-950/20 dark:to-zinc-900">
           <div className="flex items-center gap-2.5">
             <span className="text-base sm:text-lg font-semibold tracking-wide text-slate-700 dark:text-slate-300">
-              S.A.R.G.E.
+              The Foundry
             </span>
           </div>
         </div>
@@ -169,45 +169,25 @@ export function Header() {
 
       <div className="flex flex-col border-b border-border">
         {/* Row 1: Main Title - Centered */}
-        <div className="h-14 flex items-center justify-center bg-gradient-to-r from-slate-100 via-orange-50 to-slate-100 dark:from-zinc-900 dark:via-zinc-800/60 dark:to-zinc-900 relative border-b border-slate-200 dark:border-zinc-800 shadow-sm">
+        <div className="h-14 flex items-center justify-center bg-gradient-to-r from-slate-100 via-orange-50/50 to-slate-100 dark:from-[#0a0a0a] dark:via-[#141414] dark:to-[#0a0a0a] relative border-b border-slate-200 dark:border-zinc-800 shadow-sm">
           <div className="flex items-center gap-2.5 relative z-10">
-            {/* Builder icon */}
+            {/* Foundry icon */}
             <div className="relative">
-              <Hammer className="h-6 w-6 text-orange-500 drop-shadow-[0_0_6px_rgba(249,115,22,0.5)]" />
+              <Hammer className="h-6 w-6 text-[#FF6700] drop-shadow-[0_0_6px_rgba(255,103,0,0.5)]" />
               <Flame className="h-2.5 w-2.5 text-amber-400 absolute -right-0.5 -bottom-0.5 drop-shadow-[0_0_4px_rgba(251,191,36,0.9)]" />
             </div>
 
-            {/* S.A.R.G.E. Forge — Forge brand identity */}
+            {/* The Foundry — brand identity */}
             <h1 className="text-base sm:text-lg md:text-xl font-semibold tracking-wide">
-              <span className="text-orange-500 dark:text-orange-400 font-black text-xl sm:text-2xl md:text-3xl tracking-wider drop-shadow-[0_0_8px_rgba(249,115,22,0.4)]">
-                S.A.R.G.E.
-              </span>
-              <span className="text-amber-500 dark:text-amber-400 font-black text-base sm:text-lg md:text-xl ml-2 tracking-widest uppercase">
-                Forge
+              <span className="text-orange-500 dark:text-orange-400 font-black text-xl sm:text-2xl md:text-3xl tracking-wider drop-shadow-[0_0_8px_rgba(255,103,0,0.4)]">
+                The Foundry
               </span>
             </h1>
           </div>
         </div>
 
         {/* Row 2: Navigation centered + status icons right */}
-        <div className="h-11 bg-gradient-to-r from-zinc-100 via-zinc-50 to-zinc-100 dark:from-zinc-900/80 dark:via-zinc-800/50 dark:to-zinc-900/80 flex items-center px-4 border-t border-zinc-200/50 dark:border-zinc-700/30 relative">
-
-          {/* Left: Launch Workspace — only on builder page */}
-          {pathname === "/" && (
-            <button
-              onClick={() => setWorkbenchActive(!workbenchActive)}
-              title={workbenchActive ? "Exit Workspace" : "Launch multi-model workspace"}
-              className={cn(
-                "flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-black transition-all duration-300 border-2 z-10 hover:scale-105 active:scale-95",
-                workbenchActive
-                  ? "bg-purple-600/40 border-purple-400/70 text-purple-200 shadow-[0_0_18px_rgba(168,85,247,0.4)]"
-                  : "bg-purple-600/20 border-purple-500/50 text-purple-300 hover:bg-purple-600/35 hover:border-purple-400/70 hover:text-purple-100 hover:shadow-[0_0_16px_rgba(168,85,247,0.35)]"
-              )}
-            >
-              <Wrench className="h-4 w-4" />
-              <span>{workbenchActive ? "Exit Workspace" : "🚀 Launch Workspace"}</span>
-            </button>
-          )}
+        <div className="h-12 bg-zinc-100 dark:bg-[#0a0a0a] flex items-center px-4 border-t border-zinc-200/50 dark:border-zinc-800/50 relative">
 
           {/* Center: Builder | Chat */}
           <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1">
@@ -218,10 +198,10 @@ export function Header() {
                   key={item.id}
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-2 px-5 py-2 rounded-lg text-base font-black tracking-wide transition-all duration-200 border-2",
+                    "flex items-center gap-2 px-6 py-2.5 rounded-lg text-base font-black tracking-wide transition-all duration-200 border-2",
                     isActive
                       ? `${item.bgActive} ${item.activeColor}`
-                      : "border-transparent text-zinc-400 dark:text-zinc-400 hover:bg-zinc-200/80 dark:hover:bg-zinc-700/60 hover:text-zinc-100"
+                      : "border-transparent text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/80 dark:hover:bg-zinc-800/60 hover:text-zinc-900 dark:hover:text-zinc-100"
                   )}
                 >
                   <span className="text-lg leading-none">{item.emoji}</span>
@@ -291,11 +271,11 @@ export function Header() {
               )}
             </button>
 
-            {/* Workbench toggle — only on builder page */}
+            {/* The Pit toggle — only on builder page */}
             {pathname === "/" && (
               <button
                 onClick={() => setWorkbenchActive(!workbenchActive)}
-                title={workbenchActive ? "Exit Workbench" : "Open Workbench"}
+                title={workbenchActive ? "Exit The Pit" : "Launch The Pit"}
                 className={cn(
                   "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-bold transition-all duration-300 border",
                   workbenchActive
@@ -304,7 +284,7 @@ export function Header() {
                 )}
               >
                 <Wrench className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">{workbenchActive ? "Exit" : "Workbench"}</span>
+                <span className="hidden sm:inline">{workbenchActive ? "Exit" : "The Pit"}</span>
               </button>
             )}
 

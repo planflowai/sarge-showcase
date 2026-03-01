@@ -150,7 +150,7 @@ export function useStreamingUpdates({
         }
       }
     } else if (!sending && lastStreamingCodeRef.current) {
-      // STREAMING ENDED — Process final code, edits, and log
+      // STREAMING ENDED (with code) — Process final code, edits, and log
       const lastAssistantMessage = [...messages].reverse().find(
         m => m.role === 'assistant' && !m.isStreaming
       );
@@ -231,6 +231,24 @@ export function useStreamingUpdates({
           // Silent fail — log update is non-critical
           console.warn('[useStreamingUpdates] Failed to update BUILDER_LOG.md');
         });
+      }
+    } else if (!sending && !lastStreamingCodeRef.current) {
+      // STREAMING ENDED (no code extracted) — likely an error before any code fence.
+      // Still need to clear isStreaming to prevent stuck state.
+      const hasStreamingMessage = messages.some(m => m.isStreaming && m.role === 'assistant');
+      if (!hasStreamingMessage) {
+        // No streaming message means it was finalized (possibly with error content).
+        // Signal end of streaming so isStreaming gets cleared in artifactStore.
+        onStreamingUpdate?.('', false);
+
+        // Reset per-stream firing flags
+        analyzeFiredRef.current = false;
+        generateFiredRef.current = false;
+        previewFiredRef.current = false;
+
+        if (progressIsVisible) {
+          finishProgress();
+        }
       }
     }
   }, [

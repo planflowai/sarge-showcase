@@ -14,8 +14,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "S.A.R.G.E. Chat",
-  description: "Synthetic Adversarial Reasoning & Guarding Engine — Chat Standalone",
+  title: "The Foundry — Chat",
+  description: "The Foundry — Chat Standalone",
 };
 
 export default function RootLayout({
