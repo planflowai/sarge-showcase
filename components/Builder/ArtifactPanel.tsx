@@ -179,6 +179,7 @@ function ArtifactPanelInner({
   const lastUpdateTimeRef = useRef<number>(0); // Track last update time for debounce
   const hadPreviousPreviewRef = useRef<boolean>(false);
   const streamingStartedWithPreviewRef = useRef<boolean>(false);
+  const codeEditorRef = useRef<any>(null);
   const showToast = useUIStore((s) => s.showToast);
   const airGapEnabled = useAirGapStore((s) => s.airGapEnabled);
 
@@ -240,12 +241,34 @@ function ArtifactPanelInner({
     }
   }, [isAtLatest, currentVersionIndex, versions.length, goToVersion]);
 
-  const handleRestoreVersion = useCallback(() => {
+  const handleRestoreVersion = useCallback(async () => {
     if (isAtLatest) return;
     const versionCode = versions[currentVersionIndex]?.code;
     if (versionCode) {
       // Restore: make this version the new current code
       setArtifactCode(versionCode, artifactStorePath ?? null, null);
+
+      // Write restored version to disk if we have a file path
+      const { projectPath: projPath } = useBuilderStore.getState();
+      if (artifactStorePath && projPath) {
+        try {
+          const res = await fetch('/api/builder/write-file', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              path: artifactStorePath,
+              content: versionCode,
+              projectPath: projPath,
+            }),
+          });
+          if (!res.ok) {
+            console.error('[ArtifactPanel] Failed to write restored version to disk');
+          }
+        } catch (err) {
+          console.error('[ArtifactPanel] Failed to write restored version:', err);
+        }
+      }
+
       showToast({ message: `Restored to v${displayVersion}`, type: 'success' });
     }
   }, [isAtLatest, currentVersionIndex, versions, setArtifactCode, artifactStorePath, displayVersion, showToast]);
@@ -528,6 +551,23 @@ function ArtifactPanelInner({
     onCodeChange(newCode);
   };
 
+  // Capture Monaco editor instance for auto-scroll
+  const handleEditorMount = useCallback((editor: any) => {
+    codeEditorRef.current = editor;
+  }, []);
+
+  // Auto-scroll Code tab to bottom during streaming
+  useEffect(() => {
+    if (isStreaming && codeEditorRef.current && activeTab === 'code') {
+      const editor = codeEditorRef.current;
+      const model = editor.getModel();
+      if (model) {
+        const lineCount = model.getLineCount();
+        editor.revealLine(lineCount);
+      }
+    }
+  }, [code, isStreaming, activeTab]);
+
   // Force refresh preview
   const handleRefresh = () => {
     try {
@@ -808,6 +848,7 @@ function ArtifactPanelInner({
             language={language}
             value={code}
             onChange={handleEditorChange}
+            onMount={handleEditorMount}
             theme="vs-dark"
             options={{
               minimap: { enabled: false },
@@ -818,6 +859,7 @@ function ArtifactPanelInner({
               automaticLayout: true,
               tabSize: 2,
               padding: { top: 12 },
+              readOnly: isStreaming,
             }}
           />
         )}

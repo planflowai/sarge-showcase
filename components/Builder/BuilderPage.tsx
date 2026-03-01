@@ -341,15 +341,20 @@ export default function BuilderPage({ deployContent }: { deployContent?: React.R
   // Handle streaming updates from chat (for live preview)
   const handleStreamingUpdate = useCallback((code: string, streaming: boolean) => {
     setStreamingCode(code);
-    setIsStreaming(streaming);
     if (streaming) {
-      // Auto-switch to preview during streaming for live feedback
-      setActiveTab("preview");
+      // Only auto-switch to preview at the START of streaming, not every chunk.
+      // This lets the user manually switch to Code tab during streaming.
+      const wasStreaming = useArtifactStore.getState().isStreaming;
+      if (!wasStreaming) {
+        setIsStreaming(true);
+        setActiveTab("preview");
+      }
       // Track generation start time
       if (!generationStartTime) {
         setGenerationStartTime(Date.now());
       }
     } else {
+      setIsStreaming(false);
       // Streaming ended - PERSIST the new code as the artifact via store
       // This prevents reverting to the old code AND survives navigation
       if (code) {
