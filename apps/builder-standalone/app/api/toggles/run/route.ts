@@ -19,7 +19,7 @@ function resolveProjectPath(projectPath: string): string {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { projectPath: rawPath } = body;
+    const { projectPath: rawPath, toggles: clientToggles } = body;
 
     if (!rawPath) {
       return NextResponse.json(
@@ -37,23 +37,28 @@ export async function POST(req: Request) {
       );
     }
 
-    // Read project.json to get enabled toggles
-    const metaPath = join(projectPath, "project.json");
+    // If client sent explicit toggles, use those; otherwise read from project.json
     let toggles = { ...DEFAULT_TOGGLES };
     let developerEmail = "";
 
+    const metaPath = join(projectPath, "project.json");
     if (existsSync(metaPath)) {
       try {
         const meta: ProjectMeta = JSON.parse(
           readFileSync(metaPath, "utf-8")
         );
-        if (meta.toggles) {
+        developerEmail = meta.clientEmail || "";
+        if (!clientToggles && meta.toggles) {
           toggles = { ...DEFAULT_TOGGLES, ...meta.toggles };
         }
-        developerEmail = meta.clientEmail || "";
       } catch {
         // Use defaults
       }
+    }
+
+    // Client-selected toggles take priority
+    if (clientToggles) {
+      toggles = { ...DEFAULT_TOGGLES, ...clientToggles };
     }
 
     // Run the pipeline

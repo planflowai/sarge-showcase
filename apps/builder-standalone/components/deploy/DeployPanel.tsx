@@ -31,6 +31,7 @@ interface ToggleResult {
 import { useDeployStore, type DeployTarget } from "@/lib/stores/deployStore";
 import { useUIStore } from "@sarge/core";
 import { useBuilderStore } from "@sarge/builder";
+import { TOGGLE_INFO, DEFAULT_TOGGLES, type ProjectToggles } from "@/lib/types/project";
 
 interface DeployPanelProps {
   projectPath?: string | null;
@@ -76,13 +77,30 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
   const [toggleResults, setToggleResults] = useState<ToggleResult[] | null>(null);
   const [isRunningToggles, setIsRunningToggles] = useState(false);
 
-  // When project changes, reset then auto-detect existing connections
+  // Toggle selector state — which toggles user wants to run before deploy
+  const [selectedToggles, setSelectedToggles] = useState<ProjectToggles>({ ...DEFAULT_TOGGLES });
+
+  // When project changes, reset then auto-detect existing connections + load toggle defaults
   useEffect(() => {
     reset();
     setToggleResults(null);
     setIsRunningToggles(false);
+    setSelectedToggles({ ...DEFAULT_TOGGLES });
     if (activePath) {
       detectProject(activePath);
+      // Load project.json toggle defaults (if exists)
+      fetch("/api/project/meta", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectPath: activePath }),
+      })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (data?.toggles) {
+            setSelectedToggles({ ...DEFAULT_TOGGLES, ...data.toggles });
+          }
+        })
+        .catch(() => {});
     }
   }, [activePath, reset, detectProject]);
 
@@ -110,26 +128,29 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
     setShowPushPopup(false);
     setToggleResults(null);
 
-    // Step 1: Run toggle pipeline
-    setIsRunningToggles(true);
-    try {
-      const res = await fetch("/api/toggles/run", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectPath: activePath }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setToggleResults(data.results || []);
-      } else {
-        // Pipeline failed — still proceed with deploy
+    // Step 1: Run toggle pipeline (only if at least one toggle is checked)
+    const anyToggleEnabled = Object.values(selectedToggles).some(Boolean);
+    if (anyToggleEnabled) {
+      setIsRunningToggles(true);
+      try {
+        const res = await fetch("/api/toggles/run", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ projectPath: activePath, toggles: selectedToggles }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setToggleResults(data.results || []);
+        } else {
+          // Pipeline failed — still proceed with deploy
+          setToggleResults([]);
+        }
+      } catch {
+        // Network error — still proceed with deploy
         setToggleResults([]);
       }
-    } catch {
-      // Network error — still proceed with deploy
-      setToggleResults([]);
+      setIsRunningToggles(false);
     }
-    setIsRunningToggles(false);
 
     // Step 2: Deploy
     await pushProject(activePath, activeName || "", selectedTargets);
@@ -440,12 +461,12 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
                   {isDeploying ? "Pushing..." : "Push"}
                 </button>
 
-                {/* ═══ Target Selection Popup ═══ */}
+                {/* ═══ Combined Toggle + Target Selection Popup ═══ */}
                 {showPushPopup && !isDeploying && (
-                  <div className="absolute left-0 top-full mt-2 w-72 bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-2xl z-50 p-4 space-y-3">
+                  <div className="absolute left-0 top-full mt-2 w-80 bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-2xl z-50 p-4 space-y-3 max-h-[70vh] overflow-y-auto">
                     <div className="flex items-center justify-between">
                       <h4 className="text-xs font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider">
-                        Deploy Targets
+                        Run & Deploy
                       </h4>
                       <button
                         onClick={() => setShowPushPopup(false)}
@@ -455,7 +476,73 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
                       </button>
                     </div>
 
+                    {/* ── Build Toggles ── */}
                     <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                          Build Toggles
+                        </span>
+                        <button
+                          onClick={() => {
+                            const allOn = Object.values(selectedToggles).every(Boolean);
+                            const next: ProjectToggles = {} as ProjectToggles;
+                            for (const k of Object.keys(selectedToggles) as (keyof ProjectToggles)[]) {
+                              next[k] = !allOn;
+                            }
+                            setSelectedToggles(next);
+                          }}
+                          className="text-[9px] font-medium text-indigo-500 hover:text-indigo-400"
+                        >
+                          {Object.values(selectedToggles).every(Boolean) ? "Uncheck all" : "Check all"}
+                        </button>
+                      </div>
+                      {TOGGLE_INFO.map(({ key, label, description, color }) => {
+                        const isChecked = selectedToggles[key];
+                        return (
+                          <button
+                            key={key}
+                            onClick={() =>
+                              setSelectedToggles((prev) => ({ ...prev, [key]: !prev[key] }))
+                            }
+                            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left transition-colors ${
+                              isChecked
+                                ? "bg-zinc-100 dark:bg-zinc-700/50 border border-zinc-300 dark:border-zinc-600"
+                                : "bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700/50 hover:bg-zinc-100 dark:hover:bg-zinc-700/30"
+                            }`}
+                          >
+                            <div
+                              className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                                isChecked ? "border-transparent" : "border-zinc-300 dark:border-zinc-600"
+                              }`}
+                              style={isChecked ? { backgroundColor: color } : {}}
+                            >
+                              {isChecked && <Check className="h-3 w-3 text-white" />}
+                            </div>
+                            <div
+                              className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                              style={{ backgroundColor: color }}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className={`text-xs font-semibold ${isChecked ? "text-zinc-800 dark:text-zinc-200" : "text-zinc-500 dark:text-zinc-400"}`}>
+                                {label}
+                              </div>
+                              <div className="text-[9px] text-zinc-400 truncate">
+                                {description}
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* ── Divider ── */}
+                    <div className="border-t border-zinc-200 dark:border-zinc-700" />
+
+                    {/* ── Deploy Targets ── */}
+                    <div className="space-y-1.5">
+                      <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                        Deploy Targets
+                      </span>
                       {DEPLOY_TARGETS.map(({ id, label, icon: Icon }) => {
                         const url = getTargetUrl(id);
                         const isConnected = !!url;
@@ -466,14 +553,13 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
                           <button
                             key={id}
                             onClick={() => toggleTarget(id)}
-                            disabled={isGithub} // GitHub is always selected
+                            disabled={isGithub}
                             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
                               isSelected
                                 ? "bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-300 dark:border-emerald-700"
                                 : "bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-700/50"
                             } ${!isConnected && !isGithub ? "opacity-40 cursor-not-allowed" : ""} ${isGithub ? "cursor-default" : ""}`}
                           >
-                            {/* Checkbox */}
                             <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 ${
                               isSelected
                                 ? "bg-emerald-500 border-emerald-500"
@@ -501,13 +587,16 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
                       })}
                     </div>
 
+                    {/* ── Run & Deploy Button ── */}
                     <button
                       onClick={handlePushConfirm}
                       disabled={selectedTargets.length === 0}
                       className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition-colors disabled:opacity-50"
                     >
                       <Send className="h-4 w-4" />
-                      Push to {selectedTargets.length} target{selectedTargets.length !== 1 ? "s" : ""}
+                      {Object.values(selectedToggles).some(Boolean)
+                        ? `Run ${Object.values(selectedToggles).filter(Boolean).length} toggle${Object.values(selectedToggles).filter(Boolean).length !== 1 ? "s" : ""} & Deploy`
+                        : `Push to ${selectedTargets.length} target${selectedTargets.length !== 1 ? "s" : ""}`}
                     </button>
                   </div>
                 )}

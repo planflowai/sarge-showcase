@@ -25,6 +25,14 @@ Every commit gets an entry. No exceptions.
 
 ## Entries
 
+### [2026-03-02 — Toggle selector — checklist popup before deploy]
+**Commit:** (this commit)
+**Files touched:** apps/builder-standalone/components/deploy/DeployPanel.tsx (modified), apps/builder-standalone/app/api/toggles/run/route.ts (modified), CHANGELOG.md
+**What changed:** Toggle pipeline no longer auto-fires all toggles. Instead, when user clicks Push, a combined popup shows: (1) Build Toggles section with 7 checkboxes (pre-checked from project.json defaults or DEFAULT_TOGGLES), each with color dot and description, plus Check all / Uncheck all toggle; (2) Deploy Targets section with the existing 4 target checkboxes. Button label dynamically shows "Run N toggles & Deploy" or "Push to N targets" based on selections. API route now accepts optional `toggles` object from client — client-selected toggles take priority over project.json. If no toggles are checked, pipeline is skipped entirely and deploy proceeds directly.
+**What was tested:** Full TypeScript compilation passes (0 errors). API route accepts both legacy (no toggles field) and new (explicit toggles) request formats.
+**Working state:** Yes
+**Revert to:** `git reset --hard 40d75fc`
+
 ### [2026-03-02 — Toggle pipeline with visual status in Deploy panel]
 **Commit:** (this commit)
 **Files touched:** apps/builder-standalone/lib/toggles/pipeline.ts (new), apps/builder-standalone/app/api/toggles/run/route.ts (new), apps/builder-standalone/components/deploy/DeployPanel.tsx (modified), CHANGELOG.md
