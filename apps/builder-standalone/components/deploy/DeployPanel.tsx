@@ -18,6 +18,7 @@ import {
   CheckCircle2,
   XCircle,
   MinusCircle,
+  RefreshCw,
 } from "lucide-react";
 import { useDeployStore, type DeployTarget } from "@/lib/stores/deployStore";
 import { useUIStore } from "@sarge/core";
@@ -357,6 +358,22 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
                     <code className="bg-zinc-200 dark:bg-zinc-700 px-1 rounded">wrangler</code> to auto-link hosting on next init.
                   </p>
                 </div>
+              )}
+
+              {/* Re-link missing services */}
+              {(!cloudflareUrl || !vercelUrl || !netlifyUrl) && (
+                <button
+                  onClick={handleInit}
+                  disabled={isDeploying}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] font-medium text-indigo-400 hover:text-indigo-300 hover:bg-indigo-900/20 transition-colors disabled:opacity-50"
+                >
+                  {isDeploying ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-3 w-3" />
+                  )}
+                  {isDeploying ? "Linking..." : "Link missing services"}
+                </button>
               )}
             </div>
 

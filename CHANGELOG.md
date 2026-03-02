@@ -25,6 +25,14 @@ Every commit gets an entry. No exceptions.
 
 ## Entries
 
+### [2026-03-02 — DeployPanel re-link button + stub exports + portfolio fix]
+**Commit:** (this commit)
+**Files touched:** apps/builder-standalone/components/deploy/DeployPanel.tsx, apps/builder-standalone/lib/stubs/empty.ts, CHANGELOG.md
+**What changed:** (1) Added "Link missing services" button to Deploy panel — shows when any of Vercel/Netlify/Cloudflare is not connected, re-runs init to link them. (2) Fixed webpack stub empty.ts — added all missing named exports (useForensicLogStore, useDebateStore, useDebateHistoryStore, useTruthAnchorStore, useSyncStatusStore, shouldSync, useJournalStore) to silence import error flood on startup. (3) Manually linked portfolio project to Netlify (sarge-portfolio) and Cloudflare Pages (portfolio).
+**What was tested:** Builder starts clean (zero import errors), detect returns all 4 URLs for portfolio, re-link button visible when services missing
+**Working state:** Yes
+**Revert to:** `git reset --hard 5910d7e`
+
 ### [2026-03-02 — Fix Netlify non-interactive + Cloudflare wrangler.toml]
 **Commit:** (this commit)
 **Files touched:** apps/builder-standalone/app/api/deploy/route.ts, CHANGELOG.md
