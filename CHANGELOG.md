@@ -25,6 +25,14 @@ Every commit gets an entry. No exceptions.
 
 ## Entries
 
+### [2026-03-02 — Fix cookie consent injection — missing project.json]
+**Commit:** (this commit)
+**Files touched:** BUILDPLAN.md (modified), CHANGELOG.md
+**What changed:** Fixed missing cookie consent banner on sarah_brockman_v1-site portfolio. Root cause: no project.json existed in the project folder, so the toggle pipeline was never triggered during Push. Fix: created project.json with default toggles (privacy=true), ran privacy toggle via /api/toggles/run, verified 30 privacy-related strings injected into index.html (consent banner with Accept/Reject, privacy policy section, form disclosure, "Manage Cookies" link). Pushed portfolio project to GitHub (d122796). Marked BUILDPLAN.md TODO #1 as complete.
+**What was tested:** Verified 0 → 30 privacy strings in index.html. Confirmed specific elements: cookie-consent-banner, privacy-policy-section, Accept All button, Reject All, Manage Cookies link, form disclosure. Pushed to GitHub successfully.
+**Working state:** Yes (operational fix, no code changes)
+**Revert to:** `git reset --hard 93818f9`
+
 ### [2026-03-02 — BUILDPLAN.md master build plan + Rule 10]
 **Commit:** (this commit)
 **Files touched:** BUILDPLAN.md (new), CLAUDE.md (modified), CHANGELOG.md

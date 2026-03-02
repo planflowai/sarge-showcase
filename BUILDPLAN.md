@@ -48,10 +48,10 @@ All 7 toggle APIs built and tested:
 
 ## TODO (In Order)
 
-### 1. Fix Cookie Consent on Existing Portfolio
-**Status:** Not started
-**What:** Run the toggle pipeline on sarah_brockman_v1-site to inject privacy/consent elements. Or create project.json with correct toggles first.
-**Files to touch:** No code changes — operational task (run pipeline on project)
+### ~~1. Fix Cookie Consent on Existing Portfolio~~ DONE
+**Status:** Complete
+**Root cause:** No project.json existed — pipeline was never triggered
+**Fix:** Created project.json with privacy toggle enabled, ran pipeline via API, verified 30 privacy strings injected (consent banner, privacy policy, form disclosure, manage cookies link). Pushed to GitHub (d122796).
 
 ### 2. New Project Wizard (Full Commercial Flow)
 **Status:** Not started
