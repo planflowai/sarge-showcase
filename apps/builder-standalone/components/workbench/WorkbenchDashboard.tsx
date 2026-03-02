@@ -141,22 +141,12 @@ export default function WorkbenchDashboard() {
 
   // ─── Effects ────────────────────────────────────────────────────────────────
 
-  // Pre-cache screen layout on mount + position main window on Monitor 4
+  // Pre-cache screen layout on mount (no auto-positioning — user must click Launch)
   useEffect(() => {
     const initScreens = async () => {
       const status = await checkWindowManagement();
-      if (status === "granted" || status === "prompt") {
+      if (status === "granted") {
         await prefetchScreens();
-      }
-
-      // Position dashboard on Mon 4 using the same grid detection as popouts
-      if (!sessionStorage.getItem("pit-positioned")) {
-        const mon4 = getScreenForMonitor(4);
-        if (mon4) {
-          window.moveTo(mon4.availLeft, mon4.availTop);
-          window.resizeTo(mon4.availWidth, mon4.availHeight);
-        }
-        sessionStorage.setItem("pit-positioned", "1");
       }
     };
     initScreens();

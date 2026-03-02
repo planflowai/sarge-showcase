@@ -57,18 +57,17 @@ interface WorkbenchState {
   lockWinner: (slot: number) => void;
 }
 
-// Persist workbenchActive in sessionStorage so the Pit survives accidental reloads
-const PIT_ACTIVE_KEY = "pit-active";
-function readPitActive(): boolean {
-  try { return sessionStorage.getItem(PIT_ACTIVE_KEY) === "1"; } catch { return false; }
-}
-function writePitActive(v: boolean) {
-  try { if (v) sessionStorage.setItem(PIT_ACTIVE_KEY, "1"); else sessionStorage.removeItem(PIT_ACTIVE_KEY); } catch { /* ok */ }
+// Pit active state is memory-only now — NO sessionStorage persistence.
+// Previous sessionStorage approach caused popout window floods on browser restart
+// (Edge restores tabs → pit-active flag auto-launches Workbench → window.moveTo flood).
+// Clean up any leftover flag from previous sessions.
+if (typeof window !== "undefined") {
+  try { sessionStorage.removeItem("pit-active"); sessionStorage.removeItem("pit-positioned"); } catch { /* ok */ }
 }
 
 export const useWorkbenchStore = create<WorkbenchState>()((set, get) => ({
-  active: typeof window !== "undefined" ? readPitActive() : false,
-  setActive: (active) => { writePitActive(active); set({ active }); },
+  active: false,
+  setActive: (active) => set({ active }),
 
   lockedCode: null,
   lockedHtml: null,
