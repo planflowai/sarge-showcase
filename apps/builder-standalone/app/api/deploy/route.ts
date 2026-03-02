@@ -9,14 +9,15 @@ import JSZip from "jszip";
 function runCommand(
   cmd: string,
   cwd: string,
-  timeoutMs = 60_000
+  timeoutMs = 60_000,
+  extraEnv?: Record<string, string>
 ): Promise<{ stdout: string; stderr: string; code: number }> {
   return new Promise((resolve, reject) => {
     // Wrap command with Set-Location so PowerShell respects the working directory
     const wrappedCmd = `Set-Location '${cwd.replace(/'/g, "''")}'; ${cmd}`;
     const child = spawn("powershell.exe", ["-NoProfile", "-Command", wrappedCmd], {
       cwd,
-      env: { ...process.env },
+      env: { ...process.env, ...extraEnv },
     });
 
     let stdout = "";
@@ -74,6 +75,28 @@ function collectFiles(
     }
   }
   return results;
+}
+
+// ─── Helper: read Netlify site ID from .netlify/state.json ───
+
+function readNetlifySiteId(projectPath: string): string {
+  try {
+    const stateFile = path.join(projectPath, ".netlify", "state.json");
+    if (fs.existsSync(stateFile)) {
+      const state = JSON.parse(fs.readFileSync(stateFile, "utf-8"));
+      if (state.siteId) return state.siteId;
+    }
+  } catch { /* ignore */ }
+  return "";
+}
+
+// ─── Helper: build extra env for Netlify CLI (skip interactive prompts) ───
+
+function netlifyEnv(projectPath: string, siteId?: string): Record<string, string> {
+  const id = siteId || readNetlifySiteId(projectPath);
+  const env: Record<string, string> = {};
+  if (id) env.NETLIFY_SITE_ID = id;
+  return env;
 }
 
 // ─── POST handler ───
@@ -150,8 +173,10 @@ export async function POST(request: NextRequest) {
           if (ns.siteId) {
             // Try to get the actual site URL from sites:list
             const listResult = await runCommand(
-              `npx --yes netlify sites:list --json`,
-              projectPath, 30_000
+              `netlify sites:list --json `,
+              projectPath, 30_000,
+              undefined,
+              netlifyEnv(projectPath, ns.siteId)
             );
             try {
               const sites = JSON.parse(listResult.stdout);
@@ -204,7 +229,7 @@ export async function POST(request: NextRequest) {
       const [wrangler, vercel, netlify] = await Promise.all([
         checkCli("npx --yes wrangler", projectPath),
         checkCli("npx --yes vercel", projectPath),
-        checkCli("npx --yes netlify", projectPath),
+        checkCli("netlify", projectPath),
       ]);
 
       // 2. Fetch GitHub user info (needed for git config + repo creation)
@@ -376,8 +401,10 @@ export async function POST(request: NextRequest) {
         if (!siteId) {
           // Get account slug dynamically
           const acctResult = await runCommand(
-            `npx --yes netlify api listAccountsForUser --data '{}'`,
-            projectPath, 15_000
+            `netlify api listAccountsForUser --data '{}'`,
+            projectPath, 15_000,
+            undefined,
+            netlifyEnv(projectPath)
           );
           let acctSlug = "";
           try {
@@ -388,8 +415,10 @@ export async function POST(request: NextRequest) {
           // Try creating site with preferred name
           const acctFlag = acctSlug ? ` --account-slug "${acctSlug}"` : "";
           const createResult = await runCommand(
-            `npx --yes netlify sites:create --name "${safeName}"${acctFlag}`,
-            projectPath, 30_000
+            `netlify sites:create --name "${safeName}"${acctFlag} `,
+            projectPath, 30_000,
+            undefined,
+            netlifyEnv(projectPath)
           );
           if (createResult.code === 0) {
             const idMatch = createResult.stdout.match(/Site ID:\s+([a-f0-9-]+)/i);
@@ -397,8 +426,10 @@ export async function POST(request: NextRequest) {
           } else {
             // Name taken — check if we already own a site with this name from earlier
             const listResult = await runCommand(
-              `npx --yes netlify sites:list --json`,
-              projectPath, 30_000
+              `netlify sites:list --json `,
+              projectPath, 30_000,
+              undefined,
+              netlifyEnv(projectPath)
             );
             try {
               const sites = JSON.parse(listResult.stdout);
@@ -415,12 +446,21 @@ export async function POST(request: NextRequest) {
 
         // Link and deploy if we have a site
         if (siteId) {
+          const siteEnv = netlifyEnv(projectPath, siteId);
+          // Ensure .netlify/state.json exists (link  may skip writing it)
+          const netlifyDir = path.join(projectPath, ".netlify");
+          if (!fs.existsSync(netlifyDir)) fs.mkdirSync(netlifyDir, { recursive: true });
+          if (!fs.existsSync(netlifyStateFile)) {
+            fs.writeFileSync(netlifyStateFile, JSON.stringify({ siteId }), "utf-8");
+          }
           // Link by ID (non-interactive, always works)
-          await runCommand(`npx --yes netlify link --id "${siteId}"`, projectPath, 15_000);
+          await runCommand(`netlify link --id "${siteId}" `, projectPath, 15_000, undefined, siteEnv);
           // Deploy files
           const deployResult = await runCommand(
-            `npx --yes netlify deploy --prod --dir "."`,
-            projectPath, 120_000
+            `netlify deploy --prod --dir "." `,
+            projectPath, 120_000,
+            undefined,
+            siteEnv
           );
           // Parse production URL from deploy output
           const prodMatch = deployResult.stdout.match(/Deployed to production URL:\s+(https:\/\/[^\s]+)/);
@@ -439,6 +479,13 @@ export async function POST(request: NextRequest) {
       let cloudflareUrl = "";
       if (wrangler.ok) {
         const safeCfName = projectName.replace(/_/g, "-").toLowerCase();
+
+        // Write wrangler.toml BEFORE deploy so wrangler CLI can find it
+        const wranglerTomlPath = path.join(projectPath, "wrangler.toml");
+        if (!fs.existsSync(wranglerTomlPath)) {
+          fs.writeFileSync(wranglerTomlPath, `name = "${safeCfName}"\npages_build_output_dir = "."\n`, "utf-8");
+        }
+
         // Create project (ignore "already exists" errors)
         await runCommand(
           `npx --yes wrangler pages project create "${safeCfName}" --production-branch main`,
@@ -455,12 +502,6 @@ export async function POST(request: NextRequest) {
           cloudflareUrl = cfUrlMatch ? cfUrlMatch[0] : `https://${safeCfName}.pages.dev`;
         } else if (cfDeploy.stderr.includes("already exists") || cfDeploy.stdout.includes("pages.dev")) {
           cloudflareUrl = `https://${safeCfName}.pages.dev`;
-        }
-        // Save wrangler.toml so detect and push can find it
-        // Must include pages_build_output_dir so wrangler knows this is a Pages project (not Workers)
-        const wranglerTomlPath = path.join(projectPath, "wrangler.toml");
-        if (!fs.existsSync(wranglerTomlPath) && cloudflareUrl) {
-          fs.writeFileSync(wranglerTomlPath, `name = "${safeCfName}"\npages_build_output_dir = "."\n`, "utf-8");
         }
       }
 
@@ -566,8 +607,9 @@ export async function POST(request: NextRequest) {
       if (targets.includes("netlify")) {
         const netlifyStateFile = path.join(projectPath, ".netlify", "state.json");
         if (fs.existsSync(netlifyStateFile)) {
+          const pushNetlifyEnv = netlifyEnv(projectPath);
           redeployTasks.push(
-            runCommand('npx --yes netlify deploy --prod --dir "."', projectPath, 120_000).then((r) => {
+            runCommand('netlify deploy --prod --dir "." ', projectPath, 120_000, undefined, pushNetlifyEnv).then((r) => {
               deployResults.netlify = r.code === 0 ? "success" : "failed";
             }).catch(() => { deployResults.netlify = "failed"; })
           );

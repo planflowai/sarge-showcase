@@ -25,6 +25,14 @@ Every commit gets an entry. No exceptions.
 
 ## Entries
 
+### [2026-03-02 — Fix Netlify non-interactive + Cloudflare wrangler.toml]
+**Commit:** (this commit)
+**Files touched:** apps/builder-standalone/app/api/deploy/route.ts, CHANGELOG.md
+**What changed:** (1) Netlify CLI monorepo crash fixed — replaced `npx --yes netlify` with direct `netlify` CLI calls to avoid monorepo workspace picker. Added `NETLIFY_SITE_ID` env var injection via `netlifyEnv()` helper. Added `runCommand` `extraEnv` parameter. Manually write `.netlify/state.json` after site creation as safety net. (2) Cloudflare `wrangler.toml` now created BEFORE deploy (was only created after successful deploy, meaning failures left no toml).
+**What was tested:** Full E2E — created test project, init with GitHub+Vercel+Netlify+Cloudflare all returned success. Push with all 4 targets returned success. Verified `.netlify/state.json`, `wrangler.toml`, `.vercel/url.txt` all created.
+**Working state:** Yes — all 4 deploy targets working
+**Revert to:** `git reset --hard f04ce40`
+
 ### [2026-03-02 — Full System Audit]
 **Commit:** (this commit)
 **Tag:** working-2026-03-02-deploy-fix ★
