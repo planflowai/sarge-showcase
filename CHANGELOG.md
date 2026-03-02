@@ -25,6 +25,14 @@ Every commit gets an entry. No exceptions.
 
 ## Entries
 
+### [2026-03-02 — Performance Boost toggle]
+**Commit:** (this commit)
+**Files touched:** apps/builder-standalone/lib/performance/optimizer.ts (new), apps/builder-standalone/app/api/performance/optimize/route.ts (new), CHANGELOG.md
+**What changed:** Performance post-processor — minifies inline CSS/JS, adds loading="lazy" + decoding="async" to images, injects preconnect hints for external domains (Google Fonts, CDNs), adds viewport meta if missing, converts render-blocking stylesheets to async CSS loading. Two modes: raw HTML string or project path (reads/writes index.html). Follows same pattern as SEO optimizer.
+**What was tested:** API tested with sample HTML — all 7 optimizations verified (CSS minified, JS minified, 2 lazy images, 2 async decoding, 2 preconnects, viewport added, 2 async CSS). Also tested on portfolio project (already optimized, no changes needed).
+**Working state:** Yes
+**Revert to:** `git reset --hard c348ce5`
+
 ### [2026-03-02 — DeployPanel re-link button + stub exports + portfolio fix]
 **Commit:** (this commit)
 **Files touched:** apps/builder-standalone/components/deploy/DeployPanel.tsx, apps/builder-standalone/lib/stubs/empty.ts, CHANGELOG.md
