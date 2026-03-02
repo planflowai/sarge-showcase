@@ -1,11 +1,12 @@
 "use client";
 
-import React, { Suspense, useEffect, useRef, lazy } from "react";
+import React, { Suspense, useEffect, useRef, useState, useCallback, lazy } from "react";
 import { useSearchParams } from "next/navigation";
 import { ErrorBoundary } from "../components/ui/error-boundary";
 import { JuryToast } from "@sarge/core";
 import { useConversationStore } from "@sarge/chat/index.client";
 import { useArtifactStore } from "@sarge/builder/index.client";
+import { useBuilderStore } from "@sarge/builder/index.client";
 import { useWorkbenchStore } from "@/lib/stores/workbenchStore";
 
 // Lazy-load heavy components that are only conditionally rendered
@@ -14,6 +15,7 @@ const DeployPanel = lazy(() => import("@/components/deploy/DeployPanel"));
 const WarRoomPopout = lazy(() => import("@/components/chat/WarRoomPopout").then(m => ({ default: m.WarRoomPopout })));
 const WorkbenchPopout = lazy(() => import("@/components/workbench/WorkbenchPopout").then(m => ({ default: m.WorkbenchPopout })));
 const WorkbenchDashboard = lazy(() => import("@/components/workbench/WorkbenchDashboard"));
+const NewProjectWizard = lazy(() => import("@/components/project/NewProjectWizard"));
 
 const LoadingFallback = <div className="flex h-full w-full items-center justify-center"><span className="text-zinc-500">Loading...</span></div>;
 
@@ -64,6 +66,32 @@ function HomeInner() {
     const handler = () => useWorkbenchStore.getState().setActive(true);
     window.addEventListener("pit:launch", handler);
     return () => window.removeEventListener("pit:launch", handler);
+  }, []);
+
+  // New Project Wizard — triggered by project:new-wizard event from BuilderSidebar
+  const [showWizard, setShowWizard] = useState(false);
+  useEffect(() => {
+    const handler = () => setShowWizard(true);
+    window.addEventListener("project:new-wizard", handler);
+    return () => window.removeEventListener("project:new-wizard", handler);
+  }, []);
+
+  const handleWizardCreated = useCallback(async (projectPath: string, _projectName: string) => {
+    // Open the newly created project in the builder via list-directory API
+    try {
+      const res = await fetch("/api/builder/list-directory", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path: projectPath }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        useBuilderStore.getState().setProject(data.projectPath, data.projectName, data.tree);
+      }
+    } catch {
+      // Fallback: just set path and name without tree
+      useBuilderStore.getState().setProject(projectPath, _projectName, []);
+    }
   }, []);
 
   // Pit auto-restore REMOVED — caused popout flood on Edge restart.
@@ -139,6 +167,15 @@ function HomeInner() {
         </Suspense>
       </ErrorBoundary>
       <JuryToast />
+      {showWizard && (
+        <Suspense fallback={null}>
+          <NewProjectWizard
+            isOpen={showWizard}
+            onClose={() => setShowWizard(false)}
+            onCreated={handleWizardCreated}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }

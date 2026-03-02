@@ -584,8 +584,20 @@ export default function BuilderSidebar({
                 </div>
               ) : (
                 <div className="space-y-3 p-2">
+                  {/* New Client Project — opens wizard modal */}
+                  <button
+                    onClick={() => { window.dispatchEvent(new CustomEvent("project:new-wizard")); setActivePopover(null); }}
+                    className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left transition-all border-2 border-indigo-500/30 bg-indigo-500/5 hover:border-indigo-400 hover:bg-indigo-500/10 group"
+                  >
+                    <span className="w-9 h-9 rounded-lg flex items-center justify-center text-lg" style={{ background: "linear-gradient(135deg, #667eea, #764ba2)" }}>🚀</span>
+                    <div>
+                      <span className="text-sm font-bold text-white block">New Client Project</span>
+                      <span className="text-[10px] text-zinc-500 group-hover:text-zinc-400 transition-colors">Wizard — name, package, toggles, auto-deploy</span>
+                    </div>
+                  </button>
+
                   {/* New project template grid */}
-                  <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Start a New Project</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Quick Start Templates</p>
                   <div className="grid grid-cols-2 gap-2">
                     {PROJECT_TEMPLATES.map((t) => (
                       <TemplateCard key={t.id} template={t} onClick={() => {

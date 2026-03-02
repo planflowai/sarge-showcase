@@ -31,6 +31,16 @@ All 7 toggle APIs built and tested:
 - [x] API route accepts explicit toggles override from client
 - [x] Pipeline skipped entirely when no toggles checked
 
+### New Project Wizard (Full Commercial Flow)
+- [x] 4-step wizard modal: Client Info → Package & Toggles → Confirmation → Creating
+- [x] 3 package presets (Starter $500, Professional $750, Premium $1,000+) with pre-configured toggles
+- [x] Individual toggle fine-tuning after selecting a package
+- [x] Professional coming soon page generator (gradient, animated orbs, responsive)
+- [x] Streaming API: folder → hello page → project.json → hosting configs → deploy to all 4 targets
+- [x] Real-time progress display with status indicators per step
+- [x] Deploy URL cards with direct links on completion
+- [x] "New Client Project" button in Files popover + "Open in Builder" after creation
+
 ### Infrastructure
 - [x] Safety system — CHANGELOG, backups, tags, rules (b0eefaa)
 - [x] PM2 boot flood fixed (b67d518)
@@ -55,18 +65,15 @@ All 7 toggle APIs built and tested:
 **Root cause:** No project.json existed — pipeline was never triggered
 **Fix:** Created project.json with privacy toggle enabled, ran pipeline via API, verified 30 privacy strings injected (consent banner, privacy policy, form disclosure, manage cookies link). Pushed to GitHub (d122796).
 
-### 2. New Project Wizard (Full Commercial Flow)
-**Status:** Not started
-**UX Flow:**
-1. Click New Project
-2. Step 1: Project name, client email, domain (optional)
-3. Step 2: Toggle selection — checkboxes for which features this client gets
-4. Step 3: Confirmation — "You're creating [name] for [client] with [toggles]. Correct?"
-5. Click Create → deploys hello/coming soon page to all 4 targets
-6. User gets GitHub, Vercel, Netlify, Cloudflare links immediately
-7. Now user builds the site in the builder
-8. When done, Push → toggle checklist → deploy
-**Files to touch:** TBD
+### ~~2. New Project Wizard (Full Commercial Flow)~~ DONE
+**Status:** Complete
+**Files:**
+- `components/project/NewProjectWizard.tsx` — 4-step wizard modal (Client Info → Package & Toggles → Confirm → Creating)
+- `lib/templates/helloPage.ts` — Professional coming soon page generator
+- `app/api/project/create-wizard/route.ts` — Streaming API (folder → hello page → project.json → hosting configs → git → GitHub → Vercel → Netlify → Cloudflare)
+- `packages/builder/src/components/BuilderSidebar.tsx` — "New Client Project" button in Files popover
+- `app/page.tsx` — Wizard wired via `project:new-wizard` custom event
+**Features:** 3 package presets ($500/$750/$1000+), individual toggle fine-tuning, streaming deploy progress, deploy URL cards, auto-open in builder
 
 ### 3. Live Projects Dashboard
 **Status:** Not started

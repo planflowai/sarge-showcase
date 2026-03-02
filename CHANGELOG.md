@@ -25,6 +25,23 @@ Every commit gets an entry. No exceptions.
 
 ## Entries
 
+### [2026-03-02 — New Project Wizard — 4-step commercial flow with auto-deploy]
+**Commit:** (this commit)
+**Files touched:** apps/builder-standalone/components/project/NewProjectWizard.tsx (new), apps/builder-standalone/lib/templates/helloPage.ts (new), apps/builder-standalone/app/api/project/create-wizard/route.ts (new), packages/builder/src/components/BuilderSidebar.tsx (modified — added wizard trigger button), apps/builder-standalone/app/page.tsx (modified — wizard wiring), BUILDPLAN.md, CHANGELOG.md
+**What changed:**
+- New 4-step wizard modal: Client Info → Package & Toggles → Confirmation → Creating (streaming progress)
+- Three package presets (Starter $500, Professional $750, Premium $1,000+) with pre-configured toggle sets
+- Individual toggle fine-tuning after selecting a package
+- Professional coming soon page generator (gradient design, animated orbs, responsive)
+- Streaming API endpoint that creates folder, hello page, project.json, hosting configs, then deploys to GitHub → Vercel → Netlify → Cloudflare with real-time progress
+- Deploy URL cards on completion with direct links to all 4 targets
+- "Open in Builder" button auto-opens the project after creation
+- "New Client Project" button added to Files popover in BuilderSidebar (dispatches custom event)
+- Wizard wired into page.tsx via project:new-wizard event listener (same pattern as pit:launch)
+**What was tested:** TypeScript compiles clean (npx tsc --noEmit)
+**Working state:** Not runtime tested
+**Revert to:** `git revert HEAD`
+
 ### [2026-03-02 — Toggle verification cards redesign — visual proof at a glance]
 **Commit:** (this commit)
 **Files touched:** apps/builder-standalone/components/deploy/ToggleVerificationCard.tsx (rewritten), apps/builder-standalone/components/deploy/DeployPanel.tsx (modified), BUILDPLAN.md (modified), CHANGELOG.md
