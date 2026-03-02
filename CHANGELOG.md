@@ -25,6 +25,14 @@ Every commit gets an entry. No exceptions.
 
 ## Entries
 
+### [2026-03-02 — Security Pack toggle]
+**Commit:** (this commit)
+**Files touched:** apps/builder-standalone/lib/security/hardener.ts (new), apps/builder-standalone/app/api/security/harden/route.ts (new), CHANGELOG.md
+**What changed:** Security post-processor — injects CSP meta tag (restrictive, allows Google Fonts + data URIs), adds X-Content-Type-Options nosniff, adds Referrer-Policy strict-origin-when-cross-origin, adds rel="noopener noreferrer" to all target="_blank" links, injects honeypot hidden input in all forms, adds input sanitization script (escapes HTML entities on submit, silently blocks honeypot-filled submissions), strips HTML comments. Two modes: raw HTML string or project path.
+**What was tested:** API tested with sample HTML — all 7 hardenings verified (CSP added, nosniff added, referrer policy added, 2 links hardened, 2 honeypot forms, sanitizer injected, 2 comments stripped). Existing rel attributes preserved when adding noopener.
+**Working state:** Yes
+**Revert to:** `git reset --hard 55a391d`
+
 ### [2026-03-02 — Performance Boost toggle]
 **Commit:** (this commit)
 **Files touched:** apps/builder-standalone/lib/performance/optimizer.ts (new), apps/builder-standalone/app/api/performance/optimize/route.ts (new), CHANGELOG.md
