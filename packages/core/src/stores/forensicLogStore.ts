@@ -614,20 +614,16 @@ export const useForensicLogStore = create<ForensicLogState>()(
       name: "sarge-forensic-log",
       // Only persist the data, not UI state or intervals
       partialize: (state) => ({
-        // Dev mode: persist everything; Production: limit to MAX_ENTRIES_PERSIST (5000)
-        entries: isDevNoTrim()
-          ? state.entries
-          : state.entries.slice(-FORENSIC_CONFIG.MAX_ENTRIES_PERSIST),
-        // Sessions: limit to MAX_SESSIONS_PERSIST (200)
-        sessions: isDevNoTrim()
-          ? state.sessions
-          : state.sessions.slice(-FORENSIC_CONFIG.MAX_SESSIONS_PERSIST),
+        // Always limit — prevents hydration avalanche from multi-MB JSON parse on page load
+        entries: state.entries.slice(-500),
+        sessions: state.sessions.slice(-50),
         _seq: state._seq,
         chainValid: state.chainValid,
       }),
       // Custom storage with quota error handling
       storage: {
         getItem: (name) => {
+          if (typeof window === "undefined") return null;
           try {
             const value = localStorage.getItem(name);
             return value ? JSON.parse(value) : null;
@@ -637,6 +633,7 @@ export const useForensicLogStore = create<ForensicLogState>()(
           }
         },
         setItem: (name, value) => {
+          if (typeof window === "undefined") return;
           try {
             localStorage.setItem(name, JSON.stringify(value));
           } catch (e) {
@@ -683,7 +680,10 @@ export const useForensicLogStore = create<ForensicLogState>()(
             }
           }
         },
-        removeItem: (name) => localStorage.removeItem(name),
+        removeItem: (name) => {
+          if (typeof window === "undefined") return;
+          localStorage.removeItem(name);
+        },
       },
     }
   )

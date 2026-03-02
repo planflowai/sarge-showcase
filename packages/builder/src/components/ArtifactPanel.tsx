@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback, useMemo, memo } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo, memo, lazy, Suspense } from "react";
 import { Code2, Eye, RefreshCw, AlertTriangle, Download, Copy, Check, Maximize2, Minimize2, Radio, GitCompare, X, Library, ChevronLeft, ChevronRight, Save, RotateCcw, Server, Monitor, Rocket, Hammer } from "lucide-react";
-import Editor from "@monaco-editor/react";
+const Editor = lazy(() => import("@monaco-editor/react"));
 import { Button } from "@/components/ui/button";
 import { cn } from "@sarge/core";
 import { buildPreviewContent, detectLanguage, detectContentType } from "../lib/contentDetector";
@@ -783,25 +783,27 @@ function ArtifactPanelInner({
       {/* Content */}
       <div className="flex-1 min-h-0 overflow-hidden">
         {activeTab === "code" && (
-          <Editor
-            height="100%"
-            language={language}
-            value={code}
-            onChange={handleEditorChange}
-            onMount={handleEditorMount}
-            theme="vs-dark"
-            options={{
-              minimap: { enabled: false },
-              fontSize: 13,
-              lineNumbers: "on",
-              scrollBeyondLastLine: false,
-              wordWrap: "on",
-              automaticLayout: true,
-              tabSize: 2,
-              padding: { top: 12 },
-              readOnly: isStreaming,
-            }}
-          />
+          <Suspense fallback={<div className="flex items-center justify-center h-full text-zinc-500 text-sm">Loading editor...</div>}>
+            <Editor
+              height="100%"
+              language={language}
+              value={code}
+              onChange={handleEditorChange}
+              onMount={handleEditorMount}
+              theme="vs-dark"
+              options={{
+                minimap: { enabled: false },
+                fontSize: 13,
+                lineNumbers: "on",
+                scrollBeyondLastLine: false,
+                wordWrap: "on",
+                automaticLayout: true,
+                tabSize: 2,
+                padding: { top: 12 },
+                readOnly: isStreaming,
+              }}
+            />
+          </Suspense>
         )}
 
         {activeTab === "preview" && (

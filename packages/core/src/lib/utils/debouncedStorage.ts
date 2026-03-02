@@ -19,6 +19,7 @@ export function createDebouncedStorage(
 
   return {
     getItem: (key: string): StorageValue<unknown> | null => {
+      if (typeof window === "undefined") return null;
       try {
         const item = localStorage.getItem(key);
         return item ? JSON.parse(item) : null;
@@ -28,6 +29,7 @@ export function createDebouncedStorage(
       }
     },
     setItem: (key: string, value: StorageValue<unknown>) => {
+      if (typeof window === "undefined") return;
       // Clear existing timer for this key
       if (timers.has(key)) {
         clearTimeout(timers.get(key)!);
@@ -47,6 +49,7 @@ export function createDebouncedStorage(
       timers.set(key, timer);
     },
     removeItem: (key: string) => {
+      if (typeof window === "undefined") return;
       if (timers.has(key)) {
         clearTimeout(timers.get(key)!);
         timers.delete(key);

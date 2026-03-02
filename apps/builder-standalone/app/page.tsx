@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { Suspense, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import BuilderPage from "@sarge/builder/components/BuilderPage";
 import { ErrorBoundary } from "../components/ui/error-boundary";
@@ -14,6 +14,14 @@ import { useWorkbenchStore } from "@/lib/stores/workbenchStore";
 import DeployPanel from "@/components/deploy/DeployPanel";
 
 export default function Home() {
+  return (
+    <Suspense fallback={<div className="flex h-full w-full items-center justify-center"><span className="text-zinc-500">Loading...</span></div>}>
+      <HomeInner />
+    </Suspense>
+  );
+}
+
+function HomeInner() {
   const searchParams = useSearchParams();
   const {
     loadConversations,

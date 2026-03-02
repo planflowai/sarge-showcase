@@ -51,6 +51,7 @@ const DEFAULT_D3_ROLE: Role = {
 const DEFAULT_ROLES = [DEFAULT_JUDGE_ROLE, DEFAULT_D1_ROLE, DEFAULT_D2_ROLE, DEFAULT_D3_ROLE];
 
 function loadRoles(): Role[] {
+  if (typeof window === "undefined") return DEFAULT_ROLES;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULT_ROLES;
@@ -69,6 +70,7 @@ function loadRoles(): Role[] {
 }
 
 function saveRoles(roles: Role[]) {
+  if (typeof window === "undefined") return;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(roles));
   } catch {

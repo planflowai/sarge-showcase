@@ -133,44 +133,43 @@ export const useConversationStore = create<ConversationState>()(persist(
       }
     } catch {}
 
-    // 3. Scan localStorage for orphaned message keys
-    const prefixes = [MESSAGES_PREFIX, AI_CHAT_MESSAGES_PREFIX];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (!key) continue;
-
-      let convId: string | null = null;
-      for (const prefix of prefixes) {
-        if (key.startsWith(prefix)) {
-          convId = key.slice(prefix.length);
-          break;
+    // 3. Recover orphaned conversations from known key list (no full localStorage scan)
+    //    Check the ai-analysis-chat-conversations index for any conversation IDs we can look up directly
+    //    instead of iterating every key in localStorage (which blocks the main thread)
+    try {
+      const indexRaw = localStorage.getItem("ai-analysis-chat-conversations-index");
+      if (indexRaw) {
+        const knownIds: string[] = JSON.parse(indexRaw);
+        for (const convId of knownIds) {
+          if (existing.has(convId)) continue;
+          const key = MESSAGES_PREFIX + convId;
+          const altKey = AI_CHAT_MESSAGES_PREFIX + convId;
+          const raw = localStorage.getItem(key) || localStorage.getItem(altKey);
+          if (!raw) continue;
+          try {
+            const msgs = JSON.parse(raw);
+            if (!Array.isArray(msgs) || msgs.length === 0) continue;
+            const firstMsg = msgs[0];
+            const lastMsg = msgs[msgs.length - 1];
+            const userMsg = msgs.find((m: any) => m.role === "user");
+            const rawTitle = userMsg?.content?.slice(0, 50) || "Recovered Chat";
+            const title = rawTitle.length >= 50 ? rawTitle + "..." : rawTitle;
+            orphans.push({
+              id: convId,
+              title,
+              messages: [],
+              contextFiles: [],
+              provider: firstMsg?.provider || "anthropic",
+              model: firstMsg?.model || "unknown",
+              createdAt: new Date(firstMsg?.timestamp || Date.now()),
+              updatedAt: new Date(lastMsg?.timestamp || Date.now()),
+              mode: "chat",
+            });
+            existing.add(convId);
+          } catch {}
         }
       }
-      if (!convId || existing.has(convId)) continue;
-
-      try {
-        const msgs = JSON.parse(localStorage.getItem(key) || "[]");
-        if (!Array.isArray(msgs) || msgs.length === 0) continue;
-        const firstMsg = msgs[0];
-        const lastMsg = msgs[msgs.length - 1];
-        const userMsg = msgs.find((m: any) => m.role === "user");
-        const rawTitle = userMsg?.content?.slice(0, 50) || "Recovered Chat";
-        const title = rawTitle.length >= 50 ? rawTitle + "..." : rawTitle;
-
-        orphans.push({
-          id: convId,
-          title,
-          messages: [],
-          contextFiles: [],
-          provider: firstMsg?.provider || "anthropic",
-          model: firstMsg?.model || "unknown",
-          createdAt: new Date(firstMsg?.timestamp || Date.now()),
-          updatedAt: new Date(lastMsg?.timestamp || Date.now()),
-          mode: "chat",
-        });
-        existing.add(convId);
-      } catch {}
-    }
+    } catch {}
 
     if (orphans.length > 0) {
       set((state) => ({

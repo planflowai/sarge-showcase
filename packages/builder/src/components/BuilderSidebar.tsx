@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from "react";
 import {
   FolderOpen, Plus, FolderPlus, RefreshCw, X, Sparkles, Star,
   Rocket, Code2, Save, Loader2, History, FileEdit, FilePlus, FileX,
@@ -16,15 +16,17 @@ import {
 import { PROJECT_TEMPLATES, type ProjectTemplate } from "../lib/projectTemplates";
 import TemplateCard from "./TemplateCard";
 import PromptGallery from "./PromptGallery";
-import ComponentLibrarySection from "./ComponentLibrarySection";
 import AIHelpersSection from "./AIHelpersSection";
-import RouterStatus from "./RouterStatus";
-import AICapabilitiesPanel from "./AICapabilitiesPanel";
-import DependencyGraph from "./DependencyGraph";
 import { Button } from "@/components/ui/button";
 import FileTree from "./FileTree";
 import { SkeletonFileTree } from "@/components/ui/skeleton";
 import { useProjectCommandStore } from "../stores/projectCommandStore";
+
+// Lazy-load heavy sidebar sections — prevents their stores from hydrating on mount
+const ComponentLibrarySection = lazy(() => import("./ComponentLibrarySection"));
+const RouterStatus = lazy(() => import("./RouterStatus"));
+const AICapabilitiesPanel = lazy(() => import("./AICapabilitiesPanel"));
+const DependencyGraph = lazy(() => import("./DependencyGraph"));
 
 // ─── AI Template definitions ─────────────────────────────────────────────────
 
@@ -773,7 +775,9 @@ export default function BuilderSidebar({
             </div>
 
             <div className="px-4 pb-4">
-              <AICapabilitiesPanel />
+              <Suspense fallback={<div className="text-xs text-zinc-500 py-4 text-center">Loading...</div>}>
+                <AICapabilitiesPanel />
+              </Suspense>
               <AIHelpersSection />
             </div>
           </div>
@@ -787,13 +791,15 @@ export default function BuilderSidebar({
               <h2 className="text-base font-bold text-zinc-900 dark:text-zinc-100">Ready-Made UI Parts</h2>
               <p className="text-sm text-zinc-500 mt-1">Pre-built components you can drop into your project. Insert as-is, use as a starting point, or tell the AI to customize it.</p>
             </div>
-            <ComponentLibrarySection
-              onInsertComponent={(code, id) => { onInsertComponent?.(code, id); setActivePopover(null); }}
-              onUseAsBase={(code, id) => { onUseComponentAsBase?.(code, id); setActivePopover(null); }}
-              onInsertWithAI={(code, id, mods) => { onInsertComponentWithAI?.(code, id, mods); setActivePopover(null); }}
-              collapsed={false}
-              onToggleCollapse={() => {}}
-            />
+            <Suspense fallback={<div className="text-xs text-zinc-500 py-8 text-center">Loading components...</div>}>
+              <ComponentLibrarySection
+                onInsertComponent={(code, id) => { onInsertComponent?.(code, id); setActivePopover(null); }}
+                onUseAsBase={(code, id) => { onUseComponentAsBase?.(code, id); setActivePopover(null); }}
+                onInsertWithAI={(code, id, mods) => { onInsertComponentWithAI?.(code, id, mods); setActivePopover(null); }}
+                collapsed={false}
+                onToggleCollapse={() => {}}
+              />
+            </Suspense>
           </div>
         );
 
@@ -806,11 +812,13 @@ export default function BuilderSidebar({
               <p className="text-sm text-zinc-500 mt-1">Shows which AI model is handling your requests and how the system routes between local and cloud models.</p>
             </div>
             <div className="p-4 space-y-4">
-              <RouterStatus />
-              <div className="border-t border-zinc-200 dark:border-zinc-700 pt-4">
-                <p className="text-xs uppercase tracking-wider font-bold text-zinc-500 mb-3">Capability Flow</p>
-                <DependencyGraph compact />
-              </div>
+              <Suspense fallback={<div className="text-xs text-zinc-500 py-4 text-center">Loading...</div>}>
+                <RouterStatus />
+                <div className="border-t border-zinc-200 dark:border-zinc-700 pt-4">
+                  <p className="text-xs uppercase tracking-wider font-bold text-zinc-500 mb-3">Capability Flow</p>
+                  <DependencyGraph compact />
+                </div>
+              </Suspense>
             </div>
           </div>
         );
