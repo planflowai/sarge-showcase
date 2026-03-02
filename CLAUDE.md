@@ -317,3 +317,57 @@ lib/
 8. Test after every change. One task at a time.
 9. The goal is to replace Pinegrow + Claude Code with local models. Every feature serves that workflow.
 10. When making changes to project files, ALWAYS update BUILDER_LOG.md (once Phase 4 is built).
+
+---
+
+## Development Safety Rules — MANDATORY
+
+These rules exist because we've had two catastrophic failures. They are not optional.
+
+### Rule 1: Pre-Flight Backup
+Before ANY commit that modifies existing files (not just adding new files), run:
+```
+scripts\backup.bat [app-name]
+```
+This creates a timestamped copy in backups/. Do this BEFORE making changes, not after.
+
+### Rule 2: One App Per Commit
+Never modify more than one standalone app in a single commit. If a change requires modifying core packages AND an app, that's two separate commits:
+1. Commit the package change, verify it compiles
+2. Commit the app change, verify it loads
+
+### Rule 3: Changelog Entry Required
+Every commit MUST add an entry to CHANGELOG.md before pushing. The entry MUST include:
+- Files touched
+- What changed (plain English)
+- What was tested
+- Working state (Yes / Partial / No / Not tested)
+- Revert command
+
+### Rule 4: Test Every 3 Commits
+After every 3 consecutive commits, STOP. Verify:
+- Does the app start? (`npx next dev -p [port] --webpack`)
+- Does the page load in the browser?
+- Do buttons respond to clicks?
+- Are there console errors?
+If any answer is NO, fix before continuing. Do NOT stack more commits on top of broken code.
+
+### Rule 5: Never Add Unrelated Features to Existing Apps
+Each standalone app does ONE thing:
+- builder-standalone = building websites
+- launchpad-standalone = starting/stopping apps
+- env-manager-standalone = managing API keys
+Never add management, admin, or utility features to an app that has a different primary purpose. If it's a different function, it's a different app.
+
+### Rule 6: Tag Working States
+After any session where the app is verified working, create a git tag:
+```
+git tag working-YYYY-MM-DD-short-description
+git push --tags --all
+```
+
+### Rule 7: No Chain Prompting Without Verification
+If executing multiple prompts in sequence, each prompt's changes must be verified working before proceeding to the next prompt. The only exception is purely additive changes (new files only, no modifications to existing files).
+
+### Rule 8: Revert Fast, Don't Patch
+If a commit breaks something and the fix isn't obvious within 10 minutes, revert to the last working tag instead of trying to patch. It's faster to revert and redo than to debug cascading failures.
