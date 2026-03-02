@@ -26,7 +26,7 @@ import { useDeployStore, type DeployTarget } from "@/lib/stores/deployStore";
 import { useUIStore } from "@sarge/core";
 import { useBuilderStore } from "@sarge/builder";
 import { TOGGLE_INFO, DEFAULT_TOGGLES, type ProjectToggles } from "@/lib/types/project";
-import ToggleVerificationCard from "./ToggleVerificationCard";
+import ToggleVerificationCard, { generateReport } from "./ToggleVerificationCard";
 
 interface DeployPanelProps {
   projectPath?: string | null;
@@ -599,46 +599,121 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
 
               {/* ═══ Toggle Pipeline Results — Verification Cards ═══ */}
               {isRunningToggles && (
-                <div className="flex items-center gap-3 p-4 rounded-xl border border-zinc-700/50 bg-[#1a1a2e]">
-                  <Loader2 className="h-4 w-4 animate-spin text-sky-400" />
-                  <span className="text-xs font-semibold text-zinc-300">
+                <div className="flex items-center gap-4 p-6 rounded-xl border border-zinc-700/50" style={{ background: "#1a1a2e" }}>
+                  <Loader2 className="h-5 w-5 animate-spin text-sky-400" />
+                  <span className="text-base font-semibold text-zinc-200">
                     Running toggles...
                   </span>
                 </div>
               )}
               {toggleResults && toggleResults.length > 0 && !isRunningToggles && (
-                <div className="space-y-2">
-                  {/* Summary bar */}
+                <div className="space-y-4">
+                  {/* ── Scoreboard summary bar ── */}
                   {(() => {
                     const verified = toggleResults.filter((r) => r.status === "success" || r.status === "warning").length;
+                    const warns = toggleResults.filter((r) => r.status === "warning").length;
                     const skipped = toggleResults.filter((r) => r.status === "skipped").length;
                     const failed = toggleResults.filter((r) => r.status === "failed").length;
+                    const total = toggleResults.length;
+                    const ratio = total > 0 ? verified / total : 0;
+
+                    const handleExportAll = () => {
+                      const sections = toggleResults
+                        .filter((r) => r.status !== "skipped")
+                        .map((r) => generateReport(r));
+                      const combined = [
+                        `S.A.R.G.E. Toggle Verification — Full Report`,
+                        `Generated: ${new Date().toISOString()}`,
+                        `Summary: ${verified} of ${total} verified${warns > 0 ? `, ${warns} warnings` : ""}${skipped > 0 ? `, ${skipped} skipped` : ""}${failed > 0 ? `, ${failed} failed` : ""}`,
+                        "",
+                        "=".repeat(60),
+                        "",
+                        ...sections.flatMap((s) => [s, "", "=".repeat(60), ""]),
+                      ].join("\n");
+                      const blob = new Blob([combined], { type: "text/plain" });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = "toggle-verification-report.txt";
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    };
+
                     return (
-                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#1a1a2e] border border-zinc-700/50 text-[11px]">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
-                        <span className="text-zinc-300 font-semibold">
-                          {verified} of {toggleResults.length} toggles verified
-                        </span>
-                        {skipped > 0 && (
-                          <span className="text-zinc-500">| {skipped} skipped</span>
-                        )}
-                        {failed > 0 && (
-                          <span className="text-red-400">| {failed} failed</span>
-                        )}
+                      <div className="rounded-xl overflow-hidden" style={{ background: "#1a1a2e", border: "1px solid rgba(34,197,94,0.15)" }}>
+                        <div className="px-6 py-5">
+                          {/* Main score line */}
+                          <div className="flex items-center gap-4">
+                            <CheckCircle2 className="h-7 w-7 text-emerald-400 flex-shrink-0" />
+                            <div className="flex-1">
+                              <div className="flex items-baseline gap-3 flex-wrap">
+                                <span className="text-xl font-bold text-emerald-400">
+                                  {verified} of {total} Verified
+                                </span>
+                                {warns > 0 && (
+                                  <span className="text-sm font-semibold text-amber-400">
+                                    {warns} Warning{warns !== 1 ? "s" : ""}
+                                  </span>
+                                )}
+                                {failed > 0 && (
+                                  <span className="text-sm font-semibold text-red-400">
+                                    {failed} Failed
+                                  </span>
+                                )}
+                                {skipped > 0 && (
+                                  <span className="text-sm text-zinc-500">
+                                    {skipped} Skipped
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            {/* Export All */}
+                            <button
+                              onClick={handleExportAll}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-400 border border-zinc-700/60 hover:text-zinc-200 hover:border-zinc-500 hover:bg-zinc-800/50 transition-colors flex-shrink-0"
+                            >
+                              <Download className="h-3.5 w-3.5" />
+                              Export All
+                            </button>
+                          </div>
+                          {/* Progress bar */}
+                          <div className="mt-3 h-2 rounded-full bg-zinc-800 overflow-hidden">
+                            <div
+                              className="h-full rounded-full transition-all duration-700 ease-out"
+                              style={{
+                                width: `${ratio * 100}%`,
+                                background: failed > 0
+                                  ? "linear-gradient(90deg, #22c55e, #f59e0b, #ef4444)"
+                                  : warns > 0
+                                  ? "linear-gradient(90deg, #22c55e, #f59e0b)"
+                                  : "#22c55e",
+                              }}
+                            />
+                          </div>
+                        </div>
                       </div>
                     );
                   })()}
-                  {/* Cards — successful/warning/failed first, skipped last */}
+
+                  {/* ── Verification cards — active first, skipped last ── */}
                   {toggleResults
                     .filter((r) => r.status !== "skipped")
-                    .map((r) => (
-                      <ToggleVerificationCard key={r.toggle} result={r} />
+                    .map((r, i) => (
+                      <ToggleVerificationCard key={r.toggle} result={r} index={i} />
                     ))}
-                  {toggleResults
-                    .filter((r) => r.status === "skipped")
-                    .map((r) => (
-                      <ToggleVerificationCard key={r.toggle} result={r} />
-                    ))}
+                  {toggleResults.some((r) => r.status === "skipped") && (
+                    <div className="space-y-2 pt-1">
+                      {toggleResults
+                        .filter((r) => r.status === "skipped")
+                        .map((r, i) => (
+                          <ToggleVerificationCard
+                            key={r.toggle}
+                            result={r}
+                            index={toggleResults.filter((x) => x.status !== "skipped").length + i}
+                          />
+                        ))}
+                    </div>
+                  )}
                 </div>
               )}
 

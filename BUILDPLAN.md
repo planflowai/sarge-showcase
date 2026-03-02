@@ -20,6 +20,7 @@ All 7 toggle APIs built and tested:
 - [x] Pipeline runner chains toggles in order (40d75fc)
 - [x] Visual status display in Deploy panel (40d75fc)
 - [x] Toggle verification cards — rich checks with human-readable labels, Foundry dark theme, export reports
+- [x] Verification cards redesign — bigger fonts, expanded by default, scoreboard summary, Export All, staggered animations
 
 ### Toggle Selector Checklist (5d4a2a4)
 - [x] Combined popup in Push flow — toggles section + deploy targets section

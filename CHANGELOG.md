@@ -25,6 +25,14 @@ Every commit gets an entry. No exceptions.
 
 ## Entries
 
+### [2026-03-02 — Toggle verification cards redesign — visual proof at a glance]
+**Commit:** (this commit)
+**Files touched:** apps/builder-standalone/components/deploy/ToggleVerificationCard.tsx (rewritten), apps/builder-standalone/components/deploy/DeployPanel.tsx (modified), BUILDPLAN.md (modified), CHANGELOG.md
+**What changed:** Full redesign of toggle verification cards for non-technical readability. Cards now: always expanded (no collapse for success/warning), toggle name 18px bold, check labels 14px with 1.8 line height, 4px colored top border per status, checks grouped (pass → warn → fail) with subtle dividers, warning/failure details shown inline. Removed millisecond duration from headers. Status badges large + all-caps (VERIFIED/WARNINGS/FAILED/SKIPPED). Skipped cards are compact muted single-line. Staggered fade-in animation (100ms per card). Summary bar redesigned as scoreboard: "5 of 7 Verified" in 20px+ green bold with progress bar showing ratio. Added "Export All" button in summary bar that generates combined report for all toggles. Card spacing increased to 16px gaps.
+**What was tested:** Full TypeScript compilation passes (0 errors).
+**Working state:** Yes
+**Revert to:** `git reset --hard d9d30f1`
+
 ### [2026-03-02 — Toggle verification cards with human-readable checks and export]
 **Commit:** (this commit)
 **Files touched:** apps/builder-standalone/lib/toggles/pipeline.ts (modified), apps/builder-standalone/components/deploy/ToggleVerificationCard.tsx (new), apps/builder-standalone/components/deploy/DeployPanel.tsx (modified), BUILDPLAN.md (modified), CHANGELOG.md
