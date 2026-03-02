@@ -25,6 +25,14 @@ Every commit gets an entry. No exceptions.
 
 ## Entries
 
+### [2026-03-02 — Privacy/Cookie Compliance toggle (GDPR/CCPA)]
+**Commit:** (this commit)
+**Files touched:** apps/builder-standalone/lib/privacy/compliance.ts (new), apps/builder-standalone/app/api/privacy/apply/route.ts (new), CHANGELOG.md
+**What changed:** Privacy/cookie compliance post-processor — injects GDPR/CCPA cookie consent banner (dark overlay bar with Accept All, Reject Non-Essential, Customize buttons), auto-generates Privacy Policy section (data collected, cookie categories, third-party services, GDPR/CCPA rights, contact placeholder), tags analytics/marketing scripts with `data-cookie-category` and blocks them (`type=text/plain`) until consent given, adds form disclosure text ("By submitting this form, you agree to our Privacy Policy"), adds "Manage Cookies" link in footer. Consent stored via cookie (works across subdomains). Banner self-contained (inline CSS + JS, no external deps). Two modes: raw HTML string or project path.
+**What was tested:** API tested with sample HTML containing 3 scripts (2 analytics, 1 marketing), 2 forms, and a footer. All 5 features verified: consent banner added, privacy policy added, 3 scripts tagged/blocked, 2 form disclosures, manage cookies link. Idempotency verified: second run returns "already compliant" with zero changes.
+**Working state:** Yes
+**Revert to:** `git reset --hard 8cafaea`
+
 ### [2026-03-02 — Fix Cloudflare deploys going to Preview instead of Production]
 **Commit:** (this commit)
 **Files touched:** apps/builder-standalone/app/api/deploy/route.ts, CHANGELOG.md
