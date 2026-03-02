@@ -485,7 +485,9 @@ export async function syncBuilderLogToSupabase(
   }
 
   try {
-    const { processQueuedItem } = await import("@sarge/core");
+    // processQueuedItem is in @sarge/core's server entry — dynamic import with cast
+    const coreMod = await import("@sarge/core") as any;
+    const processQueuedItem = coreMod.processQueuedItem;
     const success = await processQueuedItem({
       id: `log_${Date.now()}`,
       type: "builderLog",
@@ -531,7 +533,9 @@ export async function fetchBuilderLogFromSupabase(
   }
 
   try {
-    const { fetchSupabaseBuilderLog } = await import("@sarge/core");
+    // fetchSupabaseBuilderLog is in @sarge/core's server entry — dynamic import with cast
+    const coreMod = await import("@sarge/core") as any;
+    const fetchSupabaseBuilderLog = coreMod.fetchSupabaseBuilderLog;
     return await fetchSupabaseBuilderLog(projectName);
   } catch (err) {
     console.warn("[BuilderLog] Failed to fetch from Supabase:", err);

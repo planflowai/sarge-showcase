@@ -138,7 +138,6 @@ export const useWorkbenchStore = create<WorkbenchState>()((set, get) => ({
   lockWinner: (slotNum) => {
     const slot = get().slots.find((s) => s.slot === slotNum);
     if (!slot?.lastCode) return;
-    writePitActive(false);
     set({ lockedCode: slot.lastCode, lockedHtml: slot.previewHtml, active: false });
   },
 }));
