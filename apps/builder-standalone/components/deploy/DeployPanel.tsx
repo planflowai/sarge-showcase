@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { useDeployStore, type DeployTarget } from "@/lib/stores/deployStore";
 import { useUIStore } from "@sarge/core";
+import { useBuilderStore } from "@sarge/builder";
 
 interface DeployPanelProps {
   projectPath?: string | null;
@@ -35,6 +36,9 @@ const DEPLOY_TARGETS: { id: DeployTarget; label: string; color: string; icon: ty
 ];
 
 export default function DeployPanel({ projectPath, projectName }: DeployPanelProps) {
+  const { projectPath: storeProjectPath, projectName: storeProjectName } = useBuilderStore();
+  const activePath = projectPath || storeProjectPath;
+  const activeName = projectName || storeProjectName;
   const showToast = useUIStore((s) => s.showToast);
 
   const {
@@ -62,14 +66,14 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
   // When project changes, reset then auto-detect existing connections
   useEffect(() => {
     reset();
-    if (projectPath) {
-      detectProject(projectPath);
+    if (activePath) {
+      detectProject(activePath);
     }
-  }, [projectPath, reset, detectProject]);
+  }, [activePath, reset, detectProject]);
 
   const handleInit = async () => {
-    if (!projectName || !projectPath) return;
-    await initProject(projectName, projectPath);
+    if (!activeName || !activePath) return;
+    await initProject(activeName, activePath);
     const state = useDeployStore.getState();
     if (state.error) {
       showToast({ message: `Deploy failed: ${state.error}`, type: "error" });
@@ -87,9 +91,9 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
   };
 
   const handlePushConfirm = async () => {
-    if (!projectPath || selectedTargets.length === 0) return;
+    if (!activePath || selectedTargets.length === 0) return;
     setShowPushPopup(false);
-    await pushProject(projectPath, projectName || "", selectedTargets);
+    await pushProject(activePath, activeName || "", selectedTargets);
     const state = useDeployStore.getState();
     if (state.error) {
       showToast({ message: `Push failed: ${state.error}`, type: "error" });
@@ -106,8 +110,8 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
   };
 
   const handleExport = async () => {
-    if (!projectPath) return;
-    const zipPath = await exportZip(projectPath);
+    if (!activePath) return;
+    const zipPath = await exportZip(activePath);
     const state = useDeployStore.getState();
     if (state.error) {
       showToast({ message: `Export failed: ${state.error}`, type: "error" });
@@ -147,7 +151,7 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
   };
 
   // ═══ No project open ═══
-  if (!projectPath) {
+  if (!activePath) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-zinc-500 dark:text-zinc-400 gap-3 p-8">
         <FolderOpen className="h-12 w-12 text-zinc-400 dark:text-zinc-600" />
@@ -168,7 +172,7 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
           Deploy
         </h2>
         <span className="text-xs text-zinc-400 dark:text-zinc-500 ml-auto">
-          {projectName}
+          {activeName}
         </span>
       </div>
 

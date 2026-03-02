@@ -24,6 +24,14 @@ Every commit gets an entry. No exceptions.
 
 ## Entries
 
+### [2026-03-02 — Fix DeployPanel projectPath]
+**Commit:** (this commit)
+**Files touched:** apps/builder-standalone/components/deploy/DeployPanel.tsx, CHANGELOG.md
+**What changed:** DeployPanel now reads projectPath/projectName from useBuilderStore as fallback when props are not passed (broken by Suspense wrapper swallowing cloneElement props). Props still accepted for forward-compat.
+**What was tested:** All 3 routes return 200, build compiles clean
+**Working state:** Yes
+**Revert to:** `git reset --hard b67d518`
+
 ### [2026-03-02 — Fix PM2 Boot Flood]
 **Commit:** (this commit)
 **Files touched:** start-foundry.bat (new), start-app.bat (new), CHANGELOG.md
