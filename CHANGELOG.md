@@ -25,6 +25,14 @@ Every commit gets an entry. No exceptions.
 
 ## Entries
 
+### [2026-03-02 — Client Analytics toggle]
+**Commit:** (this commit)
+**Files touched:** apps/builder-standalone/lib/analytics/injector.ts (new), apps/builder-standalone/app/api/analytics/inject/route.ts (new), CHANGELOG.md
+**What changed:** Lightweight self-contained analytics tracker injector. Tracks page views (URL, timestamp, referrer, screen size), time on page, click events (links/buttons with element tag, text, href), scroll depth (25/50/75/100%). Sends via navigator.sendBeacon with fetch fallback, buffers to localStorage if endpoint unreachable. Configurable endpoint (default: `/api/analytics/collect`). Respects privacy consent cookie — only activates if `cc_consent` cookie has `analytics: true`. Tagged `data-cookie-category="analytics"` + `type="text/plain"` so the Privacy toggle blocks it until consent. Adds "Analytics" dashboard link in footer. Snippet is 1920 chars (under 3KB). Two modes: raw HTML or project path.
+**What was tested:** API tested with sample HTML — snippet injected, cookie-category tagged, consent check present, sendBeacon/fetch/scroll/click tracking verified, dashboard link in footer. Custom endpoint override verified. Idempotency verified: second run returns "already injected" with zero changes.
+**Working state:** Yes
+**Revert to:** `git reset --hard 0433e78`
+
 ### [2026-03-02 — Privacy/Cookie Compliance toggle (GDPR/CCPA)]
 **Commit:** (this commit)
 **Files touched:** apps/builder-standalone/lib/privacy/compliance.ts (new), apps/builder-standalone/app/api/privacy/apply/route.ts (new), CHANGELOG.md
