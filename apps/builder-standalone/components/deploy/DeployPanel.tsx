@@ -19,7 +19,15 @@ import {
   XCircle,
   MinusCircle,
   RefreshCw,
+  Minus,
 } from "lucide-react";
+
+interface ToggleResult {
+  toggle: string;
+  status: "success" | "skipped" | "failed";
+  details: string;
+  duration: number;
+}
 import { useDeployStore, type DeployTarget } from "@/lib/stores/deployStore";
 import { useUIStore } from "@sarge/core";
 import { useBuilderStore } from "@sarge/builder";
@@ -64,9 +72,15 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
   const [showPushPopup, setShowPushPopup] = useState(false);
   const [selectedTargets, setSelectedTargets] = useState<DeployTarget[]>(["github"]);
 
+  // Toggle pipeline state
+  const [toggleResults, setToggleResults] = useState<ToggleResult[] | null>(null);
+  const [isRunningToggles, setIsRunningToggles] = useState(false);
+
   // When project changes, reset then auto-detect existing connections
   useEffect(() => {
     reset();
+    setToggleResults(null);
+    setIsRunningToggles(false);
     if (activePath) {
       detectProject(activePath);
     }
@@ -94,6 +108,30 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
   const handlePushConfirm = async () => {
     if (!activePath || selectedTargets.length === 0) return;
     setShowPushPopup(false);
+    setToggleResults(null);
+
+    // Step 1: Run toggle pipeline
+    setIsRunningToggles(true);
+    try {
+      const res = await fetch("/api/toggles/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectPath: activePath }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setToggleResults(data.results || []);
+      } else {
+        // Pipeline failed — still proceed with deploy
+        setToggleResults([]);
+      }
+    } catch {
+      // Network error — still proceed with deploy
+      setToggleResults([]);
+    }
+    setIsRunningToggles(false);
+
+    // Step 2: Deploy
     await pushProject(activePath, activeName || "", selectedTargets);
     const state = useDeployStore.getState();
     if (state.error) {
@@ -474,6 +512,67 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
                   </div>
                 )}
               </div>
+
+              {/* ═══ Toggle Pipeline Results ═══ */}
+              {(isRunningToggles || toggleResults) && (
+                <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 overflow-hidden">
+                  <div className="px-3 py-2 border-b border-zinc-200 dark:border-zinc-800 flex items-center gap-2">
+                    {isRunningToggles ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-sky-500" />
+                    ) : (
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                    )}
+                    <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                      {isRunningToggles ? "Running toggles..." : "Toggles complete"}
+                    </span>
+                  </div>
+                  {toggleResults && toggleResults.length > 0 && (
+                    <div className="divide-y divide-zinc-100 dark:divide-zinc-800/50">
+                      {toggleResults.map((r) => (
+                        <div
+                          key={r.toggle}
+                          className="flex items-center gap-2 px-3 py-1.5"
+                        >
+                          {r.status === "success" ? (
+                            <CheckCircle2 className="h-3 w-3 text-emerald-500 flex-shrink-0" />
+                          ) : r.status === "failed" ? (
+                            <XCircle className="h-3 w-3 text-red-500 flex-shrink-0" />
+                          ) : (
+                            <Minus className="h-3 w-3 text-zinc-400 flex-shrink-0" />
+                          )}
+                          <span
+                            className={`text-xs font-semibold min-w-[80px] ${
+                              r.status === "success"
+                                ? "text-zinc-800 dark:text-zinc-200"
+                                : r.status === "failed"
+                                ? "text-red-600 dark:text-red-400"
+                                : "text-zinc-400"
+                            }`}
+                          >
+                            {r.toggle}
+                          </span>
+                          <span
+                            className={`text-[11px] flex-1 truncate ${
+                              r.status === "skipped"
+                                ? "text-zinc-400 italic"
+                                : r.status === "failed"
+                                ? "text-red-500"
+                                : "text-zinc-500 dark:text-zinc-400"
+                            }`}
+                          >
+                            {r.status === "skipped" ? "skipped" : `— ${r.details}`}
+                          </span>
+                          {r.duration > 0 && (
+                            <span className="text-[9px] text-zinc-400 tabular-nums flex-shrink-0">
+                              {r.duration}ms
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* ═══ Push Result — persistent, clear feedback ═══ */}
               {lastPush && (

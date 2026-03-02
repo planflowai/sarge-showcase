@@ -25,6 +25,14 @@ Every commit gets an entry. No exceptions.
 
 ## Entries
 
+### [2026-03-02 — Toggle pipeline with visual status in Deploy panel]
+**Commit:** (this commit)
+**Files touched:** apps/builder-standalone/lib/toggles/pipeline.ts (new), apps/builder-standalone/app/api/toggles/run/route.ts (new), apps/builder-standalone/components/deploy/DeployPanel.tsx (modified), CHANGELOG.md
+**What changed:** Toggle pipeline runner chains all 7 toggles in order (Accessibility → Privacy → Security → SEO → Performance → Analytics → Punch List) when user clicks Push. Each step only runs if enabled in project.json. HTML output chains between steps. Accessibility and SEO are special-cased (operate on disk). New API endpoint POST /api/toggles/run reads project.json and runs pipeline. DeployPanel modified: when Push is confirmed, toggles run first with real-time visual feedback (green check = success, gray dash = skipped, red X = failed, with detail text and ms timing), then deploy proceeds. Toggle results clear on project switch. Pipeline gracefully degrades — if it fails, deploy still proceeds.
+**What was tested:** Full TypeScript compilation passes (0 errors). Pipeline function signatures verified against all 7 toggle processors. SEO special-case handling confirmed (reads/writes disk, needs ProjectMeta). DeployPanel correctly sequences toggle run → deploy.
+**Working state:** Yes
+**Revert to:** `git reset --hard c68e40d`
+
 ### [2026-03-02 — Punch List toggle (client revision tracker)]
 **Commit:** (this commit)
 **Files touched:** apps/builder-standalone/lib/punchlist/injector.ts (new), apps/builder-standalone/app/api/punchlist/inject/route.ts (new), apps/builder-standalone/app/api/punchlist/submit/route.ts (new), apps/builder-standalone/components/punchlist/PunchListPanel.tsx (new), CHANGELOG.md
