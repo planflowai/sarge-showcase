@@ -43,7 +43,6 @@ export function parseEnvFile(filePath: string): EnvEntry[] {
 /* ── Write .env.local ── */
 
 export function writeEnvFile(filePath: string, entries: EnvEntry[]) {
-  // Rebuild preserving original structure as much as possible
   const lines: string[] = [];
   const grouped = groupByCategory(entries);
   const categoryHeaders: Record<string, string> = {
@@ -265,7 +264,6 @@ export function findAppEnvPaths(): string[] {
       if (!d.isDirectory()) continue;
       if (d.name.includes("backup")) continue;
       const envPath = join(appsDir, d.name, ".env.local");
-      // Include all app dirs — we'll create .env.local for them if needed during push
       paths.push(envPath);
     }
   } catch {}

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { usePinStore } from "@/lib/stores/pinStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Lock, Hammer } from "lucide-react";
+import { Lock, KeyRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function PinLock({ children }: { children: React.ReactNode }) {
@@ -139,7 +139,7 @@ export function PinLock({ children }: { children: React.ReactNode }) {
             <Lock className="h-8 w-8 text-[#FF6700]" />
           </div>
           <div className="flex items-center gap-2">
-            <Hammer className="h-4 w-4 text-[#FF6700]" />
+            <KeyRound className="h-4 w-4 text-[#FF6700]" />
             <h1 className="text-lg font-bold text-[#FF6700]">
               {isSettingUp ? "Set Up PIN" : "ENV Manager"}
             </h1>

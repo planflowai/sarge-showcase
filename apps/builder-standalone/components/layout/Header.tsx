@@ -4,14 +4,12 @@ import {
   Moon,
   Sun,
   Settings,
-  XCircle,
   Flame,
   Shield,
   ShieldOff,
   Plane,
   Radio,
   Hammer,
-  Wrench,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
@@ -22,7 +20,7 @@ import {
 import { useWarRoomStore } from "@/lib/stores/warRoomStore";
 import { useWorkbenchStore } from "@/lib/stores/workbenchStore";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 type NavMode = "builder" | "chat";
@@ -57,24 +55,9 @@ const NAV_ITEMS: NavItem[] = [
   },
 ];
 
-/* Admin pages get a simpler nav: Builder | Launch Pad | ENV Manager */
-const ADMIN_ROUTES = ["/launcher", "/env-manager"];
-
-interface AdminNavItem {
-  label: string;
-  href: string;
-  icon: string;
-}
-
-const ADMIN_NAV: AdminNavItem[] = [
-  { label: "Builder", href: "/", icon: "🔨" },
-  { label: "Launch Pad", href: "/launcher", icon: "🚀" },
-  { label: "ENV Manager", href: "/env-manager", icon: "🔑" },
-];
 
 export function Header() {
   const pathname = usePathname();
-  const router = useRouter();
   const [mounted, setMounted] = useState(false);
 
   const theme = useSettingsStore((s) => s.theme);
@@ -120,7 +103,6 @@ export function Header() {
   };
 
   const activeMode = getActiveMode();
-  const isAdminPage = ADMIN_ROUTES.some((r) => pathname === r);
 
   // Placeholder during hydration
   if (!mounted) {
@@ -205,67 +187,26 @@ export function Header() {
         {/* Row 2: Navigation centered + status icons right */}
         <div className="h-12 bg-zinc-100 dark:bg-[#0a0a0a] flex items-center px-4 border-t border-zinc-200/50 dark:border-zinc-800/50 relative">
 
-          {/* Center: context-aware nav */}
+          {/* Center: Chat | Builder nav */}
           <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1">
-            {isAdminPage ? (
-              /* Admin pages: Builder | Launch Pad | ENV Manager */
-              ADMIN_NAV.map((item) => {
-                const isActive = pathname === item.href;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={cn(
-                      "flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-bold tracking-wide transition-all duration-200 border-2",
-                      isActive
-                        ? "bg-[#FF6700]/20 border-[#FF6700]/80 text-orange-100 shadow-[0_0_14px_rgba(255,103,0,0.25)]"
-                        : "border-transparent text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/80 dark:hover:bg-zinc-800/60 hover:text-zinc-900 dark:hover:text-zinc-100"
-                    )}
-                  >
-                    <span className="text-base leading-none">{item.icon}</span>
-                    <span>{item.label}</span>
-                  </Link>
-                );
-              })
-            ) : (
-              /* Builder/Chat pages: Chat | Builder + admin links */
-              <>
-                {NAV_ITEMS.map((item) => {
-                  const isActive = activeMode === item.id;
-                  return (
-                    <Link
-                      key={item.id}
-                      href={item.href}
-                      className={cn(
-                        "flex items-center gap-2 px-6 py-2.5 rounded-lg text-base font-black tracking-wide transition-all duration-200 border-2",
-                        isActive
-                          ? `${item.bgActive} ${item.activeColor}`
-                          : "border-transparent text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/80 dark:hover:bg-zinc-800/60 hover:text-zinc-900 dark:hover:text-zinc-100"
-                      )}
-                    >
-                      <span className="text-lg leading-none">{item.emoji}</span>
-                      <span>{item.label}</span>
-                    </Link>
-                  );
-                })}
-                {/* Separator + admin links */}
-                <div className="h-5 w-px bg-zinc-300 dark:bg-zinc-700 mx-1" />
+            {NAV_ITEMS.map((item) => {
+              const isActive = activeMode === item.id;
+              return (
                 <Link
-                  href="/launcher"
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all duration-200 border-2 border-transparent text-zinc-500 dark:text-zinc-500 hover:bg-zinc-200/80 dark:hover:bg-zinc-800/60 hover:text-zinc-900 dark:hover:text-zinc-200"
+                  key={item.id}
+                  href={item.href}
+                  className={cn(
+                    "flex items-center gap-2 px-6 py-2.5 rounded-lg text-base font-black tracking-wide transition-all duration-200 border-2",
+                    isActive
+                      ? `${item.bgActive} ${item.activeColor}`
+                      : "border-transparent text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/80 dark:hover:bg-zinc-800/60 hover:text-zinc-900 dark:hover:text-zinc-100"
+                  )}
                 >
-                  <span className="text-sm leading-none">🚀</span>
-                  <span>Launch Pad</span>
+                  <span className="text-lg leading-none">{item.emoji}</span>
+                  <span>{item.label}</span>
                 </Link>
-                <Link
-                  href="/env-manager"
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all duration-200 border-2 border-transparent text-zinc-500 dark:text-zinc-500 hover:bg-zinc-200/80 dark:hover:bg-zinc-800/60 hover:text-zinc-900 dark:hover:text-zinc-200"
-                >
-                  <span className="text-sm leading-none">🔑</span>
-                  <span>ENV</span>
-                </Link>
-              </>
-            )}
+              );
+            })}
           </div>
 
           {/* Spacer pushes right-side icons to the right */}

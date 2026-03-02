@@ -5,7 +5,6 @@ import { join } from "path";
 
 const execAsync = promisify(exec);
 
-// Ecosystem config at monorepo root
 const ECOSYSTEM = join(process.cwd(), "..", "..", "ecosystem.config.cjs").replace(/\\/g, "/");
 
 const VALID_APPS = new Set([
@@ -20,6 +19,8 @@ const VALID_APPS = new Set([
   "debate-standalone",
   "forensic-standalone",
   "trading-standalone",
+  "launchpad-standalone",
+  "env-manager-standalone",
 ]);
 
 export async function POST(req: Request) {
@@ -27,47 +28,32 @@ export async function POST(req: Request) {
     const { appName, action } = await req.json();
 
     if (!appName || !action) {
-      return NextResponse.json(
-        { error: "Missing appName or action" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Missing appName or action" }, { status: 400 });
     }
 
     if (!VALID_APPS.has(appName)) {
-      return NextResponse.json(
-        { error: `Unknown app: ${appName}` },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: `Unknown app: ${appName}` }, { status: 400 });
     }
 
-    if (appName === "builder-standalone") {
-      return NextResponse.json(
-        { error: "Cannot stop the app serving this launcher" },
-        { status: 400 }
-      );
+    // Can't stop yourself
+    if (appName === "launchpad-standalone") {
+      return NextResponse.json({ error: "Cannot stop the Launch Pad from itself" }, { status: 400 });
     }
 
     if (action !== "start" && action !== "stop") {
-      return NextResponse.json(
-        { error: 'Action must be "start" or "stop"' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Action must be "start" or "stop"' }, { status: 400 });
     }
 
-    // Sanitize: appName is validated against VALID_APPS set above
     if (action === "start") {
-      // Try direct start first (works if process is registered in PM2)
       try {
         await execAsync(`pm2 start ${appName}`, { timeout: 15000 });
       } catch {
-        // Process not registered — start via ecosystem config
         await execAsync(`pm2 start "${ECOSYSTEM}" --only ${appName}`, { timeout: 20000 });
       }
     } else {
       await execAsync(`pm2 stop ${appName}`, { timeout: 15000 });
     }
 
-    // Brief pause then get new status
     await new Promise((r) => setTimeout(r, 1000));
 
     const { stdout } = await execAsync("pm2 jlist", { timeout: 10000 });
@@ -84,9 +70,6 @@ export async function POST(req: Request) {
       },
     });
   } catch (err: any) {
-    return NextResponse.json(
-      { error: err.message || "Failed to toggle app" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: err.message || "Failed to toggle app" }, { status: 500 });
   }
 }

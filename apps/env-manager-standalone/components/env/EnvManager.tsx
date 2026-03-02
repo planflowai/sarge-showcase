@@ -187,7 +187,6 @@ export function EnvManager() {
   /* ── Edit ── */
 
   const startEdit = async (key: string) => {
-    // Reveal first if not already
     if (!revealed[key]) {
       try {
         const res = await fetch("/api/env/reveal", {
@@ -242,7 +241,6 @@ export function EnvManager() {
     if (url) {
       window.open(url, "_blank");
     }
-    // Auto-open edit after rotation link click
     startEdit(key);
   };
 

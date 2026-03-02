@@ -16,6 +16,8 @@ const APP_PORTS: Record<string, number> = {
   "debate-standalone": 3106,
   "forensic-standalone": 3107,
   "trading-standalone": 3108,
+  "launchpad-standalone": 3109,
+  "env-manager-standalone": 3110,
 };
 
 export async function GET() {
@@ -35,7 +37,6 @@ export async function GET() {
         restarts: app.pm2_env?.restart_time ?? 0,
       }));
 
-    // Add any apps in APP_PORTS that PM2 doesn't know about (not registered)
     const knownNames = new Set(apps.map((a: any) => a.name));
     for (const [name, port] of Object.entries(APP_PORTS)) {
       if (!knownNames.has(name)) {
@@ -51,10 +52,8 @@ export async function GET() {
       }
     }
 
-    // Sort by port
     apps.sort((a: any, b: any) => a.port - b.port);
 
-    // System totals
     const totalCpu = apps.reduce((sum: number, a: any) => sum + a.cpu, 0);
     const totalMemory = apps.reduce((sum: number, a: any) => sum + a.memory, 0);
     const runningCount = apps.filter((a: any) => a.status === "online").length;
@@ -70,7 +69,6 @@ export async function GET() {
       },
     });
   } catch (err: any) {
-    // PM2 not running or not installed
     return NextResponse.json(
       {
         apps: Object.entries(APP_PORTS)
