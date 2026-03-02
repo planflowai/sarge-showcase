@@ -25,6 +25,14 @@ Every commit gets an entry. No exceptions.
 
 ## Entries
 
+### [2026-03-02 — Punch List toggle (client revision tracker)]
+**Commit:** (this commit)
+**Files touched:** apps/builder-standalone/lib/punchlist/injector.ts (new), apps/builder-standalone/app/api/punchlist/inject/route.ts (new), apps/builder-standalone/app/api/punchlist/submit/route.ts (new), apps/builder-standalone/components/punchlist/PunchListPanel.tsx (new), CHANGELOG.md
+**What changed:** Punch List toggle — two-part system: (1) Client-facing floating "Request Changes" button + revision form injected into delivered HTML. Form collects page (auto-populated from nav links + section IDs), description, priority (low/medium/high), optional screenshot (base64). Submits to configurable endpoint with mailto fallback. Self-contained inline CSS+JS, revision round tracking via cookie. (2) Foundry-side PunchListPanel component — reads punchlist.json, displays items with priority badges, status dropdowns (open/in-progress/done), screenshot thumbnails, round tracking ("Round 2 of 3"), final-round fee warning, filters by status/priority/round, export button. Three API endpoints: POST inject (runs injector), POST/GET/PATCH submit (create/read/update items in punchlist.json).
+**What was tested:** Injector tested with sample HTML containing nav links, section IDs, form, and footer. All 15 checks passed: floating button, form panel, page dropdown with 4 detected pages, description textarea, priority radios, screenshot upload, submit button, round display, endpoint configured, mailto fallback, widget script. Idempotency verified: second run adds nothing.
+**Working state:** Yes
+**Revert to:** `git reset --hard 8546fe8`
+
 ### [2026-03-02 — Client Analytics toggle]
 **Commit:** (this commit)
 **Files touched:** apps/builder-standalone/lib/analytics/injector.ts (new), apps/builder-standalone/app/api/analytics/inject/route.ts (new), CHANGELOG.md
