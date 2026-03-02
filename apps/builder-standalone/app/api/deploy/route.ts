@@ -547,7 +547,7 @@ export async function POST(request: NextRequest) {
 
         // Deploy files to Cloudflare Pages
         const cfDeploy = await runCommand(
-          `npx --yes wrangler pages deploy "." --project-name="${safeCfName}"`,
+          `npx --yes wrangler pages deploy "." --project-name="${safeCfName}" --branch=main`,
           projectPath, 120_000
         );
         if (cfDeploy.code === 0) {
@@ -729,7 +729,7 @@ export async function POST(request: NextRequest) {
             }
             redeployTasks.push(
               runCommand(
-                `npx --yes wrangler pages deploy "." --project-name="${cfNameMatch[1]}"`,
+                `npx --yes wrangler pages deploy "." --project-name="${cfNameMatch[1]}" --branch=main`,
                 projectPath, 120_000
               ).then((r) => {
                 deployResults.cloudflare = r.code === 0 ? "success" : "failed";

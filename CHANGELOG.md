@@ -25,6 +25,14 @@ Every commit gets an entry. No exceptions.
 
 ## Entries
 
+### [2026-03-02 — Fix Cloudflare deploys going to Preview instead of Production]
+**Commit:** (this commit)
+**Files touched:** apps/builder-standalone/app/api/deploy/route.ts, CHANGELOG.md
+**What changed:** All Cloudflare Pages deploys were going to the "Preview" environment instead of "Production" because wrangler infers the branch from git (which is `master`), but the CF project was created with `--production-branch main`. Added `--branch=main` flag to both init and push wrangler deploy commands so CF treats them as Production deployments. Portfolio site manually redeployed with fix.
+**What was tested:** `wrangler pages deployment list --project-name=portfolio` confirms latest deploy is "Production" with `branch: main`. Site returns 200 at `portfolio-b15.pages.dev`.
+**Working state:** Yes
+**Revert to:** `git reset --hard f540144`
+
 ### [2026-03-02 — Fix deploy URL detection (Vercel + Cloudflare)]
 **Commit:** (this commit)
 **Files touched:** apps/builder-standalone/app/api/deploy/route.ts, CHANGELOG.md
