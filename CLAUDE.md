@@ -379,3 +379,6 @@ Before modifying any component, store, or API route, check `STATUS.md` for:
 - Architecture metrics (store count, component count) to avoid bloat
 - Safe revert points in case your change breaks something
 If `STATUS.md` doesn't exist or is outdated, do NOT create/update it without user permission.
+
+### Rule 10: Follow the Build Plan
+Before executing any prompt, check `BUILDPLAN.md` for the relevant feature. If the prompt contradicts the build plan, STOP and report the conflict. Do not execute prompts that skip steps or change the agreed UX flow. If a feature isn't in `BUILDPLAN.md`, add it first and get confirmation before building.

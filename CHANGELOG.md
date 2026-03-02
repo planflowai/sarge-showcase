@@ -25,6 +25,14 @@ Every commit gets an entry. No exceptions.
 
 ## Entries
 
+### [2026-03-02 — BUILDPLAN.md master build plan + Rule 10]
+**Commit:** (this commit)
+**Files touched:** BUILDPLAN.md (new), CLAUDE.md (modified), CHANGELOG.md
+**What changed:** Created BUILDPLAN.md — single source of truth for what to build next, in what order, with exact UX flows. Lists all completed features (7 toggles, pipeline, toggle selector checklist, infrastructure), investigation results, and 7 TODO items in priority order (cookie consent fix, new project wizard, live projects dashboard, client brief builder, client notifications, client analytics page, PM2 replacement). Added Rule 10 to CLAUDE.md: before executing any prompt, check BUILDPLAN.md. If prompt contradicts build plan, STOP and report. No skipping steps or changing UX flows.
+**What was tested:** Files created/modified correctly, no code changes.
+**Working state:** Yes
+**Revert to:** `git reset --hard 5d4a2a4`
+
 ### [2026-03-02 — Toggle selector — checklist popup before deploy]
 **Commit:** (this commit)
 **Files touched:** apps/builder-standalone/components/deploy/DeployPanel.tsx (modified), apps/builder-standalone/app/api/toggles/run/route.ts (modified), CHANGELOG.md
