@@ -1,21 +1,25 @@
 "use client";
 
-import { Suspense, useEffect, useRef } from "react";
+import React, { Suspense, useEffect, useRef, lazy } from "react";
 import { useSearchParams } from "next/navigation";
-import BuilderPage from "@sarge/builder/components/BuilderPage";
 import { ErrorBoundary } from "../components/ui/error-boundary";
 import { JuryToast } from "@sarge/core";
 import { useConversationStore } from "@sarge/chat/index.client";
 import { useArtifactStore } from "@sarge/builder/index.client";
-import { WarRoomPopout } from "@/components/chat/WarRoomPopout";
-import { WorkbenchPopout } from "@/components/workbench/WorkbenchPopout";
-import WorkbenchDashboard from "@/components/workbench/WorkbenchDashboard";
 import { useWorkbenchStore } from "@/lib/stores/workbenchStore";
-import DeployPanel from "@/components/deploy/DeployPanel";
+
+// Lazy-load heavy components that are only conditionally rendered
+const BuilderPage = lazy(() => import("@sarge/builder/components/BuilderPage"));
+const DeployPanel = lazy(() => import("@/components/deploy/DeployPanel"));
+const WarRoomPopout = lazy(() => import("@/components/chat/WarRoomPopout").then(m => ({ default: m.WarRoomPopout })));
+const WorkbenchPopout = lazy(() => import("@/components/workbench/WorkbenchPopout").then(m => ({ default: m.WorkbenchPopout })));
+const WorkbenchDashboard = lazy(() => import("@/components/workbench/WorkbenchDashboard"));
+
+const LoadingFallback = <div className="flex h-full w-full items-center justify-center"><span className="text-zinc-500">Loading...</span></div>;
 
 export default function Home() {
   return (
-    <Suspense fallback={<div className="flex h-full w-full items-center justify-center"><span className="text-zinc-500">Loading...</span></div>}>
+    <Suspense fallback={LoadingFallback}>
       <HomeInner />
     </Suspense>
   );
@@ -65,6 +69,13 @@ function HomeInner() {
   // Pit auto-restore REMOVED — caused popout flood on Edge restart.
   // The Pit must be launched explicitly via button click only.
 
+  // One-time cleanup of stale persist keys (messageStore persist was removed)
+  useEffect(() => {
+    try {
+      if (localStorage.getItem("message")) localStorage.removeItem("message");
+    } catch {}
+  }, []);
+
   // Auto-create a conversation so ChatView has a valid conversationId
   const initRef = useRef(false);
   useEffect(() => {
@@ -85,33 +96,47 @@ function HomeInner() {
   // Workbench popout window — full-viewport builder slot
   if (isWorkbenchPopout) {
     return (
-      <WorkbenchPopout
-        slotNum={wbSlot}
-        monitorNumber={wbMonitor}
-        provider={wbProvider}
-        model={wbModel}
-      />
+      <Suspense fallback={LoadingFallback}>
+        <WorkbenchPopout
+          slotNum={wbSlot}
+          monitorNumber={wbMonitor}
+          provider={wbProvider}
+          model={wbModel}
+        />
+      </Suspense>
     );
   }
 
   // War Room popout window — renders full-viewport overlay
   if (isPopout && popoutSlotId && popoutProvider) {
-    return <WarRoomPopout slotId={popoutSlotId} provider={popoutProvider} model={popoutModel} />;
+    return (
+      <Suspense fallback={LoadingFallback}>
+        <WarRoomPopout slotId={popoutSlotId} provider={popoutProvider} model={popoutModel} />
+      </Suspense>
+    );
   }
 
   // Workbench command center — full-screen overlay on builder page
   if (workbenchActive) {
     return (
-      <div className="flex h-full w-full">
-        <WorkbenchDashboard />
-      </div>
+      <Suspense fallback={LoadingFallback}>
+        <div className="flex h-full w-full">
+          <WorkbenchDashboard />
+        </div>
+      </Suspense>
     );
   }
 
   return (
     <div className="flex h-full w-full">
       <ErrorBoundary fallbackTitle="Builder Error">
-        <BuilderPage deployContent={<DeployPanel />} />
+        <Suspense fallback={LoadingFallback}>
+          <BuilderPage deployContent={
+            <Suspense fallback={<div className="p-4 text-zinc-500 text-sm">Loading deploy...</div>}>
+              <DeployPanel />
+            </Suspense>
+          } />
+        </Suspense>
       </ErrorBoundary>
       <JuryToast />
     </div>

@@ -276,15 +276,25 @@ export const useBuilderStore = create<BuilderState>()(
       }),
       storage: {
         getItem: (name) => {
-          const str = localStorage.getItem(name);
-          if (!str) return null;
-          const parsed = JSON.parse(str);
-          return parsed;
+          if (typeof window === "undefined") return null;
+          try {
+            const str = localStorage.getItem(name);
+            if (!str) return null;
+            return JSON.parse(str);
+          } catch {
+            return null;
+          }
         },
         setItem: (name, value) => {
-          localStorage.setItem(name, JSON.stringify(value));
+          if (typeof window === "undefined") return;
+          try {
+            localStorage.setItem(name, JSON.stringify(value));
+          } catch {
+            // ignore quota errors
+          }
         },
         removeItem: (name) => {
+          if (typeof window === "undefined") return;
           localStorage.removeItem(name);
         },
       },

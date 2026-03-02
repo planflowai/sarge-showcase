@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useRef, useEffect } from "react";
+import React, { useState, useCallback, useRef, useEffect, lazy, Suspense } from "react";
 import BuilderSidebar from "./BuilderSidebar";
 import BuilderModelBar from "./BuilderModelBar";
 import BuilderChat from "./BuilderChat";
@@ -19,10 +19,12 @@ import { applyEditBlocks, type EditBlock, getDiffSummary } from "../lib/editBloc
 import { useWorkspaceStore, launchWorkspace, recallWorkspace } from "../stores/workspaceStore";
 import { LayoutGrid, X, Plus, Save, Terminal as TerminalIcon, Loader2, FolderOpen, Rocket, FolderPlus, Package, User, Globe, CheckCircle2, Circle } from "lucide-react";
 import { ThreadGuardianIndicator } from "@sarge/chat";
-import ProjectCommandCenter from "./ProjectCommandCenter";
-import AssetLibrary from "./AssetLibrary";
 import { useProjectCommandStore } from "../stores/projectCommandStore";
 import { useAssetLibraryStore } from "../stores/assetLibraryStore";
+
+// Lazy-load overlay modals — only rendered when opened
+const ProjectCommandCenter = lazy(() => import("./ProjectCommandCenter"));
+const AssetLibrary = lazy(() => import("./AssetLibrary"));
 
 /**
  * BuilderPage - Main container for the Builder tab
@@ -939,10 +941,14 @@ Please provide the complete modified version of this component. Make only the re
       />
 
       {/* Project Command Center overlay */}
-      <ProjectCommandCenter />
+      <Suspense fallback={null}>
+        <ProjectCommandCenter />
+      </Suspense>
 
       {/* Asset Library overlay */}
-      <AssetLibrary />
+      <Suspense fallback={null}>
+        <AssetLibrary />
+      </Suspense>
     </div>
   );
 }

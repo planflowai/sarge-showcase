@@ -66,6 +66,7 @@ export const useDraftStore = create<DraftState>()(
     {
       name: 'chat-drafts',
       version: 1,
+      storage: createDebouncedStorage(),
     }
   )
 );

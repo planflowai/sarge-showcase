@@ -607,17 +607,28 @@ console.log('${name} loaded');
         } : null,
         projectList: state.projectList,
       }),
-      // Custom serialization to handle Set
+      // Custom serialization to handle Set — with SSR guards
       storage: {
         getItem: (name) => {
-          const str = localStorage.getItem(name);
-          if (!str) return null;
-          return JSON.parse(str);
+          if (typeof window === "undefined") return null;
+          try {
+            const str = localStorage.getItem(name);
+            if (!str) return null;
+            return JSON.parse(str);
+          } catch {
+            return null;
+          }
         },
         setItem: (name, value) => {
-          localStorage.setItem(name, JSON.stringify(value));
+          if (typeof window === "undefined") return;
+          try {
+            localStorage.setItem(name, JSON.stringify(value));
+          } catch {
+            // ignore quota errors
+          }
         },
         removeItem: (name) => {
+          if (typeof window === "undefined") return;
           localStorage.removeItem(name);
         },
       },

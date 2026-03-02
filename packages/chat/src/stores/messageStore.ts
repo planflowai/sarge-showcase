@@ -1,8 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import { createDebouncedStorage, useKnowledgeStore, useThreadGuardianStore, useJuryGuardianStore, countTokens, buildContextForModel, shouldInjectContext, runInterventionCheck } from "@sarge/core";
+import { useKnowledgeStore, useThreadGuardianStore, useJuryGuardianStore, countTokens, buildContextForModel, shouldInjectContext, runInterventionCheck } from "@sarge/core";
 import type { Provider } from "@sarge/core";
 import { useConversationStore } from "./conversationStore";
 import { sanitizeForCloud, summarizeThread } from "../lib/utils/summarize";
@@ -54,6 +53,7 @@ function addModelAttribution(messages: Message[], modelName: string, provider: P
 }
 
 function loadFromStorage(conversationId: string): Message[] {
+  if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem(STORAGE_PREFIX + conversationId);
     if (!raw) return [];
@@ -71,6 +71,7 @@ function loadFromStorage(conversationId: string): Message[] {
 const storageTimeouts = new Map<string, NodeJS.Timeout>();
 
 function saveToStorage(conversationId: string, messages: Message[]) {
+  if (typeof window === "undefined") return;
   // Cancel previous timeout for this conversation
   if (storageTimeouts.has(conversationId)) {
     clearTimeout(storageTimeouts.get(conversationId)!);
@@ -151,7 +152,7 @@ async function callProvider(
   return data;
 }
 
-export const useMessageStore = create<MessageState>()(persist(
+export const useMessageStore = create<MessageState>()(
   (set, get) => ({
   messages: [],
   loading: false,
@@ -524,10 +525,5 @@ export const useMessageStore = create<MessageState>()(persist(
   clearMessages: () => {
     set({ messages: [] });
   }
-  }),
-    {
-      name: "message",
-      storage: createDebouncedStorage(),
-    }
-  )
+  })
 );

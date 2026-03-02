@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import type { Components } from "react-markdown";
 import { Copy, Check, Zap, Clock, Brain, ChevronDown, ChevronRight } from "lucide-react";
@@ -176,6 +176,8 @@ export default function BuilderMessageBubble({
   const [copied, setCopied] = useState(false);
   const [fileProposals, setFileProposals] = useState<FileEditProposal[]>([]);
   const [originalContents, setOriginalContents] = useState<Record<string, string>>({});
+  // Track code already sent to editor/preview to avoid infinite re-render loops
+  const lastSentCodeRef = useRef<string>("");
 
   const isUser = message.role === "user";
   // Detect raw error messages — render as a friendly warning card instead of raw text
@@ -348,9 +350,14 @@ export default function BuilderMessageBubble({
       // Multi-line code blocks → send to artifact panel, show one-line summary in chat
       if (match || codeString.includes("\n")) {
         const lang = match?.[1] || "html";
-        // Auto-open in editor/preview
-        if (onOpenInEditor) onOpenInEditor(codeString, lang);
-        if (onOpenPreview) onOpenPreview(codeString);
+        // Schedule auto-open in editor/preview via microtask to avoid setState during render
+        if (codeString !== lastSentCodeRef.current) {
+          lastSentCodeRef.current = codeString;
+          queueMicrotask(() => {
+            if (onOpenInEditor) onOpenInEditor(codeString, lang);
+            if (onOpenPreview) onOpenPreview(codeString);
+          });
+        }
         // Show a minimal inline reference instead of a card
         const lineCount = codeString.split("\n").length;
         return (

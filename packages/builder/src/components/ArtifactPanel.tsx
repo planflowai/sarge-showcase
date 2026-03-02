@@ -12,7 +12,7 @@ import { useUIStore } from "@sarge/core";
 import { useArtifactStore } from "../stores/artifactStore";
 import { useBuilderStore } from "../stores/builderStore";
 import { useAirGapStore } from "@sarge/core";
-import BuilderDiffEditor from "./BuilderDiffEditor";
+const BuilderDiffEditor = lazy(() => import("./BuilderDiffEditor"));
 import SaveToLibraryDialog from "./SaveToLibraryDialog";
 import BuilderStatusStrip from "./BuilderStatusStrip";
 import type { ProgressStep } from "./ProgressCards";
@@ -895,11 +895,13 @@ function ArtifactPanelInner({
               </Button>
             </div>
             <div className="flex-1 min-h-0">
-              <BuilderDiffEditor
-                originalContent={diffView.originalContent}
-                modifiedContent={diffView.proposedContent}
-                filePath={diffView.filePath}
-              />
+              <Suspense fallback={<div className="flex items-center justify-center h-full text-zinc-500 text-sm">Loading diff editor...</div>}>
+                <BuilderDiffEditor
+                  originalContent={diffView.originalContent}
+                  modifiedContent={diffView.proposedContent}
+                  filePath={diffView.filePath}
+                />
+              </Suspense>
             </div>
           </div>
         )}

@@ -536,7 +536,8 @@ export const useComponentLibraryStore = create<ComponentLibraryState>()(
       name: "component-library",
       storage: createDebouncedStorage(),
       partialize: (state) => ({
-        components: state.components,
+        // Only persist user-created components — built-ins are always merged back on hydrate()
+        components: state.components.filter((c) => !c.id.startsWith("builtin-")),
       }),
     }
   )
