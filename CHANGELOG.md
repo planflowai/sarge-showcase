@@ -24,6 +24,14 @@ Every commit gets an entry. No exceptions.
 
 ## Entries
 
+### [2026-03-02 — Fix PM2 Boot Flood]
+**Commit:** (this commit)
+**Files touched:** start-foundry.bat (new), start-app.bat (new), CHANGELOG.md
+**What changed:** Removed PM2 from Windows startup (deleted start-sarge.vbs from shell:startup), cleared PM2 dump files from both C:\ProgramData\pm2\home\ and ~/.pm2/, ran pm2 delete all + pm2 save --force, created manual start scripts (start-foundry.bat, start-app.bat) in monorepo root
+**What was tested:** Verified start-sarge.vbs removed, dump files deleted, PM2 daemon killed with empty process list, start scripts created
+**Working state:** Yes — no app code was modified
+**Revert to:** `git reset --hard b0eefaa` (Note: must manually re-add start-sarge.vbs to Startup folder to restore PM2 auto-start)
+
 ### [2026-03-02 — Safety System]
 **Commit:** (this commit)
 **Tag:** working-2026-03-02-post-hydration-fix ★
