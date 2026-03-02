@@ -176,6 +176,20 @@ function ProjectCard({
         } else {
           showToast({ message: data.error || "SEO failed", type: "error" });
         }
+      } else if (key === "accessibility") {
+        const res = await fetch("/api/accessibility/check", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ projectPath: project.path }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast({ message: data.summary || "Accessibility check complete", type: "success" });
+        } else if (data.skipped) {
+          showToast({ message: data.reason || "Accessibility skipped", type: "info" });
+        } else {
+          showToast({ message: data.error || "Accessibility check failed", type: "error" });
+        }
       } else {
         showToast({ message: `${key} — coming soon`, type: "info" });
       }
