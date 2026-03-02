@@ -25,6 +25,14 @@ Every commit gets an entry. No exceptions.
 
 ## Entries
 
+### [2026-03-02 — Fix deploy URL detection (Vercel + Cloudflare)]
+**Commit:** (this commit)
+**Files touched:** apps/builder-standalone/app/api/deploy/route.ts, CHANGELOG.md
+**What changed:** Five bugs fixed in deploy route: (1) Vercel detect now queries `vercel project ls` for production alias instead of reading stale per-deploy URL from url.txt — self-heals url.txt on each detect. (2) Cloudflare detect queries `wrangler pages project list` for actual domain (e.g. `portfolio-b15.pages.dev` instead of guessing `portfolio.pages.dev`). (3) All CLI output parsing now merges stdout+stderr — Vercel CLI sends table to stderr via PowerShell NativeCommandError, was causing empty stdout. (4) Exact name matching for project lookups — prevents `deploy-test` prefix-matching `deploy-test-project3`. Uses `name + " "` boundary check for Vercel, `│` column parsing for wrangler tables. (5) Fixed 6 instances of `runCommand(cmd, cwd, timeout, undefined, extraEnv)` where `undefined` was filling the `extraEnv` slot and the actual env dict was silently dropped as a 5th arg.
+**What was tested:** detect endpoint returns correct production alias for deploy_test (Vercel: `deploytest-vert-delta.vercel.app`, CF: exact `deploy-test-project.pages.dev`). url.txt self-healed from per-deploy URL to production alias.
+**Working state:** Yes
+**Revert to:** `git reset --hard d18a635`
+
 ### [2026-03-02 — Security Pack toggle]
 **Commit:** (this commit)
 **Files touched:** apps/builder-standalone/lib/security/hardener.ts (new), apps/builder-standalone/app/api/security/harden/route.ts (new), CHANGELOG.md
