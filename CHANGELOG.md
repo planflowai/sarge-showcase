@@ -25,6 +25,14 @@ Every commit gets an entry. No exceptions.
 
 ## Entries
 
+### [2026-03-02 — Toggle verification cards with human-readable checks and export]
+**Commit:** (this commit)
+**Files touched:** apps/builder-standalone/lib/toggles/pipeline.ts (modified), apps/builder-standalone/components/deploy/ToggleVerificationCard.tsx (new), apps/builder-standalone/components/deploy/DeployPanel.tsx (modified), BUILDPLAN.md (modified), CHANGELOG.md
+**What changed:** Replaced simple one-line toggle results with rich verification cards matching The Foundry dark theme. Pipeline now returns `ToggleResult` with `checks: ToggleCheck[]` array — each check has human-readable label, status (pass/warn/fail), optional detail. All 7 toggle processors now produce checks: Accessibility (skip link, heading hierarchy, alt text, lang attr, warnings, failures), Privacy (consent banner, privacy policy, form disclosures, manage cookies, script blocking), Security (CSP, external links, honeypots, sanitization, comments stripped, referrer policy), SEO (meta tags by type, sitemap, robots.txt, alt text, heading hierarchy, minification), Performance (lazy images, CSS/JS minified, preconnect, async CSS, viewport, total savings), Analytics (page views, clicks, scroll, time, consent-aware, dashboard), Punch List (revision form, page selector, screenshot, endpoint, email fallback). ToggleVerificationCard.tsx renders dark cards with color-coded border glow (green/amber/red/gray), status badges, expand/collapse, export-to-text button. DeployPanel shows summary bar ("5 of 7 verified | 2 skipped") with successful/warning/failed cards expanded, skipped cards collapsed.
+**What was tested:** Full TypeScript compilation passes (0 errors). All 7 toggle check mappings verified against actual report field types.
+**Working state:** Yes
+**Revert to:** `git reset --hard 9e194b5`
+
 ### [2026-03-02 — Fix cookie consent injection — missing project.json]
 **Commit:** (this commit)
 **Files touched:** BUILDPLAN.md (modified), CHANGELOG.md

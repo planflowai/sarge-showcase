@@ -19,19 +19,14 @@ import {
   XCircle,
   MinusCircle,
   RefreshCw,
-  Minus,
 } from "lucide-react";
 
-interface ToggleResult {
-  toggle: string;
-  status: "success" | "skipped" | "failed";
-  details: string;
-  duration: number;
-}
+import type { ToggleResult } from "@/lib/toggles/pipeline";
 import { useDeployStore, type DeployTarget } from "@/lib/stores/deployStore";
 import { useUIStore } from "@sarge/core";
 import { useBuilderStore } from "@sarge/builder";
 import { TOGGLE_INFO, DEFAULT_TOGGLES, type ProjectToggles } from "@/lib/types/project";
+import ToggleVerificationCard from "./ToggleVerificationCard";
 
 interface DeployPanelProps {
   projectPath?: string | null;
@@ -602,64 +597,48 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
                 )}
               </div>
 
-              {/* ═══ Toggle Pipeline Results ═══ */}
-              {(isRunningToggles || toggleResults) && (
-                <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 overflow-hidden">
-                  <div className="px-3 py-2 border-b border-zinc-200 dark:border-zinc-800 flex items-center gap-2">
-                    {isRunningToggles ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin text-sky-500" />
-                    ) : (
-                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-                    )}
-                    <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
-                      {isRunningToggles ? "Running toggles..." : "Toggles complete"}
-                    </span>
-                  </div>
-                  {toggleResults && toggleResults.length > 0 && (
-                    <div className="divide-y divide-zinc-100 dark:divide-zinc-800/50">
-                      {toggleResults.map((r) => (
-                        <div
-                          key={r.toggle}
-                          className="flex items-center gap-2 px-3 py-1.5"
-                        >
-                          {r.status === "success" ? (
-                            <CheckCircle2 className="h-3 w-3 text-emerald-500 flex-shrink-0" />
-                          ) : r.status === "failed" ? (
-                            <XCircle className="h-3 w-3 text-red-500 flex-shrink-0" />
-                          ) : (
-                            <Minus className="h-3 w-3 text-zinc-400 flex-shrink-0" />
-                          )}
-                          <span
-                            className={`text-xs font-semibold min-w-[80px] ${
-                              r.status === "success"
-                                ? "text-zinc-800 dark:text-zinc-200"
-                                : r.status === "failed"
-                                ? "text-red-600 dark:text-red-400"
-                                : "text-zinc-400"
-                            }`}
-                          >
-                            {r.toggle}
-                          </span>
-                          <span
-                            className={`text-[11px] flex-1 truncate ${
-                              r.status === "skipped"
-                                ? "text-zinc-400 italic"
-                                : r.status === "failed"
-                                ? "text-red-500"
-                                : "text-zinc-500 dark:text-zinc-400"
-                            }`}
-                          >
-                            {r.status === "skipped" ? "skipped" : `— ${r.details}`}
-                          </span>
-                          {r.duration > 0 && (
-                            <span className="text-[9px] text-zinc-400 tabular-nums flex-shrink-0">
-                              {r.duration}ms
-                            </span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
+              {/* ═══ Toggle Pipeline Results — Verification Cards ═══ */}
+              {isRunningToggles && (
+                <div className="flex items-center gap-3 p-4 rounded-xl border border-zinc-700/50 bg-[#1a1a2e]">
+                  <Loader2 className="h-4 w-4 animate-spin text-sky-400" />
+                  <span className="text-xs font-semibold text-zinc-300">
+                    Running toggles...
+                  </span>
+                </div>
+              )}
+              {toggleResults && toggleResults.length > 0 && !isRunningToggles && (
+                <div className="space-y-2">
+                  {/* Summary bar */}
+                  {(() => {
+                    const verified = toggleResults.filter((r) => r.status === "success" || r.status === "warning").length;
+                    const skipped = toggleResults.filter((r) => r.status === "skipped").length;
+                    const failed = toggleResults.filter((r) => r.status === "failed").length;
+                    return (
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#1a1a2e] border border-zinc-700/50 text-[11px]">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                        <span className="text-zinc-300 font-semibold">
+                          {verified} of {toggleResults.length} toggles verified
+                        </span>
+                        {skipped > 0 && (
+                          <span className="text-zinc-500">| {skipped} skipped</span>
+                        )}
+                        {failed > 0 && (
+                          <span className="text-red-400">| {failed} failed</span>
+                        )}
+                      </div>
+                    );
+                  })()}
+                  {/* Cards — successful/warning/failed first, skipped last */}
+                  {toggleResults
+                    .filter((r) => r.status !== "skipped")
+                    .map((r) => (
+                      <ToggleVerificationCard key={r.toggle} result={r} />
+                    ))}
+                  {toggleResults
+                    .filter((r) => r.status === "skipped")
+                    .map((r) => (
+                      <ToggleVerificationCard key={r.toggle} result={r} />
+                    ))}
                 </div>
               )}
 
