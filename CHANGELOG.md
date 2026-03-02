@@ -18,11 +18,21 @@ Every commit gets an entry. No exceptions.
 
 | Tag | Date | Description |
 |-----|------|-------------|
+| working-2026-03-02-deploy-fix | 2026-03-02 | DeployPanel reads from store, all routes 200, full audit complete |
 | working-2026-03-02-post-hydration-fix | 2026-03-02 | Builder loads, all routes 200, hydration fixed, MetaMask identified |
 
 ---
 
 ## Entries
+
+### [2026-03-02 — Full System Audit]
+**Commit:** (this commit)
+**Tag:** working-2026-03-02-deploy-fix ★
+**Files touched:** STATUS.md (new), CLAUDE.md (Rule 9 added), CHANGELOG.md
+**What changed:** Comprehensive audit of all UI features, API endpoints, stores, and architecture. Created STATUS.md documenting ~80 features, 30 API endpoints, 6 known issues, 11 standalone apps, architecture metrics, and safe revert points. Added Rule 9 (Check STATUS.md Before Changes) to CLAUDE.md.
+**What was tested:** All 3 page routes return 200, all 30 API endpoints tested via curl, all UI components audited by source inspection
+**Working state:** Yes — builder-standalone verified working at localhost:3101
+**Revert to:** `git reset --hard 620c39c`
 
 ### [2026-03-02 — Fix DeployPanel projectPath]
 **Commit:** (this commit)

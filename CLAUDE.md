@@ -371,3 +371,11 @@ If executing multiple prompts in sequence, each prompt's changes must be verifie
 
 ### Rule 8: Revert Fast, Don't Patch
 If a commit breaks something and the fix isn't obvious within 10 minutes, revert to the last working tag instead of trying to patch. It's faster to revert and redo than to debug cascading failures.
+
+### Rule 9: Check STATUS.md Before Changes
+Before modifying any component, store, or API route, check `STATUS.md` for:
+- Current working state of the feature you're touching
+- Known issues that might be related
+- Architecture metrics (store count, component count) to avoid bloat
+- Safe revert points in case your change breaks something
+If `STATUS.md` doesn't exist or is outdated, do NOT create/update it without user permission.
