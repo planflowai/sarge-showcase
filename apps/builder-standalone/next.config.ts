@@ -10,6 +10,15 @@ const emptyStub = path.resolve(__dirname, "lib/stubs/empty.ts");
 const nextConfig: NextConfig = {
   devIndicators: false,
   transpilePackages: ["@sarge/core", "@sarge/chat", "@sarge/builder", "@sarge/benchmark", "@sarge/audit"],
+  // Keep audit-heavy Node.js packages out of webpack bundling —
+  // lighthouse uses import.meta for path resolution, axe-core/jsdom need native Node APIs
+  serverExternalPackages: [
+    "lighthouse",
+    "chrome-launcher",
+    "axe-core",
+    "jsdom",
+    "html-validate",
+  ],
   // Turbopack: empty config silences Next.js 16 webpack-only warning.
   // Windows paths not yet supported in Turbopack resolveAlias — use --webpack flag.
   turbopack: {},

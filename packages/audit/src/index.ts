@@ -94,7 +94,7 @@ export async function runAudit(
           break;
         }
         case "axe-core": {
-          const result = await runAxeCore(rawHTML);
+          const result = await runAxeCore(projectPath);
           results.push(result);
           break;
         }
