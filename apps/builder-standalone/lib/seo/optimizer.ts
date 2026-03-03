@@ -4,6 +4,8 @@ import {
   injectMetaTags,
   fixAltText,
   checkHeadingHierarchy,
+  fixHeadingHierarchy,
+  type HeadingFix,
 } from "./metaTags";
 import { minifyHtml } from "./minifier";
 import type { ProjectMeta } from "@/lib/types/project";
@@ -12,9 +14,12 @@ export interface SeoReport {
   metaTagsAdded: string[];
   altTextFixed: number;
   headingWarnings: string[];
+  headingFixes: HeadingFix[];
   sitemapCreated: boolean;
   robotsCreated: boolean;
   minified: boolean;
+  originalSize: number;
+  optimizedSize: number;
 }
 
 /**
@@ -29,9 +34,12 @@ export function applySeoOptimization(
     metaTagsAdded: [],
     altTextFixed: 0,
     headingWarnings: [],
+    headingFixes: [],
     sitemapCreated: false,
     robotsCreated: false,
     minified: false,
+    originalSize: 0,
+    optimizedSize: 0,
   };
 
   const indexPath = join(projectPath, "index.html");
@@ -63,13 +71,17 @@ export function applySeoOptimization(
   html = altResult.html;
   report.altTextFixed = altResult.fixed;
 
-  // 3. Check heading hierarchy
-  report.headingWarnings = checkHeadingHierarchy(html);
+  // 3. Fix heading hierarchy (auto-fix skips, report any remaining)
+  const headingResult = fixHeadingHierarchy(html);
+  html = headingResult.html;
+  report.headingFixes = headingResult.fixes;
+  report.headingWarnings = headingResult.remainingWarnings;
 
   // 4. Minify HTML
-  const originalLength = html.length;
+  report.originalSize = html.length;
   html = minifyHtml(html);
-  report.minified = html.length < originalLength;
+  report.optimizedSize = html.length;
+  report.minified = html.length < report.originalSize;
 
   // Write optimized HTML back
   writeFileSync(indexPath, html, "utf-8");

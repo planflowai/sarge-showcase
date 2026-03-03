@@ -273,6 +273,91 @@ export function checkHeadingHierarchy(html: string): string[] {
   return warnings;
 }
 
+export interface HeadingFix {
+  before: string;
+  after: string;
+  text: string;
+}
+
+/**
+ * Auto-fix heading hierarchy gaps by downgrading headings.
+ * When H1 → H3 (skip), changes the H3 to H2. Cascades downward.
+ * Returns { html, fixes, remainingWarnings }.
+ */
+export function fixHeadingHierarchy(html: string): {
+  html: string;
+  fixes: HeadingFix[];
+  remainingWarnings: string[];
+} {
+  const fixes: HeadingFix[] = [];
+
+  // Parse all headings with their positions
+  interface HeadingInfo {
+    level: number;
+    text: string;
+    fullMatch: string;
+    index: number;
+  }
+  const headings: HeadingInfo[] = [];
+  const re = /<h([1-6])([^>]*)>([\s\S]*?)<\/h\1>/gi;
+  let m;
+  while ((m = re.exec(html)) !== null) {
+    headings.push({
+      level: parseInt(m[1]),
+      text: m[3].replace(/<[^>]+>/g, "").trim().slice(0, 50),
+      fullMatch: m[0],
+      index: m.index,
+    });
+  }
+
+  if (headings.length === 0) {
+    return { html, fixes: [], remainingWarnings: [] };
+  }
+
+  // Build a target level map: each heading gets the correct level
+  const targetLevels: number[] = new Array(headings.length);
+  targetLevels[0] = headings[0].level;
+
+  for (let i = 1; i < headings.length; i++) {
+    const prev = targetLevels[i - 1];
+    const curr = headings[i].level;
+    if (curr > prev + 1) {
+      // Skip detected — downgrade to prev + 1
+      targetLevels[i] = prev + 1;
+    } else {
+      targetLevels[i] = curr;
+    }
+  }
+
+  // Apply fixes in reverse order (so indices don't shift)
+  let result = html;
+  for (let i = headings.length - 1; i >= 0; i--) {
+    const h = headings[i];
+    const target = targetLevels[i];
+    if (target !== h.level) {
+      const oldTag = h.fullMatch;
+      // Replace opening and closing tags with new level, preserve attributes
+      const newTag = oldTag
+        .replace(new RegExp(`^<h${h.level}`, "i"), `<h${target}`)
+        .replace(new RegExp(`</h${h.level}>$`, "i"), `</h${target}>`);
+      result = result.substring(0, h.index) + newTag + result.substring(h.index + oldTag.length);
+      fixes.push({
+        before: `<h${h.level}>${h.text}</h${h.level}>`,
+        after: `<h${target}>${h.text}</h${target}>`,
+        text: h.text,
+      });
+    }
+  }
+
+  // Reverse fixes array so it's in document order
+  fixes.reverse();
+
+  // Re-check for any remaining issues
+  const remainingWarnings = checkHeadingHierarchy(result);
+
+  return { html: result, fixes, remainingWarnings };
+}
+
 /* ── Helpers ── */
 
 function escAttr(s: string): string {

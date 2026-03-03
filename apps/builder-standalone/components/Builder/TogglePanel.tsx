@@ -16,6 +16,7 @@ import {
   Check,
   AlertTriangle,
   ChevronDown,
+  RotateCcw,
 } from "lucide-react";
 import {
   TOGGLE_INFO,
@@ -25,6 +26,7 @@ import {
 } from "@/lib/types/project";
 import type { ToggleResult } from "@/lib/toggles/pipeline";
 import { useBuilderStore } from "@sarge/builder/index.client";
+import VerificationCard from "./VerificationCard";
 
 /* ── Icon map per toggle key ── */
 const TOGGLE_ICONS: Record<string, React.ElementType> = {
@@ -57,6 +59,7 @@ export default function TogglePanel({ onClose }: Props) {
   const [running, setRunning] = useState(false);
   const [optimizeLabel, setOptimizeLabel] = useState<"idle" | "running" | "done">("idle");
   const [currentToggleName, setCurrentToggleName] = useState("");
+  const [reverting, setReverting] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
 
   // Load toggle states from project.json on mount
@@ -267,6 +270,33 @@ export default function TogglePanel({ onClose }: Props) {
       setRunning(false);
     }
   }, [projectPath, running, toggles, toggleConfig]);
+
+  // Revert to pre-optimize snapshot
+  const handleRevert = useCallback(async () => {
+    if (!projectPath || reverting) return;
+    setReverting(true);
+    try {
+      const res = await fetch("/api/toggles/run", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectPath }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setResults([]);
+        setLogLines(["Reverted to pre-optimize snapshot"]);
+        setStatuses({});
+        setOptimizeLabel("idle");
+        window.dispatchEvent(new CustomEvent("builder:refresh-preview"));
+      } else {
+        setLogLines((prev) => [...prev, `Revert failed: ${data.error}`]);
+      }
+    } catch (err: any) {
+      setLogLines((prev) => [...prev, `Revert error: ${err.message}`]);
+    } finally {
+      setReverting(false);
+    }
+  }, [projectPath, reverting]);
 
   // Auto-scroll log
   useEffect(() => {
@@ -533,48 +563,25 @@ export default function TogglePanel({ onClose }: Props) {
               </div>
             )}
 
-            {/* Result summary cards */}
+            {/* Verification cards */}
             {!running && results.length > 0 && (
               <div className="mt-4 space-y-3">
                 {results
                   .filter((r) => r.status !== "skipped")
-                  .map((r) => (
-                    <div
-                      key={r.toggle}
-                      className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-3"
-                    >
-                      <div className="flex items-center gap-2 mb-1.5">
-                        {r.status === "success" && (
-                          <Check className="w-4 h-4 text-emerald-400" />
-                        )}
-                        {r.status === "failed" && (
-                          <X className="w-4 h-4 text-red-400" />
-                        )}
-                        {r.status === "warning" && (
-                          <AlertTriangle className="w-4 h-4 text-amber-400" />
-                        )}
-                        <span className="text-sm font-bold text-white">
-                          {r.toggle}
-                        </span>
-                        <span className="text-xs text-zinc-500 ml-auto">
-                          {r.duration}ms
-                        </span>
-                      </div>
-                      <p className="text-xs text-zinc-400">{r.summary}</p>
-                      {r.checks
-                        .filter((c) => c.status === "warn")
-                        .map((c, i) => (
-                          <p key={i} className="text-xs text-amber-400 mt-1">
-                            {"\u26A0"} {c.label}
-                            {c.detail && (
-                              <span className="text-zinc-500 ml-1">
-                                — {c.detail}
-                              </span>
-                            )}
-                          </p>
-                        ))}
-                    </div>
-                  ))}
+                  .map((r) => {
+                    const info = TOGGLE_INFO.find(
+                      (t) => t.label === r.toggle || t.key === r.toggle.toLowerCase()
+                    );
+                    return (
+                      <VerificationCard
+                        key={r.toggle}
+                        result={r}
+                        color={info?.color || "#FF6700"}
+                        onRerun={handleOptimize}
+                        onRevert={handleRevert}
+                      />
+                    );
+                  })}
               </div>
             )}
           </div>
@@ -637,14 +644,26 @@ export default function TogglePanel({ onClose }: Props) {
           {optimizeLabel === "done" && "\u2713 OPTIMIZED"}
         </button>
 
-        {/* Right — Close */}
-        <button
-          onClick={onClose}
-          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-zinc-400 hover:text-white bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors"
-        >
-          <X className="w-4 h-4" />
-          Close
-        </button>
+        {/* Right — Revert + Close */}
+        <div className="flex items-center gap-2">
+          {results.length > 0 && !running && (
+            <button
+              onClick={handleRevert}
+              disabled={reverting}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-400 hover:text-red-300 bg-zinc-800 hover:bg-red-900/30 rounded-lg transition-colors disabled:opacity-40"
+            >
+              <RotateCcw className="w-4 h-4" />
+              {reverting ? "Reverting..." : "Revert All"}
+            </button>
+          )}
+          <button
+            onClick={onClose}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-zinc-400 hover:text-white bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors"
+          >
+            <X className="w-4 h-4" />
+            Close
+          </button>
+        </div>
       </div>
 
       {/* Custom scrollbar styles */}

@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, existsSync } from "fs";
+import { readFileSync, writeFileSync, existsSync, copyFileSync } from "fs";
 import { join } from "path";
 import type { ProjectToggles, ProjectMeta } from "@/lib/types/project";
 import { runAccessibilityCheck } from "@/lib/accessibility/checker";
@@ -17,12 +17,75 @@ export interface ToggleCheck {
   detail?: string;
 }
 
+export interface VerificationItem {
+  label: string;
+  before: string;
+  after: string;
+  section?: string;
+}
+
+export interface WarningItem {
+  label: string;
+  detail: string;
+  before?: string;
+  after?: string;
+}
+
+export interface ManualItem {
+  label: string;
+  instruction: string;
+}
+
+export interface VerificationData {
+  fixed: VerificationItem[];
+  warnings: WarningItem[];
+  manual: ManualItem[];
+  stats: { bytesBefore?: number; bytesAfter?: number; bytesSaved?: number };
+}
+
 export interface ToggleResult {
   toggle: string;
   status: "success" | "skipped" | "failed" | "warning";
   summary: string;
   duration: number;
   checks: ToggleCheck[];
+  verification?: VerificationData;
+}
+
+/* ── HTML Section Extractors ── */
+
+function extractHead(html: string): string {
+  const m = html.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
+  return m ? m[1].trim() : "(no <head>)";
+}
+
+function extractImages(html: string): string {
+  const imgs = html.match(/<img\s[^>]+>/gi) || [];
+  return imgs.length > 0 ? imgs.join("\n") : "(no images)";
+}
+
+function extractHeadings(html: string): string {
+  const hs = html.match(/<h[1-6][^>]*>[\s\S]*?<\/h[1-6]>/gi) || [];
+  return hs.length > 0 ? hs.join("\n") : "(no headings)";
+}
+
+function extractLinks(html: string): string {
+  const links = html.match(/<a\s[^>]+>/gi) || [];
+  return links.length > 0 ? links.join("\n") : "(no links)";
+}
+
+function extractForms(html: string): string {
+  const forms = html.match(/<form[\s\S]*?<\/form>/gi) || [];
+  return forms.length > 0 ? forms.join("\n") : "(no forms)";
+}
+
+function extractScripts(html: string): string {
+  const scripts = html.match(/<script[\s\S]*?<\/script>/gi) || [];
+  return scripts.length > 0 ? scripts.join("\n") : "(no scripts)";
+}
+
+function truncate(s: string, max: number = 500): string {
+  return s.length > max ? s.slice(0, max) + "..." : s;
 }
 
 /**
@@ -37,6 +100,8 @@ export interface ToggleResult {
  *  5. Performance
  *  6. Analytics
  *  7. Punch List
+ *  8. Calendly
+ *  9. Mailchimp
  */
 export async function runTogglePipeline(
   projectPath: string,
@@ -46,11 +111,20 @@ export async function runTogglePipeline(
   const results: ToggleResult[] = [];
   const indexPath = join(projectPath, "index.html");
 
+  // ─── Pre-optimize snapshot ───
+  const snapshotPath = join(projectPath, "index.pre-optimize.html");
+  if (existsSync(indexPath)) {
+    copyFileSync(indexPath, snapshotPath);
+  }
+
   // ─── 1. Accessibility (special — operates on project directory) ───
   {
     const t0 = Date.now();
     if (toggles.accessibility) {
       try {
+        const beforeHtml = existsSync(indexPath) ? readFileSync(indexPath, "utf-8") : "";
+        const beforeHeadings = extractHeadings(beforeHtml);
+        const beforeImages = extractImages(beforeHtml);
         const report = await runAccessibilityCheck(projectPath);
         const checks: ToggleCheck[] = [];
         checks.push({
@@ -96,6 +170,20 @@ export async function runTogglePipeline(
           });
         }
 
+        const afterHtml = existsSync(indexPath) ? readFileSync(indexPath, "utf-8") : "";
+        const afterHeadings = extractHeadings(afterHtml);
+        const afterImages = extractImages(afterHtml);
+
+        const verification: VerificationData = { fixed: [], warnings: [], manual: [], stats: {} };
+        if (report.fixes.skipLinkInjected) verification.fixed.push({ label: "Skip navigation link added", before: "(none)", after: '<a href="#main-content" class="skip-link">Skip to main content</a>', section: "body" });
+        if (report.fixes.langAdded) verification.fixed.push({ label: "Language attribute added to <html>", before: "<html>", after: '<html lang="en">', section: "html" });
+        if (report.fixes.headingsFixed > 0) verification.fixed.push({ label: `${report.fixes.headingsFixed} heading(s) fixed`, before: truncate(beforeHeadings), after: truncate(afterHeadings), section: "headings" });
+        if (report.fixes.altTextAdded > 0) verification.fixed.push({ label: `${report.fixes.altTextAdded} image alt text(s) added`, before: truncate(beforeImages), after: truncate(afterImages), section: "images" });
+        for (const issue of report.issues.filter(i => i.severity === "warning").slice(0, 5)) {
+          verification.warnings.push({ label: issue.message, detail: issue.message });
+        }
+        verification.manual.push({ label: "Keyboard navigation", instruction: "Tab through your site to verify all interactive elements are reachable" });
+
         const fixCount =
           report.fixes.headingsFixed +
           report.fixes.altTextAdded +
@@ -112,6 +200,7 @@ export async function runTogglePipeline(
               : `${report.passed} passed${hasWarnings ? `, ${report.warnings} warnings` : ""}`,
           duration: Date.now() - t0,
           checks,
+          verification,
         });
       } catch (err: any) {
         results.push({
@@ -157,6 +246,8 @@ export async function runTogglePipeline(
     const t0 = Date.now();
     if (toggles.privacy) {
       try {
+        const beforeForms = extractForms(html);
+        const beforeScripts = extractScripts(html);
         const { html: out, report } = applyPrivacyCompliance(html);
         html = out;
         writeFileSync(indexPath, html, "utf-8");
@@ -198,6 +289,13 @@ export async function runTogglePipeline(
           });
         }
 
+        const verification: VerificationData = { fixed: [], warnings: [], manual: [], stats: {} };
+        if (report.consentBannerAdded) verification.fixed.push({ label: "Cookie consent banner injected", before: "(none)", after: "GDPR/CCPA consent banner with Accept/Reject/Manage", section: "body" });
+        if (report.privacyPolicyAdded) verification.fixed.push({ label: "Privacy policy page generated", before: "(none)", after: "GDPR + CCPA compliant privacy policy", section: "body" });
+        if (report.formDisclosuresAdded > 0) verification.fixed.push({ label: `${report.formDisclosuresAdded} form disclosure(s) added`, before: truncate(beforeForms), after: truncate(extractForms(html)), section: "forms" });
+        if (report.manageCookiesLinkAdded) verification.fixed.push({ label: "Manage Cookies link added to footer", before: "(none)", after: "Manage Cookies link in footer", section: "footer" });
+        if (report.scriptsTagged > 0) verification.fixed.push({ label: `${report.scriptsTagged} script(s) tagged for consent`, before: truncate(beforeScripts), after: truncate(extractScripts(html)), section: "scripts" });
+
         const parts: string[] = [];
         if (report.consentBannerAdded) parts.push("consent banner");
         if (report.privacyPolicyAdded) parts.push("privacy policy");
@@ -209,6 +307,7 @@ export async function runTogglePipeline(
           summary: parts.length > 0 ? parts.join(", ") : "Already compliant",
           duration: Date.now() - t0,
           checks,
+          verification,
         });
       } catch (err: any) {
         results.push({
@@ -229,6 +328,9 @@ export async function runTogglePipeline(
     const t0 = Date.now();
     if (toggles.security) {
       try {
+        const beforeLinks = extractLinks(html);
+        const beforeForms3 = extractForms(html);
+        const beforeHead3 = extractHead(html);
         const { html: out, report } = applySecurityHardening(html);
         html = out;
         writeFileSync(indexPath, html, "utf-8");
@@ -271,6 +373,14 @@ export async function runTogglePipeline(
           status: "pass",
         });
 
+        const verification: VerificationData = { fixed: [], warnings: [], manual: [], stats: {} };
+        if (report.cspAdded) verification.fixed.push({ label: "Content Security Policy added", before: "(none)", after: truncate(extractHead(html).match(/meta[^>]*http-equiv[^>]*Content-Security-Policy[^>]*/i)?.[0] || "CSP meta tag"), section: "head" });
+        if (report.referrerPolicyAdded) verification.fixed.push({ label: "Referrer policy set", before: "(none)", after: 'strict-origin-when-cross-origin', section: "head" });
+        if (report.noopenerFixed > 0) verification.fixed.push({ label: `${report.noopenerFixed} external link(s) secured`, before: truncate(beforeLinks), after: truncate(extractLinks(html)), section: "links" });
+        if (report.honeypotFormsAdded > 0) verification.fixed.push({ label: `${report.honeypotFormsAdded} form honeypot(s) added`, before: truncate(beforeForms3), after: truncate(extractForms(html)), section: "forms" });
+        if (report.sanitizationScriptAdded) verification.fixed.push({ label: "Input sanitization script added", before: "(none)", after: "All form inputs sanitized on submit", section: "scripts" });
+        if (report.commentsStripped > 0) verification.fixed.push({ label: `${report.commentsStripped} HTML comment(s) stripped`, before: `${report.commentsStripped} comments found`, after: "0 comments", section: "html" });
+
         const parts: string[] = [];
         if (report.cspAdded) parts.push("CSP added");
         if (report.noopenerFixed > 0) parts.push(`${report.noopenerFixed} links hardened`);
@@ -283,6 +393,7 @@ export async function runTogglePipeline(
           summary: parts.length > 0 ? parts.join(", ") : "Already hardened",
           duration: Date.now() - t0,
           checks,
+          verification,
         });
       } catch (err: any) {
         results.push({
@@ -303,6 +414,10 @@ export async function runTogglePipeline(
     const t0 = Date.now();
     if (toggles.seo) {
       try {
+        const beforeHead4 = extractHead(html);
+        const beforeImages4 = extractImages(html);
+        const beforeHeadings4 = extractHeadings(html);
+        const beforeSize = html.length;
         // Write current HTML so SEO optimizer reads the chained version
         writeFileSync(indexPath, html, "utf-8");
 
@@ -374,17 +489,51 @@ export async function runTogglePipeline(
             : "Image alt text — all images covered",
           status: "pass",
         });
+        if (report.headingFixes && report.headingFixes.length > 0) {
+          checks.push({ label: `Heading hierarchy — ${report.headingFixes.length} fixed`, status: "pass" });
+        }
         if (report.headingWarnings.length > 0) {
           checks.push({
-            label: `Heading hierarchy — ${report.headingWarnings.length} issue${report.headingWarnings.length !== 1 ? "s" : ""}`,
+            label: `Heading hierarchy — ${report.headingWarnings.length} remaining issue${report.headingWarnings.length !== 1 ? "s" : ""}`,
             status: "warn",
             detail: report.headingWarnings.slice(0, 2).join("; "),
           });
-        } else {
+        } else if (!report.headingFixes || report.headingFixes.length === 0) {
           checks.push({ label: "Heading hierarchy — valid", status: "pass" });
         }
         if (report.minified) {
-          checks.push({ label: "HTML minified — size reduced", status: "pass" });
+          const saved = report.originalSize - report.optimizedSize;
+          checks.push({ label: `HTML minified — ${saved > 1024 ? `${(saved / 1024).toFixed(1)}KB` : `${saved}B`} saved`, status: "pass" });
+        }
+
+        // Build verification data
+        const verification: VerificationData = { fixed: [], warnings: [], manual: [], stats: {} };
+        for (const tag of report.metaTagsAdded) {
+          const tagHtml = extractHead(html).match(new RegExp(`<(?:meta|title|link)[^>]*${tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[^>]*>?`, "i"))?.[0] || tag;
+          verification.fixed.push({ label: `${tag} added`, before: "(none)", after: truncate(tagHtml, 200), section: "head" });
+        }
+        if (report.altTextFixed > 0) {
+          verification.fixed.push({ label: `${report.altTextFixed} image alt text(s) fixed`, before: truncate(beforeImages4), after: truncate(extractImages(html)), section: "images" });
+        }
+        for (const hf of (report.headingFixes || [])) {
+          verification.fixed.push({ label: `Heading fixed: ${hf.text}`, before: hf.before, after: hf.after, section: "headings" });
+        }
+        if (report.sitemapCreated) {
+          const sitemapContent = existsSync(join(projectPath, "sitemap.xml")) ? truncate(readFileSync(join(projectPath, "sitemap.xml"), "utf-8"), 400) : "sitemap.xml";
+          verification.fixed.push({ label: "Sitemap generated", before: "(none)", after: sitemapContent, section: "sitemap.xml" });
+        }
+        if (report.robotsCreated) {
+          const robotsContent = existsSync(join(projectPath, "robots.txt")) ? readFileSync(join(projectPath, "robots.txt"), "utf-8") : "robots.txt";
+          verification.fixed.push({ label: "Robots.txt generated", before: "(none)", after: robotsContent, section: "robots.txt" });
+        }
+        if (report.minified) {
+          verification.stats = { bytesBefore: report.originalSize, bytesAfter: report.optimizedSize, bytesSaved: report.originalSize - report.optimizedSize };
+        }
+        for (const w of report.headingWarnings) {
+          verification.warnings.push({ label: w, detail: w });
+        }
+        if (!report.metaTagsAdded.some(t => t.includes("og:image"))) {
+          verification.manual.push({ label: "og:image missing", instruction: "Upload a social preview image (1200\u00d7630px recommended) and add <meta property=\"og:image\" content=\"URL\"> to <head>" });
         }
 
         const parts: string[] = [];
@@ -392,6 +541,7 @@ export async function runTogglePipeline(
         if (report.sitemapCreated) parts.push("sitemap");
         if (report.robotsCreated) parts.push("robots.txt");
         if (report.altTextFixed > 0) parts.push(`${report.altTextFixed} alt text fixed`);
+        if (report.headingFixes && report.headingFixes.length > 0) parts.push(`${report.headingFixes.length} heading fixes`);
         const hasWarnings = report.headingWarnings.length > 0;
         results.push({
           toggle: "SEO",
@@ -399,6 +549,7 @@ export async function runTogglePipeline(
           summary: parts.length > 0 ? parts.join(", ") : "Already optimized",
           duration: Date.now() - t0,
           checks,
+          verification,
         });
       } catch (err: any) {
         results.push({
@@ -419,6 +570,8 @@ export async function runTogglePipeline(
     const t0 = Date.now();
     if (toggles.performance) {
       try {
+        const beforeImages5 = extractImages(html);
+        const beforeSize5 = html.length;
         const { html: out, report } = applyPerformanceOptimization(html);
         html = out;
         writeFileSync(indexPath, html, "utf-8");
@@ -462,6 +615,13 @@ export async function runTogglePipeline(
           checks.push({ label: `Total savings — ${saved > 1024 ? `${(saved / 1024).toFixed(1)}KB` : `${saved}B`} reduced`, status: "pass" });
         }
 
+        const verification: VerificationData = { fixed: [], warnings: [], manual: [], stats: { bytesBefore: beforeSize5, bytesAfter: html.length, bytesSaved: saved } };
+        if (report.lazyImagesAdded > 0) verification.fixed.push({ label: `${report.lazyImagesAdded} image(s) lazy-loaded`, before: truncate(beforeImages5), after: truncate(extractImages(html)), section: "images" });
+        if (report.cssMinified > 0) verification.fixed.push({ label: `${report.cssMinified} CSS block(s) minified`, before: `${report.cssMinified} unminified blocks`, after: "Minified", section: "styles" });
+        if (report.jsMinified > 0) verification.fixed.push({ label: `${report.jsMinified} JS block(s) minified`, before: `${report.jsMinified} unminified blocks`, after: "Minified", section: "scripts" });
+        if (report.preconnectLinksAdded.length > 0) verification.fixed.push({ label: `Preconnect hints for ${report.preconnectLinksAdded.length} domain(s)`, before: "(none)", after: report.preconnectLinksAdded.join(", "), section: "head" });
+        if (report.viewportAdded) verification.fixed.push({ label: "Viewport meta configured", before: "(none)", after: '<meta name="viewport" content="width=device-width, initial-scale=1.0">', section: "head" });
+
         const parts: string[] = [];
         if (report.lazyImagesAdded > 0) parts.push(`${report.lazyImagesAdded} lazy images`);
         if (report.cssMinified > 0) parts.push(`CSS minified`);
@@ -473,6 +633,7 @@ export async function runTogglePipeline(
           summary: parts.length > 0 ? parts.join(", ") : "Already optimized",
           duration: Date.now() - t0,
           checks,
+          verification,
         });
       } catch (err: any) {
         results.push({
@@ -517,6 +678,13 @@ export async function runTogglePipeline(
           status: "pass",
         });
 
+        const verification: VerificationData = { fixed: [], warnings: [], manual: [], stats: {} };
+        if (report.snippetInjected) {
+          verification.fixed.push({ label: "Analytics tracker injected", before: "(none)", after: "Page views, click tracking, scroll depth (25/50/75/100%), time on page", section: "scripts" });
+          verification.fixed.push({ label: "Consent-aware tracking", before: "(none)", after: "Tracker waits for cookie consent before activating", section: "scripts" });
+        }
+        if (report.dashboardLinkAdded) verification.fixed.push({ label: "Dashboard link added to footer", before: "(none)", after: "Analytics dashboard link in footer", section: "footer" });
+
         const parts: string[] = [];
         if (report.snippetInjected) parts.push("tracker injected");
         if (report.dashboardLinkAdded) parts.push("dashboard link");
@@ -526,6 +694,7 @@ export async function runTogglePipeline(
           summary: parts.length > 0 ? parts.join(", ") : "Already injected",
           duration: Date.now() - t0,
           checks,
+          verification,
         });
       } catch (err: any) {
         results.push({
@@ -576,6 +745,12 @@ export async function runTogglePipeline(
           checks.push({ label: "Email fallback — configured", status: "pass" });
         }
 
+        const verification: VerificationData = { fixed: [], warnings: [], manual: [], stats: {} };
+        if (report.floatingButtonAdded) verification.fixed.push({ label: "Floating revision button added", before: "(none)", after: "Bottom-right floating button for client feedback", section: "body" });
+        if (report.navPagesDetected > 0) verification.fixed.push({ label: `Page selector with ${report.navPagesDetected} page(s)`, before: "(none)", after: `${report.navPagesDetected} pages available in selector`, section: "body" });
+        if (report.mailtoFallbackEmail) verification.fixed.push({ label: "Email fallback configured", before: "(none)", after: report.mailtoFallbackEmail, section: "config" });
+        verification.manual.push({ label: "Screenshot upload", instruction: "Test the screenshot upload by clicking the revision button and using the camera icon" });
+
         const parts: string[] = [];
         if (report.floatingButtonAdded) parts.push("revision form");
         if (report.navPagesDetected > 0) parts.push(`${report.navPagesDetected} pages detected`);
@@ -586,6 +761,7 @@ export async function runTogglePipeline(
           summary: parts.length > 0 ? parts.join(", ") : "Already injected",
           duration: Date.now() - t0,
           checks,
+          verification,
         });
       } catch (err: any) {
         results.push({
@@ -626,12 +802,20 @@ export async function runTogglePipeline(
           status: "pass",
         });
 
+        const verification: VerificationData = { fixed: [], warnings: [], manual: [], stats: {} };
+        if (report.buttonInjected) {
+          verification.fixed.push({ label: "Book a Call button injected", before: "(none)", after: "Floating button, bottom-right, Calendly blue (#006BFF)", section: "body" });
+          verification.fixed.push({ label: "Calendly popup widget loaded", before: "(none)", after: `Calendly URL: ${options.calendlyUrl}`, section: "scripts" });
+        }
+        verification.manual.push({ label: "Test booking link", instruction: "Click the Book a Call button to verify the Calendly popup opens with your calendar" });
+
         results.push({
           toggle: "Calendly",
           status: "success",
           summary: report.buttonInjected ? "Book a Call button + popup widget" : "Already injected",
           duration: Date.now() - t0,
           checks,
+          verification,
         });
       } catch (err: any) {
         results.push({
@@ -677,12 +861,21 @@ export async function runTogglePipeline(
           checks.push({ label: "Accessibility labels — included", status: "pass" });
         }
 
+        const verification: VerificationData = { fixed: [], warnings: [], manual: [], stats: {} };
+        if (report.formInjected) {
+          verification.fixed.push({ label: "Email signup form injected", before: "(none)", after: "Styled form with name, email, subscribe button", section: "footer" });
+          verification.fixed.push({ label: "Honeypot anti-spam field added", before: "(none)", after: "Hidden field to catch bots", section: "form" });
+          verification.fixed.push({ label: "Accessibility labels included", before: "(none)", after: "aria-label on all inputs", section: "form" });
+        }
+        verification.manual.push({ label: "Test email submission", instruction: "Submit a test email to verify it arrives in your Mailchimp audience" });
+
         results.push({
           toggle: "Mailchimp",
           status: "success",
           summary: report.formInjected ? "Email signup form injected" : "Already injected",
           duration: Date.now() - t0,
           checks,
+          verification,
         });
       } catch (err: any) {
         results.push({

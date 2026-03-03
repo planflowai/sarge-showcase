@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { existsSync, readFileSync } from "fs";
+import { existsSync, readFileSync, copyFileSync, unlinkSync } from "fs";
 import { join } from "path";
 import { runTogglePipeline } from "@/lib/toggles/pipeline";
 import type { ProjectMeta } from "@/lib/types/project";
@@ -14,6 +14,39 @@ function resolveProjectPath(projectPath: string): string {
     return join(PROJECTS_DIR, projectPath).replace(/\\/g, "/");
   }
   return projectPath.replace(/\\/g, "/");
+}
+
+/**
+ * DELETE — Revert to pre-optimize snapshot.
+ * Body: { projectPath }
+ */
+export async function DELETE(req: Request) {
+  try {
+    const body = await req.json();
+    const { projectPath: rawPath } = body;
+
+    if (!rawPath) {
+      return NextResponse.json({ error: "Missing 'projectPath'" }, { status: 400 });
+    }
+
+    const projectPath = resolveProjectPath(rawPath);
+    const indexPath = join(projectPath, "index.html");
+    const snapshotPath = join(projectPath, "index.pre-optimize.html");
+
+    if (!existsSync(snapshotPath)) {
+      return NextResponse.json({ error: "No pre-optimize snapshot found" }, { status: 404 });
+    }
+
+    copyFileSync(snapshotPath, indexPath);
+    unlinkSync(snapshotPath);
+
+    return NextResponse.json({ success: true, message: "Reverted to pre-optimize snapshot" });
+  } catch (err: any) {
+    return NextResponse.json(
+      { error: err.message || "Revert failed" },
+      { status: 500 }
+    );
+  }
 }
 
 export async function POST(req: Request) {
