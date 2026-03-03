@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
       const res = await fetch(`${lmstudioUrl}/chat/completions`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ model, messages: hasImages ? messagesWithNote : messages, max_tokens: 1024, stream: true }),
+        body: JSON.stringify({ model, messages: hasImages ? messagesWithNote : messages, max_tokens: 4096, stream: true }),
       });
 
       if (!res.ok) {
@@ -305,7 +305,7 @@ async function streamAnthropic(model: string, prompt: string, systemPrompt?: str
     },
     body: JSON.stringify({
       model,
-      max_tokens: 4096,
+      max_tokens: 8192,
       stream: true,
       system: systemPrompt || undefined,
       messages: [{ role: 'user', content }],
@@ -345,8 +345,8 @@ async function streamOpenAI(model: string, messages: { role: string; content: an
   const apiKey = process.env.OPENAI_API_KEY || '';
   const isReasoning = model.startsWith('o3') || model.startsWith('o4');
   const tokenParam = isReasoning
-    ? { max_completion_tokens: 4096 }
-    : { max_tokens: 4096 };
+    ? { max_completion_tokens: 16384 }
+    : { max_tokens: 16384 };
 
   // If images present, convert last user message to multimodal content
   if (images && images.length > 0) {
@@ -407,8 +407,8 @@ async function streamXAI(model: string, messages: { role: string; content: strin
   const apiKey = process.env.XAI_API_KEY || process.env.GROK_API_KEY || '';
   const isGrok4 = model.includes('grok-4');
   const tokenParam = isGrok4
-    ? { max_completion_tokens: 4096 }
-    : { max_tokens: 4096 };
+    ? { max_completion_tokens: 8192 }
+    : { max_tokens: 8192 };
   const res = await fetch('https://api.x.ai/v1/chat/completions', {
     method: 'POST',
     headers: {

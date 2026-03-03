@@ -186,10 +186,10 @@ export async function chat(
     options: {
       temperature: options?.temperature ?? 0.3,
       top_p: options?.topP ?? 1,
-      num_predict: options?.maxTokens ?? 2048,
+      num_predict: options?.maxTokens ?? 4096,
       num_gpu: 99,
       num_thread: 12,
-      num_ctx: 8192,
+      num_ctx: 32768,
       num_batch: 256,
     },
   });

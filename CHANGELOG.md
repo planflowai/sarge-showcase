@@ -25,6 +25,21 @@ Every commit gets an entry. No exceptions.
 
 ## Entries
 
+### [2026-03-02 — Uncap model context windows — local models 4x bigger, cloud models 2-4x]
+**Commit:** (this commit)
+**Files touched:** lib/providers/ollama.ts (modified), app/api/test/stream/route.ts (modified), CHANGELOG.md
+**What changed:**
+- Ollama: `num_ctx` 8192 → 32768 (4x input context), `num_predict` 2048 → 4096 (2x output)
+- LM Studio: `max_tokens` 1024 → 4096 (4x output)
+- Anthropic (Claude): `max_tokens` 4096 → 8192 (2x output)
+- OpenAI (GPT): `max_tokens` 4096 → 16384 (4x output)
+- xAI (Grok): `max_tokens` 4096 → 8192 (2x output)
+- DeepSeek: already 8192, no change
+**Why:** All models had hardcoded output caps far below their actual capability. Local models were also input-starved (8K context for 128K models). This was causing truncated, low-quality responses especially from local models.
+**What was tested:** TypeScript compiles clean
+**Working state:** Not runtime tested
+**Revert to:** `git revert HEAD`
+
 ### [2026-03-02 — Fix wizard deploy — git user config, initial push, mailto link]
 **Commit:** (this commit)
 **Files touched:** apps/builder-standalone/app/api/project/create-wizard/route.ts (modified), CHANGELOG.md
