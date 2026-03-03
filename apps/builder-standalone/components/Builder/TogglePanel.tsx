@@ -447,7 +447,7 @@ export default function TogglePanel({ onClose }: Props) {
           </h1>
           <Flame className="w-10 h-10 text-[#FF6700] drop-shadow-[0_0_14px_rgba(255,103,0,0.7)]" />
         </div>
-        <p className="absolute bottom-1 text-base font-bold text-zinc-400 tracking-widest">
+        <p className="absolute bottom-1 text-lg font-bold text-zinc-300 tracking-widest">
           Automated Site Enhancement Pipeline
         </p>
       </div>
@@ -522,7 +522,7 @@ export default function TogglePanel({ onClose }: Props) {
                   </div>
 
                   {/* Description */}
-                  <p className="text-[14px] text-zinc-400 mb-3 pr-14">
+                  <p className="text-[15px] font-bold text-zinc-300 mb-3 pr-14">
                     {info.description}
                   </p>
 
@@ -530,32 +530,32 @@ export default function TogglePanel({ onClose }: Props) {
                   <div className="flex items-center gap-2">
                     {status === "idle" && (
                       <>
-                        <div className="w-2 h-2 rounded-full bg-zinc-600" />
-                        <span className="text-xs text-zinc-500">Idle</span>
+                        <div className="w-2 h-2 rounded-full bg-zinc-500" />
+                        <span className="text-sm font-bold text-zinc-400">Idle</span>
                       </>
                     )}
                     {status === "running" && (
                       <>
                         <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                        <span className="text-xs text-amber-400 font-medium">Running...</span>
+                        <span className="text-sm font-bold text-amber-400">Running...</span>
                       </>
                     )}
                     {status === "complete" && (
                       <>
                         <Check className="w-3.5 h-3.5 text-emerald-400" />
-                        <span className="text-xs text-emerald-400 font-medium">Complete</span>
+                        <span className="text-sm font-bold text-emerald-400">Complete</span>
                       </>
                     )}
                     {status === "error" && (
                       <>
                         <X className="w-3.5 h-3.5 text-red-400" />
-                        <span className="text-xs text-red-400 font-medium">Error</span>
+                        <span className="text-sm font-bold text-red-400">Error</span>
                       </>
                     )}
                     {status === "warning" && (
                       <>
                         <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
-                        <span className="text-xs text-amber-400 font-medium">Warnings</span>
+                        <span className="text-sm font-bold text-amber-400">Warnings</span>
                       </>
                     )}
                   </div>
@@ -563,7 +563,7 @@ export default function TogglePanel({ onClose }: Props) {
                   {/* Calendly config input */}
                   {info.key === "calendly" && isOn && (
                     <div className="mt-3 pt-3 border-t border-zinc-800">
-                      <label className="text-xs text-zinc-400 block mb-1.5">
+                      <label className="text-sm font-bold text-zinc-300 block mb-1.5">
                         Calendly scheduling URL
                       </label>
                       <input
@@ -580,7 +580,7 @@ export default function TogglePanel({ onClose }: Props) {
                   {/* Mailchimp config input */}
                   {info.key === "mailchimp" && isOn && (
                     <div className="mt-3 pt-3 border-t border-zinc-800">
-                      <label className="text-xs text-zinc-400 block mb-1.5">
+                      <label className="text-sm font-bold text-zinc-300 block mb-1.5">
                         Mailchimp form action URL
                       </label>
                       <input
@@ -593,7 +593,7 @@ export default function TogglePanel({ onClose }: Props) {
                         className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-sm text-white placeholder-zinc-600 focus:border-[#FFE01B] focus:outline-none transition-colors"
                         disabled={running}
                       />
-                      <p className="mt-1.5 text-[11px] text-zinc-500">
+                      <p className="mt-1.5 text-xs font-bold text-zinc-400">
                         Find this in Mailchimp → Audience → Signup forms → Embedded forms → copy the action URL
                       </p>
                     </div>
@@ -613,7 +613,7 @@ export default function TogglePanel({ onClose }: Props) {
               <p className="text-sm font-semibold text-emerald-400 mt-1">
                 Optimization complete — {successCount}/{totalRun} toggles applied
                 {totalBytes > 0 && (
-                  <span className="text-zinc-400 ml-2">
+                  <span className="font-bold text-zinc-300 ml-2">
                     ({totalBytes > 1024 ? `${(totalBytes / 1024).toFixed(1)} KB` : `${totalBytes} B`} saved)
                   </span>
                 )}
@@ -629,7 +629,7 @@ export default function TogglePanel({ onClose }: Props) {
                   <div className="absolute inset-0 bg-[#FF6700]/10 blur-2xl rounded-full scale-[2]" />
                   <Zap className="relative w-10 h-10 text-[#FF6700]/30" />
                 </div>
-                <p className="text-sm font-bold text-zinc-500 tracking-wide">
+                <p className="text-base font-bold text-zinc-400 tracking-wide">
                   Select toggles and click Optimize to begin
                 </p>
               </div>
@@ -647,7 +647,7 @@ export default function TogglePanel({ onClose }: Props) {
 
             {/* Log lines */}
             {logLines.length > 0 && (
-              <div className="space-y-1 font-mono text-[13px]">
+              <div className="space-y-1 font-mono text-sm font-bold">
                 {logLines.map((line, i) => (
                   <div
                     key={i}
@@ -666,7 +666,7 @@ export default function TogglePanel({ onClose }: Props) {
                         ? "text-emerald-400 font-bold mt-2"
                         : line === ""
                         ? "h-2"
-                        : "text-zinc-300"
+                        : "text-zinc-200"
                     }
                   >
                     {line}
@@ -723,7 +723,7 @@ export default function TogglePanel({ onClose }: Props) {
                     </div>
                     <div>
                       <p className="text-sm font-bold text-white">Running Independent Audit...</p>
-                      <p className="text-xs text-zinc-400 mt-0.5">html-validate, axe-core, Lighthouse</p>
+                      <p className="text-sm font-bold text-zinc-300 mt-0.5">html-validate, axe-core, Lighthouse</p>
                     </div>
                   </div>
                 )}
@@ -768,26 +768,26 @@ export default function TogglePanel({ onClose }: Props) {
                             <div className="flex items-center gap-2">
                               {/* Score / Status badge */}
                               {ar.tool === "axe-core" && ar.score !== null && (
-                                <span className="text-xs font-bold px-2 py-0.5 rounded" style={{ color: scoreColor, background: `${scoreColor}22` }}>
+                                <span className="text-sm font-bold px-2 py-0.5 rounded" style={{ color: scoreColor, background: `${scoreColor}22` }}>
                                   {ar.score}/100
                                 </span>
                               )}
                               {ar.tool === "html-validate" && (
-                                <span className={`text-xs font-bold px-2 py-0.5 rounded ${ar.passed ? "text-emerald-400 bg-emerald-400/10" : "text-red-400 bg-red-400/10"}`}>
+                                <span className={`text-sm font-bold px-2 py-0.5 rounded ${ar.passed ? "text-emerald-400 bg-emerald-400/10" : "text-red-400 bg-red-400/10"}`}>
                                   {ar.passed ? "VALID" : `${ar.violations.filter((v) => v.severity === "error").length} ERRORS`}
                                 </span>
                               )}
                               {ar.tool === "axe-core" && (
-                                <span className={`text-xs font-bold px-2 py-0.5 rounded ${ar.passed ? "text-emerald-400 bg-emerald-400/10" : "text-red-400 bg-red-400/10"}`}>
+                                <span className={`text-sm font-bold px-2 py-0.5 rounded ${ar.passed ? "text-emerald-400 bg-emerald-400/10" : "text-red-400 bg-red-400/10"}`}>
                                   {ar.passed ? "COMPLIANT" : `${ar.violations.length} VIOLATIONS`}
                                 </span>
                               )}
                               {ar.tool === "lighthouse" && (
-                                <span className={`text-xs font-bold px-2 py-0.5 rounded ${ar.passed ? "text-emerald-400 bg-emerald-400/10" : "text-amber-400 bg-amber-400/10"}`}>
+                                <span className={`text-sm font-bold px-2 py-0.5 rounded ${ar.passed ? "text-emerald-400 bg-emerald-400/10" : "text-amber-400 bg-amber-400/10"}`}>
                                   {ar.passed ? "ALL PASSING" : `${Object.values(auditReport.scores).filter((s) => s !== null && s < 80).length} BELOW THRESHOLD`}
                                 </span>
                               )}
-                              {isExpanded ? <ChevronUp className="w-4 h-4 text-zinc-500" /> : <ChevronDown className="w-4 h-4 text-zinc-500" />}
+                              {isExpanded ? <ChevronUp className="w-4 h-4 text-zinc-400" /> : <ChevronDown className="w-4 h-4 text-zinc-400" />}
                             </div>
                           </button>
 
@@ -800,7 +800,7 @@ export default function TogglePanel({ onClose }: Props) {
                                 const c = s >= 90 ? "#22c55e" : s >= 70 ? "#f59e0b" : "#ef4444";
                                 const label = key === "bestPractices" ? "Best Practices" : key.charAt(0).toUpperCase() + key.slice(1);
                                 return (
-                                  <span key={key} className="text-xs font-bold px-2 py-1 rounded-lg" style={{ color: c, background: `${c}15`, border: `1px solid ${c}33` }}>
+                                  <span key={key} className="text-sm font-bold px-2 py-1 rounded-lg" style={{ color: c, background: `${c}15`, border: `1px solid ${c}33` }}>
                                     {label}: {s}
                                   </span>
                                 );
@@ -812,23 +812,23 @@ export default function TogglePanel({ onClose }: Props) {
                           {isExpanded && (
                             <div className="px-4 pb-3 border-t border-zinc-800/50 pt-2">
                               {ar.violations.length === 0 ? (
-                                <p className="text-xs text-zinc-500 italic">{ar.summary}</p>
+                                <p className="text-sm font-bold text-zinc-400 italic">{ar.summary}</p>
                               ) : (
                                 <div className="space-y-1.5 max-h-[200px] overflow-y-auto custom-scrollbar">
                                   {ar.violations.map((v, i) => (
-                                    <div key={i} className="text-xs rounded-lg px-3 py-2 bg-zinc-900/50">
+                                    <div key={i} className="text-sm font-bold rounded-lg px-3 py-2 bg-zinc-900/50">
                                       <div className="flex items-start gap-2">
-                                        <span className={`flex-shrink-0 font-bold ${v.severity === "error" ? "text-red-400" : v.severity === "warning" ? "text-amber-400" : "text-zinc-400"}`}>
+                                        <span className={`flex-shrink-0 font-bold ${v.severity === "error" ? "text-red-400" : v.severity === "warning" ? "text-amber-400" : "text-zinc-300"}`}>
                                           {v.severity === "error" ? "\u2717" : v.severity === "warning" ? "\u26A0" : "\u2022"}
                                         </span>
                                         <div className="min-w-0">
-                                          <span className="text-zinc-300">{v.message}</span>
-                                          <span className="text-zinc-600 ml-2">({v.rule})</span>
-                                          {v.line && <span className="text-zinc-600 ml-1">line {v.line}</span>}
-                                          {v.wcag && <span className="text-blue-400/60 ml-2">{v.wcag}</span>}
-                                          {v.fix && <p className="text-zinc-500 mt-0.5">{v.fix}</p>}
+                                          <span className="text-zinc-200">{v.message}</span>
+                                          <span className="font-bold text-zinc-400 ml-2">({v.rule})</span>
+                                          {v.line && <span className="font-bold text-zinc-400 ml-1">line {v.line}</span>}
+                                          {v.wcag && <span className="font-bold text-blue-400 ml-2">{v.wcag}</span>}
+                                          {v.fix && <p className="font-bold text-zinc-400 mt-0.5">{v.fix}</p>}
                                           {v.element && (
-                                            <pre className="text-[11px] text-zinc-600 mt-1 font-mono truncate">{v.element}</pre>
+                                            <pre className="text-xs font-bold text-zinc-400 mt-1 font-mono truncate">{v.element}</pre>
                                           )}
                                         </div>
                                       </div>
@@ -836,7 +836,7 @@ export default function TogglePanel({ onClose }: Props) {
                                   ))}
                                 </div>
                               )}
-                              <p className="text-[11px] text-zinc-600 mt-2">
+                              <p className="text-xs font-bold text-zinc-400 mt-2">
                                 Completed in {ar.duration}ms
                               </p>
                             </div>
@@ -846,7 +846,7 @@ export default function TogglePanel({ onClose }: Props) {
                     })}
 
                     {/* Overall duration */}
-                    <p className="text-[11px] text-zinc-600 text-right">
+                    <p className="text-xs font-bold text-zinc-400 text-right">
                       Total audit: {(auditReport.totalDuration / 1000).toFixed(1)}s
                     </p>
                   </div>
@@ -864,21 +864,21 @@ export default function TogglePanel({ onClose }: Props) {
           <button
             onClick={selectAll}
             disabled={running}
-            className="px-3 py-1.5 text-xs font-medium text-zinc-400 hover:text-white bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors disabled:opacity-40"
+            className="px-3 py-1.5 text-sm font-bold text-zinc-300 hover:text-white bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors disabled:opacity-40"
           >
             Select All
           </button>
           <button
             onClick={deselectAll}
             disabled={running}
-            className="px-3 py-1.5 text-xs font-medium text-zinc-400 hover:text-white bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors disabled:opacity-40"
+            className="px-3 py-1.5 text-sm font-bold text-zinc-300 hover:text-white bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors disabled:opacity-40"
           >
             Deselect All
           </button>
           <button
             onClick={resetDefaults}
             disabled={running}
-            className="px-3 py-1.5 text-xs font-medium text-zinc-400 hover:text-white bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors disabled:opacity-40"
+            className="px-3 py-1.5 text-sm font-bold text-zinc-300 hover:text-white bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors disabled:opacity-40"
           >
             Defaults
           </button>
@@ -948,7 +948,7 @@ export default function TogglePanel({ onClose }: Props) {
             <button
               onClick={handleRevert}
               disabled={reverting}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-400 hover:text-red-300 bg-zinc-800 hover:bg-red-900/30 rounded-lg transition-colors disabled:opacity-40"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-red-400 hover:text-red-300 bg-zinc-800 hover:bg-red-900/30 rounded-lg transition-colors disabled:opacity-40"
             >
               <RotateCcw className="w-4 h-4" />
               {reverting ? "Reverting..." : "Revert All"}
@@ -956,7 +956,7 @@ export default function TogglePanel({ onClose }: Props) {
           )}
           <button
             onClick={onClose}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-zinc-400 hover:text-white bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-zinc-300 hover:text-white bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors"
           >
             <X className="w-4 h-4" />
             Close

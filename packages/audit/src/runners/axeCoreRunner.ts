@@ -3,31 +3,44 @@ import type { AuditResult, AuditViolation } from "../types/audit";
 
 /**
  * Run axe-core accessibility audit against an HTML string using JSDOM.
+ * Uses window.eval() to inject axe-core source — more reliable than <script> injection.
  */
 export async function runAxeCore(html: string): Promise<AuditResult> {
   const t0 = Date.now();
   const violations: AuditViolation[] = [];
 
   try {
-    // Create a JSDOM instance for axe-core
+    // Create a JSDOM instance — runScripts: "dangerously" allows eval'd scripts
     const dom = new JSDOM(html, {
       url: "http://localhost",
       runScripts: "dangerously",
-      resources: "usable",
       pretendToBeVisual: true,
     });
 
     const { window } = dom;
     const { document } = window;
 
-    // Dynamically import axe-core source and inject into JSDOM
-    const axeCore = await import("axe-core");
-    const axeSource = axeCore.source;
+    // Import axe-core — dynamic import puts the module on .default
+    const axeModule = await import("axe-core");
+    const axeSource: string =
+      (axeModule as any).default?.source ??
+      (axeModule as any).source ??
+      "";
 
-    // Inject axe-core into the JSDOM window
-    const script = document.createElement("script");
-    script.textContent = axeSource;
-    document.head.appendChild(script);
+    if (!axeSource) {
+      throw new Error(
+        "Could not load axe-core source. Ensure axe-core is installed."
+      );
+    }
+
+    // Inject axe-core into the JSDOM window using eval (more reliable than <script>)
+    window.eval(axeSource);
+
+    if (typeof (window as any).axe?.run !== "function") {
+      throw new Error(
+        "axe-core did not initialize in JSDOM — window.axe.run is not a function"
+      );
+    }
 
     // Run axe in the JSDOM context
     const axeResults = await new Promise<any>((resolve, reject) => {
@@ -38,7 +51,7 @@ export async function runAxeCore(html: string): Promise<AuditResult> {
 
       try {
         (window as any).axe
-          .run(document, {
+          .run(document.documentElement, {
             runOnly: {
               type: "tag",
               values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"],
@@ -98,7 +111,7 @@ export async function runAxeCore(html: string): Promise<AuditResult> {
       violations,
       summary:
         errorCount === 0
-          ? `WCAG 2.1 AA \u2014 0 violations (score: ${score}/100)`
+          ? `WCAG 2.1 AA — 0 violations (score: ${score}/100)`
           : `${violations.length} violations found (score: ${score}/100)`,
       timestamp: new Date().toISOString(),
       duration: Date.now() - t0,

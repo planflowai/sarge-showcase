@@ -21,7 +21,10 @@ const MIME_TYPES: Record<string, string> = {
 };
 
 /**
- * Run Lighthouse audit against a project folder by spinning up a temporary HTTP server.
+ * Run Lighthouse audit against a project folder.
+ * Uses chrome-launcher (bundled with Lighthouse) instead of Puppeteer
+ * to avoid bufferUtil/ws compatibility issues.
+ * Graceful fallback if Chrome cannot launch.
  */
 export async function runLighthouse(
   projectPath: string
@@ -36,32 +39,76 @@ export async function runLighthouse(
 }> {
   const t0 = Date.now();
   const violations: AuditViolation[] = [];
+  const nullScores = {
+    performance: null,
+    accessibility: null,
+    seo: null,
+    bestPractices: null,
+  };
 
   let server: Server | null = null;
-  let browser: any = null;
+  let chrome: any = null;
 
   try {
     // Spin up a temporary static file server
     const port = await startStaticServer(projectPath);
     server = (globalThis as any).__auditServer;
 
-    // Import puppeteer and lighthouse dynamically
-    const puppeteer = await import("puppeteer");
-    browser = await puppeteer.default.launch({
-      headless: true,
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-gpu",
-      ],
-    });
+    // Use chrome-launcher (comes with lighthouse) instead of puppeteer
+    let chromeLauncher: any;
+    try {
+      chromeLauncher = await import("chrome-launcher");
+    } catch {
+      return {
+        result: {
+          tool: "lighthouse",
+          category: "seo",
+          score: null,
+          passed: false,
+          violations: [],
+          summary:
+            "Lighthouse unavailable — chrome-launcher module not found. Install with: pnpm add chrome-launcher",
+          timestamp: new Date().toISOString(),
+          duration: Date.now() - t0,
+        },
+        scores: nullScores,
+      };
+    }
 
+    // Launch Chrome via chrome-launcher
+    try {
+      chrome = await chromeLauncher.launch({
+        chromeFlags: [
+          "--headless",
+          "--no-sandbox",
+          "--disable-gpu",
+          "--disable-dev-shm-usage",
+          "--disable-setuid-sandbox",
+        ],
+      });
+    } catch (launchErr: any) {
+      // Graceful fallback — Chrome is not available
+      return {
+        result: {
+          tool: "lighthouse",
+          category: "seo",
+          score: null,
+          passed: false,
+          violations: [],
+          summary: `Lighthouse unavailable — headless Chrome could not launch: ${launchErr.message || "Unknown error"}`,
+          timestamp: new Date().toISOString(),
+          duration: Date.now() - t0,
+        },
+        scores: nullScores,
+      };
+    }
+
+    // Run Lighthouse using chrome-launcher's port
     const lighthouse = await import("lighthouse");
     const lhResult = await lighthouse.default(
       `http://localhost:${port}`,
       {
-        port: new URL(browser.wsEndpoint()).port,
+        port: chrome.port,
         output: "json",
         logLevel: "error",
         onlyCategories: [
@@ -81,34 +128,44 @@ export async function runLighthouse(
     const categories = lhr.categories || {};
 
     const scores = {
-      performance: categories.performance?.score != null
-        ? Math.round(categories.performance.score * 100)
-        : null,
-      accessibility: categories.accessibility?.score != null
-        ? Math.round(categories.accessibility.score * 100)
-        : null,
-      seo: categories.seo?.score != null
-        ? Math.round(categories.seo.score * 100)
-        : null,
-      bestPractices: categories["best-practices"]?.score != null
-        ? Math.round(categories["best-practices"]!.score! * 100)
-        : null,
+      performance:
+        categories.performance?.score != null
+          ? Math.round(categories.performance.score * 100)
+          : null,
+      accessibility:
+        categories.accessibility?.score != null
+          ? Math.round(categories.accessibility.score * 100)
+          : null,
+      seo:
+        categories.seo?.score != null
+          ? Math.round(categories.seo.score * 100)
+          : null,
+      bestPractices:
+        categories["best-practices"]?.score != null
+          ? Math.round(categories["best-practices"]!.score! * 100)
+          : null,
     };
 
     // Extract failing audits as violations
     const audits = lhr.audits || {};
     for (const [id, audit] of Object.entries<any>(audits)) {
-      if (audit.score !== null && audit.score < 1 && audit.score !== undefined) {
-        // Only include audits that actually failed (not informational)
-        if (audit.scoreDisplayMode === "binary" || audit.scoreDisplayMode === "numeric") {
+      if (
+        audit.score !== null &&
+        audit.score < 1 &&
+        audit.score !== undefined
+      ) {
+        if (
+          audit.scoreDisplayMode === "binary" ||
+          audit.scoreDisplayMode === "numeric"
+        ) {
           violations.push({
             rule: id,
             severity:
               audit.score === 0
                 ? "error"
                 : audit.score < 0.5
-                ? "warning"
-                : "notice",
+                  ? "warning"
+                  : "notice",
             message: audit.title || id,
             fix: audit.description
               ? truncate(audit.description, 300)
@@ -142,8 +199,8 @@ export async function runLighthouse(
         passed: allPassing,
         violations,
         summary: allPassing
-          ? `All passing \u2014 ${summaryParts.join(", ")}`
-          : `${belowThreshold} below threshold \u2014 ${summaryParts.join(", ")}`,
+          ? `All passing — ${summaryParts.join(", ")}`
+          : `${belowThreshold} below threshold — ${summaryParts.join(", ")}`,
         timestamp: new Date().toISOString(),
         duration: Date.now() - t0,
       },
@@ -161,17 +218,12 @@ export async function runLighthouse(
         timestamp: new Date().toISOString(),
         duration: Date.now() - t0,
       },
-      scores: {
-        performance: null,
-        accessibility: null,
-        seo: null,
-        bestPractices: null,
-      },
+      scores: nullScores,
     };
   } finally {
     // Cleanup
     try {
-      if (browser) await browser.close();
+      if (chrome) await chrome.kill();
     } catch {}
     try {
       if (server) server.close();
@@ -187,7 +239,8 @@ export async function runLighthouse(
 function startStaticServer(projectPath: string): Promise<number> {
   return new Promise((resolve, reject) => {
     const server = createServer((req, res) => {
-      const urlPath = req.url === "/" ? "/index.html" : req.url || "/index.html";
+      const urlPath =
+        req.url === "/" ? "/index.html" : req.url || "/index.html";
       const filePath = join(projectPath, urlPath);
 
       if (!existsSync(filePath) || !statSync(filePath).isFile()) {
