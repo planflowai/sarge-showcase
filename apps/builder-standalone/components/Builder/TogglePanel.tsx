@@ -16,7 +16,12 @@ import {
   Check,
   AlertTriangle,
   ChevronDown,
+  ChevronUp,
   RotateCcw,
+  Code2,
+  Gauge,
+  ScanEye,
+  ShieldCheck,
 } from "lucide-react";
 import {
   TOGGLE_INFO,
@@ -43,6 +48,41 @@ const TOGGLE_ICONS: Record<string, React.ElementType> = {
 
 type ToggleStatus = "idle" | "running" | "complete" | "error" | "warning";
 
+/* ── Audit types (mirrors @sarge/audit but kept lightweight for client) ── */
+interface AuditViolation {
+  rule: string;
+  severity: "error" | "warning" | "notice";
+  message: string;
+  element?: string;
+  fix?: string;
+  wcag?: string;
+  line?: number;
+}
+interface AuditResult {
+  tool: string;
+  category: string;
+  score: number | null;
+  passed: boolean;
+  violations: AuditViolation[];
+  summary: string;
+  timestamp: string;
+  duration: number;
+}
+interface AuditReport {
+  projectPath: string;
+  timestamp: string;
+  totalDuration: number;
+  results: AuditResult[];
+  overallPassed: boolean;
+  scores: {
+    html: number | null;
+    accessibility: number | null;
+    seo: number | null;
+    performance: number | null;
+    bestPractices: number | null;
+  };
+}
+
 interface Props {
   onClose: () => void;
 }
@@ -61,6 +101,11 @@ export default function TogglePanel({ onClose }: Props) {
   const [currentToggleName, setCurrentToggleName] = useState("");
   const [reverting, setReverting] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
+
+  // Audit state
+  const [auditReport, setAuditReport] = useState<AuditReport | null>(null);
+  const [auditRunning, setAuditRunning] = useState(false);
+  const [auditExpanded, setAuditExpanded] = useState<Record<string, boolean>>({});
 
   // Load toggle states from project.json on mount
   useEffect(() => {
@@ -166,6 +211,68 @@ export default function TogglePanel({ onClose }: Props) {
 
   const anyEnabled = TOGGLE_INFO.some((t) => toggles[t.key]);
 
+  // Run independent audit
+  const handleAudit = useCallback(async () => {
+    if (!projectPath || auditRunning) return;
+    setAuditRunning(true);
+    setAuditReport(null);
+    setAuditExpanded({});
+    try {
+      const res = await fetch("/api/audit/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectPath }),
+      });
+      if (res.ok) {
+        const report: AuditReport = await res.json();
+        setAuditReport(report);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setAuditReport({
+          projectPath,
+          timestamp: new Date().toISOString(),
+          totalDuration: 0,
+          results: [{
+            tool: "audit",
+            category: "html",
+            score: null,
+            passed: false,
+            violations: [],
+            summary: data.error || "Audit request failed",
+            timestamp: new Date().toISOString(),
+            duration: 0,
+          }],
+          overallPassed: false,
+          scores: { html: null, accessibility: null, seo: null, performance: null, bestPractices: null },
+        });
+      }
+    } catch (err: any) {
+      setAuditReport({
+        projectPath,
+        timestamp: new Date().toISOString(),
+        totalDuration: 0,
+        results: [{
+          tool: "audit",
+          category: "html",
+          score: null,
+          passed: false,
+          violations: [],
+          summary: `Network error: ${err.message}`,
+          timestamp: new Date().toISOString(),
+          duration: 0,
+        }],
+        overallPassed: false,
+        scores: { html: null, accessibility: null, seo: null, performance: null, bestPractices: null },
+      });
+    } finally {
+      setAuditRunning(false);
+    }
+  }, [projectPath, auditRunning]);
+
+  // Ref to latest handleAudit so handleOptimize can call it without circular dep
+  const handleAuditRef = useRef(handleAudit);
+  handleAuditRef.current = handleAudit;
+
   // Run the pipeline
   const handleOptimize = useCallback(async () => {
     if (!projectPath || running) return;
@@ -261,6 +368,11 @@ export default function TogglePanel({ onClose }: Props) {
       // Refresh preview
       window.dispatchEvent(new CustomEvent("builder:refresh-preview"));
 
+      // Auto-trigger independent audit after optimization
+      setTimeout(() => {
+        handleAuditRef.current();
+      }, 500);
+
       // Reset button after 3 seconds
       setTimeout(() => setOptimizeLabel("idle"), 3000);
     } catch (err: any) {
@@ -303,7 +415,7 @@ export default function TogglePanel({ onClose }: Props) {
     if (logRef.current) {
       logRef.current.scrollTop = logRef.current.scrollHeight;
     }
-  }, [logLines]);
+  }, [logLines, auditReport, auditRunning]);
 
   // Compute summary stats
   const successCount = results.filter((r) => r.status === "success").length;
@@ -584,6 +696,163 @@ export default function TogglePanel({ onClose }: Props) {
                   })}
               </div>
             )}
+
+            {/* ── Independent Verification Section ── */}
+            {(auditRunning || auditReport) && (
+              <div className="mt-6">
+                {/* Section header */}
+                <div className="flex items-center gap-2 mb-3">
+                  <ShieldCheck className="w-5 h-5 text-blue-400" />
+                  <h3 className="text-sm font-bold tracking-widest text-blue-400 uppercase">
+                    Third-Party Verified
+                  </h3>
+                </div>
+
+                {/* Loading state */}
+                {auditRunning && !auditReport && (
+                  <div
+                    className="rounded-xl p-5 flex items-center gap-4"
+                    style={{
+                      background: "#0f0f12",
+                      borderLeft: "4px solid #3B82F6",
+                      border: "1px solid #1e3a5f",
+                    }}
+                  >
+                    <div className="relative">
+                      <div className="w-8 h-8 rounded-full border-2 border-blue-500/30 border-t-blue-500 animate-spin" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-white">Running Independent Audit...</p>
+                      <p className="text-xs text-zinc-400 mt-0.5">html-validate, axe-core, Lighthouse</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Audit result cards */}
+                {auditReport && (
+                  <div className="space-y-3">
+                    {auditReport.results.map((ar) => {
+                      const isExpanded = auditExpanded[ar.tool] || false;
+                      const scoreColor = ar.score !== null
+                        ? ar.score >= 90 ? "#22c55e" : ar.score >= 70 ? "#f59e0b" : "#ef4444"
+                        : "#6b7280";
+
+                      return (
+                        <div
+                          key={ar.tool}
+                          className="rounded-xl overflow-hidden transition-all duration-200"
+                          style={{
+                            background: "#0f0f12",
+                            borderLeft: "4px solid #3B82F6",
+                            borderTop: "1px solid #1e3a5f",
+                            borderRight: "1px solid #1e3a5f",
+                            borderBottom: "1px solid #1e3a5f",
+                          }}
+                        >
+                          {/* Card header */}
+                          <button
+                            onClick={() => setAuditExpanded((prev) => ({ ...prev, [ar.tool]: !prev[ar.tool] }))}
+                            className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/[0.02] transition-colors"
+                          >
+                            <div className="flex items-center gap-3">
+                              {ar.tool === "html-validate" && <Code2 className="w-4 h-4 text-blue-400" />}
+                              {ar.tool === "axe-core" && <ScanEye className="w-4 h-4 text-blue-400" />}
+                              {ar.tool === "lighthouse" && <Gauge className="w-4 h-4 text-blue-400" />}
+                              <span className="text-sm font-bold text-white">
+                                {ar.tool === "html-validate" && "HTML Validation"}
+                                {ar.tool === "axe-core" && "Accessibility (WCAG 2.1 AA)"}
+                                {ar.tool === "lighthouse" && "Lighthouse Audit"}
+                                {!["html-validate", "axe-core", "lighthouse"].includes(ar.tool) && ar.tool}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {/* Score / Status badge */}
+                              {ar.tool === "axe-core" && ar.score !== null && (
+                                <span className="text-xs font-bold px-2 py-0.5 rounded" style={{ color: scoreColor, background: `${scoreColor}22` }}>
+                                  {ar.score}/100
+                                </span>
+                              )}
+                              {ar.tool === "html-validate" && (
+                                <span className={`text-xs font-bold px-2 py-0.5 rounded ${ar.passed ? "text-emerald-400 bg-emerald-400/10" : "text-red-400 bg-red-400/10"}`}>
+                                  {ar.passed ? "VALID" : `${ar.violations.filter((v) => v.severity === "error").length} ERRORS`}
+                                </span>
+                              )}
+                              {ar.tool === "axe-core" && (
+                                <span className={`text-xs font-bold px-2 py-0.5 rounded ${ar.passed ? "text-emerald-400 bg-emerald-400/10" : "text-red-400 bg-red-400/10"}`}>
+                                  {ar.passed ? "COMPLIANT" : `${ar.violations.length} VIOLATIONS`}
+                                </span>
+                              )}
+                              {ar.tool === "lighthouse" && (
+                                <span className={`text-xs font-bold px-2 py-0.5 rounded ${ar.passed ? "text-emerald-400 bg-emerald-400/10" : "text-amber-400 bg-amber-400/10"}`}>
+                                  {ar.passed ? "ALL PASSING" : `${Object.values(auditReport.scores).filter((s) => s !== null && s < 80).length} BELOW THRESHOLD`}
+                                </span>
+                              )}
+                              {isExpanded ? <ChevronUp className="w-4 h-4 text-zinc-500" /> : <ChevronDown className="w-4 h-4 text-zinc-500" />}
+                            </div>
+                          </button>
+
+                          {/* Lighthouse score badges */}
+                          {ar.tool === "lighthouse" && auditReport.scores.seo !== null && (
+                            <div className="px-4 pb-2 flex items-center gap-2 flex-wrap">
+                              {(["seo", "performance", "accessibility", "bestPractices"] as const).map((key) => {
+                                const s = auditReport.scores[key];
+                                if (s === null) return null;
+                                const c = s >= 90 ? "#22c55e" : s >= 70 ? "#f59e0b" : "#ef4444";
+                                const label = key === "bestPractices" ? "Best Practices" : key.charAt(0).toUpperCase() + key.slice(1);
+                                return (
+                                  <span key={key} className="text-xs font-bold px-2 py-1 rounded-lg" style={{ color: c, background: `${c}15`, border: `1px solid ${c}33` }}>
+                                    {label}: {s}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          {/* Expanded violations */}
+                          {isExpanded && (
+                            <div className="px-4 pb-3 border-t border-zinc-800/50 pt-2">
+                              {ar.violations.length === 0 ? (
+                                <p className="text-xs text-zinc-500 italic">{ar.summary}</p>
+                              ) : (
+                                <div className="space-y-1.5 max-h-[200px] overflow-y-auto custom-scrollbar">
+                                  {ar.violations.map((v, i) => (
+                                    <div key={i} className="text-xs rounded-lg px-3 py-2 bg-zinc-900/50">
+                                      <div className="flex items-start gap-2">
+                                        <span className={`flex-shrink-0 font-bold ${v.severity === "error" ? "text-red-400" : v.severity === "warning" ? "text-amber-400" : "text-zinc-400"}`}>
+                                          {v.severity === "error" ? "\u2717" : v.severity === "warning" ? "\u26A0" : "\u2022"}
+                                        </span>
+                                        <div className="min-w-0">
+                                          <span className="text-zinc-300">{v.message}</span>
+                                          <span className="text-zinc-600 ml-2">({v.rule})</span>
+                                          {v.line && <span className="text-zinc-600 ml-1">line {v.line}</span>}
+                                          {v.wcag && <span className="text-blue-400/60 ml-2">{v.wcag}</span>}
+                                          {v.fix && <p className="text-zinc-500 mt-0.5">{v.fix}</p>}
+                                          {v.element && (
+                                            <pre className="text-[11px] text-zinc-600 mt-1 font-mono truncate">{v.element}</pre>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              <p className="text-[11px] text-zinc-600 mt-2">
+                                Completed in {ar.duration}ms
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    {/* Overall duration */}
+                    <p className="text-[11px] text-zinc-600 text-right">
+                      Total audit: {(auditReport.totalDuration / 1000).toFixed(1)}s
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -615,34 +884,63 @@ export default function TogglePanel({ onClose }: Props) {
           </button>
         </div>
 
-        {/* Center — OPTIMIZE button */}
-        <button
-          onClick={handleOptimize}
-          disabled={!anyEnabled || running || !projectPath}
-          className="px-10 py-3 rounded-xl text-base font-[800] tracking-[2px] transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
-          style={{
-            background:
-              optimizeLabel === "done"
-                ? "linear-gradient(90deg, #22c55e, #16a34a)"
-                : "linear-gradient(90deg, #FF6700, #FF8C00, #FFD700)",
-            color: optimizeLabel === "done" ? "#fff" : "#000",
-            boxShadow:
-              optimizeLabel === "done"
-                ? "0 0 20px rgba(34,197,94,0.4)"
-                : anyEnabled && !running
-                ? "0 0 20px rgba(255,103,0,0.3)"
+        {/* Center — OPTIMIZE + VERIFY buttons */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleOptimize}
+            disabled={!anyEnabled || running || !projectPath}
+            className="px-10 py-3 rounded-xl text-base font-[800] tracking-[2px] transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
+            style={{
+              background:
+                optimizeLabel === "done"
+                  ? "linear-gradient(90deg, #22c55e, #16a34a)"
+                  : "linear-gradient(90deg, #FF6700, #FF8C00, #FFD700)",
+              color: optimizeLabel === "done" ? "#fff" : "#000",
+              boxShadow:
+                optimizeLabel === "done"
+                  ? "0 0 20px rgba(34,197,94,0.4)"
+                  : anyEnabled && !running
+                  ? "0 0 20px rgba(255,103,0,0.3)"
+                  : "none",
+            }}
+          >
+            {optimizeLabel === "idle" && "OPTIMIZE"}
+            {optimizeLabel === "running" && (
+              <span className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-black animate-pulse" />
+                OPTIMIZING...
+              </span>
+            )}
+            {optimizeLabel === "done" && "\u2713 OPTIMIZED"}
+          </button>
+
+          <button
+            onClick={handleAudit}
+            disabled={auditRunning || running || !projectPath}
+            className="px-6 py-3 rounded-xl text-base font-[800] tracking-[2px] transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
+            style={{
+              background: auditRunning
+                ? "#1e3a5f"
+                : "linear-gradient(90deg, #2563eb, #3b82f6)",
+              color: "#fff",
+              boxShadow: !auditRunning && projectPath
+                ? "0 0 16px rgba(59,130,246,0.3)"
                 : "none",
-          }}
-        >
-          {optimizeLabel === "idle" && "OPTIMIZE"}
-          {optimizeLabel === "running" && (
-            <span className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-black animate-pulse" />
-              OPTIMIZING...
-            </span>
-          )}
-          {optimizeLabel === "done" && "\u2713 OPTIMIZED"}
-        </button>
+            }}
+          >
+            {auditRunning ? (
+              <span className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                VERIFYING...
+              </span>
+            ) : (
+              <span className="flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4" />
+                VERIFY
+              </span>
+            )}
+          </button>
+        </div>
 
         {/* Right — Revert + Close */}
         <div className="flex items-center gap-2">
