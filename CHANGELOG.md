@@ -25,6 +25,17 @@ Every commit gets an entry. No exceptions.
 
 ## Entries
 
+### [2026-03-02 — Fix wizard deploy — git user config, initial push, mailto link]
+**Commit:** (this commit)
+**Files touched:** apps/builder-standalone/app/api/project/create-wizard/route.ts (modified), CHANGELOG.md
+**What changed:**
+- Fix 1: Git user config hardcoded to `planflowai` / `rgallo2016@gmail.com` instead of dynamic GitHub API lookup (prevents Vercel rejecting `builder@local.private`)
+- Fix 2: Added `git branch -M main` after initial commit so push targets `main` not `master`. Removed push fallback — branch is always `main` now.
+- Fix 3: Verified mailto link in helloPage.ts — already correct (`<a href="mailto:...">`)
+**What was tested:** TypeScript compiles clean
+**Working state:** Not runtime tested
+**Revert to:** `git revert HEAD`
+
 ### [2026-03-02 — Wire New button to NewProjectWizard instead of old ProjectCommandCenter]
 **Commit:** (this commit)
 **Files touched:** packages/builder/src/components/BuilderPage.tsx (1 line), CHANGELOG.md

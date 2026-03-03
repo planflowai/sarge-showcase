@@ -233,20 +233,19 @@ export async function POST(request: NextRequest) {
       }
 
       await runCmd("git init", projectPath);
+      await runCmd('git config user.name "planflowai"', projectPath);
+      await runCmd('git config user.email "rgallo2016@gmail.com"', projectPath);
+      await runCmd("git add .", projectPath);
+      await runCmd('git commit -m "Initial commit - coming soon page"', projectPath);
+      await runCmd("git branch -M main", projectPath);
+      send("git", "done", "Repository initialized");
 
-      // Get GitHub user info
+      // Get GitHub login from token
       const ghRes = await fetch("https://api.github.com/user", {
         headers: { Authorization: `Bearer ${githubToken}`, Accept: "application/json" },
       });
       const ghUser = await ghRes.json();
       const ghLogin = ghUser.login as string;
-      const ghEmail = (ghUser.email as string) || `${ghLogin}@users.noreply.github.com`;
-
-      await runCmd(`git config user.name "${ghLogin}"`, projectPath);
-      await runCmd(`git config user.email "${ghEmail}"`, projectPath);
-      await runCmd("git add .", projectPath);
-      await runCmd('git commit -m "Initial commit — Coming Soon"', projectPath);
-      send("git", "done", "Repository initialized");
 
       // ── Step 6: GitHub repo creation ──
       send("github", "running", "Creating GitHub repository");
@@ -272,14 +271,9 @@ export async function POST(request: NextRequest) {
         }
 
         const remoteUrl = `https://${ghLogin}:${githubToken}@github.com/${ghLogin}/${safeName}.git`;
-        // Remove existing origin if present
         await runCmd("git remote remove origin", projectPath).catch(() => {});
         await runCmd(`git remote add origin "${remoteUrl}"`, projectPath);
-        await runCmd("git push -u origin main", projectPath).catch(async () => {
-          // Fallback: try current branch name
-          const { stdout: branch } = await runCmd("git branch --show-current", projectPath);
-          await runCmd(`git push -u origin ${branch.trim()}`, projectPath);
-        });
+        await runCmd("git push -u origin main", projectPath);
         send("github", "done", githubUrl);
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
