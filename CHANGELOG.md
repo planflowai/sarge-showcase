@@ -25,6 +25,14 @@ Every commit gets an entry. No exceptions.
 
 ## Entries
 
+### [2026-03-02 — Wire New button to NewProjectWizard instead of old ProjectCommandCenter]
+**Commit:** (this commit)
+**Files touched:** packages/builder/src/components/BuilderPage.tsx (1 line), CHANGELOG.md
+**What changed:** The "New" button in BuilderPage top bar (line 742) now dispatches `project:new-wizard` custom event instead of calling `useProjectCommandStore.getState().open("new")`. This opens the 4-step NewProjectWizard instead of the old ProjectCommandCenter overlay.
+**What was tested:** TypeScript compiles clean
+**Working state:** Not runtime tested
+**Revert to:** `git revert HEAD`
+
 ### [2026-03-02 — New Project Wizard — 4-step commercial flow with auto-deploy]
 **Commit:** (this commit)
 **Files touched:** apps/builder-standalone/components/project/NewProjectWizard.tsx (new), apps/builder-standalone/lib/templates/helloPage.ts (new), apps/builder-standalone/app/api/project/create-wizard/route.ts (new), packages/builder/src/components/BuilderSidebar.tsx (modified — added wizard trigger button), apps/builder-standalone/app/page.tsx (modified — wizard wiring), BUILDPLAN.md, CHANGELOG.md

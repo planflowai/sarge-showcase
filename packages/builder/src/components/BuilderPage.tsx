@@ -739,7 +739,7 @@ Please provide the complete modified version of this component. Make only the re
           {/* Action bar: New / Projects / Assets — centered with Foundry colors */}
           <div className="flex-shrink-0 flex items-center justify-center gap-2 px-3 py-2 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60">
             <button
-              onClick={() => useProjectCommandStore.getState().open("new")}
+              onClick={() => window.dispatchEvent(new CustomEvent("project:new-wizard"))}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FF6700]/10 hover:bg-[#FF6700]/20 text-[#FF6700] rounded-lg text-xs font-medium border border-[#FF6700]/30 transition-colors"
               title="New Project"
             >
