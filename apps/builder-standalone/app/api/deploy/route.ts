@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
       let netlifyUrl = "";
       let cloudflareUrl = "";
 
-      // Check git remote for GitHub
+      // ── Step 1: GitHub (fast — local git command) ──
       const gitDir = path.join(projectPath, ".git");
       if (fs.existsSync(gitDir)) {
         const remoteResult = await runCommand("git remote get-url origin", projectPath);
@@ -148,101 +148,102 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Check Vercel: read project.json for project name, then get production alias
-      const vercelProjectFile = path.join(projectPath, ".vercel", "project.json");
-      const vercelUrlFile = path.join(projectPath, ".vercel", "url.txt");
-      if (fs.existsSync(vercelProjectFile)) {
-        try {
-          const vp = JSON.parse(fs.readFileSync(vercelProjectFile, "utf-8"));
-          const vpName = vp.projectName || "";
-          if (vpName) {
-            // Query vercel project ls for the production alias (not per-deploy URL)
-            try {
-              const lsResult = await runCommand("npx --yes vercel project ls", projectPath, 30_000);
-              // Vercel CLI may send table to stderr (PowerShell NativeCommandError), so check both
-              const allOutput = (lsResult.stdout + "\n" + lsResult.stderr);
-              // Match exact project name (followed by whitespace, not a prefix of another name)
-              const nameVariant = vpName.replace(/_/g, "-");
-              const projLine = allOutput.split("\n").find((l: string) => {
-                const t = l.trim();
-                return (t.startsWith(vpName + " ") || t.startsWith(nameVariant + " ") ||
-                        t === vpName || t === nameVariant);
-              });
-              if (projLine) {
-                const aliasMatch = projLine.match(/https:\/\/[^\s]+\.vercel\.app/);
-                if (aliasMatch) {
-                  vercelUrl = aliasMatch[0];
-                  // Update cached url.txt with correct production alias
-                  fs.writeFileSync(vercelUrlFile, vercelUrl, "utf-8");
-                }
-              }
-            } catch { /* ignore — fall through to url.txt cache */ }
-            // Fallback: read cached url.txt
-            if (!vercelUrl && fs.existsSync(vercelUrlFile)) {
-              vercelUrl = fs.readFileSync(vercelUrlFile, "utf-8").replace(/^\uFEFF/, "").trim();
-            }
-            // Last resort: construct from project name
-            if (!vercelUrl) {
-              const safeName = vpName.replace(/_/g, "-").toLowerCase();
-              vercelUrl = `https://${safeName}.vercel.app`;
-            }
-          }
-        } catch { /* ignore */ }
-      } else if (fs.existsSync(vercelUrlFile)) {
-        // No project.json but url.txt exists — use cached value
-        vercelUrl = fs.readFileSync(vercelUrlFile, "utf-8").replace(/^\uFEFF/, "").trim();
-      }
-
-      // Check .netlify/state.json
-      const netlifyStateFile = path.join(projectPath, ".netlify", "state.json");
-      if (fs.existsSync(netlifyStateFile)) {
-        try {
-          const ns = JSON.parse(fs.readFileSync(netlifyStateFile, "utf-8"));
-          if (ns.siteId) {
-            // Try to get the actual site URL from sites:list
-            const listResult = await runCommand(
-              `netlify sites:list --json `,
-              projectPath, 30_000,
-              netlifyEnv(projectPath, ns.siteId)
-            );
-            try {
-              const sites = JSON.parse(listResult.stdout);
-              const site = sites.find((s: any) => s.id === ns.siteId);
-              if (site) {
-                netlifyUrl = site.ssl_url || site.url || "";
-              }
-            } catch { /* ignore */ }
-            if (!netlifyUrl) netlifyUrl = "https://app.netlify.com (linked)";
-          }
-        } catch { /* ignore */ }
-      }
-
-      // Check wrangler.toml for Cloudflare Pages
-      const wranglerToml = path.join(projectPath, "wrangler.toml");
-      if (fs.existsSync(wranglerToml)) {
-        const wranglerCfg = fs.readFileSync(wranglerToml, "utf-8");
-        const cfNameMatch = wranglerCfg.match(/name\s*=\s*"([^"]+)"/);
-        if (cfNameMatch) {
-          // Query actual domain from Cloudflare (name-hash.pages.dev, not name.pages.dev)
+      // ── Step 2: Vercel + Netlify + Cloudflare in PARALLEL ──
+      // Each check is independent — run all 3 concurrently instead of sequentially
+      const detectVercel = async (): Promise<string> => {
+        const vercelProjectFile = path.join(projectPath, ".vercel", "project.json");
+        const vercelUrlFile = path.join(projectPath, ".vercel", "url.txt");
+        if (fs.existsSync(vercelProjectFile)) {
           try {
-            const cfList = await runCommand("npx --yes wrangler pages project list", projectPath, 30_000);
-            const cfAllOutput = (cfList.stdout + "\n" + cfList.stderr);
-            const cfProjName = cfNameMatch[1];
-            // Wrangler uses │ table separators — match exact project name in first column
-            const cfLine = cfAllOutput.split("\n").find((l: string) => {
-              if (!l.includes(cfProjName)) return false;
-              // Extract first column value from table row (between │ delimiters)
-              const cols = l.split("│").map((c: string) => c.trim()).filter(Boolean);
-              return cols.length > 0 && cols[0] === cfProjName;
-            });
-            if (cfLine) {
-              const domainMatch = cfLine.match(/([a-z0-9-]+\.pages\.dev)/);
-              if (domainMatch) cloudflareUrl = `https://${domainMatch[1]}`;
+            const vp = JSON.parse(fs.readFileSync(vercelProjectFile, "utf-8"));
+            const vpName = vp.projectName || "";
+            if (vpName) {
+              try {
+                const lsResult = await runCommand("npx --yes vercel project ls", projectPath, 30_000);
+                const allOutput = (lsResult.stdout + "\n" + lsResult.stderr);
+                const nameVariant = vpName.replace(/_/g, "-");
+                const projLine = allOutput.split("\n").find((l: string) => {
+                  const t = l.trim();
+                  return (t.startsWith(vpName + " ") || t.startsWith(nameVariant + " ") ||
+                          t === vpName || t === nameVariant);
+                });
+                if (projLine) {
+                  const aliasMatch = projLine.match(/https:\/\/[^\s]+\.vercel\.app/);
+                  if (aliasMatch) {
+                    fs.writeFileSync(vercelUrlFile, aliasMatch[0], "utf-8");
+                    return aliasMatch[0];
+                  }
+                }
+              } catch { /* fall through to cache */ }
+              // Fallback: cached url.txt
+              if (fs.existsSync(vercelUrlFile)) {
+                return fs.readFileSync(vercelUrlFile, "utf-8").replace(/^\uFEFF/, "").trim();
+              }
+              // Last resort: construct from name
+              return `https://${vpName.replace(/_/g, "-").toLowerCase()}.vercel.app`;
             }
           } catch { /* ignore */ }
-          if (!cloudflareUrl) cloudflareUrl = `https://${cfNameMatch[1]}.pages.dev`;
+        } else if (fs.existsSync(vercelUrlFile)) {
+          return fs.readFileSync(vercelUrlFile, "utf-8").replace(/^\uFEFF/, "").trim();
         }
-      }
+        return "";
+      };
+
+      const detectNetlify = async (): Promise<string> => {
+        const netlifyStateFile = path.join(projectPath, ".netlify", "state.json");
+        if (fs.existsSync(netlifyStateFile)) {
+          try {
+            const ns = JSON.parse(fs.readFileSync(netlifyStateFile, "utf-8"));
+            if (ns.siteId) {
+              const listResult = await runCommand(
+                `netlify sites:list --json `,
+                projectPath, 30_000,
+                netlifyEnv(projectPath, ns.siteId)
+              );
+              try {
+                const sites = JSON.parse(listResult.stdout);
+                const site = sites.find((s: any) => s.id === ns.siteId);
+                if (site) return site.ssl_url || site.url || "";
+              } catch { /* ignore */ }
+              return "https://app.netlify.com (linked)";
+            }
+          } catch { /* ignore */ }
+        }
+        return "";
+      };
+
+      const detectCloudflare = async (): Promise<string> => {
+        const wranglerToml = path.join(projectPath, "wrangler.toml");
+        if (fs.existsSync(wranglerToml)) {
+          const wranglerCfg = fs.readFileSync(wranglerToml, "utf-8");
+          const cfNameMatch = wranglerCfg.match(/name\s*=\s*"([^"]+)"/);
+          if (cfNameMatch) {
+            try {
+              const cfList = await runCommand("npx --yes wrangler pages project list", projectPath, 30_000);
+              const cfAllOutput = (cfList.stdout + "\n" + cfList.stderr);
+              const cfProjName = cfNameMatch[1];
+              const cfLine = cfAllOutput.split("\n").find((l: string) => {
+                if (!l.includes(cfProjName)) return false;
+                const cols = l.split("│").map((c: string) => c.trim()).filter(Boolean);
+                return cols.length > 0 && cols[0] === cfProjName;
+              });
+              if (cfLine) {
+                const domainMatch = cfLine.match(/([a-z0-9-]+\.pages\.dev)/);
+                if (domainMatch) return `https://${domainMatch[1]}`;
+              }
+            } catch { /* ignore */ }
+            return `https://${cfNameMatch[1]}.pages.dev`;
+          }
+        }
+        return "";
+      };
+
+      // Run all 3 in parallel — ~15s instead of ~45s
+      [vercelUrl, netlifyUrl, cloudflareUrl] = await Promise.all([
+        detectVercel(),
+        detectNetlify(),
+        detectCloudflare(),
+      ]);
 
       return NextResponse.json({
         success: true,
