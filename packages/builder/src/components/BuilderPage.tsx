@@ -17,7 +17,7 @@ import { flattenFileTree, useUIStore } from "@sarge/core";
 import { pushProject } from "../lib/pushProject";
 import { applyEditBlocks, type EditBlock, getDiffSummary } from "../lib/editBlockParser";
 import { useWorkspaceStore, launchWorkspace, recallWorkspace } from "../stores/workspaceStore";
-import { LayoutGrid, X, Plus, Save, Terminal as TerminalIcon, Loader2, FolderOpen, Rocket, FolderPlus, Package, User, Globe, CheckCircle2, Circle } from "lucide-react";
+import { LayoutGrid, X, Plus, Save, Terminal as TerminalIcon, Loader2, FolderOpen, Rocket, FolderPlus, Package, User, Globe, CheckCircle2, Circle, Flame, SlidersHorizontal } from "lucide-react";
 import { ThreadGuardianIndicator } from "@sarge/chat";
 import { useProjectCommandStore } from "../stores/projectCommandStore";
 import { useAssetLibraryStore } from "../stores/assetLibraryStore";
@@ -703,17 +703,35 @@ Please provide the complete modified version of this component. Make only the re
 
   return (
     <div className="relative flex flex-col h-full w-full bg-zinc-50 dark:bg-zinc-950">
-      {/* The Pit — fixed top LEFT, centered text with orange-gold gradient */}
-      <div className="fixed top-1 left-4 z-[100] flex items-center gap-3">
+      {/* The Pit + Forge Trials — fixed top LEFT, stacked vertically */}
+      <div className="fixed top-1 left-4 z-[100] flex flex-col items-start gap-1.5">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent("pit:launch"))}
+            className="flex items-center justify-center gap-2 px-6 py-3 bg-zinc-900/80 hover:bg-zinc-800/80 border border-[#FF6700]/40 rounded-lg shadow-lg transition-all text-sm font-[800] tracking-[1px]"
+            title="Launch The Pit — 5-monitor workspace + dashboard"
+          >
+            <Rocket className="w-4 h-4 text-[#FF6700]" />
+            <span className="bg-gradient-to-r from-[#FF6700] to-[#FFD700] bg-clip-text text-transparent">The Pit</span>
+          </button>
+          <ThreadGuardianIndicator conversationId="builder-chat" />
+        </div>
         <button
-          onClick={() => window.dispatchEvent(new CustomEvent("pit:launch"))}
-          className="flex items-center justify-center gap-2 px-6 py-3 bg-zinc-900/80 hover:bg-zinc-800/80 border border-[#FF6700]/40 rounded-lg shadow-lg transition-all text-sm font-[800] tracking-[1px]"
-          title="Launch The Pit — 5-monitor workspace + dashboard"
+          onClick={() => window.dispatchEvent(new CustomEvent("forge:trials"))}
+          className="flex items-center justify-center gap-2 px-6 py-3 bg-zinc-900/80 hover:bg-zinc-800/80 border border-[#FF6700]/40 rounded-lg shadow-lg transition-all text-sm font-[800] tracking-[1px] hover:shadow-[0_0_14px_rgba(255,103,0,0.3)]"
+          title="Forge Trials — Model benchmark scorecard"
         >
-          <Rocket className="w-4 h-4 text-[#FF6700]" />
-          <span className="bg-gradient-to-r from-[#FF6700] to-[#FFD700] bg-clip-text text-transparent">The Pit</span>
+          <Flame className="w-4 h-4 text-[#FF6700]" />
+          <span className="bg-gradient-to-r from-[#FF6700] to-[#FFD700] bg-clip-text text-transparent">Forge Trials</span>
         </button>
-        <ThreadGuardianIndicator conversationId="builder-chat" />
+        <button
+          onClick={() => window.dispatchEvent(new CustomEvent("forge:optimize"))}
+          className="flex items-center justify-center gap-2 px-6 py-3 bg-zinc-900/80 hover:bg-zinc-800/80 border border-[#FF6700]/40 rounded-lg shadow-lg transition-all text-sm font-[800] tracking-[1px] hover:shadow-[0_0_14px_rgba(255,103,0,0.3)]"
+          title="Forge Optimization — SEO, Security, Privacy, Performance + more"
+        >
+          <SlidersHorizontal className="w-4 h-4 text-[#FF6700]" />
+          <span className="bg-gradient-to-r from-[#FF6700] to-[#FFD700] bg-clip-text text-transparent">Optimize</span>
+        </button>
       </div>
 
       {/* Horizontal toolbar ribbon — full width, below header */}

@@ -6,6 +6,13 @@ export interface ProjectToggles {
   security: boolean;
   performance: boolean;
   punchList: boolean;
+  calendly: boolean;
+  mailchimp: boolean;
+}
+
+export interface ToggleConfig {
+  calendly?: { url: string };
+  mailchimp?: { actionUrl: string };
 }
 
 export interface DeployUrls {
@@ -36,6 +43,7 @@ export interface ProjectMeta {
   domain: string;
   createdAt: string;
   toggles: ProjectToggles;
+  toggleConfig?: ToggleConfig;
   deployUrls: DeployUrls;
   revisions: ProjectRevisions;
   template?: string;
@@ -49,6 +57,8 @@ export const DEFAULT_TOGGLES: ProjectToggles = {
   security: false,
   performance: false,
   punchList: false,
+  calendly: false,
+  mailchimp: false,
 };
 
 export const TOGGLE_INFO: {
@@ -98,5 +108,17 @@ export const TOGGLE_INFO: {
     label: "Punch List",
     description: "Enable client revision form after delivery",
     color: "#00b4d8",
+  },
+  {
+    key: "calendly",
+    label: "Calendly Booking",
+    description: "Add a Book a Call button linked to your Calendly",
+    color: "#006BFF",
+  },
+  {
+    key: "mailchimp",
+    label: "Mailchimp Signup",
+    description: "Add email capture form for your mailing list",
+    color: "#FFE01B",
   },
 ];

@@ -19,7 +19,7 @@ function resolveProjectPath(projectPath: string): string {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { projectPath: rawPath, toggles: clientToggles } = body;
+    const { projectPath: rawPath, toggles: clientToggles, toggleConfig } = body;
 
     if (!rawPath) {
       return NextResponse.json(
@@ -64,6 +64,8 @@ export async function POST(req: Request) {
     // Run the pipeline
     const results = await runTogglePipeline(projectPath, toggles, {
       developerEmail,
+      calendlyUrl: toggleConfig?.calendly?.url || "",
+      mailchimpActionUrl: toggleConfig?.mailchimp?.actionUrl || "",
     });
 
     const successCount = results.filter((r) => r.status === "success").length;

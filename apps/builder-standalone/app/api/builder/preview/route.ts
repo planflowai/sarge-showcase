@@ -172,6 +172,40 @@ async function inlineLocalAssets(html: string, projectDir: string): Promise<stri
   return processed;
 }
 
+/**
+ * Inject navigation blocker into preview HTML.
+ * Prevents links from navigating the iframe (which would load the builder app).
+ * Adds <base target="_blank"> so links open in new tabs, plus a click interceptor
+ * that blocks any remaining in-frame navigation.
+ */
+function injectPreviewNavigationBlocker(html: string): string {
+  const blocker = `<base target="_blank">
+<script>
+document.addEventListener('click', function(e) {
+  var link = e.target.closest('a');
+  if (link) {
+    var href = link.getAttribute('href');
+    if (href && href !== '#' && !href.startsWith('javascript:')) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }
+}, true);
+</script>`;
+
+  if (/<head[^>]*>/i.test(html)) {
+    return html.replace(/<head[^>]*>/i, function(match) {
+      return match + '\n' + blocker;
+    });
+  } else if (/<html[^>]*>/i.test(html)) {
+    return html.replace(/<html[^>]*>/i, function(match) {
+      return match + '\n<head>' + blocker + '</head>';
+    });
+  } else {
+    return blocker + '\n' + html;
+  }
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const projectName = searchParams.get('project');
@@ -221,11 +255,12 @@ export async function GET(request: NextRequest) {
     const mimeType = getMimeType(fileName);
     console.log(`[Preview] File read successfully, length: ${content.length}, mimeType: ${mimeType}`);
 
-    // For HTML files, inline local CSS and JS
+    // For HTML files, inline local CSS and JS + inject navigation blocker
     if (inline && (fileName.endsWith('.html') || fileName.endsWith('.htm'))) {
       console.log(`[Preview] Inlining assets for HTML file, projectDir: ${projectDir}`);
       const beforeLength = content.length;
       content = await inlineLocalAssets(content, projectDir);
+      content = injectPreviewNavigationBlocker(content);
       console.log(`[Preview] Inlining complete. Before: ${beforeLength} chars, After: ${content.length} chars`);
     }
 

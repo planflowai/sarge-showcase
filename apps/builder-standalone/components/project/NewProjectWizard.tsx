@@ -149,6 +149,8 @@ export default function NewProjectWizard({
       security: false,
       performance: false,
       punchList: false,
+      calendly: false,
+      mailchimp: false,
     };
     for (const key of pkg.toggleKeys) {
       newToggles[key] = true;

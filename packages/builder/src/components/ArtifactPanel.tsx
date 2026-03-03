@@ -813,7 +813,7 @@ function ArtifactPanelInner({
               <iframe
                 key="localhost-preview"
                 src="http://localhost:3000"
-                sandbox="allow-scripts allow-same-origin"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
                 className="w-full h-full border-0"
                 title="Dev Server Preview (localhost:3000)"
                 style={{ display: 'block', minHeight: '100%' }}
@@ -830,7 +830,7 @@ function ArtifactPanelInner({
                 key={previewUrl}
                 ref={iframeRef}
                 src={previewUrl}
-                sandbox="allow-scripts allow-same-origin"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
                 className="w-full h-full border-0"
                 title="Preview"
                 style={{
@@ -846,7 +846,7 @@ function ArtifactPanelInner({
               <iframe
                 ref={iframeRef}
                 srcDoc={previewContent}
-                sandbox="allow-scripts allow-same-origin"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
                 className="w-full h-full border-0"
                 title="Preview"
                 style={{

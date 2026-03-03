@@ -8,6 +8,8 @@ import { applySeoOptimization } from "@/lib/seo/optimizer";
 import { applyPerformanceOptimization } from "@/lib/performance/optimizer";
 import { injectAnalytics } from "@/lib/analytics/injector";
 import { injectPunchList } from "@/lib/punchlist/injector";
+import { injectCalendlyWidget } from "@/lib/calendly/injector";
+import { injectMailchimpForm } from "@/lib/mailchimp/injector";
 
 export interface ToggleCheck {
   label: string;
@@ -39,7 +41,7 @@ export interface ToggleResult {
 export async function runTogglePipeline(
   projectPath: string,
   toggles: ProjectToggles,
-  options?: { developerEmail?: string }
+  options?: { developerEmail?: string; calendlyUrl?: string; mailchimpActionUrl?: string }
 ): Promise<ToggleResult[]> {
   const results: ToggleResult[] = [];
   const indexPath = join(projectPath, "index.html");
@@ -596,6 +598,111 @@ export async function runTogglePipeline(
       }
     } else {
       results.push({ toggle: "Punch List", status: "skipped", summary: "Not enabled", duration: 0, checks: [] });
+    }
+  }
+
+  // ─── 8. Calendly ───
+  {
+    const t0 = Date.now();
+    if (toggles.calendly && options?.calendlyUrl) {
+      try {
+        // Re-read HTML in case previous steps modified it
+        html = readFileSync(indexPath, "utf-8");
+        const { html: out, report } = injectCalendlyWidget(html, options.calendlyUrl);
+        html = out;
+        writeFileSync(indexPath, html, "utf-8");
+
+        const checks: ToggleCheck[] = [];
+        checks.push({
+          label: report.buttonInjected
+            ? "Book a Call button — floating, bottom-right"
+            : "Book a Call button — already present",
+          status: "pass",
+        });
+        checks.push({
+          label: report.widgetScriptInjected
+            ? "Calendly popup widget — loaded"
+            : "Calendly widget — already present",
+          status: "pass",
+        });
+
+        results.push({
+          toggle: "Calendly",
+          status: "success",
+          summary: report.buttonInjected ? "Book a Call button + popup widget" : "Already injected",
+          duration: Date.now() - t0,
+          checks,
+        });
+      } catch (err: any) {
+        results.push({
+          toggle: "Calendly",
+          status: "failed",
+          summary: err.message || "Injection failed",
+          duration: Date.now() - t0,
+          checks: [{ label: "Calendly injection failed", status: "fail", detail: err.message }],
+        });
+      }
+    } else if (toggles.calendly && !options?.calendlyUrl) {
+      results.push({
+        toggle: "Calendly",
+        status: "warning",
+        summary: "No Calendly URL configured",
+        duration: 0,
+        checks: [{ label: "Calendly URL not set — configure in toggle panel", status: "warn" }],
+      });
+    } else {
+      results.push({ toggle: "Calendly", status: "skipped", summary: "Not enabled", duration: 0, checks: [] });
+    }
+  }
+
+  // ─── 9. Mailchimp ───
+  {
+    const t0 = Date.now();
+    if (toggles.mailchimp && options?.mailchimpActionUrl) {
+      try {
+        html = readFileSync(indexPath, "utf-8");
+        const { html: out, report } = injectMailchimpForm(html, options.mailchimpActionUrl);
+        html = out;
+        writeFileSync(indexPath, html, "utf-8");
+
+        const checks: ToggleCheck[] = [];
+        checks.push({
+          label: report.formInjected
+            ? "Email signup form — styled, in footer"
+            : "Signup form — already present",
+          status: "pass",
+        });
+        if (report.formInjected) {
+          checks.push({ label: "Honeypot anti-spam — active", status: "pass" });
+          checks.push({ label: "Accessibility labels — included", status: "pass" });
+        }
+
+        results.push({
+          toggle: "Mailchimp",
+          status: "success",
+          summary: report.formInjected ? "Email signup form injected" : "Already injected",
+          duration: Date.now() - t0,
+          checks,
+        });
+      } catch (err: any) {
+        results.push({
+          toggle: "Mailchimp",
+          status: "failed",
+          summary: err.message || "Injection failed",
+          duration: Date.now() - t0,
+          checks: [{ label: "Mailchimp injection failed", status: "fail", detail: err.message }],
+        });
+      }
+    } else if (toggles.mailchimp && !options?.mailchimpActionUrl) {
+      results.push({
+        toggle: "Mailchimp",
+        status: "warning",
+        summary: "No Mailchimp action URL configured",
+        duration: 0,
+        checks: [{ label: "Mailchimp action URL not set — configure in toggle panel", status: "warn" }],
+      });
+    } else {
+      results.push({ toggle: "Mailchimp", status: "skipped", summary: "Not enabled", duration: 0, checks: [] });
     }
   }
 

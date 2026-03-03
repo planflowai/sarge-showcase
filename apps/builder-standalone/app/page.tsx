@@ -16,6 +16,8 @@ const WarRoomPopout = lazy(() => import("@/components/chat/WarRoomPopout").then(
 const WorkbenchPopout = lazy(() => import("@/components/workbench/WorkbenchPopout").then(m => ({ default: m.WorkbenchPopout })));
 const WorkbenchDashboard = lazy(() => import("@/components/workbench/WorkbenchDashboard"));
 const NewProjectWizard = lazy(() => import("@/components/project/NewProjectWizard"));
+const ForgeTrialsDashboard = lazy(() => import("@/components/benchmark/ForgeTrialsDashboard"));
+const TogglePanel = lazy(() => import("@/components/Builder/TogglePanel"));
 
 const LoadingFallback = <div className="flex h-full w-full items-center justify-center"><span className="text-zinc-500">Loading...</span></div>;
 
@@ -74,6 +76,22 @@ function HomeInner() {
     const handler = () => setShowWizard(true);
     window.addEventListener("project:new-wizard", handler);
     return () => window.removeEventListener("project:new-wizard", handler);
+  }, []);
+
+  // Forge Trials — triggered by forge:trials event from BuilderPage button
+  const [showForgeTrials, setShowForgeTrials] = useState(false);
+  useEffect(() => {
+    const handler = () => setShowForgeTrials(true);
+    window.addEventListener("forge:trials", handler);
+    return () => window.removeEventListener("forge:trials", handler);
+  }, []);
+
+  // Forge Optimization — triggered by forge:optimize event from BuilderPage button
+  const [showOptimize, setShowOptimize] = useState(false);
+  useEffect(() => {
+    const handler = () => setShowOptimize(true);
+    window.addEventListener("forge:optimize", handler);
+    return () => window.removeEventListener("forge:optimize", handler);
   }, []);
 
   const handleWizardCreated = useCallback(async (projectPath: string, _projectName: string) => {
@@ -140,6 +158,24 @@ function HomeInner() {
     return (
       <Suspense fallback={LoadingFallback}>
         <WarRoomPopout slotId={popoutSlotId} provider={popoutProvider} model={popoutModel} />
+      </Suspense>
+    );
+  }
+
+  // Forge Trials — full-screen benchmark dashboard
+  if (showForgeTrials) {
+    return (
+      <Suspense fallback={LoadingFallback}>
+        <ForgeTrialsDashboard onClose={() => setShowForgeTrials(false)} />
+      </Suspense>
+    );
+  }
+
+  // Forge Optimization — full-screen toggle optimization panel
+  if (showOptimize) {
+    return (
+      <Suspense fallback={LoadingFallback}>
+        <TogglePanel onClose={() => setShowOptimize(false)} />
       </Suspense>
     );
   }
