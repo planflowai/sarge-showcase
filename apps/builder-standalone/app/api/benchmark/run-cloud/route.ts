@@ -97,10 +97,16 @@ async function callOpenAICompat(
   const onParentAbort = () => controller.abort();
   signal.addEventListener("abort", onParentAbort);
 
+  // Accumulate outside try so catch can access partial content
+  let content = "";
+  let tokenCount = 0;
+
   try {
     const messages: { role: string; content: string }[] = [];
     if (systemPrompt) messages.push({ role: "system", content: systemPrompt });
     messages.push({ role: "user", content: userPrompt });
+
+    console.log(`[CLOUD TRIAL] Calling ${model} at ${apiUrl} (timeout=${timeoutMs}ms, key=${apiKey ? "set" : "MISSING"})...`);
 
     const res = await fetch(apiUrl, {
       method: "POST",
@@ -112,8 +118,11 @@ async function callOpenAICompat(
       signal: controller.signal,
     });
 
+    console.log(`[CLOUD TRIAL] ${model} response status: ${res.status}`);
+
     if (!res.ok) {
       const errText = await res.text().catch(() => "");
+      console.log(`[CLOUD TRIAL] ${model} ERROR: ${errText.slice(0, 200)}`);
       return { content: "", timeMs: Date.now() - start, timedOut: false, tokenCount: 0, error: `API ${res.status}: ${errText.slice(0, 200)}` };
     }
 
@@ -121,8 +130,6 @@ async function callOpenAICompat(
     if (!reader) return { content: "", timeMs: Date.now() - start, timedOut: false, tokenCount: 0, error: "No response body" };
 
     const decoder = new TextDecoder();
-    let content = "";
-    let tokenCount = 0;
     let sseBuffer = "";
 
     while (true) {
@@ -148,6 +155,9 @@ async function callOpenAICompat(
       }
     }
 
+    console.log(`[CLOUD TRIAL] ${model} DONE: ${content.length} chars, ${tokenCount} tokens, ${Date.now() - start}ms`);
+    console.log(`[CLOUD TRIAL] ${model} first 200 chars: ${content.slice(0, 200)}`);
+
     return {
       content,
       timeMs: Date.now() - start,
@@ -156,9 +166,14 @@ async function callOpenAICompat(
     };
   } catch (err: unknown) {
     const elapsed = Date.now() - start;
+    console.log(`[CLOUD TRIAL] ${model} CATCH: ${err instanceof Error ? err.name + ": " + err.message : String(err)} after ${elapsed}ms, accumulated ${content.length} chars`);
+
     if (err instanceof Error && err.name === "AbortError") {
+      // User stopped — discard content
       if (signal.aborted) return { content: "", timeMs: elapsed, timedOut: false, tokenCount: 0, error: "Stopped by user" };
-      return { content: "", timeMs: elapsed, timedOut: true, tokenCount: 0 };
+      // Timeout — KEEP accumulated content (this is the key fix)
+      console.log(`[CLOUD TRIAL] ${model} TIMEOUT but has ${content.length} chars of content — keeping it`);
+      return { content, timeMs: elapsed, timedOut: true, tokenCount: Math.max(tokenCount, Math.ceil(content.length / 4)) };
     }
     return { content: "", timeMs: elapsed, timedOut: false, tokenCount: 0, error: String(err) };
   } finally {
@@ -183,7 +198,12 @@ async function callAnthropic(
   const onParentAbort = () => controller.abort();
   signal.addEventListener("abort", onParentAbort);
 
+  let content = "";
+  let tokenCount = 0;
+
   try {
+    console.log(`[CLOUD TRIAL] Calling Anthropic ${model} (timeout=${timeoutMs}ms)...`);
+
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -201,6 +221,8 @@ async function callAnthropic(
       signal: controller.signal,
     });
 
+    console.log(`[CLOUD TRIAL] Anthropic ${model} response status: ${res.status}`);
+
     if (!res.ok) {
       const errText = await res.text().catch(() => "");
       return { content: "", timeMs: Date.now() - start, timedOut: false, tokenCount: 0, error: `Anthropic ${res.status}: ${errText.slice(0, 200)}` };
@@ -210,8 +232,6 @@ async function callAnthropic(
     if (!reader) return { content: "", timeMs: Date.now() - start, timedOut: false, tokenCount: 0, error: "No response body" };
 
     const decoder = new TextDecoder();
-    let content = "";
-    let tokenCount = 0;
     let sseBuffer = "";
 
     while (true) {
@@ -234,6 +254,8 @@ async function callAnthropic(
       }
     }
 
+    console.log(`[CLOUD TRIAL] Anthropic ${model} DONE: ${content.length} chars, ${tokenCount} tokens`);
+
     return {
       content,
       timeMs: Date.now() - start,
@@ -242,9 +264,11 @@ async function callAnthropic(
     };
   } catch (err: unknown) {
     const elapsed = Date.now() - start;
+    console.log(`[CLOUD TRIAL] Anthropic ${model} CATCH: ${err instanceof Error ? err.name : String(err)} after ${elapsed}ms, accumulated ${content.length} chars`);
+
     if (err instanceof Error && err.name === "AbortError") {
       if (signal.aborted) return { content: "", timeMs: elapsed, timedOut: false, tokenCount: 0, error: "Stopped by user" };
-      return { content: "", timeMs: elapsed, timedOut: true, tokenCount: 0 };
+      return { content, timeMs: elapsed, timedOut: true, tokenCount: Math.max(tokenCount, Math.ceil(content.length / 4)) };
     }
     return { content: "", timeMs: elapsed, timedOut: false, tokenCount: 0, error: String(err) };
   } finally {
@@ -269,7 +293,12 @@ async function callGemini(
   const onParentAbort = () => controller.abort();
   signal.addEventListener("abort", onParentAbort);
 
+  let content = "";
+  let tokenCount = 0;
+
   try {
+    console.log(`[CLOUD TRIAL] Calling Gemini ${model} (timeout=${timeoutMs}ms)...`);
+
     const contents: any[] = [];
     if (systemPrompt) {
       contents.push({ role: "user", parts: [{ text: systemPrompt }] });
@@ -287,6 +316,8 @@ async function callGemini(
       }
     );
 
+    console.log(`[CLOUD TRIAL] Gemini ${model} response status: ${res.status}`);
+
     if (!res.ok) {
       const errText = await res.text().catch(() => "");
       return { content: "", timeMs: Date.now() - start, timedOut: false, tokenCount: 0, error: `Gemini ${res.status}: ${errText.slice(0, 200)}` };
@@ -296,8 +327,6 @@ async function callGemini(
     if (!reader) return { content: "", timeMs: Date.now() - start, timedOut: false, tokenCount: 0, error: "No response body" };
 
     const decoder = new TextDecoder();
-    let content = "";
-    let tokenCount = 0;
     let sseBuffer = "";
 
     while (true) {
@@ -321,6 +350,8 @@ async function callGemini(
       }
     }
 
+    console.log(`[CLOUD TRIAL] Gemini ${model} DONE: ${content.length} chars, ${tokenCount} tokens`);
+
     return {
       content,
       timeMs: Date.now() - start,
@@ -329,9 +360,11 @@ async function callGemini(
     };
   } catch (err: unknown) {
     const elapsed = Date.now() - start;
+    console.log(`[CLOUD TRIAL] Gemini ${model} CATCH: ${err instanceof Error ? err.name : String(err)} after ${elapsed}ms, accumulated ${content.length} chars`);
+
     if (err instanceof Error && err.name === "AbortError") {
       if (signal.aborted) return { content: "", timeMs: elapsed, timedOut: false, tokenCount: 0, error: "Stopped by user" };
-      return { content: "", timeMs: elapsed, timedOut: true, tokenCount: 0 };
+      return { content, timeMs: elapsed, timedOut: true, tokenCount: Math.max(tokenCount, Math.ceil(content.length / 4)) };
     }
     return { content: "", timeMs: elapsed, timedOut: false, tokenCount: 0, error: String(err) };
   } finally {
@@ -500,6 +533,7 @@ export async function POST(request: NextRequest) {
             });
 
             // Direct API call — no self-fetch
+            console.log(`[CLOUD TRIAL] >>> ${model.name} — ${scenario.name} — Run ${run + 1}/${RUNS_PER_SCENARIO}`);
             const result = await callCloudDirect(
               model.provider,
               model.id,
@@ -508,6 +542,7 @@ export async function POST(request: NextRequest) {
               scenario.timeout,
               abortController.signal
             );
+            console.log(`[CLOUD TRIAL] <<< ${model.name} — ${scenario.name}: ${result.content.length} chars, timedOut=${result.timedOut}, error=${result.error || "none"}`);
 
             // Log billing
             const cost = await logBilling(
@@ -528,6 +563,11 @@ export async function POST(request: NextRequest) {
               });
               continue;
             }
+
+            // Log what extractCode receives and returns
+            const codeForLog = extractCode(result.content);
+            console.log(`[CLOUD TRIAL] extractCode input (first 200): ${result.content.slice(0, 200)}`);
+            console.log(`[CLOUD TRIAL] extractCode output (first 200): ${codeForLog ? codeForLog.slice(0, 200) : "EMPTY"}`);
 
             // Score the response
             emit({
