@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { RefreshCw } from "lucide-react";
 import { providers, getCloudProviders, getLocalProviders } from "@/lib/providers";
 import { useProviderStore } from "@/lib/stores/providerStore";
 import { useModelStore } from "@/lib/stores/modelStore";
@@ -24,6 +25,9 @@ export function ProviderSelector() {
   const hydrateModels = useModelStore((s) => s.hydrate);
   const getEffectiveModels = useModelStore((s) => s.getEffectiveModels);
   const getDisplayName = useModelStore((s) => s.getDisplayName);
+  const allStoreModels = useModelStore((s) => s.models);
+  const verifyModelFn = useModelStore((s) => s.verifyModel);
+  const verifyAllCloudModels = useModelStore((s) => s.verifyAllCloudModels);
 
   useEffect(() => {
     hydrate();
@@ -74,6 +78,42 @@ export function ProviderSelector() {
         setLocalLoading(false);
       });
   }, [currentProvider, isLocal, setModel]);
+
+  const [verifying, setVerifying] = useState(false);
+
+  // Status dot for current selected cloud model
+  const currentModelStatus = useMemo(() => {
+    if (!currentModel || isLocal) return null;
+    const m = allStoreModels.find(m => m.id === currentModel && m.provider === currentProvider);
+    return m?.status || null;
+  }, [currentModel, currentProvider, isLocal, allStoreModels]);
+
+  const statusDotColor = currentModelStatus === "active" ? "#10B981"
+    : currentModelStatus === "error" ? "#EF4444"
+    : currentModelStatus === "unchecked" ? "#F59E0B"
+    : "#6B7280";
+
+  const handleVerify = useCallback(async () => {
+    if (verifying) return;
+    setVerifying(true);
+    try {
+      if (currentModel && !isLocal) {
+        await verifyModelFn(currentModel, currentProvider);
+      } else {
+        await verifyAllCloudModels();
+      }
+    } finally {
+      setVerifying(false);
+    }
+  }, [verifying, currentModel, isLocal, currentProvider, verifyModelFn, verifyAllCloudModels]);
+
+  const statusChar = useCallback((modelId: string, providerId: string) => {
+    const m = allStoreModels.find(m => m.id === modelId && m.provider === providerId);
+    if (!m?.status) return "";
+    if (m.status === "active") return "✓ ";
+    if (m.status === "error") return "✗ ";
+    return "· ";
+  }, [allStoreModels]);
 
   return (
     <div className="space-y-3">
@@ -163,18 +203,38 @@ export function ProviderSelector() {
               </select>
             )
           ) : (
-            <select
-              value={currentModel}
-              onChange={(e) => setModel(e.target.value)}
-              className="w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-2 py-1.5 text-xs text-zinc-700 dark:text-zinc-300 outline-none focus:border-indigo-500 truncate"
-              title={currentModel}
-            >
-              {getEffectiveModels(activeProvider.id).map((model) => (
-                <option key={model.id} value={model.id} title={model.id}>
-                  {getDisplayName(model.id, model.name)}
-                </option>
-              ))}
-            </select>
+            <div className="flex items-center gap-1.5">
+              {/* Status dot */}
+              <span
+                className="w-2 h-2 rounded-full flex-shrink-0"
+                style={{ backgroundColor: statusDotColor }}
+                title={currentModelStatus === "active" ? "Verified — online"
+                  : currentModelStatus === "error" ? "Error — failed verification"
+                  : currentModelStatus === "unchecked" ? "Checking..."
+                  : "Not verified"}
+              />
+              <select
+                value={currentModel}
+                onChange={(e) => setModel(e.target.value)}
+                className="flex-1 min-w-0 rounded-md border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-2 py-1.5 text-xs text-zinc-700 dark:text-zinc-300 outline-none focus:border-indigo-500 truncate"
+                title={currentModel}
+              >
+                {getEffectiveModels(activeProvider.id).map((model) => (
+                  <option key={model.id} value={model.id} title={model.id}>
+                    {statusChar(model.id, activeProvider.id)}{getDisplayName(model.id, model.name)}
+                  </option>
+                ))}
+              </select>
+              {/* Verify button */}
+              <button
+                onClick={handleVerify}
+                disabled={verifying}
+                title={verifying ? "Verifying..." : "Verify model"}
+                className="flex-shrink-0 p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 disabled:opacity-50 transition-colors"
+              >
+                <RefreshCw className={`h-3 w-3 ${verifying ? "animate-spin" : ""}`} />
+              </button>
+            </div>
           )}
         </div>
       )}

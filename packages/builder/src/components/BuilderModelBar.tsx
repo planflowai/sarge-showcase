@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
-import { Zap, Globe, ChevronDown, X } from "lucide-react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { Zap, Globe, ChevronDown, X, RefreshCw } from "lucide-react";
 import { useModelStore, useAIModeStore, fetchOllamaModels, fetchLMStudioModels, providers, groupOllamaModels, cn } from "@sarge/core";
 import type { LocalModel } from "@sarge/core";
 import Link from "next/link";
@@ -21,7 +21,8 @@ export default function BuilderModelBar({
   webSearch = false,
   onWebSearchToggle,
 }: BuilderModelBarProps) {
-  const { hydrated, hydrate, isBuilderModel, getDisplayName, getEffectiveModels } = useModelStore();
+  const { hydrated, hydrate, isBuilderModel, getDisplayName, getEffectiveModels, verifyModel: verifyModelFn, verifyAllCloudModels } = useModelStore();
+  const allStoreModels = useModelStore((s) => s.models);
   const [ollamaModels, setOllamaModels] = useState<LocalModel[]>([]);
   const [ollamaLoading, setOllamaLoading] = useState(false);
   const [ollamaError, setOllamaError] = useState<string | null>(null);
@@ -29,6 +30,43 @@ export default function BuilderModelBar({
   const executionMode = useAIModeStore((s) => s.executionMode);
   const [showModelPanel, setShowModelPanel] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
+  const [verifying, setVerifying] = useState(false);
+
+  const isLocalProvider = selectedProvider === "ollama" || selectedProvider === "lmstudio";
+
+  // Status dot for current selected model
+  const currentModelStatus = useMemo(() => {
+    if (!selectedModel || isLocalProvider) return null;
+    const m = allStoreModels.find(m => m.id === selectedModel && m.provider === selectedProvider);
+    return m?.status || null;
+  }, [selectedModel, selectedProvider, isLocalProvider, allStoreModels]);
+
+  const statusDotColor = currentModelStatus === "active" ? "#10B981"
+    : currentModelStatus === "error" ? "#EF4444"
+    : currentModelStatus === "unchecked" ? "#F59E0B"
+    : "#6B7280";
+
+  const handleVerifyAll = useCallback(async () => {
+    if (verifying) return;
+    setVerifying(true);
+    try {
+      await verifyAllCloudModels();
+    } finally {
+      setVerifying(false);
+    }
+  }, [verifying, verifyAllCloudModels]);
+
+  const getModelStatus = useCallback((modelId: string, providerId: string) => {
+    const m = allStoreModels.find(m => m.id === modelId && m.provider === providerId);
+    return m?.status || null;
+  }, [allStoreModels]);
+
+  const statusDotFor = useCallback((status: string | null) => {
+    if (status === "active") return "#10B981";
+    if (status === "error") return "#EF4444";
+    if (status === "unchecked") return "#F59E0B";
+    return "#6B7280";
+  }, []);
 
   useEffect(() => {
     if (!hydrated) hydrate();
@@ -82,7 +120,6 @@ export default function BuilderModelBar({
   const localProviders = allProviders.filter((p) => p.type === "local");
 
   // Models for current provider
-  const isLocalProvider = selectedProvider === "ollama" || selectedProvider === "lmstudio";
   const currentProviderModels = useMemo(() => {
     if (!hydrated) return [];
     if (isLocalProvider) {
@@ -176,6 +213,17 @@ export default function BuilderModelBar({
 
       {/* Model selector row — click to open model panel */}
       <div className="flex items-center gap-1.5 px-2 pb-1.5">
+        {/* Status dot for current model */}
+        {!isLocalProvider && selectedModel && (
+          <span
+            className="w-2 h-2 rounded-full flex-shrink-0"
+            style={{ backgroundColor: statusDotColor }}
+            title={currentModelStatus === "active" ? "Verified — online"
+              : currentModelStatus === "error" ? "Error — failed verification"
+              : currentModelStatus === "unchecked" ? "Checking..."
+              : "Not verified"}
+          />
+        )}
         <button
           onClick={() => setShowModelPanel(!showModelPanel)}
           className="flex-1 flex items-center justify-between gap-1.5 px-2.5 py-1 rounded-md border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 hover:border-indigo-500 transition-colors min-w-0"
@@ -213,14 +261,27 @@ export default function BuilderModelBar({
           ref={panelRef}
           className="absolute left-0 right-0 top-full z-50 bg-zinc-900 border border-zinc-700 rounded-b-lg shadow-2xl max-h-[300px] overflow-y-auto"
         >
-          {/* Close button */}
+          {/* Header with verify + close */}
           <div className="flex items-center justify-between px-3 py-1.5 border-b border-zinc-800">
             <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
               {currentProviderConfig?.name} Models
             </span>
-            <button onClick={() => setShowModelPanel(false)} className="text-zinc-500 hover:text-zinc-300">
-              <X className="h-3 w-3" />
-            </button>
+            <div className="flex items-center gap-1.5">
+              {!isLocalProvider && (
+                <button
+                  onClick={handleVerifyAll}
+                  disabled={verifying}
+                  title={verifying ? "Verifying all..." : "Verify all cloud models"}
+                  className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium text-zinc-500 hover:text-emerald-400 hover:bg-zinc-800 disabled:opacity-50 transition-colors"
+                >
+                  <RefreshCw className={cn("h-2.5 w-2.5", verifying && "animate-spin")} />
+                  {verifying ? "Checking..." : "Verify All"}
+                </button>
+              )}
+              <button onClick={() => setShowModelPanel(false)} className="text-zinc-500 hover:text-zinc-300">
+                <X className="h-3 w-3" />
+              </button>
+            </div>
           </div>
 
           {/* Model cards */}
@@ -261,6 +322,8 @@ export default function BuilderModelBar({
             ) : (
               currentProviderModels.map((model) => {
                 const isSelected = selectedModel === model.id;
+                const mStatus = getModelStatus(model.id, selectedProvider);
+                const dotColor = statusDotFor(mStatus);
                 return (
                   <button
                     key={model.id}
@@ -277,7 +340,14 @@ export default function BuilderModelBar({
                       backgroundColor: `${providerColor}15`,
                     } : undefined}
                   >
-                    <div className="font-medium truncate">{getDisplayName(model.id, model.name)}</div>
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: dotColor }}
+                        title={mStatus === "active" ? "Online" : mStatus === "error" ? "Failed" : mStatus === "unchecked" ? "Checking..." : "Not verified"}
+                      />
+                      <span className="font-medium truncate">{getDisplayName(model.id, model.name)}</span>
+                    </div>
                   </button>
                 );
               })

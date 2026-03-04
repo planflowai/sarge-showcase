@@ -38,6 +38,8 @@ interface ModelState {
   setVoicePersona: (persona: string) => void;
   setBuilderFlag: (modelId: string, isBuilder: boolean, providerId?: string) => void;
   isBuilderModel: (modelId: string, providerId?: string) => boolean;
+  verifyModel: (modelId: string, provider: string) => Promise<void>;
+  verifyAllCloudModels: () => Promise<void>;
   clearAll: () => void;
 }
 
@@ -163,7 +165,7 @@ export const useModelStore = create<ModelState>()(
         }));
 
         // Verify the model works — fire and forget
-        verifyModel(modelId, providerId).then(ok => {
+        verifyModelPing(modelId, providerId).then(ok => {
           set((state) => ({
             models: state.models.map(m =>
               m.id === modelId && m.provider === providerId
@@ -234,6 +236,56 @@ export const useModelStore = create<ModelState>()(
         return state.builderFlags[modelId] || false;
       },
 
+      verifyModel: async (modelId, provider) => {
+        // Mark as unchecked while verifying
+        set((state) => ({
+          models: state.models.map(m =>
+            m.id === modelId && m.provider === provider
+              ? { ...m, status: "unchecked" as const }
+              : m
+          ),
+        }));
+        const ok = await verifyModelPing(modelId, provider);
+        set((state) => ({
+          models: state.models.map(m =>
+            m.id === modelId && m.provider === provider
+              ? { ...m, status: ok ? "active" as const : "error" as const }
+              : m
+          ),
+        }));
+      },
+
+      verifyAllCloudModels: async () => {
+        const state = get();
+        const cloudModels = state.models.filter(
+          m => m.provider !== "ollama" && m.provider !== "lmstudio"
+        );
+        // Mark all cloud models as unchecked
+        set((s) => ({
+          models: s.models.map(m =>
+            m.provider !== "ollama" && m.provider !== "lmstudio"
+              ? { ...m, status: "unchecked" as const }
+              : m
+          ),
+        }));
+        // Verify in parallel (max 3 concurrent)
+        const queue = [...cloudModels];
+        const runBatch = async () => {
+          while (queue.length > 0) {
+            const model = queue.shift()!;
+            const ok = await verifyModelPing(model.id, model.provider);
+            set((s) => ({
+              models: s.models.map(m =>
+                m.id === model.id && m.provider === model.provider
+                  ? { ...m, status: ok ? "active" as const : "error" as const }
+                  : m
+              ),
+            }));
+          }
+        };
+        await Promise.all([runBatch(), runBatch(), runBatch()]);
+      },
+
       clearAll: () => {
         set({
           models: getInitialModels(),
@@ -274,7 +326,7 @@ export const useModelStore = create<ModelState>()(
 );
 
 /** Quick check if a model responds. Returns true if the provider accepts it. */
-async function verifyModel(modelId: string, provider: string): Promise<boolean> {
+async function verifyModelPing(modelId: string, provider: string): Promise<boolean> {
   try {
     const res = await fetch("/api/test/stream", {
       method: "POST",

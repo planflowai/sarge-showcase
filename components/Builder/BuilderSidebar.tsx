@@ -54,7 +54,7 @@ interface BuilderSidebarProps {
 }
 
 export default function BuilderSidebar({ selectedModel, selectedProvider, onModelSelect, onFileOpen, onNewFile, terminalOpen, onTerminalToggle, onScrollToMessage, onPromptSelect, onInsertComponent, onUseComponentAsBase, onInsertComponentWithAI, onNewBuild }: BuilderSidebarProps) {
-  const { hydrated, hydrate, getBuilderModels, isBuilderModel, getDisplayName, getEffectiveModels } = useModelStore();
+  const { hydrated, hydrate, getBuilderModels, isBuilderModel, getDisplayName, getEffectiveModels, models: allStoreModels, verifyModel, verifyAllCloudModels } = useModelStore();
   const changes = useChangesStore(state => state.changes);
   const clearChanges = useChangesStore(state => state.clearChanges);
   const {
@@ -81,6 +81,7 @@ export default function BuilderSidebar({ selectedModel, selectedProvider, onMode
   const [newProjectPath, setNewProjectPath] = useState("");
   const [showNewProjectInput, setShowNewProjectInput] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<ProjectTemplate | null>(null);
+  const [verifying, setVerifying] = useState(false);
   const [promptsExpanded, setPromptsExpanded] = useState(false);
   const [componentsExpanded, setComponentsExpanded] = useState(false);
   const [depGraphExpanded, setDepGraphExpanded] = useState(false);
@@ -198,6 +199,43 @@ export default function BuilderSidebar({ selectedModel, selectedProvider, onMode
     const allModels = getEffectiveModels(selectedProvider);
     return allModels.filter(m => isBuilderModel(m.id, selectedProvider));
   }, [hydrated, selectedProvider, isLocalProvider, ollamaModels, isBuilderModel, getEffectiveModels]);
+
+  // Get current model's verification status
+  const currentModelStatus = useMemo(() => {
+    if (!selectedModel || isLocalProvider) return null;
+    const m = allStoreModels.find(m => m.id === selectedModel && m.provider === selectedProvider);
+    return m?.status || null;
+  }, [selectedModel, selectedProvider, isLocalProvider, allStoreModels]);
+
+  // Status dot color
+  const statusDotColor = currentModelStatus === "active" ? "#10B981"
+    : currentModelStatus === "error" ? "#EF4444"
+    : currentModelStatus === "unchecked" ? "#F59E0B"
+    : "#6B7280";
+
+  // Verify current model or all cloud models
+  const handleVerify = useCallback(async () => {
+    if (verifying) return;
+    setVerifying(true);
+    try {
+      if (selectedModel && !isLocalProvider) {
+        await verifyModel(selectedModel, selectedProvider);
+      } else {
+        await verifyAllCloudModels();
+      }
+    } finally {
+      setVerifying(false);
+    }
+  }, [verifying, selectedModel, isLocalProvider, selectedProvider, verifyModel, verifyAllCloudModels]);
+
+  // Helper: status prefix for option text
+  const statusChar = useCallback((modelId: string, providerId: string) => {
+    const m = allStoreModels.find(m => m.id === modelId && m.provider === providerId);
+    if (!m?.status) return "";
+    if (m.status === "active") return "✓ ";
+    if (m.status === "error") return "✗ ";
+    return "· ";
+  }, [allStoreModels]);
 
   // Get current provider config
   const activeProvider = providers.find(p => p.id === selectedProvider);
@@ -430,7 +468,7 @@ export default function BuilderSidebar({ selectedModel, selectedProvider, onMode
           </div>
 
           {/* Model Dropdown - fixed height to prevent sidebar jiggling */}
-          <div className="h-[28px] flex items-center">
+          <div className="h-[28px] flex items-center gap-1">
             {isLocalProvider ? (
               ollamaLoading ? (
                 <div className="text-[10px] text-zinc-500">Loading...</div>
@@ -444,7 +482,7 @@ export default function BuilderSidebar({ selectedModel, selectedProvider, onMode
                 <select
                   value={selectedModel || ""}
                   onChange={(e) => onModelSelect(e.target.value, selectedProvider)}
-                  className="w-full rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-1.5 py-1 text-[10px] text-zinc-700 dark:text-zinc-300 outline-none focus:border-indigo-500"
+                  className="flex-1 min-w-0 rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-1.5 py-1 text-[10px] text-zinc-700 dark:text-zinc-300 outline-none focus:border-indigo-500"
                   title={selectedModel || "Select a model"}
                 >
                   <option value="" disabled>Model...</option>
@@ -464,19 +502,39 @@ export default function BuilderSidebar({ selectedModel, selectedProvider, onMode
                 No models. <Link href="/settings" className="text-indigo-500 hover:underline">Settings</Link>
               </div>
             ) : (
-              <select
-                value={selectedModel || ""}
-                onChange={(e) => onModelSelect(e.target.value, selectedProvider)}
-                className="w-full rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-1.5 py-1 text-[10px] text-zinc-700 dark:text-zinc-300 outline-none focus:border-indigo-500"
-                title={selectedModel || "Select a model"}
-              >
-                <option value="" disabled>Model...</option>
-                {currentProviderModels.map((model) => (
-                  <option key={model.id} value={model.id} title={model.id}>
-                    {getDisplayName(model.id, model.name)}
-                  </option>
-                ))}
-              </select>
+              <>
+                {/* Status dot for current model */}
+                <span
+                  className="w-2 h-2 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: statusDotColor }}
+                  title={currentModelStatus === "active" ? "Verified — model is online"
+                    : currentModelStatus === "error" ? "Error — model failed verification"
+                    : currentModelStatus === "unchecked" ? "Checking..."
+                    : "Not verified"}
+                />
+                <select
+                  value={selectedModel || ""}
+                  onChange={(e) => onModelSelect(e.target.value, selectedProvider)}
+                  className="flex-1 min-w-0 rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-1.5 py-1 text-[10px] text-zinc-700 dark:text-zinc-300 outline-none focus:border-indigo-500"
+                  title={selectedModel || "Select a model"}
+                >
+                  <option value="" disabled>Model...</option>
+                  {currentProviderModels.map((model) => (
+                    <option key={model.id} value={model.id} title={model.id}>
+                      {statusChar(model.id, selectedProvider)}{getDisplayName(model.id, model.name)}
+                    </option>
+                  ))}
+                </select>
+                {/* Verify button */}
+                <button
+                  onClick={handleVerify}
+                  disabled={verifying}
+                  title={verifying ? "Verifying..." : "Verify model connection"}
+                  className="flex-shrink-0 p-0.5 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 disabled:opacity-50 transition-colors"
+                >
+                  <RefreshCw className={cn("h-3 w-3", verifying && "animate-spin")} />
+                </button>
+              </>
             )}
           </div>
         </div>

@@ -9,6 +9,7 @@ export interface Model {
   provider: string;
   contextWindow: number;
   isBuiltIn?: boolean;
+  status?: "active" | "error" | "unchecked";
 }
 
 export type EffectiveModel = Model;
@@ -36,6 +37,8 @@ interface ModelState {
   setVoicePersona: (persona: string) => void;
   setBuilderFlag: (modelId: string, isBuilder: boolean, providerId?: string) => void;
   isBuilderModel: (modelId: string, providerId?: string) => boolean;
+  verifyModel: (modelId: string, provider: string) => Promise<void>;
+  verifyAllCloudModels: () => Promise<void>;
   clearAll: () => void;
 }
 
@@ -137,6 +140,9 @@ export const useModelStore = create<ModelState>((set, get) => ({
   },
 
   addModel: (providerId, modelId, modelName) => {
+    const existing = get().models.find(m => m.id === modelId && m.provider === providerId);
+    if (existing) return;
+
     set((state) => ({
       models: [
         ...state.models,
@@ -145,9 +151,25 @@ export const useModelStore = create<ModelState>((set, get) => ({
           name: modelName,
           provider: providerId,
           contextWindow: 4096,
+          status: "unchecked" as const,
         },
       ],
+      builderFlags: {
+        ...state.builderFlags,
+        [modelId]: providerId !== 'ollama' && providerId !== 'lmstudio',
+      },
     }));
+
+    // Verify the model works — fire and forget
+    verifyModelPing(modelId, providerId).then(ok => {
+      set((state) => ({
+        models: state.models.map(m =>
+          m.id === modelId && m.provider === providerId
+            ? { ...m, status: ok ? "active" as const : "error" as const }
+            : m
+        ),
+      }));
+    });
   },
 
   removeModel: (providerId, modelId) => {
@@ -205,6 +227,53 @@ export const useModelStore = create<ModelState>((set, get) => ({
     return state.builderFlags[modelId] || false;
   },
 
+  verifyModel: async (modelId, provider) => {
+    set((state) => ({
+      models: state.models.map(m =>
+        m.id === modelId && m.provider === provider
+          ? { ...m, status: "unchecked" as const }
+          : m
+      ),
+    }));
+    const ok = await verifyModelPing(modelId, provider);
+    set((state) => ({
+      models: state.models.map(m =>
+        m.id === modelId && m.provider === provider
+          ? { ...m, status: ok ? "active" as const : "error" as const }
+          : m
+      ),
+    }));
+  },
+
+  verifyAllCloudModels: async () => {
+    const state = get();
+    const cloudModels = state.models.filter(
+      m => m.provider !== "ollama" && m.provider !== "lmstudio"
+    );
+    set((s) => ({
+      models: s.models.map(m =>
+        m.provider !== "ollama" && m.provider !== "lmstudio"
+          ? { ...m, status: "unchecked" as const }
+          : m
+      ),
+    }));
+    const queue = [...cloudModels];
+    const runBatch = async () => {
+      while (queue.length > 0) {
+        const model = queue.shift()!;
+        const ok = await verifyModelPing(model.id, model.provider);
+        set((s) => ({
+          models: s.models.map(m =>
+            m.id === model.id && m.provider === model.provider
+              ? { ...m, status: ok ? "active" as const : "error" as const }
+              : m
+          ),
+        }));
+      }
+    };
+    await Promise.all([runBatch(), runBatch(), runBatch()]);
+  },
+
   clearAll: () => {
     set({
       models: [],
@@ -215,3 +284,28 @@ export const useModelStore = create<ModelState>((set, get) => ({
     });
   },
 }));
+
+/** Quick check if a model responds. Returns true if the provider accepts it. */
+async function verifyModelPing(modelId: string, provider: string): Promise<boolean> {
+  try {
+    const res = await fetch("/api/test/stream", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: modelId,
+        provider,
+        prompt: "Hi",
+        systemPrompt: "Reply with OK",
+        source: provider === "ollama" || provider === "lmstudio" ? "local" : "cloud",
+      }),
+    });
+    if (!res.ok) return false;
+    const reader = res.body?.getReader();
+    if (!reader) return false;
+    const { done, value } = await reader.read();
+    reader.cancel();
+    return !done && value && value.length > 0;
+  } catch {
+    return false;
+  }
+}
