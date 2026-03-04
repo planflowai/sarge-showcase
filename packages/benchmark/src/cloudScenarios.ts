@@ -23,7 +23,7 @@ export const CLOUD_SCENARIOS: BenchmarkScenario[] = [
     id: "cloud-r1-restaurant",
     name: "Restaurant",
     difficulty: "hard",
-    timeout: 180_000,
+    timeout: 120_000,
     systemPrompt: CLOUD_SYSTEM_PROMPT,
     prompt:
       "Build a complete restaurant website: animated hero with parallax background image effect, navigation bar with smooth scroll to sections, food menu organized by category (appetizers/mains/desserts) with prices and descriptions, image gallery section, reservation form with date picker and party size selector using vanilla JS, customer testimonials carousel that auto-rotates, Google Maps embed placeholder div, footer with hours/address/social links. Professional color scheme. Fully responsive. Output a single complete HTML file with all CSS in a style tag and all JS in a script tag. No external dependencies except CDN libraries (Tailwind, Font Awesome, Google Fonts are fine). The file must be fully functional when opened in a browser.",
@@ -41,7 +41,7 @@ export const CLOUD_SCENARIOS: BenchmarkScenario[] = [
     id: "cloud-r2-portfolio",
     name: "Portfolio",
     difficulty: "hard",
-    timeout: 180_000,
+    timeout: 120_000,
     systemPrompt: CLOUD_SYSTEM_PROMPT,
     prompt:
       "Build a creative portfolio site: hero section with animated text typing effect using JS, filterable project gallery (categories: Web, Mobile, Branding — clicking a category filters the grid with fade transitions), lightbox modal that opens when clicking a project, scroll-triggered reveal animations on sections using Intersection Observer, skills section with animated progress bars that fill on scroll, contact form with real-time validation, smooth page transitions. Dark theme with accent color. Output a single complete HTML file with all CSS in a style tag and all JS in a script tag. No external dependencies except CDN libraries. The file must be fully functional when opened in a browser.",
@@ -59,7 +59,7 @@ export const CLOUD_SCENARIOS: BenchmarkScenario[] = [
     id: "cloud-r3-saas",
     name: "SaaS",
     difficulty: "hard",
-    timeout: 180_000,
+    timeout: 150_000,
     systemPrompt: CLOUD_SYSTEM_PROMPT,
     prompt:
       "Build a SaaS product landing page: sticky navigation with scroll-aware active states, hero with animated gradient background, feature grid with hover effects and icons, pricing section with monthly/annual toggle that updates all prices dynamically using JS, feature comparison table (3 tiers), FAQ accordion with smooth expand/collapse, testimonial slider, newsletter signup with email validation, mobile hamburger menu with slide-in animation. Professional SaaS aesthetic. Output a single complete HTML file with all CSS in a style tag and all JS in a script tag. No external dependencies except CDN libraries. The file must be fully functional when opened in a browser.",
@@ -77,7 +77,7 @@ export const CLOUD_SCENARIOS: BenchmarkScenario[] = [
     id: "cloud-r4-ecommerce",
     name: "E-Commerce",
     difficulty: "hard",
-    timeout: 180_000,
+    timeout: 150_000,
     systemPrompt: CLOUD_SYSTEM_PROMPT,
     prompt:
       "Build a product detail page: image gallery with thumbnail carousel and main image swap on click, product variant selectors (size dropdown, color swatches that change main image border), quantity stepper (plus/minus buttons with min 1 max 10), Add to Cart button that shows a slide-in cart drawer with item count and total, related products grid (4 items) with hover zoom effect, product tabs (Description/Specs/Reviews) switching content, star rating display, breadcrumb navigation. Fully responsive grid layout. Output a single complete HTML file with all CSS in a style tag and all JS in a script tag. No external dependencies except CDN libraries. The file must be fully functional when opened in a browser.",
@@ -95,7 +95,7 @@ export const CLOUD_SCENARIOS: BenchmarkScenario[] = [
     id: "cloud-r5-dashboard",
     name: "Dashboard",
     difficulty: "expert",
-    timeout: 180_000,
+    timeout: 150_000,
     systemPrompt: CLOUD_SYSTEM_PROMPT,
     prompt:
       "Build an admin dashboard: sidebar navigation with collapsible sections and active states, top bar with search input and notification bell with count badge, main area with 4 stat cards (animated count-up numbers on load), line chart placeholder with labeled axes and grid (draw with CSS/SVG, no chart library required), data table with 10 rows of sample data — sortable by clicking column headers and filterable by a search input above the table, dark mode toggle that switches entire dashboard theme using CSS variables, responsive — sidebar collapses to icons on smaller screens. Output a single complete HTML file with all CSS in a style tag and all JS in a script tag. No external dependencies except CDN libraries. The file must be fully functional when opened in a browser.",
@@ -113,7 +113,7 @@ export const CLOUD_SCENARIOS: BenchmarkScenario[] = [
     id: "cloud-r6-multipage",
     name: "Multi-Page",
     difficulty: "expert",
-    timeout: 180_000,
+    timeout: 180_000,  // Multi-page builds need more generation time
     systemPrompt: CLOUD_SYSTEM_PROMPT,
     prompt:
       "Build a 4-page business website ALL IN ONE HTML FILE using JS-powered page routing. Pages: Home (hero, services overview, CTA), About (team cards with photos placeholder, company story, stats counter), Services (6 service cards with modal detail popups), Contact (validated form — name, email, phone, message — with inline error messages, success state). ALL pages share the same header and footer. Navigation highlights the active page. Page transitions are smooth. URL hash changes on navigation. Back button works. Consistent styling across all pages. Output a single complete HTML file with all CSS in a style tag and all JS in a script tag. No external dependencies except CDN libraries. The file must be fully functional when opened in a browser.",
@@ -131,7 +131,7 @@ export const CLOUD_SCENARIOS: BenchmarkScenario[] = [
     id: "cloud-r7-refactor",
     name: "Refactor",
     difficulty: "expert",
-    timeout: 180_000,
+    timeout: 240_000,  // Refactor requires understanding existing code first
     systemPrompt: CLOUD_SYSTEM_PROMPT,
     prompt: `Take this existing site and improve it significantly without changing the business or content. Add: responsive design with mobile menu, scroll animations using Intersection Observer, hero background image placeholder with overlay, service cards with hover effects and icons, a testimonials section with 3 reviews, a contact form with validation, schema.org JSON-LD for LocalBusiness, meta description and Open Graph tags, smooth scroll navigation, footer with business hours and social links. Keep the existing color scheme but make it modern. Output the complete improved HTML file.
 
@@ -164,7 +164,7 @@ footer{background:#333;color:white;padding:20px;text-align:center}</style></head
     id: "cloud-r8-autonomy",
     name: "Autonomy",
     difficulty: "expert",
-    timeout: 180_000,
+    timeout: 300_000,  // Self-directed builds need the most time
     systemPrompt: CLOUD_SYSTEM_PROMPT,
     prompt:
       "I run a dog grooming business called Pawfect Cuts in Austin, Texas. I need a website that makes me look professional and trustworthy. I offer grooming for all breeds, nail trimming, flea treatments, and puppy packages. I have been in business for 8 years. My phone number is (512) 555-0199. I want people to be able to book online. Make it look great. I trust your judgment on colors, layout, and design. Output a single complete HTML file with all CSS in a style tag and all JS in a script tag.",

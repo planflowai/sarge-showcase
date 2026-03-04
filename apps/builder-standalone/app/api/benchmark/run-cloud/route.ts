@@ -511,6 +511,8 @@ export async function POST(request: NextRequest) {
           let bestResponse = "";
           let bestCode = "";
           let bestScore: ScoreBreakdown | null = null;
+          let bestTokenCount = 0;
+          let roundCost = 0;
 
           for (let run = 0; run < RUNS_PER_SCENARIO; run++) {
             if (abortController.signal.aborted) break;
@@ -553,6 +555,7 @@ export async function POST(request: NextRequest) {
               result.timeMs
             );
             totalCost += cost;
+            roundCost += cost;
 
             if (result.error && !result.timedOut) {
               runs.push({
@@ -560,6 +563,7 @@ export async function POST(request: NextRequest) {
                 timeMs: result.timeMs,
                 timedOut: false,
                 error: result.error,
+                tokensOut: 0,
               });
               continue;
             }
@@ -585,12 +589,14 @@ export async function POST(request: NextRequest) {
               score: scored.score.total,
               timeMs: result.timeMs,
               timedOut: result.timedOut,
+              tokensOut: result.tokenCount,
             });
 
             if (!bestScore || scored.score.total > bestScore.total) {
               bestResponse = result.content;
               bestCode = scored.code;
               bestScore = scored.score;
+              bestTokenCount = result.tokenCount;
             }
           }
 
@@ -619,7 +625,14 @@ export async function POST(request: NextRequest) {
             total: 0,
             tier: "fail",
           };
-          medianBreakdown = { ...medianBreakdown, total: medianScore, tier: getCloudTier(medianScore) };
+          const anyTimedOut = validRuns.some((r) => r.timedOut);
+          // If any run timed out, force tier to "partial" — score reflects incomplete output,
+          // not the model's true capability. PARTIAL scores must not count toward routing decisions.
+          medianBreakdown = {
+            ...medianBreakdown,
+            total: medianScore,
+            tier: anyTimedOut ? "partial" : getCloudTier(medianScore),
+          };
 
           const roundResult: RoundResult = {
             modelId: model.id,
@@ -629,8 +642,11 @@ export async function POST(request: NextRequest) {
             rawResponse: bestResponse,
             extractedCode: bestCode,
             timestamp: Date.now(),
-            timedOut: validRuns.some((r) => r.timedOut),
+            timedOut: anyTimedOut,
             runs,
+            tokensIn: Math.ceil(bestTokenCount * 0.3),
+            tokensOut: bestTokenCount,
+            cost: roundCost,
           };
 
           modelResults.push(roundResult);
@@ -653,8 +669,8 @@ export async function POST(request: NextRequest) {
           });
         }
 
-        // Build scorecard for this model
-        const validResults = modelResults.filter((r) => r.score.total > 0);
+        // Build scorecard for this model — exclude timedOut from grade
+        const validResults = modelResults.filter((r) => r.score.total > 0 && !r.timedOut);
         const overallScore =
           validResults.length > 0
             ? Math.round(

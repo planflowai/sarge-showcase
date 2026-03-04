@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { Flame, X, Play, Square, Download, Cloud, Cpu } from "lucide-react";
+import { Flame, X, Play, Square, Download, Cloud, Cpu, Trash2 } from "lucide-react";
 import { useBenchmarkStore } from "@/lib/stores/benchmarkStore";
 import {
   BUILDER_SCENARIOS,
@@ -88,6 +88,7 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
     cloudSetTotalCost,
     cloudSetWarmupHtml,
     cloudWarmupHtml,
+    clearAll,
   } = store;
 
   const [localModels, setLocalModels] = useState<string[]>(
@@ -330,6 +331,15 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
             <Download className="w-4 h-4" />
             Export
           </button>
+          <button
+            onClick={() => { if (confirm("Clear all Forge Trials data? This cannot be undone.")) clearAll(); }}
+            disabled={activeRunning || (results.length === 0 && cloudResults.length === 0)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-zinc-800 hover:bg-red-900/50 text-zinc-400 hover:text-red-300 rounded-lg transition-all border border-zinc-700 hover:border-red-700 disabled:opacity-30 disabled:cursor-not-allowed"
+            title="Clear all trials data"
+          >
+            <Trash2 className="w-4 h-4" />
+            Clear
+          </button>
           <button onClick={onClose} className="flex items-center justify-center w-10 h-10 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 transition-all" title="Back to Builder">
             <X className="w-5 h-5 text-zinc-400" />
           </button>
@@ -413,6 +423,7 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
             isCloud={isCloud}
             totalCost={isCloud ? cloudTotalCost : undefined}
             warmupHtml={isCloud ? cloudWarmupHtml : undefined}
+            provider={isCloud && activeSelectedCell ? cloudSelectedModels.find((m) => m.id === activeSelectedCell.modelId)?.provider : undefined}
           />
         </div>
       </div>

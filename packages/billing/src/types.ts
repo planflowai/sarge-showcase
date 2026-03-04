@@ -51,6 +51,8 @@ export interface DailyTotal {
   date: string;
   cost: number;
   callCount: number;
+  trialsCost?: number;   // cost from app='trials-cloud'
+  builderCost?: number;  // cost from app='builder'
 }
 
 export interface BillingConfig {

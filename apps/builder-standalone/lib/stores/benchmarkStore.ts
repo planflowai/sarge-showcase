@@ -77,6 +77,7 @@ interface BenchmarkState {
   cloudSetTotalCost: (cost: number) => void;
   cloudSetWarmupHtml: (html: string) => void;
   cloudReset: () => void;
+  clearAll: () => void;
 }
 
 const LOCAL_INITIAL = {
@@ -216,24 +217,35 @@ export const useBenchmarkStore = create<BenchmarkState>()(
         })),
 
       cloudReset: () => set(CLOUD_INITIAL),
+
+      clearAll: () => set({ ...LOCAL_INITIAL, ...CLOUD_INITIAL, activeTab: "local" as TrialsTab }),
     }),
     {
       name: "forge-trials-store",
-      partialize: (s) => ({
-        activeTab: s.activeTab,
-        pastRuns: s.pastRuns,
-        selectedModels: s.selectedModels,
-        currentRunId: s.currentRunId,
-        results: s.results,
-        scorecards: s.scorecards,
-        selectedCell: s.selectedCell,
-        cloudPastRuns: s.cloudPastRuns,
-        cloudSelectedModels: s.cloudSelectedModels,
-        cloudCurrentRunId: s.cloudCurrentRunId,
-        cloudResults: s.cloudResults,
-        cloudScorecards: s.cloudScorecards,
-        cloudSelectedCell: s.cloudSelectedCell,
-      }),
+      partialize: (s) => {
+        // Strip rawResponse + extractedCode from persisted results to avoid
+        // blowing localStorage quota (each is 5-20KB of HTML × 8 rounds × N models)
+        const stripHeavy = (r: RoundResult): RoundResult => ({
+          ...r,
+          rawResponse: "",
+          extractedCode: "",
+        });
+        return {
+          activeTab: s.activeTab,
+          pastRuns: s.pastRuns,
+          selectedModels: s.selectedModels,
+          currentRunId: s.currentRunId,
+          results: s.results.map(stripHeavy),
+          scorecards: s.scorecards,
+          selectedCell: s.selectedCell,
+          cloudPastRuns: s.cloudPastRuns,
+          cloudSelectedModels: s.cloudSelectedModels,
+          cloudCurrentRunId: s.cloudCurrentRunId,
+          cloudResults: s.cloudResults.map(stripHeavy),
+          cloudScorecards: s.cloudScorecards,
+          cloudSelectedCell: s.cloudSelectedCell,
+        };
+      },
     }
   )
 );

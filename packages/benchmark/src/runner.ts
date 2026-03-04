@@ -50,6 +50,7 @@ export interface RunAttempt {
   timeMs: number;
   timedOut: boolean;
   error?: string;
+  tokensOut?: number;  // output token count for this attempt
 }
 
 export interface RoundResult {
@@ -64,6 +65,9 @@ export interface RoundResult {
   error?: string;
   /** Individual run data (3 runs). Present for 3-run median runs. */
   runs?: RunAttempt[];
+  tokensIn?: number;   // estimated input tokens (best run)
+  tokensOut?: number;  // output tokens (best run)
+  cost?: number;       // billed cost in USD for this round
 }
 
 export interface ModelScorecard {

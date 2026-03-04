@@ -1,9 +1,9 @@
 # S.A.R.G.E. — System Status Report
 
-Generated: 2026-03-02
-Commit: 620c39c
+Generated: 2026-03-04
+Commit: c848430
 Branch: sargebuild-v1
-Tag: working-2026-03-02-deploy-fix
+Tag: working-2026-03-02-deploy-fix (last tagged)
 
 ---
 
@@ -203,6 +203,42 @@ Tag: working-2026-03-02-deploy-fix
 | Endpoint | Called By | Status |
 |----------|----------|--------|
 | `/api/chat/backup` | conversationStore.ts:51 | **500 — DOES NOT EXIST** |
+
+---
+
+### Cloud Forge Trials
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Cloud trial runner | Works | Direct API calls (no self-fetch), NDJSON progress streaming |
+| 8 benchmark scenarios (R1-R8) | Works | Per-round timeouts: R1-R2 120s, R3-R5 150s, R6 180s, R7 240s, R8 300s |
+| DeepSeek V3 trials | **Partially benchmarked** | R1: 82/100 "Strong". Timeout fix applied (commit c848430) |
+| extractCode HTML detection | Works | Searches for `<!doctype html`/`<html` in raw response (commit 1dc1f1a) |
+| Timeout content preservation | Works | Accumulated content kept on timeout instead of discarded |
+| Results persistence | Works | localStorage via Zustand persist (`forge-trials-store`) |
+| Warmup splash | Works | Preview iframe shows splash during first API call |
+| Remaining cloud models | **Not started** | Gemini, Grok, GPT, Claude — next step |
+| Local trials (Ollama) | **Not tested this session** | 15 scenarios, Ollama backend |
+| Routing summary layer | **Not started** | Depends on complete score matrix |
+
+### Recent Changes (Since Last Status)
+
+| Date | Commit | Change |
+|------|--------|--------|
+| Mar 4 | c848430 | Fix cloud trials DeepSeek — timeout content preservation, 180s timeout, diagnostics |
+| Mar 3 | 1dc1f1a | Fix cloud trials — extractCode HTML detection, reasoning token separation, direct API calls |
+| Mar 3 | 5f84e08 | Add warmup call to cloud trials — splash page renders in preview within seconds |
+| Mar 3 | 2d42911 | Live forge splash in detail panel during cloud trials + 120s timeout |
+| Mar 3 | a9adf7f | Add live elapsed timer to cloud trials progress + disable Vercel auto-deploy |
+
+### Documentation
+
+| File | Status | Notes |
+|------|--------|-------|
+| SARGE_Product_Documentation.md | **Current** | Living document — single truth anchor, updated Mar 4 |
+| CLAUDE.md | **Current** | Claude Code instructions — workflow rules |
+| STATUS.md | **Current** | This file — quick-glance state |
+| Old docs (v1, v4, PLATFORM, etc.) | **Archived** | Moved to `docs/archive/` — not authoritative |
 
 ---
 

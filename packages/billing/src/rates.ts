@@ -36,9 +36,9 @@ export const MODEL_RATES: Record<string, ModelRate> = {
   "gemini-2.5-pro":     { input: 1.25,  output: 10.00 },
 
   // DeepSeek
-  "deepseek-chat":      { input: 0.14,  output: 0.28  },
+  "deepseek-chat":      { input: 0.27,  output: 1.10  },
   "deepseek-reasoner":  { input: 0.55,  output: 2.19  },
-  "deepseek-v3":        { input: 0.14,  output: 0.28  },
+  "deepseek-v3":        { input: 0.27,  output: 1.10  },
   "deepseek-r1":        { input: 0.55,  output: 2.19  },
 
   // Local — always free

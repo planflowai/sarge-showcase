@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
-import { Link2, Lock, Flame, Cloud } from "lucide-react";
+import React, { useMemo } from "react";
+import { Link2, Lock, Flame, Cloud, Timer } from "lucide-react";
 import type {
   RoundResult,
   ModelScorecard,
@@ -94,6 +94,34 @@ export function ForgeTrialsMatrix({
   const getScorecard = (modelId: string): ModelScorecard | undefined =>
     scorecards.find((s) => s.modelId === modelId);
 
+  // Compute grade excluding timed-out rounds
+  const computeGrade = useMemo(() => {
+    return (modelId: string): { grade: number; tier: string; hasTimedOut: boolean } => {
+      const modelResults = results.filter((r) => r.modelId === modelId);
+      const valid = modelResults.filter((r) => r.score.total > 0 && !r.timedOut);
+      const hasTimedOut = modelResults.some((r) => r.timedOut);
+      if (valid.length === 0) return { grade: 0, tier: "unusable", hasTimedOut };
+      const avg = Math.round(valid.reduce((s, r) => s + r.score.total, 0) / valid.length);
+      let tier: string;
+      if (isCloud) {
+        tier = avg >= 90 ? "expert" : avg >= 70 ? "strong" : avg >= 50 ? "medium" : avg >= 25 ? "basic" : "unusable";
+      } else {
+        tier = avg >= 80 ? "expert" : avg >= 65 ? "strong" : avg >= 45 ? "medium" : avg >= 25 ? "basic" : "unusable";
+      }
+      return { grade: avg, tier, hasTimedOut };
+    };
+  }, [results, isCloud]);
+
+  // Compute avg time excluding timed-out rounds
+  const computeAvgTime = useMemo(() => {
+    return (modelId: string): number | null => {
+      const modelResults = results.filter((r) => r.modelId === modelId);
+      const valid = modelResults.filter((r) => !r.timedOut && r.timeMs > 0);
+      if (valid.length === 0) return null;
+      return Math.round(valid.reduce((s, r) => s + r.timeMs, 0) / valid.length);
+    };
+  }, [results]);
+
   return (
     <div className="w-full">
       {/* Table */}
@@ -125,7 +153,7 @@ export function ForgeTrialsMatrix({
                 Avg ⏱
               </th>
               <th className="px-3 py-3 text-center text-xs font-bold text-zinc-400 tracking-wider uppercase border-b border-zinc-800 min-w-[80px]">
-                Score
+                Grade
               </th>
             </tr>
           </thead>
@@ -190,9 +218,12 @@ export function ForgeTrialsMatrix({
                       );
                     }
 
-                    const colors = isCloud
-                      ? cloudScoreColor(result.score.total)
-                      : tierColor(result.score.tier);
+                    const isTimedOut = result.timedOut;
+                    const colors = isTimedOut
+                      ? { bg: "bg-amber-500/10", border: "border-amber-400/60", text: "text-amber-300", glow: "shadow-[0_0_10px_rgba(245,158,11,0.3)]" }
+                      : isCloud
+                        ? cloudScoreColor(result.score.total)
+                        : tierColor(result.score.tier);
 
                     return (
                       <td key={scenario.id} className="px-2 py-3">
@@ -208,6 +239,13 @@ export function ForgeTrialsMatrix({
                           <span className="text-[11px] font-bold opacity-70 mt-0.5">
                             {formatTime(result.timeMs)}
                           </span>
+                          {/* Timed out indicator */}
+                          {isTimedOut && (
+                            <span className="absolute bottom-0.5 left-1 flex items-center gap-0.5 text-[9px] font-bold text-amber-400">
+                              <Timer className="w-2.5 h-2.5" />
+                              T/O
+                            </span>
+                          )}
                           {/* 3-run median badge */}
                           {result.runs && result.runs.length > 1 && (
                             <span className="absolute top-0.5 right-1 text-[9px] font-bold text-zinc-500">
@@ -219,42 +257,54 @@ export function ForgeTrialsMatrix({
                     );
                   })}
 
-                  {/* Avg Time */}
+                  {/* Avg Time (excludes timed-out rounds) */}
                   <td className="px-3 py-3 text-center">
-                    {card ? (
-                      <span className="text-sm font-bold text-zinc-300 font-mono">
-                        {formatTime(card.avgTimeMs)}
-                      </span>
-                    ) : (
-                      <span className="text-zinc-700">—</span>
-                    )}
+                    {(() => {
+                      const avg = computeAvgTime(modelId);
+                      return avg !== null ? (
+                        <span className="text-sm font-bold text-zinc-300 font-mono">
+                          {formatTime(avg)}
+                        </span>
+                      ) : card ? (
+                        <span className="text-sm font-bold text-zinc-300 font-mono">
+                          {formatTime(card.avgTimeMs)}
+                        </span>
+                      ) : (
+                        <span className="text-zinc-700">—</span>
+                      );
+                    })()}
                   </td>
 
-                  {/* Overall Score */}
+                  {/* Grade (excludes timed-out rounds) */}
                   <td className="px-3 py-3 text-center">
                     {card ? (
-                      <div className="flex flex-col items-center">
-                        <span
-                          className={`text-lg font-bold ${
-                            isCloud
-                              ? card.overallScore >= 90
-                                ? "text-emerald-400"
-                                : card.overallScore >= 70
-                                ? "text-amber-400"
-                                : "text-red-400"
-                              : card.overallScore >= 60
-                              ? "text-emerald-400"
-                              : card.overallScore >= 30
-                              ? "text-amber-400"
-                              : "text-red-400"
-                          }`}
-                        >
-                          {card.overallScore}
-                        </span>
-                        <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">
-                          {card.tier}
-                        </span>
-                      </div>
+                      (() => {
+                        const { grade, tier, hasTimedOut } = computeGrade(modelId);
+                        return (
+                          <div className="flex flex-col items-center">
+                            <span
+                              className={`text-lg font-bold ${
+                                isCloud
+                                  ? grade >= 90
+                                    ? "text-emerald-400"
+                                    : grade >= 70
+                                    ? "text-amber-400"
+                                    : "text-red-400"
+                                  : grade >= 60
+                                  ? "text-emerald-400"
+                                  : grade >= 30
+                                  ? "text-amber-400"
+                                  : "text-red-400"
+                              }`}
+                            >
+                              {grade}{hasTimedOut ? "*" : ""}
+                            </span>
+                            <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">
+                              {tier}
+                            </span>
+                          </div>
+                        );
+                      })()
                     ) : (
                       <span className="text-zinc-700">—</span>
                     )}
@@ -267,54 +317,67 @@ export function ForgeTrialsMatrix({
       </div>
 
       {/* Legend */}
-      <div className="flex items-center gap-6 mt-4 px-2 text-sm font-bold text-zinc-400">
-        {isCloud ? (
-          <>
-            <span className="flex items-center gap-1.5">
-              <span className="w-3.5 h-3.5 rounded-sm bg-emerald-500/30 border border-emerald-400/50" />
-              Expert (90+)
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-3.5 h-3.5 rounded-sm bg-amber-500/30 border border-[#FFD700]/50" />
-              Strong (70-89)
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-3.5 h-3.5 rounded-sm bg-red-500/30 border border-red-400/50" />
-              Below 70
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-3.5 h-3.5 rounded-sm bg-red-900/50 border border-red-800/60" />
-              Failed (0)
-            </span>
-          </>
-        ) : (
-          <>
-            <span className="flex items-center gap-1.5">
-              <span className="w-3.5 h-3.5 rounded-sm bg-emerald-500/30 border border-emerald-400/50" />
-              Pass (60+)
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-3.5 h-3.5 rounded-sm bg-amber-500/30 border border-[#FFD700]/50" />
-              Partial (30-59)
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-3.5 h-3.5 rounded-sm bg-red-500/30 border border-red-400/50" />
-              Fail (&lt;30)
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Link2 className="w-3.5 h-3.5 text-emerald-400" />
-              Chain Capable
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Lock className="w-3.5 h-3.5 text-red-400" />
-              Generate Only
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Flame className="w-3.5 h-3.5 text-[#FF6700]" />
-              Chain Gate (R3)
-            </span>
-          </>
-        )}
+      <div className="flex flex-col gap-1.5 mt-4 px-2">
+        <div className="flex items-center gap-6 text-sm font-bold text-zinc-400">
+          {isCloud ? (
+            <>
+              <span className="flex items-center gap-1.5">
+                <span className="w-3.5 h-3.5 rounded-sm bg-emerald-500/30 border border-emerald-400/50" />
+                Expert (90+)
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-3.5 h-3.5 rounded-sm bg-amber-500/30 border border-[#FFD700]/50" />
+                Strong (70-89)
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-3.5 h-3.5 rounded-sm bg-red-500/30 border border-red-400/50" />
+                Below 70
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-3.5 h-3.5 rounded-sm bg-red-900/50 border border-red-800/60" />
+                Failed (0)
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-3.5 h-3.5 rounded-sm bg-amber-500/10 border-2 border-amber-400/60" />
+                <Timer className="w-3 h-3 text-amber-400" />
+                Timed Out
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="flex items-center gap-1.5">
+                <span className="w-3.5 h-3.5 rounded-sm bg-emerald-500/30 border border-emerald-400/50" />
+                Pass (60+)
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-3.5 h-3.5 rounded-sm bg-amber-500/30 border border-[#FFD700]/50" />
+                Partial (30-59)
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-3.5 h-3.5 rounded-sm bg-red-500/30 border border-red-400/50" />
+                Fail (&lt;30)
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-3.5 h-3.5 rounded-sm bg-amber-500/10 border-2 border-amber-400/60" />
+                <Timer className="w-3 h-3 text-amber-400" />
+                Timed Out
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Link2 className="w-3.5 h-3.5 text-emerald-400" />
+                Chain Capable
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Lock className="w-3.5 h-3.5 text-red-400" />
+                Generate Only
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Flame className="w-3.5 h-3.5 text-[#FF6700]" />
+                Chain Gate (R3)
+              </span>
+            </>
+          )}
+        </div>
+        <span className="text-xs text-zinc-500 italic">* Grade excludes timed-out rounds</span>
       </div>
     </div>
   );

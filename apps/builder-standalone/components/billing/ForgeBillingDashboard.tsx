@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { X, Flame, Settings, ChevronDown, ChevronUp, ArrowUpDown, Sun, Moon } from "lucide-react";
-import { formatCost } from "@sarge/billing";
-import type { ModelBreakdown, AppBreakdown, DailyTotal, BillingConfig } from "@sarge/billing";
+import { formatCost, calculateCost, getRate } from "@sarge/billing";
+import type { ModelBreakdown, AppBreakdown, DailyTotal, BillingConfig, UsageEntry } from "@sarge/billing";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   BarChart, Bar, Cell, ReferenceLine,
@@ -51,7 +51,39 @@ function balanceBorder(balance: number): string {
   return "border-red-500/30";
 }
 
+function balanceBarColor(ratio: number): string {
+  if (ratio < 0.5) return "bg-emerald-500";
+  if (ratio < 0.8) return "bg-amber-500";
+  return "bg-red-500";
+}
+
 type SortKey = "model" | "provider" | "callCount" | "totalTokensIn" | "totalTokensOut" | "totalCost" | "avgTokensPerSecond";
+type ChartView = "all" | "trials" | "builder";
+type TableTab = "trials" | "builder";
+
+/** Build model breakdown from filtered usage entries */
+function buildModelBreakdown(entries: UsageEntry[]): ModelBreakdown[] {
+  const map = new Map<string, ModelBreakdown>();
+  for (const e of entries) {
+    const key = `${e.provider}/${e.model}`;
+    const existing = map.get(key) || {
+      model: e.model, provider: e.provider, totalCost: 0, callCount: 0,
+      totalTokensIn: 0, totalTokensOut: 0, avgTokensPerSecond: 0,
+    };
+    existing.totalCost += e.cost;
+    existing.callCount += 1;
+    existing.totalTokensIn += e.tokensIn;
+    existing.totalTokensOut += e.tokensOut;
+    map.set(key, existing);
+  }
+  return Array.from(map.values()).map(m => {
+    const relevant = entries.filter(e => e.model === m.model && e.provider === m.provider);
+    m.avgTokensPerSecond = relevant.length > 0
+      ? Math.round(relevant.reduce((s, e) => s + e.tokensPerSecond, 0) / relevant.length * 10) / 10
+      : 0;
+    return m;
+  });
+}
 
 export default function ForgeBillingDashboard({ onClose }: { onClose: () => void }) {
   const theme = useSettingsStore((s) => s.theme);
@@ -63,13 +95,17 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
   const [todayCost, setTodayCost] = useState(0);
   const [weekCost, setWeekCost] = useState(0);
   const [monthCost, setMonthCost] = useState(0);
+  const [monthTrialsCost, setMonthTrialsCost] = useState(0);
   const [models, setModels] = useState<ModelBreakdown[]>([]);
   const [apps, setApps] = useState<AppBreakdown[]>([]);
+  const [periodEntries, setPeriodEntries] = useState<UsageEntry[]>([]);
   const [dailyTotals, setDailyTotals] = useState<DailyTotal[]>([]);
   const [config, setConfig] = useState<BillingConfig>({ balance: 50, alertAt: 10, dailyCap: 5, weeklyCap: 25 });
   const [showSettings, setShowSettings] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>("totalCost");
   const [sortAsc, setSortAsc] = useState(false);
+  const [chartView, setChartView] = useState<ChartView>("all");
+  const [tableTab, setTableTab] = useState<TableTab>("trials");
 
   // Editable config fields
   const [editBalance, setEditBalance] = useState("");
@@ -99,12 +135,17 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
       setMonthCost(monthData.totalCost || 0);
       setModels(periodData.modelBreakdown || []);
       setApps(periodData.appBreakdown || []);
+      setPeriodEntries(periodData.entries || []);
       setDailyTotals(dailyData.dailyTotals || []);
       setConfig(configData);
       setEditBalance(String(configData.balance ?? 50));
       setEditAlertAt(String(configData.alertAt ?? 10));
       setEditDailyCap(String(configData.dailyCap ?? ""));
       setEditWeeklyCap(String(configData.weeklyCap ?? ""));
+
+      // Trials cost from month app breakdown
+      const trialsApp = (monthData.appBreakdown || []).find((a: AppBreakdown) => a.app === "trials-cloud");
+      setMonthTrialsCost(trialsApp ? trialsApp.totalCost : 0);
     } catch {}
   }, [period]);
 
@@ -114,16 +155,31 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
     return () => clearInterval(iv);
   }, [refresh]);
 
-  // Sorted models
+  // Filtered entries for table tabs
+  const trialsEntries = useMemo(() =>
+    periodEntries.filter(e => e.app === "trials-cloud"),
+  [periodEntries]);
+
+  const builderEntries = useMemo(() =>
+    periodEntries.filter(e => e.app === "builder"),
+  [periodEntries]);
+
+  // Build model breakdown per tab
+  const trialsModels = useMemo(() => buildModelBreakdown(trialsEntries), [trialsEntries]);
+  const builderModels = useMemo(() => buildModelBreakdown(builderEntries), [builderEntries]);
+
+  const activeTabModels = tableTab === "trials" ? trialsModels : builderModels;
+
+  // Sorted models for current tab
   const sortedModels = useMemo(() => {
-    const sorted = [...models].sort((a, b) => {
-      const av = a[sortKey] as number;
-      const bv = b[sortKey] as number;
+    const sorted = [...activeTabModels].sort((a, b) => {
+      const av = a[sortKey];
+      const bv = b[sortKey];
       if (typeof av === "string" && typeof bv === "string") return sortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
-      return sortAsc ? (av as number) - (bv as number) : (bv as number) - (av as number);
+      return sortAsc ? Number(av) - Number(bv) : Number(bv) - Number(av);
     });
     return sorted;
-  }, [models, sortKey, sortAsc]);
+  }, [activeTabModels, sortKey, sortAsc]);
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) setSortAsc(!sortAsc);
@@ -142,6 +198,16 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
     if (avgDaily <= 0) return null;
     return Math.round(config.balance / avgDaily);
   }, [dailyTotals, monthCost, config.balance]);
+
+  // Balance usage ratio for progress bar
+  const balanceRatio = useMemo(() => {
+    if (config.balance <= 0) return 1;
+    return Math.min(monthCost / config.balance, 1);
+  }, [monthCost, config.balance]);
+
+  // Chart data key based on view
+  const chartDataKey = chartView === "trials" ? "trialsCost" : chartView === "builder" ? "builderCost" : "cost";
+  const chartLabel = chartView === "trials" ? "Trials" : chartView === "builder" ? "Builder" : "All";
 
   const saveConfig = async () => {
     try {
@@ -170,6 +236,39 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
     { key: "month", label: "Month" },
     { key: "all", label: "All Time" },
   ];
+
+  // Table columns based on tab
+  const trialsColumns: Array<{ key: SortKey; label: string }> = [
+    { key: "model", label: "Model" },
+    { key: "provider", label: "Provider" },
+    { key: "callCount", label: "Rounds" },
+    { key: "totalTokensIn", label: "Tokens In" },
+    { key: "totalTokensOut", label: "Tokens Out" },
+    { key: "totalCost", label: "Cost" },
+    { key: "avgTokensPerSecond", label: "Cost/Round" },
+  ];
+
+  const builderColumns: Array<{ key: SortKey; label: string }> = [
+    { key: "model", label: "Model" },
+    { key: "provider", label: "Provider" },
+    { key: "callCount", label: "Calls" },
+    { key: "totalTokensIn", label: "Tokens In" },
+    { key: "totalTokensOut", label: "Tokens Out" },
+    { key: "totalCost", label: "Total Cost" },
+    { key: "avgTokensPerSecond", label: "Avg tok/s" },
+  ];
+
+  const activeColumns = tableTab === "trials" ? trialsColumns : builderColumns;
+
+  /** Fix $0.00 for cloud models — recalculate from tokens if cost is zero */
+  const getDisplayCost = (m: ModelBreakdown): { cost: number; isCalc: boolean } => {
+    const isLocal = m.provider === "ollama" || m.provider === "lmstudio" || m.provider === "lm-studio";
+    if (m.totalCost > 0 || isLocal || m.totalTokensOut === 0) {
+      return { cost: m.totalCost, isCalc: false };
+    }
+    const computed = calculateCost(m.model, m.provider, m.totalTokensIn, m.totalTokensOut);
+    return { cost: computed, isCalc: true };
+  };
 
   return (
     <div className={`flex flex-col h-full w-full overflow-hidden ${isDark ? "bg-[#0a0a0a] text-[#F5F5F5]" : "bg-[#fafafa] text-[#1a1a1a]"}`}>
@@ -204,26 +303,42 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto px-8 py-6 space-y-8">
 
-        {/* ROW 1: Hero Stats */}
-        <div className="grid grid-cols-4 gap-6">
+        {/* ROW 1: 5-Card Stats Grid */}
+        <div className="grid grid-cols-5 gap-5">
           {[
             { label: "TODAY", value: todayCost },
             { label: "THIS WEEK", value: weekCost },
             { label: "THIS MONTH", value: monthCost },
           ].map(({ label, value }) => (
-            <div key={label} className={`rounded-xl border p-6 text-center ${isDark ? "bg-[#0f0f12] border-zinc-800" : "bg-white border-zinc-200"}`}>
-              <div className="text-4xl font-bold font-mono text-[#F5F5F5] dark:text-[#F5F5F5]">
-                <span className={isDark ? "text-[#F5F5F5]" : "text-[#1a1a1a]"}>{formatCost(value)}</span>
+            <div key={label} className={`rounded-xl border p-5 text-center ${isDark ? "bg-[#0f0f12] border-zinc-800" : "bg-white border-zinc-200"}`}>
+              <div className={`text-5xl font-[900] font-mono ${isDark ? "text-[#F5F5F5]" : "text-[#1a1a1a]"}`}>
+                {formatCost(value)}
               </div>
               <div className={`text-sm font-bold mt-2 ${isDark ? "text-zinc-400" : "text-zinc-500"}`}>{label}</div>
             </div>
           ))}
-          {/* Balance card */}
-          <div className={`rounded-xl border p-6 text-center ${isDark ? "bg-[#0f0f12]" : "bg-white"} ${balanceBorder(config.balance)}`}>
-            <div className={`text-4xl font-bold font-mono ${balanceColor(config.balance)}`}>
+
+          {/* Trials (Month) card — gold accent */}
+          <div className={`rounded-xl border-2 p-5 text-center ${isDark ? "bg-[#0f0f12] border-[#FFD700]/40" : "bg-white border-[#FFD700]/50"}`}>
+            <div className="text-5xl font-[900] font-mono text-[#FFD700]">
+              {formatCost(monthTrialsCost)}
+            </div>
+            <div className="text-sm font-bold mt-2 text-[#FFD700]/70">TRIALS (MONTH)</div>
+          </div>
+
+          {/* Balance card with progress bar */}
+          <div className={`rounded-xl border p-5 text-center ${isDark ? "bg-[#0f0f12]" : "bg-white"} ${balanceBorder(config.balance)}`}>
+            <div className={`text-5xl font-[900] font-mono ${balanceColor(config.balance)}`}>
               {formatCost(config.balance)}
             </div>
             <div className={`text-sm font-bold mt-2 ${isDark ? "text-zinc-400" : "text-zinc-500"}`}>BALANCE</div>
+            {/* Progress bar */}
+            <div className={`mt-2 h-2 rounded-full ${isDark ? "bg-zinc-800" : "bg-zinc-200"} overflow-hidden`}>
+              <div
+                className={`h-full rounded-full transition-all ${balanceBarColor(balanceRatio)}`}
+                style={{ width: `${Math.round(balanceRatio * 100)}%` }}
+              />
+            </div>
             {daysRemaining !== null && (
               <div className={`text-xs mt-1 ${isDark ? "text-zinc-500" : "text-zinc-400"}`}>
                 ~{daysRemaining} days remaining
@@ -232,16 +347,39 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
           </div>
         </div>
 
-        {/* ROW 2: Spend Chart */}
+        {/* ROW 2: 30-Day Spend Chart */}
         <div className={`rounded-xl border p-6 ${isDark ? "bg-[#141414] border-zinc-800" : "bg-white border-zinc-200"}`}>
-          <h2 className="text-lg font-bold mb-4">30-Day Spend</h2>
-          <div className="h-[280px]">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold">30-Day Spend</h2>
+            <div className="flex items-center gap-1">
+              {(["all", "trials", "builder"] as ChartView[]).map((view) => (
+                <button
+                  key={view}
+                  onClick={() => setChartView(view)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                    chartView === view
+                      ? view === "trials"
+                        ? "bg-[#FFD700]/20 text-[#FFD700] border border-[#FFD700]/40"
+                        : "bg-[#FF6700]/20 text-[#FF6700] border border-[#FF6700]/40"
+                      : isDark ? "text-zinc-500 hover:text-zinc-300 border border-zinc-800" : "text-zinc-400 hover:text-zinc-600 border border-zinc-200"
+                  }`}
+                >
+                  {view === "all" ? "All" : view === "trials" ? "Trials" : "Builder"}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="h-[400px]">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={dailyTotals} margin={{ top: 10, right: 30, left: 10, bottom: 0 }}>
                 <defs>
                   <linearGradient id="orangeGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#FF6700" stopOpacity={0.4} />
                     <stop offset="95%" stopColor="#FF6700" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="goldGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#FFD700" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="#FFD700" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke={isDark ? "#222" : "#e5e7eb"} />
@@ -265,35 +403,83 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
                     fontSize: "14px",
                     fontWeight: "bold",
                   }}
-                  formatter={(value: number) => [`$${value.toFixed(4)}`, "Cost"]}
+                  formatter={(value: number) => [`$${value.toFixed(4)}`, chartLabel]}
                   labelFormatter={(label: string) => `Date: ${label}`}
                 />
-                {config.dailyCap && (
+                {config.dailyCap && chartView === "all" && (
                   <ReferenceLine y={config.dailyCap} stroke="#EF4444" strokeDasharray="5 5" label={{ value: `Cap: $${config.dailyCap}`, fill: "#EF4444", fontSize: 12 }} />
                 )}
-                <Area type="monotone" dataKey="cost" stroke="#FF6700" strokeWidth={2.5} fill="url(#orangeGrad)" />
+                {/* Main area for selected view */}
+                <Area
+                  type="monotone"
+                  dataKey={chartDataKey}
+                  stroke={chartView === "trials" ? "#FFD700" : "#FF6700"}
+                  strokeWidth={2.5}
+                  fill={chartView === "trials" ? "url(#goldGrad)" : "url(#orangeGrad)"}
+                />
+                {/* Overlay dashed lines when viewing "all" */}
+                {chartView === "all" && (
+                  <>
+                    <Area type="monotone" dataKey="trialsCost" stroke="#FFD700" strokeWidth={1.5} strokeDasharray="5 3" fill="none" />
+                    <Area type="monotone" dataKey="builderCost" stroke="#FF6700" strokeWidth={1.5} strokeDasharray="3 3" fill="none" />
+                  </>
+                )}
               </AreaChart>
             </ResponsiveContainer>
           </div>
+          {chartView === "all" && (
+            <div className="flex items-center gap-6 mt-2 text-xs text-zinc-500">
+              <span className="flex items-center gap-1.5">
+                <span className="w-6 h-0.5 bg-[#FFD700]" style={{ borderTop: "2px dashed #FFD700" }} />
+                Trials
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-6 h-0.5 bg-[#FF6700]" style={{ borderTop: "2px dashed #FF6700" }} />
+                Builder
+              </span>
+            </div>
+          )}
         </div>
 
-        {/* ROW 3: Period Tabs + Model Breakdown Table */}
+        {/* ROW 3: Two-Tab Table (Trials / Builder) */}
         <div className={`rounded-xl border ${isDark ? "bg-[#0f0f12] border-zinc-800" : "bg-white border-zinc-200"}`}>
-          {/* Period tabs */}
-          <div className="flex items-center gap-1 px-6 pt-5 pb-3">
-            {periods.map(({ key, label }) => (
-              <button
-                key={key}
-                onClick={() => setPeriod(key)}
-                className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors duration-200 ${
-                  period === key
-                    ? "bg-[#FF6700] text-white"
-                    : isDark ? "text-zinc-400 hover:bg-zinc-800 hover:text-white" : "text-zinc-500 hover:bg-zinc-100 hover:text-black"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
+          {/* Tab row */}
+          <div className="flex items-center justify-between px-6 pt-5 pb-3">
+            {/* Primary tabs: Trials / Builder */}
+            <div className="flex items-center gap-1">
+              {(["trials", "builder"] as TableTab[]).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setTableTab(tab)}
+                  className={`px-5 py-2 rounded-lg text-sm font-bold transition-colors duration-200 ${
+                    tableTab === tab
+                      ? tab === "trials"
+                        ? "bg-[#FFD700]/20 text-[#FFD700] border border-[#FFD700]/40"
+                        : "bg-[#FF6700] text-white"
+                      : isDark ? "text-zinc-400 hover:bg-zinc-800 hover:text-white" : "text-zinc-500 hover:bg-zinc-100 hover:text-black"
+                  }`}
+                >
+                  {tab === "trials" ? "Trials" : "Builder"}
+                </button>
+              ))}
+            </div>
+
+            {/* Secondary tabs: period selector (right-aligned) */}
+            <div className="flex items-center gap-1">
+              {periods.map(({ key, label }) => (
+                <button
+                  key={key}
+                  onClick={() => setPeriod(key)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors duration-200 ${
+                    period === key
+                      ? isDark ? "bg-zinc-700 text-white" : "bg-zinc-200 text-black"
+                      : isDark ? "text-zinc-500 hover:text-zinc-300" : "text-zinc-400 hover:text-zinc-600"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Table */}
@@ -301,15 +487,7 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
             <table className="w-full text-sm">
               <thead>
                 <tr className={`border-b ${isDark ? "border-zinc-800" : "border-zinc-200"}`}>
-                  {[
-                    { key: "model" as SortKey, label: "Model" },
-                    { key: "provider" as SortKey, label: "Provider" },
-                    { key: "callCount" as SortKey, label: "Calls" },
-                    { key: "totalTokensIn" as SortKey, label: "Tokens In" },
-                    { key: "totalTokensOut" as SortKey, label: "Tokens Out" },
-                    { key: "totalCost" as SortKey, label: "Total Cost" },
-                    { key: "avgTokensPerSecond" as SortKey, label: "Avg tok/s" },
-                  ].map(({ key, label }) => (
+                  {activeColumns.map(({ key, label }) => (
                     <th
                       key={key}
                       onClick={() => handleSort(key)}
@@ -322,10 +500,12 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
               </thead>
               <tbody>
                 {sortedModels.length === 0 && (
-                  <tr><td colSpan={7} className="px-3 py-8 text-center text-zinc-500">No usage data for this period</td></tr>
+                  <tr><td colSpan={7} className="px-3 py-8 text-center text-zinc-500">No {tableTab} usage data for this period</td></tr>
                 )}
                 {sortedModels.map((m, i) => {
                   const isLocal = m.provider === "ollama" || m.provider === "lmstudio";
+                  const { cost: displayCost, isCalc } = getDisplayCost(m);
+                  const costPerRound = m.callCount > 0 ? displayCost / m.callCount : 0;
                   return (
                     <tr
                       key={`${m.provider}/${m.model}`}
@@ -346,13 +526,21 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
                       <td className={`px-3 py-2.5 font-mono ${isDark ? "text-[#F5F5F5]" : "text-[#1a1a1a]"}`}>{m.callCount}</td>
                       <td className={`px-3 py-2.5 font-mono ${isDark ? "text-[#F5F5F5]" : "text-[#1a1a1a]"}`}>{m.totalTokensIn.toLocaleString()}</td>
                       <td className={`px-3 py-2.5 font-mono ${isDark ? "text-[#F5F5F5]" : "text-[#1a1a1a]"}`}>{m.totalTokensOut.toLocaleString()}</td>
-                      <td className={`px-3 py-2.5 font-mono text-right ${costColor(m.totalCost)}`}>
-                        {formatCost(m.totalCost)}
+                      <td className={`px-3 py-2.5 font-mono text-right ${costColor(displayCost)}`}>
+                        {formatCost(displayCost)}
+                        {isCalc && (
+                          <span className="ml-1.5 px-1 py-0.5 rounded text-[9px] font-bold bg-cyan-500/20 text-cyan-400">calc</span>
+                        )}
                         {isLocal && (
-                          <span className="ml-2 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400">LOCAL</span>
+                          <span className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400">LOCAL</span>
                         )}
                       </td>
-                      <td className={`px-3 py-2.5 font-mono ${isDark ? "text-[#F5F5F5]" : "text-[#1a1a1a]"}`}>{m.avgTokensPerSecond}</td>
+                      <td className={`px-3 py-2.5 font-mono ${isDark ? "text-[#F5F5F5]" : "text-[#1a1a1a]"}`}>
+                        {tableTab === "trials"
+                          ? formatCost(costPerRound)
+                          : m.avgTokensPerSecond
+                        }
+                      </td>
                     </tr>
                   );
                 })}
