@@ -10,6 +10,7 @@ import {
   Plane,
   Radio,
   Hammer,
+  DollarSign,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
@@ -19,6 +20,7 @@ import {
 } from "@sarge/core";
 import { useWarRoomStore } from "@/lib/stores/warRoomStore";
 import { useWorkbenchStore } from "@/lib/stores/workbenchStore";
+import { launchBillingPopout } from "@/lib/billingPopoutManager";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -175,9 +177,9 @@ export function Header() {
               <Flame className="h-2.5 w-2.5 text-amber-400 absolute -right-0.5 -bottom-0.5 drop-shadow-[0_0_4px_rgba(251,191,36,0.9)]" />
             </div>
 
-            {/* The Foundry — brand identity */}
+            {/* The Foundry — brand identity (orange→gold gradient) */}
             <h1 className="text-base sm:text-lg md:text-xl font-semibold tracking-wide">
-              <span className="text-orange-500 dark:text-orange-400 font-black text-xl sm:text-2xl md:text-3xl tracking-wider drop-shadow-[0_0_8px_rgba(255,103,0,0.4)]">
+              <span className="font-[900] text-2xl sm:text-3xl md:text-4xl tracking-wider bg-gradient-to-r from-[#FF6700] via-[#FF8C00] to-[#FFD700] bg-clip-text text-transparent drop-shadow-[0_0_12px_rgba(255,103,0,0.5)]">
                 The Foundry
               </span>
             </h1>
@@ -271,6 +273,15 @@ export function Header() {
 
             {/* Separator */}
             <div className="h-5 w-px bg-zinc-300 dark:bg-zinc-700" />
+
+            {/* Billing Popout */}
+            <button
+              onClick={() => launchBillingPopout()}
+              title="Open Billing Dashboard"
+              className="flex items-center justify-center h-8 w-8 rounded-md transition-all duration-200 bg-zinc-800/60 border border-zinc-600/50 text-zinc-400 hover:bg-[#FF6700]/20 hover:text-[#FF6700] hover:border-[#FF6700]/50"
+            >
+              <DollarSign className="h-4 w-4" />
+            </button>
 
             {/* Theme Toggle */}
             <Button

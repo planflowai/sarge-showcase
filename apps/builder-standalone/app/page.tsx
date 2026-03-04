@@ -47,6 +47,9 @@ function HomeInner() {
 
   // Workbench popout detection — ?workbench=1&slot=N&monitor=M&provider=P&model=M
   const isWorkbenchPopout = searchParams.get("workbench") === "1";
+
+  // Billing popout detection — ?billing=1
+  const isBillingPopout = searchParams.get("billing") === "1";
   const wbSlot     = parseInt(searchParams.get("slot")     ?? "1", 10);
   const wbMonitor  = parseInt(searchParams.get("monitor")  ?? "1", 10);
   const wbProvider = searchParams.get("provider") ?? "anthropic";
@@ -159,6 +162,17 @@ function HomeInner() {
           provider={wbProvider}
           model={wbModel}
         />
+      </Suspense>
+    );
+  }
+
+  // Billing popout window — full-viewport billing dashboard
+  if (isBillingPopout) {
+    return (
+      <Suspense fallback={LoadingFallback}>
+        <div className="fixed inset-0 z-50 bg-[#0a0a0a]">
+          <ForgeBillingDashboard onClose={() => window.close()} />
+        </div>
       </Suspense>
     );
   }

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { X, Flame, Settings, ChevronDown, ChevronUp, ArrowUpDown, Sun, Moon } from "lucide-react";
+import { X, Flame, Settings, ChevronDown, ChevronUp, ArrowUpDown, Sun, Moon, DollarSign, Calendar, TrendingUp, Wallet } from "lucide-react";
 import { formatCost, calculateCost, getRate } from "@sarge/billing";
 import type { ModelBreakdown, AppBreakdown, DailyTotal, BillingConfig, UsageEntry } from "@sarge/billing";
 import {
@@ -273,16 +273,12 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
   return (
     <div className={`flex flex-col h-full w-full overflow-hidden ${isDark ? "bg-[#0a0a0a] text-[#F5F5F5]" : "bg-[#fafafa] text-[#1a1a1a]"}`}>
       {/* Header */}
-      <div className="flex items-center justify-between px-8 py-5 border-b border-[#FF6700]/20 flex-shrink-0">
-        <div className="flex items-center gap-4">
-          <Flame className="w-8 h-8 text-[#FF6700]" />
-          <h1
-            className="text-5xl font-[900] tracking-[4px] bg-gradient-to-r from-[#FF6700] via-[#FF8C00] to-[#FFD700] bg-clip-text text-transparent"
-            style={{ filter: "drop-shadow(0 0 20px rgba(255,103,0,0.4))" }}
-          >
-            FORGE BILLING
+      <div className="flex items-center justify-between px-6 py-3 border-b border-zinc-800/50 flex-shrink-0">
+        <div className="flex items-center gap-2.5">
+          <Flame className="w-5 h-5 text-[#FF6700]" />
+          <h1 className="text-xl font-bold tracking-wide bg-gradient-to-r from-[#FF6700] to-[#FFD700] bg-clip-text text-transparent">
+            Forge Billing
           </h1>
-          <Flame className="w-8 h-8 text-[#FF6700]" />
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -301,56 +297,64 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
       </div>
 
       {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto px-8 py-6 space-y-8">
+      <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
 
         {/* ROW 1: 5-Card Stats Grid */}
-        <div className="grid grid-cols-5 gap-5">
+        <div className="grid grid-cols-5 gap-3">
           {[
-            { label: "TODAY", value: todayCost },
-            { label: "THIS WEEK", value: weekCost },
-            { label: "THIS MONTH", value: monthCost },
-          ].map(({ label, value }) => (
-            <div key={label} className={`rounded-xl border p-5 text-center ${isDark ? "bg-[#0f0f12] border-zinc-800" : "bg-white border-zinc-200"}`}>
-              <div className={`text-5xl font-[900] font-mono ${isDark ? "text-[#F5F5F5]" : "text-[#1a1a1a]"}`}>
+            { label: "Today", value: todayCost, Icon: DollarSign },
+            { label: "This Week", value: weekCost, Icon: Calendar },
+            { label: "This Month", value: monthCost, Icon: TrendingUp },
+          ].map(({ label, value, Icon }) => (
+            <div key={label} className={`rounded-xl border p-4 ${isDark ? "bg-[#0f0f12] border-zinc-800" : "bg-white border-zinc-200"}`}>
+              <div className="flex items-center gap-1.5 mb-1">
+                <Icon className={`w-3.5 h-3.5 ${isDark ? "text-zinc-500" : "text-zinc-400"}`} />
+                <span className={`text-xs font-semibold uppercase tracking-wider ${isDark ? "text-zinc-400" : "text-zinc-500"}`}>{label}</span>
+              </div>
+              <div className={`text-2xl font-bold font-mono ${isDark ? "text-[#F5F5F5]" : "text-[#1a1a1a]"}`}>
                 {formatCost(value)}
               </div>
-              <div className={`text-sm font-bold mt-2 ${isDark ? "text-zinc-400" : "text-zinc-500"}`}>{label}</div>
             </div>
           ))}
 
           {/* Trials (Month) card — gold accent */}
-          <div className={`rounded-xl border-2 p-5 text-center ${isDark ? "bg-[#0f0f12] border-[#FFD700]/40" : "bg-white border-[#FFD700]/50"}`}>
-            <div className="text-5xl font-[900] font-mono text-[#FFD700]">
+          <div className={`rounded-xl border p-4 ${isDark ? "bg-[#0f0f12] border-[#FFD700]/30" : "bg-white border-[#FFD700]/40"}`}>
+            <div className="flex items-center gap-1.5 mb-1">
+              <Flame className="w-3.5 h-3.5 text-[#FFD700]/70" />
+              <span className="text-xs font-semibold uppercase tracking-wider text-[#FFD700]/70">Trials</span>
+            </div>
+            <div className="text-2xl font-bold font-mono text-[#FFD700]">
               {formatCost(monthTrialsCost)}
             </div>
-            <div className="text-sm font-bold mt-2 text-[#FFD700]/70">TRIALS (MONTH)</div>
           </div>
 
           {/* Balance card with progress bar */}
-          <div className={`rounded-xl border p-5 text-center ${isDark ? "bg-[#0f0f12]" : "bg-white"} ${balanceBorder(config.balance)}`}>
-            <div className={`text-5xl font-[900] font-mono ${balanceColor(config.balance)}`}>
+          <div className={`rounded-xl border p-4 ${isDark ? "bg-[#0f0f12]" : "bg-white"} ${balanceBorder(config.balance)}`}>
+            <div className="flex items-center gap-1.5 mb-1">
+              <Wallet className={`w-3.5 h-3.5 ${isDark ? "text-zinc-500" : "text-zinc-400"}`} />
+              <span className={`text-xs font-semibold uppercase tracking-wider ${isDark ? "text-zinc-400" : "text-zinc-500"}`}>Balance</span>
+            </div>
+            <div className={`text-2xl font-bold font-mono ${balanceColor(config.balance)}`}>
               {formatCost(config.balance)}
             </div>
-            <div className={`text-sm font-bold mt-2 ${isDark ? "text-zinc-400" : "text-zinc-500"}`}>BALANCE</div>
-            {/* Progress bar */}
-            <div className={`mt-2 h-2 rounded-full ${isDark ? "bg-zinc-800" : "bg-zinc-200"} overflow-hidden`}>
+            <div className={`mt-1.5 h-1.5 rounded-full ${isDark ? "bg-zinc-800" : "bg-zinc-200"} overflow-hidden`}>
               <div
                 className={`h-full rounded-full transition-all ${balanceBarColor(balanceRatio)}`}
                 style={{ width: `${Math.round(balanceRatio * 100)}%` }}
               />
             </div>
             {daysRemaining !== null && (
-              <div className={`text-xs mt-1 ${isDark ? "text-zinc-500" : "text-zinc-400"}`}>
-                ~{daysRemaining} days remaining
+              <div className={`text-[11px] mt-1 ${isDark ? "text-zinc-500" : "text-zinc-400"}`}>
+                ~{daysRemaining} days at current rate
               </div>
             )}
           </div>
         </div>
 
         {/* ROW 2: 30-Day Spend Chart */}
-        <div className={`rounded-xl border p-6 ${isDark ? "bg-[#141414] border-zinc-800" : "bg-white border-zinc-200"}`}>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold">30-Day Spend</h2>
+        <div className={`rounded-xl border p-5 ${isDark ? "bg-[#141414] border-zinc-800" : "bg-white border-zinc-200"}`}>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-semibold">30-Day Spend</h2>
             <div className="flex items-center gap-1">
               {(["all", "trials", "builder"] as ChartView[]).map((view) => (
                 <button
@@ -369,7 +373,7 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
               ))}
             </div>
           </div>
-          <div className="h-[400px]">
+          <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={dailyTotals} margin={{ top: 10, right: 30, left: 10, bottom: 0 }}>
                 <defs>
@@ -485,22 +489,25 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
           {/* Table */}
           <div className="overflow-x-auto px-4 pb-4">
             <table className="w-full text-sm">
-              <thead>
+              <thead className={`sticky top-0 z-10 ${isDark ? "bg-[#0f0f12]" : "bg-white"}`}>
                 <tr className={`border-b ${isDark ? "border-zinc-800" : "border-zinc-200"}`}>
-                  {activeColumns.map(({ key, label }) => (
-                    <th
-                      key={key}
-                      onClick={() => handleSort(key)}
-                      className={`text-left px-3 py-3 font-bold cursor-pointer select-none ${isDark ? "text-[#F5F5F5]" : "text-[#1a1a1a]"}`}
-                    >
-                      {label}<SortIcon k={key} />
-                    </th>
-                  ))}
+                  {activeColumns.map(({ key, label }) => {
+                    const isNumeric = key !== "model" && key !== "provider";
+                    return (
+                      <th
+                        key={key}
+                        onClick={() => handleSort(key)}
+                        className={`${isNumeric ? "text-right" : "text-left"} px-4 py-3 font-semibold cursor-pointer select-none text-xs uppercase tracking-wider ${isDark ? "text-zinc-400" : "text-zinc-500"}`}
+                      >
+                        {label}<SortIcon k={key} />
+                      </th>
+                    );
+                  })}
                 </tr>
               </thead>
               <tbody>
                 {sortedModels.length === 0 && (
-                  <tr><td colSpan={7} className="px-3 py-8 text-center text-zinc-500">No {tableTab} usage data for this period</td></tr>
+                  <tr><td colSpan={7} className="px-4 py-8 text-center text-zinc-500">No {tableTab} usage data for this period</td></tr>
                 )}
                 {sortedModels.map((m, i) => {
                   const isLocal = m.provider === "ollama" || m.provider === "lmstudio";
@@ -510,12 +517,12 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
                     <tr
                       key={`${m.provider}/${m.model}`}
                       className={i % 2 === 0
-                        ? (isDark ? "bg-[#0f0f12]" : "bg-white")
-                        : (isDark ? "bg-[#141418]" : "bg-zinc-50")
+                        ? ""
+                        : (isDark ? "bg-zinc-900/30" : "bg-zinc-50")
                       }
                     >
-                      <td className={`px-3 py-2.5 font-bold ${isDark ? "text-[#F5F5F5]" : "text-[#1a1a1a]"}`}>{m.model}</td>
-                      <td className="px-3 py-2.5">
+                      <td className={`px-4 py-3 font-semibold ${isDark ? "text-[#F5F5F5]" : "text-[#1a1a1a]"}`}>{m.model}</td>
+                      <td className="px-4 py-3">
                         <span
                           className="px-2 py-0.5 rounded text-xs font-bold"
                           style={{ backgroundColor: (PROVIDER_COLORS[m.provider] || "#666") + "22", color: PROVIDER_COLORS[m.provider] || "#888" }}
@@ -523,10 +530,10 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
                           {m.provider}
                         </span>
                       </td>
-                      <td className={`px-3 py-2.5 font-mono ${isDark ? "text-[#F5F5F5]" : "text-[#1a1a1a]"}`}>{m.callCount}</td>
-                      <td className={`px-3 py-2.5 font-mono ${isDark ? "text-[#F5F5F5]" : "text-[#1a1a1a]"}`}>{m.totalTokensIn.toLocaleString()}</td>
-                      <td className={`px-3 py-2.5 font-mono ${isDark ? "text-[#F5F5F5]" : "text-[#1a1a1a]"}`}>{m.totalTokensOut.toLocaleString()}</td>
-                      <td className={`px-3 py-2.5 font-mono text-right ${costColor(displayCost)}`}>
+                      <td className={`px-4 py-3 font-mono text-right ${isDark ? "text-zinc-300" : "text-zinc-700"}`}>{m.callCount}</td>
+                      <td className={`px-4 py-3 font-mono text-right ${isDark ? "text-zinc-300" : "text-zinc-700"}`}>{m.totalTokensIn.toLocaleString()}</td>
+                      <td className={`px-4 py-3 font-mono text-right ${isDark ? "text-zinc-300" : "text-zinc-700"}`}>{m.totalTokensOut.toLocaleString()}</td>
+                      <td className={`px-4 py-3 font-mono text-right ${costColor(displayCost)}`}>
                         {formatCost(displayCost)}
                         {isCalc && (
                           <span className="ml-1.5 px-1 py-0.5 rounded text-[9px] font-bold bg-cyan-500/20 text-cyan-400">calc</span>
@@ -535,7 +542,7 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
                           <span className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400">LOCAL</span>
                         )}
                       </td>
-                      <td className={`px-3 py-2.5 font-mono ${isDark ? "text-[#F5F5F5]" : "text-[#1a1a1a]"}`}>
+                      <td className={`px-4 py-3 font-mono text-right ${isDark ? "text-zinc-300" : "text-zinc-700"}`}>
                         {tableTab === "trials"
                           ? formatCost(costPerRound)
                           : m.avgTokensPerSecond
@@ -550,10 +557,10 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
         </div>
 
         {/* ROW 4: Side-by-side — Top Models + App Breakdown */}
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 gap-5">
           {/* Top Models */}
-          <div className={`rounded-xl border p-6 ${isDark ? "bg-[#0f0f12] border-zinc-800" : "bg-white border-zinc-200"}`}>
-            <h2 className="text-lg font-bold mb-4">Top Models by Spend</h2>
+          <div className={`rounded-xl border p-5 ${isDark ? "bg-[#0f0f12] border-zinc-800" : "bg-white border-zinc-200"}`}>
+            <h2 className="text-base font-semibold mb-3">Top Models by Spend</h2>
             {topModels.length === 0 ? (
               <div className="text-zinc-500 text-center py-8">No data</div>
             ) : (
@@ -579,8 +586,8 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
           </div>
 
           {/* App Breakdown */}
-          <div className={`rounded-xl border p-6 ${isDark ? "bg-[#0f0f12] border-zinc-800" : "bg-white border-zinc-200"}`}>
-            <h2 className="text-lg font-bold mb-4">App Breakdown</h2>
+          <div className={`rounded-xl border p-5 ${isDark ? "bg-[#0f0f12] border-zinc-800" : "bg-white border-zinc-200"}`}>
+            <h2 className="text-base font-semibold mb-3">App Breakdown</h2>
             {apps.length === 0 ? (
               <div className="text-zinc-500 text-center py-8">No data</div>
             ) : (
