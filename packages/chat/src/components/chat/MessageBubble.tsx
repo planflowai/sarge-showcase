@@ -35,6 +35,25 @@ interface MessageBubbleProps {
   onShareToAll?: (message: Message) => void;
 }
 
+// Inlined cost helpers — avoids @sarge/billing barrel import (logger.ts has fs/path, crashes client)
+function formatCostInline(cost: number): string {
+  if (cost === 0) return "$0.00";
+  if (cost < 0.005) return `$${cost.toFixed(4)}`;
+  if (cost < 1) return `$${cost.toFixed(3)}`;
+  return `$${cost.toFixed(2)}`;
+}
+const OUTPUT_RATES: Record<string, number> = {
+  "claude-opus-4.6": 75, "claude-sonnet-4.5": 15, "claude-haiku-4.5": 4, "claude-sonnet-4.6": 15,
+  "gpt-4o": 10, "gpt-4o-mini": 0.6, "gpt-5.2": 12, "o1": 60, "o1-mini": 12,
+  "grok-4": 10, "grok-4.1-fast": 0.5,
+  "gemini-2.5-flash": 3, "gemini-3-flash": 3, "gemini-2.5-pro": 10,
+  "deepseek-chat": 0.28, "deepseek-reasoner": 2.19, "deepseek-v3": 0.28, "deepseek-r1": 2.19,
+};
+function getOutputRateInline(model: string, provider: string): number {
+  if (provider === "ollama" || provider === "lmstudio") return 0;
+  return OUTPUT_RATES[model] || 0;
+}
+
 // Helper to extract BUILDER_PROMPT blocks from content
 function extractBuilderPrompts(content: string): string[] {
   const regex = /```BUILDER_PROMPT\s*\n([\s\S]*?)```/g;
@@ -342,6 +361,13 @@ export function MessageBubble({
           )}
           {!isUser && latencySec && (
             <span>{latencySec}s</span>
+          )}
+          {!isUser && message.tokenCount != null && message.tokenCount > 0 && message.provider && (
+            <span className="font-mono text-[#FF6700]">
+              {message.provider === "ollama" || message.provider === "lmstudio"
+                ? "FREE"
+                : formatCostInline((message.tokenCount / 1_000_000) * getOutputRateInline(message.model || "", message.provider || ""))}
+            </span>
           )}
 
           {/* Copy button */}
