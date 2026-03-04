@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import { Check, Cloud, AlertCircle } from "lucide-react";
 import { useModelStore } from "@sarge/core";
 
@@ -20,48 +20,13 @@ interface Props {
   onCloudModelsChange?: (models: CloudModel[]) => void;
 }
 
-// Default cloud models by provider
-const CLOUD_PROVIDER_GROUPS: { provider: string; label: string; models: { id: string; name: string }[] }[] = [
-  {
-    provider: "anthropic",
-    label: "Anthropic",
-    models: [
-      { id: "claude-opus-4-5-20250514", name: "Claude Opus 4.5" },
-      { id: "claude-sonnet-4-5-20241022", name: "Claude Sonnet 4.5" },
-    ],
-  },
-  {
-    provider: "openai",
-    label: "OpenAI",
-    models: [
-      { id: "gpt-4o", name: "GPT-4o" },
-      { id: "gpt-4o-mini", name: "GPT-4o Mini" },
-    ],
-  },
-  {
-    provider: "xai",
-    label: "xAI",
-    models: [
-      { id: "grok-4", name: "Grok 4" },
-      { id: "grok-4.1-fast", name: "Grok 4.1 Fast" },
-    ],
-  },
-  {
-    provider: "google",
-    label: "Google",
-    models: [
-      { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash" },
-    ],
-  },
-  {
-    provider: "deepseek",
-    label: "DeepSeek",
-    models: [
-      { id: "deepseek-chat", name: "DeepSeek V3" },
-      { id: "deepseek-reasoner", name: "DeepSeek R1" },
-    ],
-  },
-];
+const PROVIDER_LABELS: Record<string, string> = {
+  anthropic: "Anthropic",
+  openai: "OpenAI",
+  xai: "xAI",
+  google: "Google",
+  deepseek: "DeepSeek",
+};
 
 export function ForgeTrialsControls({
   models,
@@ -73,6 +38,24 @@ export function ForgeTrialsControls({
   onCloudModelsChange,
 }: Props) {
   const storeModels = useModelStore((s) => s.models);
+  const builderFlags = useModelStore((s) => s.builderFlags);
+
+  // Build cloud provider groups dynamically from model store
+  const cloudProviderGroups = useMemo(() => {
+    const cloudBuilderModels = storeModels.filter(
+      (m) => m.provider !== "ollama" && m.provider !== "lmstudio" && builderFlags[m.id]
+    );
+    const grouped: Record<string, { id: string; name: string }[]> = {};
+    cloudBuilderModels.forEach((m) => {
+      if (!grouped[m.provider]) grouped[m.provider] = [];
+      grouped[m.provider].push({ id: m.id, name: m.name });
+    });
+    return Object.entries(grouped).map(([provider, models]) => ({
+      provider,
+      label: PROVIDER_LABELS[provider] || provider.charAt(0).toUpperCase() + provider.slice(1),
+      models,
+    }));
+  }, [storeModels, builderFlags]);
 
   const getModelStatus = (modelId: string, provider: string): string | null => {
     const m = storeModels.find((m) => m.id === modelId && m.provider === provider);
@@ -143,7 +126,7 @@ export function ForgeTrialsControls({
   const selectAllCloud = () => {
     if (running || !onCloudModelsChange) return;
     const all: CloudModel[] = [];
-    CLOUD_PROVIDER_GROUPS.forEach((g) => {
+    cloudProviderGroups.forEach((g) => {
       g.models.forEach((m) => {
         all.push({ id: m.id, provider: g.provider, name: m.name });
       });
@@ -156,7 +139,7 @@ export function ForgeTrialsControls({
     onCloudModelsChange([]);
   };
 
-  const totalCloudModels = CLOUD_PROVIDER_GROUPS.reduce((sum, g) => sum + g.models.length, 0);
+  const totalCloudModels = cloudProviderGroups.reduce((sum, g) => sum + g.models.length, 0);
 
   return (
     <div className="px-4 pt-3 pb-2 border-b border-zinc-800/80 bg-zinc-900/40">
@@ -181,7 +164,7 @@ export function ForgeTrialsControls({
 
         {/* Provider grid — 3 columns */}
         <div className="grid grid-cols-3 gap-x-4 gap-y-2">
-          {CLOUD_PROVIDER_GROUPS.map((group) => (
+          {cloudProviderGroups.map((group) => (
             <div key={group.provider}>
               <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1">
                 {group.label}
