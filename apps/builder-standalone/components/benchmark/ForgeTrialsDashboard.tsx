@@ -404,6 +404,11 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
           <ForgeTrialsRoundDetail
             result={selectedResult}
             scenario={activeSelectedCell ? activeScenarios.find((s) => s.id === activeSelectedCell.scenarioId) : undefined}
+            running={activeRunning}
+            currentModel={activeCurrentModel}
+            currentRound={activeCurrentRound}
+            isCloud={isCloud}
+            totalCost={isCloud ? cloudTotalCost : undefined}
           />
         </div>
       </div>

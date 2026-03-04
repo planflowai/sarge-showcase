@@ -1,18 +1,53 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
-import { Code, Eye, BarChart3, Clock, Flame } from "lucide-react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
+import { Code, Eye, BarChart3, Clock, Flame, Loader2 } from "lucide-react";
 import type { RoundResult, BenchmarkScenario } from "@sarge/benchmark";
 
 interface Props {
   result?: RoundResult;
   scenario?: BenchmarkScenario;
+  running?: boolean;
+  currentModel?: string | null;
+  currentRound?: string | null;
+  isCloud?: boolean;
+  totalCost?: number;
 }
 
 type Tab = "preview" | "code" | "breakdown";
 
-export function ForgeTrialsRoundDetail({ result, scenario }: Props) {
+export function ForgeTrialsRoundDetail({
+  result,
+  scenario,
+  running = false,
+  currentModel,
+  currentRound,
+  isCloud = false,
+  totalCost,
+}: Props) {
   const [tab, setTab] = useState<Tab>("preview");
+
+  // Live elapsed timer
+  const [elapsed, setElapsed] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (running && !result) {
+      setElapsed(0);
+      const start = Date.now();
+      timerRef.current = setInterval(() => {
+        setElapsed(Math.floor((Date.now() - start) / 1000));
+      }, 1000);
+      return () => {
+        if (timerRef.current) clearInterval(timerRef.current);
+      };
+    } else {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    }
+  }, [running, result, currentModel, currentRound]);
 
   // Build preview HTML
   const previewHtml = useMemo(() => {
@@ -29,6 +64,62 @@ export function ForgeTrialsRoundDetail({ result, scenario }: Props) {
     return `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:system-ui,sans-serif;padding:1rem}</style></head><body>${code}</body></html>`;
   }, [result?.extractedCode]);
 
+  // ── Running state: show live splash ──
+  if (!result && running) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full bg-zinc-950 gap-6 px-8">
+        {/* Animated forge fire */}
+        <div className="relative">
+          <Flame className="w-24 h-24 text-[#FF6700] animate-pulse drop-shadow-[0_0_30px_rgba(255,103,0,0.6)]" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-16 h-16 rounded-full border-4 border-[#FF6700]/30 border-t-[#FFD700] animate-spin" />
+          </div>
+        </div>
+
+        <div className="text-center space-y-3">
+          <h2 className="text-2xl font-[900] tracking-wide bg-gradient-to-r from-[#FF6700] via-[#FF8C00] to-[#FFD700] bg-clip-text text-transparent">
+            {isCloud ? "CLOUD" : "LOCAL"} FORGE TRIALS
+          </h2>
+          <p className="text-lg font-bold text-zinc-300">
+            Testing in progress...
+          </p>
+        </div>
+
+        {/* Current operation */}
+        {currentModel && (
+          <div className="w-full max-w-md bg-zinc-900/80 border border-[#FF6700]/20 rounded-xl p-5 space-y-3">
+            <div className="flex items-center gap-3">
+              <Loader2 className="w-5 h-5 text-[#FF6700] animate-spin flex-shrink-0" />
+              <span className="text-base font-bold text-[#FFD700]">
+                {currentModel}
+              </span>
+            </div>
+            {currentRound && (
+              <div className="text-sm font-bold text-zinc-400 pl-8">
+                Scenario: <span className="text-zinc-300">{currentRound}</span>
+              </div>
+            )}
+            <div className="flex items-center justify-between pl-8">
+              <span className="text-sm font-mono font-bold text-amber-400">
+                {elapsed}s elapsed
+              </span>
+              {isCloud && totalCost != null && totalCost > 0 && (
+                <span className="text-sm font-mono font-bold text-emerald-400">
+                  ${totalCost.toFixed(4)} spent
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
+        <p className="text-sm font-bold text-zinc-600 text-center max-w-sm">
+          Results will appear here as each scenario completes. Click any scored cell in the matrix to review.
+        </p>
+      </div>
+    );
+  }
+
+  // ── No result, not running: idle state ──
   if (!result || !scenario) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-zinc-600 gap-4">
