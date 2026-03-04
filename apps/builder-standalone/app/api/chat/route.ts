@@ -40,8 +40,23 @@ export async function POST(req: NextRequest) {
       case "google":    return await callGoogle(model, messages, getEnvKey("google"));
       case "xai":       return await callXAI(model, messages, getEnvKey("xai"));
       case "deepseek":  return await callDeepSeek(model, messages, getEnvKey("deepseek"));
-      default:
+      default: {
+        // Custom provider fallback — OpenAI-compatible
+        const KNOWN_BASE_URLS: Record<string, string> = {
+          mistral: "https://api.mistral.ai/v1",
+          huggingface: "https://api-inference.huggingface.co/v1",
+          perplexity: "https://api.perplexity.ai",
+          together: "https://api.together.xyz/v1",
+          groq: "https://api.groq.com/openai/v1",
+        };
+        const envKey = `${provider.toUpperCase()}_API_KEY`;
+        const apiKey = process.env[envKey] || "";
+        const baseUrl = KNOWN_BASE_URLS[provider] || "";
+        if (apiKey && baseUrl) {
+          return await callOpenAICompatible(model, messages, baseUrl, apiKey, provider);
+        }
         return NextResponse.json({ error: `Unknown provider: ${provider}` }, { status: 400 });
+      }
     }
   } catch (err) {
     console.error("[standalone /api/chat] Error:", err);
@@ -220,5 +235,28 @@ async function callDeepSeek(model: string, messages: ChatMessage[], apiKey: stri
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error?.message || `DeepSeek error: ${res.status}`);
+  return NextResponse.json({ content: data.choices?.[0]?.message?.content || "" });
+}
+
+// ── Generic OpenAI-compatible (Mistral, Perplexity, Together, Groq, etc.) ────
+
+async function callOpenAICompatible(model: string, messages: ChatMessage[], baseUrl: string, apiKey: string, provider: string) {
+  if (!apiKey) {
+    return NextResponse.json(
+      { error: `No API key. Add ${provider.toUpperCase()}_API_KEY to .env.local` },
+      { status: 401 }
+    );
+  }
+  const endpoint = `${baseUrl.replace(/\/+$/, '')}/chat/completions`;
+  const res = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ model, messages, stream: false }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error?.message || `${provider} error: ${res.status}`);
   return NextResponse.json({ content: data.choices?.[0]?.message?.content || "" });
 }

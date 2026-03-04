@@ -37,6 +37,7 @@ export * from './stores/forensicLogStore';
 export * from './stores/testModeStore';
 export * from './stores/draftStore';
 export * from './stores/journalStore';
+export * from './stores/customProviderStore';
 
 // ─── Lib ─────────────────────────────────────────────────
 export * from './lib/constants';

@@ -24,6 +24,10 @@ export function launchBillingPopout(): boolean {
   const features = `left=${left},top=${top},width=${w},height=${h},menubar=no,toolbar=no,location=no,status=no`;
 
   billingWindow = window.open(url, "sarge-billing", features);
+  // Fallback: if popup was blocked, open as a new tab
+  if (!billingWindow || billingWindow.closed) {
+    billingWindow = window.open(url, "_blank");
+  }
   return !!billingWindow && !billingWindow.closed;
 }
 

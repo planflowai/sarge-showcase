@@ -267,10 +267,87 @@ export async function POST(request: NextRequest) {
       }
       return await streamDeepSeek(model, hasImages ? messagesWithNote : messages);
     }
+    // ── Custom provider fallback (OpenAI-compatible) ──
+    // 1. Check if explicit custom config was passed in the body
+    const customBaseUrl = body.customBaseUrl;
+    const customEnvKey = body.customEnvKey;
+    if (customBaseUrl && customEnvKey) {
+      const apiKey = process.env[customEnvKey] || '';
+      if (!apiKey) {
+        return NextResponse.json({ error: `API key not configured. Please add ${customEnvKey} to your .env.local file.` }, { status: 500 });
+      }
+      return await streamOpenAICompatible(model, messages, customBaseUrl, apiKey);
+    }
+    // 2. Look up by provider ID for known OpenAI-compatible providers
+    const KNOWN_BASE_URLS: Record<string, string> = {
+      mistral: "https://api.mistral.ai/v1",
+      huggingface: "https://api-inference.huggingface.co/v1",
+      perplexity: "https://api.perplexity.ai",
+      together: "https://api.together.xyz/v1",
+      groq: "https://api.groq.com/openai/v1",
+    };
+    const knownBaseUrl = KNOWN_BASE_URLS[provider];
+    if (knownBaseUrl) {
+      const envKey = `${provider.toUpperCase()}_API_KEY`;
+      const apiKey = process.env[envKey] || '';
+      if (!apiKey) {
+        return NextResponse.json({ error: `API key not configured. Please add ${envKey} to your .env.local file.` }, { status: 500 });
+      }
+      return await streamOpenAICompatible(model, messages, knownBaseUrl, apiKey);
+    }
+
     return NextResponse.json({ error: `Unknown model provider: model="${model}", provider="${provider}"` }, { status: 400 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+}
+
+// ── Generic OpenAI-compatible streaming (Mistral, Perplexity, Together, Groq, etc.) ───
+async function streamOpenAICompatible(
+  model: string,
+  messages: { role: string; content: any }[],
+  baseUrl: string,
+  apiKey: string
+) {
+  const endpoint = baseUrl.endsWith('/chat/completions')
+    ? baseUrl
+    : `${baseUrl.replace(/\/+$/, '')}/chat/completions`;
+
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({ model, messages, max_tokens: 4096, stream: true }),
+  });
+
+  if (!res.ok || !res.body) {
+    const err = await res.text();
+    return NextResponse.json({ error: err }, { status: res.status });
+  }
+
+  const transform = new TransformStream({
+    transform(chunk, controller) {
+      const text = new TextDecoder().decode(chunk);
+      for (const line of text.split('\n')) {
+        if (!line.startsWith('data: ') || line.includes('[DONE]')) continue;
+        try {
+          const data = JSON.parse(line.slice(6));
+          const content = data.choices?.[0]?.delta?.content;
+          if (content) {
+            controller.enqueue(new TextEncoder().encode(
+              JSON.stringify({ message: { content } }) + '\n'
+            ));
+          }
+        } catch {}
+      }
+    }
+  });
+
+  return new Response(res.body.pipeThrough(transform), {
+    headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' },
+  });
 }
 
 // ── Anthropic (Claude) — native SSE streaming with vision ───────────────

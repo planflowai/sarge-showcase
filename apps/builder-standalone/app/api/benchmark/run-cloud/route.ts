@@ -74,8 +74,26 @@ async function callCloudDirect(
       return callAnthropic(modelId, systemPrompt, userPrompt, timeoutMs, signal);
     case "google":
       return callGemini(modelId, systemPrompt, userPrompt, timeoutMs, signal);
-    default:
-      return { content: "", timeMs: 0, timedOut: false, tokenCount: 0, error: `Unknown provider: ${provider}` };
+    default: {
+      // Custom provider — check for OpenAI-compatible config in env
+      // Convention: {PROVIDER}_API_KEY env var, {PROVIDER}_BASE_URL env var or passed config
+      const envKey = `${provider.toUpperCase()}_API_KEY`;
+      const baseUrlKey = `${provider.toUpperCase()}_BASE_URL`;
+      const apiKey = process.env[envKey] || "";
+      // Known custom provider base URLs (fallback)
+      const KNOWN_BASE_URLS: Record<string, string> = {
+        mistral: "https://api.mistral.ai/v1/chat/completions",
+        huggingface: "https://api-inference.huggingface.co/v1/chat/completions",
+        perplexity: "https://api.perplexity.ai/chat/completions",
+        together: "https://api.together.xyz/v1/chat/completions",
+        groq: "https://api.groq.com/openai/v1/chat/completions",
+      };
+      const baseUrl = process.env[baseUrlKey] || KNOWN_BASE_URLS[provider] || "";
+      if (!apiKey || !baseUrl) {
+        return { content: "", timeMs: 0, timedOut: false, tokenCount: 0, error: `No API key (${envKey}) or base URL for provider: ${provider}` };
+      }
+      return callOpenAICompat(baseUrl, apiKey, modelId, systemPrompt, userPrompt, 4096, timeoutMs, signal);
+    }
   }
 }
 

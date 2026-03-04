@@ -18,6 +18,9 @@ import {
   DEFAULT_TIER2_CONFIG,
   DEFAULT_TIER3_CONFIG,
   type ThreadTierConfig as TierConfig,
+  useCustomProviderStore,
+  KNOWN_PROVIDERS,
+  DEFAULT_MODELS,
 } from "@sarge/core";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -413,6 +416,17 @@ export default function SettingsPage() {
   const [lmstudioLoading, setLmstudioLoading] = useState(false);
   const [lmstudioError, setLmstudioError] = useState<string | null>(null);
 
+  // Custom provider state
+  const { providers: customProviders, addProvider: addCustomProvider, removeProvider: removeCustomProvider, addModelToProvider, removeModelFromProvider } = useCustomProviderStore();
+  const [showAddProvider, setShowAddProvider] = useState(false);
+  const [newProviderName, setNewProviderName] = useState("");
+  const [newProviderBaseUrl, setNewProviderBaseUrl] = useState("");
+  const [newProviderEnvKey, setNewProviderEnvKey] = useState("");
+  const [newProviderColor, setNewProviderColor] = useState("#8B5CF6");
+  const [selectedKnownProvider, setSelectedKnownProvider] = useState<string>("");
+  const [customNewModelId, setCustomNewModelId] = useState("");
+  const [customNewModelName, setCustomNewModelName] = useState("");
+
   const { prompts, hydrated: promptsHydrated, hydrate: hydratePrompts, addPrompt, updatePrompt, deletePrompt } = usePromptStore();
   const [newPromptName, setNewPromptName] = useState("");
   const [newPromptContent, setNewPromptContent] = useState("");
@@ -598,6 +612,162 @@ export default function SettingsPage() {
               </p>
             </div>
 
+            {/* ── Add Provider Button + Form ── */}
+            {!showAddProvider ? (
+              <button
+                onClick={() => setShowAddProvider(true)}
+                className="flex items-center gap-2 w-full rounded-lg border-2 border-dashed border-zinc-600 dark:border-zinc-700 px-4 py-3 text-sm font-medium text-zinc-500 hover:text-[#FF6700] hover:border-[#FF6700]/50 transition-colors"
+              >
+                <Plus className="h-4 w-4" /> Add Provider
+              </button>
+            ) : (
+              <div className="rounded-lg border border-[#FF6700]/30 bg-zinc-800/50 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-white">Add Custom Provider</h3>
+                  <button onClick={() => { setShowAddProvider(false); setSelectedKnownProvider(""); setNewProviderName(""); setNewProviderBaseUrl(""); setNewProviderEnvKey(""); }} className="text-zinc-500 hover:text-zinc-300">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+
+                {/* Quick-pick known providers */}
+                <div className="flex flex-wrap gap-2">
+                  {KNOWN_PROVIDERS.filter((kp) => !customProviders.some((cp) => cp.id === kp.id) && !providers.some((bp) => bp.id === kp.id)).map((kp) => (
+                    <button
+                      key={kp.id}
+                      onClick={() => {
+                        setSelectedKnownProvider(kp.id);
+                        setNewProviderName(kp.name);
+                        setNewProviderBaseUrl(kp.baseUrl);
+                        setNewProviderEnvKey(kp.envKeyName);
+                        setNewProviderColor(kp.color);
+                      }}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+                        selectedKnownProvider === kp.id
+                          ? "bg-[#FF6700]/15 border-[#FF6700]/40 text-[#FFD700]"
+                          : "bg-zinc-900 border-zinc-700 text-zinc-400 hover:border-zinc-500"
+                      }`}
+                    >
+                      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: kp.color }} />
+                      {kp.name}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Form fields */}
+                <div className="grid grid-cols-2 gap-2">
+                  <Input placeholder="Provider name" value={newProviderName} onChange={(e) => setNewProviderName(e.target.value)} className={`text-xs h-8 ${inputCls}`} />
+                  <Input placeholder="API Key env var (e.g. MISTRAL_API_KEY)" value={newProviderEnvKey} onChange={(e) => setNewProviderEnvKey(e.target.value)} className={`text-xs h-8 ${inputCls}`} />
+                </div>
+                <Input placeholder="Base URL (e.g. https://api.mistral.ai/v1)" value={newProviderBaseUrl} onChange={(e) => setNewProviderBaseUrl(e.target.value)} className={`text-xs h-8 ${inputCls}`} />
+
+                <Button
+                  size="sm"
+                  disabled={!newProviderName.trim() || !newProviderBaseUrl.trim() || !newProviderEnvKey.trim()}
+                  className="w-full bg-[#FF6700] hover:bg-[#FF6700]/80 disabled:opacity-40 text-sm font-bold"
+                  onClick={() => {
+                    const id = newProviderName.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+                    const defaultModels = DEFAULT_MODELS[id] || [];
+                    addCustomProvider({
+                      id,
+                      name: newProviderName.trim(),
+                      baseUrl: newProviderBaseUrl.trim(),
+                      envKeyName: newProviderEnvKey.trim(),
+                      color: newProviderColor,
+                      models: defaultModels,
+                    });
+                    // Register models in the model store so they appear in builder + trials
+                    defaultModels.forEach((m) => {
+                      addModel(id, m.id, m.name);
+                    });
+                    setShowAddProvider(false);
+                    setSelectedKnownProvider("");
+                    setNewProviderName("");
+                    setNewProviderBaseUrl("");
+                    setNewProviderEnvKey("");
+                    setNewProviderColor("#8B5CF6");
+                    setExpandedProvider(id);
+                  }}
+                >
+                  <Plus className="h-3 w-3 mr-1" /> Add {newProviderName || "Provider"}
+                </Button>
+              </div>
+            )}
+
+            {/* ── Custom Providers ── */}
+            {customProviders.map((cp) => {
+              const isExpanded = expandedProvider === cp.id;
+              const cpModels = getEffectiveModels(cp.id);
+              return (
+                <div key={cp.id} className={`rounded-lg border border-zinc-300 dark:border-zinc-700 ${isExpanded ? "bg-zinc-50 dark:bg-zinc-800/50" : ""}`}>
+                  <button
+                    onClick={() => { setExpandedProvider(isExpanded ? null : cp.id); setCustomNewModelId(""); setCustomNewModelName(""); }}
+                    className="flex w-full items-center gap-3 px-4 py-3 text-left"
+                  >
+                    <span className="h-2.5 w-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: cp.color }} />
+                    <span className="flex-1 text-sm font-medium text-zinc-900 dark:text-white">{cp.name}</span>
+                    <span className="text-[10px] text-emerald-500 uppercase px-1.5 py-0.5 rounded bg-emerald-500/10 mr-2">custom</span>
+                    <span className="text-xs font-medium text-zinc-600 dark:text-zinc-500">{cpModels.length} model{cpModels.length !== 1 ? "s" : ""}</span>
+                    {isExpanded ? <ChevronDown className="h-4 w-4 text-zinc-500" /> : <ChevronRight className="h-4 w-4 text-zinc-500" />}
+                  </button>
+                  {isExpanded && (
+                    <div className="border-t border-zinc-300 dark:border-zinc-700 px-4 py-3 space-y-3">
+                      <div className="text-[10px] text-zinc-500 space-y-0.5">
+                        <div>Base URL: <span className="text-zinc-400 font-mono">{cp.baseUrl}</span></div>
+                        <div>API Key: <span className="text-zinc-400 font-mono">{cp.envKeyName}</span></div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+                        {cpModels.map((m) => (
+                          <div key={m.id} className="flex items-center gap-2 rounded-lg border border-zinc-200 dark:border-zinc-700 px-2.5 py-2 text-xs transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-600" style={{ minHeight: '44px' }}>
+                            <div className="flex-1 min-w-0 overflow-hidden">
+                              {nicknames[m.id] ? (
+                                <div className="flex flex-col">
+                                  <span className="font-medium text-zinc-900 dark:text-white truncate text-xs">{nicknames[m.id]}</span>
+                                  <span className="text-[10px] text-zinc-400 dark:text-zinc-500 truncate">{m.name}</span>
+                                </div>
+                              ) : (
+                                <span className="text-zinc-800 dark:text-zinc-200 truncate block">{m.name}</span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1.5 flex-shrink-0">
+                              <button onClick={() => setBuilderFlag(m.id, !isBuilderModel(m.id, cp.id))} className={`transition-colors ${isBuilderModel(m.id, cp.id) ? 'text-indigo-500' : 'text-zinc-400 hover:text-indigo-400'}`} title={isBuilderModel(m.id, cp.id) ? "Remove from Builder" : "Add to Builder"}>
+                                <Hammer className="h-3 w-3" />
+                              </button>
+                              <button onClick={() => { removeModel(cp.id, m.id); removeModelFromProvider(cp.id, m.id); }} className="text-zinc-500 hover:text-red-400">
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      {/* Add model + delete provider row */}
+                      <div className="flex items-center gap-2 pt-3 border-t border-zinc-300/50 dark:border-zinc-700/50">
+                        <Input placeholder="Model ID" value={customNewModelId} onChange={(e) => setCustomNewModelId(e.target.value)} className={`flex-1 text-xs h-8 max-w-[200px] ${inputCls}`} />
+                        <Input placeholder="Display name" value={customNewModelName} onChange={(e) => setCustomNewModelName(e.target.value)} className={`flex-1 text-xs h-8 max-w-[200px] ${inputCls}`} />
+                        <Button size="sm" onClick={() => {
+                          if (customNewModelId.trim() && customNewModelName.trim()) {
+                            addModelToProvider(cp.id, { id: customNewModelId.trim(), name: customNewModelName.trim() });
+                            addModel(cp.id, customNewModelId.trim(), customNewModelName.trim());
+                            setCustomNewModelId(""); setCustomNewModelName("");
+                          }
+                        }} disabled={!customNewModelId.trim() || !customNewModelName.trim()} className="h-8 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40">
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                        <div className="flex-1" />
+                        <Button size="sm" variant="ghost" onClick={() => {
+                          cpModels.forEach((m) => removeModel(cp.id, m.id));
+                          removeCustomProvider(cp.id);
+                          setExpandedProvider(null);
+                        }} className="h-8 text-red-400 hover:text-red-300 hover:bg-red-500/10 text-xs">
+                          <Trash2 className="h-3 w-3 mr-1" /> Remove Provider
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* ── Built-in Providers ── */}
             {providers.map((p) => {
               const isExpanded = expandedProvider === p.id;
               const isOllama = p.id === "ollama";

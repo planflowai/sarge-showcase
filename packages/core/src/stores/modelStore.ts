@@ -146,6 +146,10 @@ export const useModelStore = create<ModelState>()(
         const existing = get().models.find(m => m.id === modelId && m.provider === providerId);
         if (existing) return; // Already exists
 
+        // Known built-in providers — verify via ping
+        const builtInProviders = ['ollama', 'lmstudio', 'anthropic', 'openai', 'google', 'xai', 'deepseek'];
+        const isBuiltIn = builtInProviders.includes(providerId);
+
         set((state) => ({
           models: [
             ...state.models,
@@ -154,7 +158,8 @@ export const useModelStore = create<ModelState>()(
               name: modelName,
               provider: providerId,
               contextWindow: 4096,
-              status: "unchecked" as const,
+              // Custom providers start as "active" (can't verify without base URL context)
+              status: isBuiltIn ? "unchecked" as const : "active" as const,
             },
           ],
           // Auto-tag new cloud models as builders
@@ -164,21 +169,23 @@ export const useModelStore = create<ModelState>()(
           },
         }));
 
-        // Verify the model works — fire and forget
-        verifyModelPing(modelId, providerId).then(ok => {
-          set((state) => ({
-            models: state.models.map(m =>
-              m.id === modelId && m.provider === providerId
-                ? { ...m, status: ok ? "active" as const : "error" as const }
-                : m
-            ),
-          }));
-          if (ok) {
-            console.log(`[modelStore] Model verified: ${modelId}`);
-          } else {
-            console.warn(`[modelStore] Model failed verification: ${modelId}`);
-          }
-        });
+        // Only verify built-in providers (custom providers need base URL which isn't available here)
+        if (isBuiltIn) {
+          verifyModelPing(modelId, providerId).then(ok => {
+            set((state) => ({
+              models: state.models.map(m =>
+                m.id === modelId && m.provider === providerId
+                  ? { ...m, status: ok ? "active" as const : "error" as const }
+                  : m
+              ),
+            }));
+            if (ok) {
+              console.log(`[modelStore] Model verified: ${modelId}`);
+            } else {
+              console.warn(`[modelStore] Model failed verification: ${modelId}`);
+            }
+          });
+        }
       },
 
       removeModel: (providerId, modelId) => {
@@ -326,18 +333,22 @@ export const useModelStore = create<ModelState>()(
 );
 
 /** Quick check if a model responds. Returns true if the provider accepts it. */
-async function verifyModelPing(modelId: string, provider: string): Promise<boolean> {
+async function verifyModelPing(modelId: string, provider: string, customBaseUrl?: string, customEnvKey?: string): Promise<boolean> {
   try {
+    const body: Record<string, string> = {
+      model: modelId,
+      provider,
+      prompt: "Hi",
+      systemPrompt: "Reply with OK",
+      source: provider === "ollama" || provider === "lmstudio" ? "local" : "cloud",
+    };
+    if (customBaseUrl) body.customBaseUrl = customBaseUrl;
+    if (customEnvKey) body.customEnvKey = customEnvKey;
+
     const res = await fetch("/api/test/stream", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: modelId,
-        provider,
-        prompt: "Hi",
-        systemPrompt: "Reply with OK",
-        source: provider === "ollama" || provider === "lmstudio" ? "local" : "cloud",
-      }),
+      body: JSON.stringify(body),
     });
     if (!res.ok) return false;
     // Read just enough to confirm it streams

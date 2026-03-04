@@ -201,7 +201,7 @@ export function ForgeTrialsMatrix({
                     if (isRunning) {
                       return (
                         <td key={scenario.id} className="px-2 py-3">
-                          <div className="flex items-center justify-center w-full h-[60px] rounded-lg border-2 border-[#FF6700]/50 bg-[#FF6700]/10 animate-pulse">
+                          <div className="flex items-center justify-center w-full h-[52px] rounded-lg border-2 border-[#FF6700]/50 bg-[#FF6700]/10 animate-pulse">
                             <div className="molten-pour micro" />
                           </div>
                         </td>
@@ -211,7 +211,7 @@ export function ForgeTrialsMatrix({
                     if (!result) {
                       return (
                         <td key={scenario.id} className="px-2 py-3">
-                          <div className="flex items-center justify-center w-full h-[60px] rounded-lg border border-zinc-800/50 bg-zinc-900/30">
+                          <div className="flex items-center justify-center w-full h-[52px] rounded-lg border border-zinc-800/50 bg-zinc-900/30">
                             <span className="text-zinc-700 text-xs">—</span>
                           </div>
                         </td>
@@ -229,7 +229,7 @@ export function ForgeTrialsMatrix({
                       <td key={scenario.id} className="px-2 py-3">
                         <button
                           onClick={() => onSelectCell({ modelId, scenarioId: scenario.id })}
-                          className={`relative flex flex-col items-center justify-center w-full h-[60px] rounded-lg border-2 transition-all cursor-pointer ${colors.bg} ${colors.border} ${colors.text} ${
+                          className={`relative flex flex-col items-center justify-center w-full h-[52px] rounded-lg border-2 transition-all cursor-pointer ${colors.bg} ${colors.border} ${colors.text} ${
                             isSelected ? `${colors.glow} ring-1 ring-white/20` : ""
                           }`}
                         >

@@ -1,14 +1,20 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { X, Flame, Settings, ChevronDown, ChevronUp, ArrowUpDown, Sun, Moon, DollarSign, Calendar, TrendingUp, Wallet } from "lucide-react";
+import {
+  Flame, ArrowLeft, Settings, ChevronDown, ChevronUp, ArrowUpDown,
+  Sun, Moon, DollarSign, Calendar, TrendingUp, Wallet, RefreshCw,
+  Shield, ShieldOff, Plane, Radio,
+} from "lucide-react";
 import { formatCost, calculateCost, getRate } from "@sarge/billing";
 import type { ModelBreakdown, AppBreakdown, DailyTotal, BillingConfig, UsageEntry } from "@sarge/billing";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  BarChart, Bar, Cell, ReferenceLine,
+  BarChart, Bar, Cell,
 } from "recharts";
-import { useSettingsStore } from "@sarge/core";
+import { useSettingsStore, useAirGapStore } from "@sarge/core";
+import { launchBillingPopout } from "@/lib/billingPopoutManager";
+import Link from "next/link";
 
 // Provider colors
 const PROVIDER_COLORS: Record<string, string> = {
@@ -19,18 +25,11 @@ const PROVIDER_COLORS: Record<string, string> = {
   deepseek: "#06B6D4",
   ollama: "#6B7280",
   lmstudio: "#6B7280",
-};
-
-// App colors
-const APP_COLORS: Record<string, string> = {
-  builder: "#FF6700",
-  foundry: "#FF6700",
-  beast: "#3B82F6",
-  "forge-trials": "#FFD700",
-  guardian: "#10B981",
-  "jury-duty": "#A855F7",
-  chat: "#06B6D4",
-  debate: "#F43F5E",
+  mistral: "#FF7000",
+  huggingface: "#FFD21E",
+  perplexity: "#20B2AA",
+  together: "#6366F1",
+  groq: "#F55036",
 };
 
 function costColor(cost: number): string {
@@ -57,9 +56,8 @@ function balanceBarColor(ratio: number): string {
   return "bg-red-500";
 }
 
-type SortKey = "model" | "provider" | "callCount" | "totalTokensIn" | "totalTokensOut" | "totalCost" | "avgTokensPerSecond";
+type SortKey = "model" | "provider" | "callCount" | "totalCost" | "avgTokensPerSecond";
 type ChartView = "all" | "trials" | "builder";
-type TableTab = "trials" | "builder";
 
 /** Build model breakdown from filtered usage entries */
 function buildModelBreakdown(entries: UsageEntry[]): ModelBreakdown[] {
@@ -88,10 +86,13 @@ function buildModelBreakdown(entries: UsageEntry[]): ModelBreakdown[] {
 export default function ForgeBillingDashboard({ onClose }: { onClose: () => void }) {
   const theme = useSettingsStore((s) => s.theme);
   const setTheme = useSettingsStore((s) => s.setTheme);
+  const secureMode = useAirGapStore((s) => s.secureMode);
+  const toggleSecureMode = useAirGapStore((s) => s.toggleSecureMode);
+  const airGapEnabled = useAirGapStore((s) => s.airGapEnabled);
+  const toggleAirGap = useAirGapStore((s) => s.toggleAirGap);
   const isDark = theme === "dark";
 
   // Data state
-  const [period, setPeriod] = useState<"day" | "week" | "month" | "all">("day");
   const [todayCost, setTodayCost] = useState(0);
   const [weekCost, setWeekCost] = useState(0);
   const [monthCost, setMonthCost] = useState(0);
@@ -105,7 +106,7 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
   const [sortKey, setSortKey] = useState<SortKey>("totalCost");
   const [sortAsc, setSortAsc] = useState(false);
   const [chartView, setChartView] = useState<ChartView>("all");
-  const [tableTab, setTableTab] = useState<TableTab>("trials");
+  const [refreshing, setRefreshing] = useState(false);
 
   // Editable config fields
   const [editBalance, setEditBalance] = useState("");
@@ -114,12 +115,13 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
   const [editWeeklyCap, setEditWeeklyCap] = useState("");
 
   const refresh = useCallback(async () => {
+    setRefreshing(true);
     try {
       const [dayRes, weekRes, monthRes, periodRes, dailyRes, configRes] = await Promise.all([
         fetch("/api/billing/stats?period=day"),
         fetch("/api/billing/stats?period=week"),
         fetch("/api/billing/stats?period=month"),
-        fetch(`/api/billing/stats?period=${period}`),
+        fetch("/api/billing/stats?period=month"),
         fetch("/api/billing/daily?days=30"),
         fetch("/api/billing/balance"),
       ]);
@@ -143,50 +145,34 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
       setEditDailyCap(String(configData.dailyCap ?? ""));
       setEditWeeklyCap(String(configData.weeklyCap ?? ""));
 
-      // Trials cost from month app breakdown
       const trialsApp = (monthData.appBreakdown || []).find((a: AppBreakdown) => a.app === "trials-cloud");
       setMonthTrialsCost(trialsApp ? trialsApp.totalCost : 0);
     } catch {}
-  }, [period]);
+    setRefreshing(false);
+  }, []);
 
+  // Fetch ONCE on mount — no polling
   useEffect(() => {
     refresh();
-    const iv = setInterval(refresh, 10_000);
-    return () => clearInterval(iv);
   }, [refresh]);
 
-  // Filtered entries for table tabs
-  const trialsEntries = useMemo(() =>
-    periodEntries.filter(e => e.app === "trials-cloud"),
-  [periodEntries]);
-
-  const builderEntries = useMemo(() =>
-    periodEntries.filter(e => e.app === "builder"),
-  [periodEntries]);
-
-  // Build model breakdown per tab
-  const trialsModels = useMemo(() => buildModelBreakdown(trialsEntries), [trialsEntries]);
-  const builderModels = useMemo(() => buildModelBreakdown(builderEntries), [builderEntries]);
-
-  const activeTabModels = tableTab === "trials" ? trialsModels : builderModels;
-
-  // Sorted models for current tab
+  // Sorted models
   const sortedModels = useMemo(() => {
-    const sorted = [...activeTabModels].sort((a, b) => {
+    const sorted = [...models].sort((a, b) => {
       const av = a[sortKey];
       const bv = b[sortKey];
       if (typeof av === "string" && typeof bv === "string") return sortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
       return sortAsc ? Number(av) - Number(bv) : Number(bv) - Number(av);
     });
     return sorted;
-  }, [activeTabModels, sortKey, sortAsc]);
+  }, [models, sortKey, sortAsc]);
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) setSortAsc(!sortAsc);
     else { setSortKey(key); setSortAsc(false); }
   };
 
-  // Top 5 models by cost for chart
+  // Top 5 models for right panel
   const topModels = useMemo(() =>
     [...models].sort((a, b) => b.totalCost - a.totalCost).slice(0, 5),
   [models]);
@@ -199,15 +185,12 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
     return Math.round(config.balance / avgDaily);
   }, [dailyTotals, monthCost, config.balance]);
 
-  // Balance usage ratio for progress bar
   const balanceRatio = useMemo(() => {
     if (config.balance <= 0) return 1;
     return Math.min(monthCost / config.balance, 1);
   }, [monthCost, config.balance]);
 
-  // Chart data key based on view
   const chartDataKey = chartView === "trials" ? "trialsCost" : chartView === "builder" ? "builderCost" : "cost";
-  const chartLabel = chartView === "trials" ? "Trials" : chartView === "builder" ? "Builder" : "All";
 
   const saveConfig = async () => {
     try {
@@ -227,354 +210,230 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
   };
 
   const SortIcon = ({ k }: { k: SortKey }) => (
-    <ArrowUpDown className={`w-3 h-3 inline ml-1 ${sortKey === k ? "text-[#FF6700]" : "text-zinc-600"}`} />
+    <ArrowUpDown className={`w-2.5 h-2.5 inline ml-0.5 ${sortKey === k ? "text-[#FF6700]" : "text-zinc-600"}`} />
   );
 
-  const periods: Array<{ key: "day" | "week" | "month" | "all"; label: string }> = [
-    { key: "day", label: "Day" },
-    { key: "week", label: "Week" },
-    { key: "month", label: "Month" },
-    { key: "all", label: "All Time" },
-  ];
-
-  // Table columns based on tab
-  const trialsColumns: Array<{ key: SortKey; label: string }> = [
-    { key: "model", label: "Model" },
-    { key: "provider", label: "Provider" },
-    { key: "callCount", label: "Rounds" },
-    { key: "totalTokensIn", label: "Tokens In" },
-    { key: "totalTokensOut", label: "Tokens Out" },
-    { key: "totalCost", label: "Cost" },
-    { key: "avgTokensPerSecond", label: "Cost/Round" },
-  ];
-
-  const builderColumns: Array<{ key: SortKey; label: string }> = [
-    { key: "model", label: "Model" },
-    { key: "provider", label: "Provider" },
-    { key: "callCount", label: "Calls" },
-    { key: "totalTokensIn", label: "Tokens In" },
-    { key: "totalTokensOut", label: "Tokens Out" },
-    { key: "totalCost", label: "Total Cost" },
-    { key: "avgTokensPerSecond", label: "Avg tok/s" },
-  ];
-
-  const activeColumns = tableTab === "trials" ? trialsColumns : builderColumns;
-
   /** Fix $0.00 for cloud models — recalculate from tokens if cost is zero */
-  const getDisplayCost = (m: ModelBreakdown): { cost: number; isCalc: boolean } => {
-    const isLocal = m.provider === "ollama" || m.provider === "lmstudio" || m.provider === "lm-studio";
-    if (m.totalCost > 0 || isLocal || m.totalTokensOut === 0) {
-      return { cost: m.totalCost, isCalc: false };
-    }
-    const computed = calculateCost(m.model, m.provider, m.totalTokensIn, m.totalTokensOut);
-    return { cost: computed, isCalc: true };
+  const getDisplayCost = (m: ModelBreakdown): number => {
+    const isLocal = m.provider === "ollama" || m.provider === "lmstudio";
+    if (m.totalCost > 0 || isLocal || m.totalTokensOut === 0) return m.totalCost;
+    return calculateCost(m.model, m.provider, m.totalTokensIn, m.totalTokensOut);
   };
 
   return (
-    <div className={`flex flex-col h-full w-full overflow-hidden ${isDark ? "bg-[#0a0a0a] text-[#F5F5F5]" : "bg-[#fafafa] text-[#1a1a1a]"}`}>
-      {/* Header */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-zinc-800/50 flex-shrink-0">
-        <div className="flex items-center gap-2.5">
-          <Flame className="w-5 h-5 text-[#FF6700]" />
-          <h1 className="text-xl font-bold tracking-wide bg-gradient-to-r from-[#FF6700] to-[#FFD700] bg-clip-text text-transparent">
-            Forge Billing
-          </h1>
-        </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setTheme(isDark ? "light" : "dark")}
-            className={`p-2 rounded-lg transition-colors ${isDark ? "hover:bg-zinc-800 text-zinc-400" : "hover:bg-zinc-200 text-zinc-600"}`}
-          >
-            {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-          </button>
+    <div className="fixed inset-0 z-50 flex flex-col bg-zinc-950 text-zinc-100 overflow-hidden">
+      {/* ── Toolbar (48px) ── */}
+      <div className="flex items-center h-12 px-3 border-b border-zinc-800 bg-zinc-900/80 flex-shrink-0">
+        {/* Left: Exit + Refresh */}
+        <div className="flex items-center gap-2 flex-shrink-0">
           <button
             onClick={onClose}
-            className={`p-2 rounded-lg transition-colors ${isDark ? "hover:bg-zinc-800 text-zinc-400 hover:text-white" : "hover:bg-zinc-200 text-zinc-600 hover:text-black"}`}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 hover:text-white text-xs font-bold transition-all"
           >
-            <X className="w-6 h-6" />
+            <ArrowLeft className="w-3.5 h-3.5" />
+            Exit Billing
           </button>
+          <button
+            onClick={refresh}
+            disabled={refreshing}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded-lg text-xs transition-all border border-zinc-700 disabled:opacity-50"
+            title="Refresh data"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
+          </button>
+        </div>
+
+        {/* Center: Title */}
+        <div className="flex-1 flex items-center justify-center gap-3">
+          <DollarSign className="w-5 h-5 text-[#FF6700] drop-shadow-[0_0_8px_rgba(255,103,0,0.6)]" />
+          <span className="text-lg font-[900] tracking-[3px] bg-gradient-to-r from-[#FF6700] via-[#FF8C00] to-[#FFD700] bg-clip-text text-transparent">
+            FORGE BILLING
+          </span>
+        </div>
+
+        {/* Right: Header icons */}
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <button onClick={toggleSecureMode} title={secureMode ? "Disable Secure Mode" : "Enable Secure Mode"} className={`flex items-center justify-center h-7 w-7 rounded-md text-xs transition-all border ${secureMode ? "bg-red-600/30 border-red-500/60 text-red-300" : "bg-zinc-800/60 border-zinc-700 text-zinc-500 hover:text-zinc-300"}`}>
+            {secureMode ? <Shield className="h-3.5 w-3.5" /> : <ShieldOff className="h-3.5 w-3.5" />}
+          </button>
+          <button onClick={toggleAirGap} title={airGapEnabled ? "Disable Air-Gap" : "Enable Air-Gap"} className={`flex items-center justify-center h-7 w-7 rounded-md text-xs transition-all border ${airGapEnabled ? "bg-amber-500/20 border-amber-400/50 text-amber-300" : "bg-zinc-800/60 border-zinc-700 text-zinc-500 hover:text-zinc-300"}`}>
+            {airGapEnabled ? <Plane className="h-3.5 w-3.5 rotate-45" /> : <Radio className="h-3.5 w-3.5" />}
+          </button>
+          <button onClick={() => setTheme(isDark ? "light" : "dark")} title="Toggle theme" className="flex items-center justify-center h-7 w-7 rounded-md bg-zinc-800/60 border border-zinc-700 text-zinc-500 hover:text-zinc-300 transition-all">
+            {isDark ? <Sun className="h-3.5 w-3.5 text-amber-400" /> : <Moon className="h-3.5 w-3.5" />}
+          </button>
+          <Link href="/settings" className="flex items-center justify-center h-7 w-7 rounded-md bg-zinc-800/60 border border-zinc-700 text-zinc-500 hover:text-zinc-300 transition-all">
+            <Settings className="h-3.5 w-3.5" />
+          </Link>
         </div>
       </div>
 
-      {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
-
-        {/* ROW 1: 5-Card Stats Grid */}
-        <div className="grid grid-cols-5 gap-3">
-          {[
-            { label: "Today", value: todayCost, Icon: DollarSign },
-            { label: "This Week", value: weekCost, Icon: Calendar },
-            { label: "This Month", value: monthCost, Icon: TrendingUp },
-          ].map(({ label, value, Icon }) => (
-            <div key={label} className={`rounded-xl border p-4 ${isDark ? "bg-[#0f0f12] border-zinc-800" : "bg-white border-zinc-200"}`}>
-              <div className="flex items-center gap-1.5 mb-1">
-                <Icon className={`w-3.5 h-3.5 ${isDark ? "text-zinc-500" : "text-zinc-400"}`} />
-                <span className={`text-xs font-semibold uppercase tracking-wider ${isDark ? "text-zinc-400" : "text-zinc-500"}`}>{label}</span>
+      {/* ── Two-Column Layout — zero scrolling ── */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* LEFT COLUMN (60%) */}
+        <div className="flex flex-col flex-[6] border-r border-zinc-800 overflow-hidden p-3 gap-3">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-5 gap-2 flex-shrink-0">
+            {[
+              { label: "Today", value: todayCost, Icon: DollarSign },
+              { label: "Week", value: weekCost, Icon: Calendar },
+              { label: "Month", value: monthCost, Icon: TrendingUp },
+            ].map(({ label, value, Icon }) => (
+              <div key={label} className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-2.5">
+                <div className="flex items-center gap-1 mb-0.5">
+                  <Icon className="w-3 h-3 text-zinc-500" />
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">{label}</span>
+                </div>
+                <div className="text-lg font-bold font-mono text-white">
+                  {formatCost(value)}
+                </div>
               </div>
-              <div className={`text-2xl font-bold font-mono ${isDark ? "text-[#F5F5F5]" : "text-[#1a1a1a]"}`}>
-                {formatCost(value)}
+            ))}
+
+            {/* Trials card */}
+            <div className="rounded-lg border border-[#FFD700]/20 bg-zinc-900/50 p-2.5">
+              <div className="flex items-center gap-1 mb-0.5">
+                <Flame className="w-3 h-3 text-[#FFD700]/70" />
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#FFD700]/70">Trials</span>
+              </div>
+              <div className="text-lg font-bold font-mono text-[#FFD700]">
+                {formatCost(monthTrialsCost)}
               </div>
             </div>
-          ))}
 
-          {/* Trials (Month) card — gold accent */}
-          <div className={`rounded-xl border p-4 ${isDark ? "bg-[#0f0f12] border-[#FFD700]/30" : "bg-white border-[#FFD700]/40"}`}>
-            <div className="flex items-center gap-1.5 mb-1">
-              <Flame className="w-3.5 h-3.5 text-[#FFD700]/70" />
-              <span className="text-xs font-semibold uppercase tracking-wider text-[#FFD700]/70">Trials</span>
-            </div>
-            <div className="text-2xl font-bold font-mono text-[#FFD700]">
-              {formatCost(monthTrialsCost)}
-            </div>
-          </div>
-
-          {/* Balance card with progress bar */}
-          <div className={`rounded-xl border p-4 ${isDark ? "bg-[#0f0f12]" : "bg-white"} ${balanceBorder(config.balance)}`}>
-            <div className="flex items-center gap-1.5 mb-1">
-              <Wallet className={`w-3.5 h-3.5 ${isDark ? "text-zinc-500" : "text-zinc-400"}`} />
-              <span className={`text-xs font-semibold uppercase tracking-wider ${isDark ? "text-zinc-400" : "text-zinc-500"}`}>Balance</span>
-            </div>
-            <div className={`text-2xl font-bold font-mono ${balanceColor(config.balance)}`}>
-              {formatCost(config.balance)}
-            </div>
-            <div className={`mt-1.5 h-1.5 rounded-full ${isDark ? "bg-zinc-800" : "bg-zinc-200"} overflow-hidden`}>
-              <div
-                className={`h-full rounded-full transition-all ${balanceBarColor(balanceRatio)}`}
-                style={{ width: `${Math.round(balanceRatio * 100)}%` }}
-              />
-            </div>
-            {daysRemaining !== null && (
-              <div className={`text-[11px] mt-1 ${isDark ? "text-zinc-500" : "text-zinc-400"}`}>
-                ~{daysRemaining} days at current rate
+            {/* Balance card */}
+            <div className={`rounded-lg border bg-zinc-900/50 p-2.5 ${balanceBorder(config.balance)}`}>
+              <div className="flex items-center gap-1 mb-0.5">
+                <Wallet className="w-3 h-3 text-zinc-500" />
+                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Balance</span>
               </div>
-            )}
-          </div>
-        </div>
-
-        {/* ROW 2: 30-Day Spend Chart */}
-        <div className={`rounded-xl border p-5 ${isDark ? "bg-[#141414] border-zinc-800" : "bg-white border-zinc-200"}`}>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-semibold">30-Day Spend</h2>
-            <div className="flex items-center gap-1">
-              {(["all", "trials", "builder"] as ChartView[]).map((view) => (
-                <button
-                  key={view}
-                  onClick={() => setChartView(view)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
-                    chartView === view
-                      ? view === "trials"
-                        ? "bg-[#FFD700]/20 text-[#FFD700] border border-[#FFD700]/40"
-                        : "bg-[#FF6700]/20 text-[#FF6700] border border-[#FF6700]/40"
-                      : isDark ? "text-zinc-500 hover:text-zinc-300 border border-zinc-800" : "text-zinc-400 hover:text-zinc-600 border border-zinc-200"
-                  }`}
-                >
-                  {view === "all" ? "All" : view === "trials" ? "Trials" : "Builder"}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={dailyTotals} margin={{ top: 10, right: 30, left: 10, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="orangeGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#FF6700" stopOpacity={0.4} />
-                    <stop offset="95%" stopColor="#FF6700" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="goldGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#FFD700" stopOpacity={0.4} />
-                    <stop offset="95%" stopColor="#FFD700" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? "#222" : "#e5e7eb"} />
-                <XAxis
-                  dataKey="date"
-                  stroke={isDark ? "#888" : "#666"}
-                  tick={{ fontSize: 12, fill: isDark ? "#aaa" : "#555" }}
-                  tickFormatter={(d: string) => d.slice(5)}
-                />
-                <YAxis
-                  stroke={isDark ? "#888" : "#666"}
-                  tick={{ fontSize: 12, fill: isDark ? "#aaa" : "#555" }}
-                  tickFormatter={(v: number) => `$${v.toFixed(2)}`}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: isDark ? "#1a1a1a" : "#fff",
-                    border: "1px solid #333",
-                    borderRadius: "8px",
-                    color: isDark ? "#F5F5F5" : "#1a1a1a",
-                    fontSize: "14px",
-                    fontWeight: "bold",
-                  }}
-                  formatter={(value: number) => [`$${value.toFixed(4)}`, chartLabel]}
-                  labelFormatter={(label: string) => `Date: ${label}`}
-                />
-                {config.dailyCap && chartView === "all" && (
-                  <ReferenceLine y={config.dailyCap} stroke="#EF4444" strokeDasharray="5 5" label={{ value: `Cap: $${config.dailyCap}`, fill: "#EF4444", fontSize: 12 }} />
-                )}
-                {/* Main area for selected view */}
-                <Area
-                  type="monotone"
-                  dataKey={chartDataKey}
-                  stroke={chartView === "trials" ? "#FFD700" : "#FF6700"}
-                  strokeWidth={2.5}
-                  fill={chartView === "trials" ? "url(#goldGrad)" : "url(#orangeGrad)"}
-                />
-                {/* Overlay dashed lines when viewing "all" */}
-                {chartView === "all" && (
-                  <>
-                    <Area type="monotone" dataKey="trialsCost" stroke="#FFD700" strokeWidth={1.5} strokeDasharray="5 3" fill="none" />
-                    <Area type="monotone" dataKey="builderCost" stroke="#FF6700" strokeWidth={1.5} strokeDasharray="3 3" fill="none" />
-                  </>
-                )}
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-          {chartView === "all" && (
-            <div className="flex items-center gap-6 mt-2 text-xs text-zinc-500">
-              <span className="flex items-center gap-1.5">
-                <span className="w-6 h-0.5 bg-[#FFD700]" style={{ borderTop: "2px dashed #FFD700" }} />
-                Trials
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-6 h-0.5 bg-[#FF6700]" style={{ borderTop: "2px dashed #FF6700" }} />
-                Builder
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* ROW 3: Two-Tab Table (Trials / Builder) */}
-        <div className={`rounded-xl border ${isDark ? "bg-[#0f0f12] border-zinc-800" : "bg-white border-zinc-200"}`}>
-          {/* Tab row */}
-          <div className="flex items-center justify-between px-6 pt-5 pb-3">
-            {/* Primary tabs: Trials / Builder */}
-            <div className="flex items-center gap-1">
-              {(["trials", "builder"] as TableTab[]).map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setTableTab(tab)}
-                  className={`px-5 py-2 rounded-lg text-sm font-bold transition-colors duration-200 ${
-                    tableTab === tab
-                      ? tab === "trials"
-                        ? "bg-[#FFD700]/20 text-[#FFD700] border border-[#FFD700]/40"
-                        : "bg-[#FF6700] text-white"
-                      : isDark ? "text-zinc-400 hover:bg-zinc-800 hover:text-white" : "text-zinc-500 hover:bg-zinc-100 hover:text-black"
-                  }`}
-                >
-                  {tab === "trials" ? "Trials" : "Builder"}
-                </button>
-              ))}
-            </div>
-
-            {/* Secondary tabs: period selector (right-aligned) */}
-            <div className="flex items-center gap-1">
-              {periods.map(({ key, label }) => (
-                <button
-                  key={key}
-                  onClick={() => setPeriod(key)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors duration-200 ${
-                    period === key
-                      ? isDark ? "bg-zinc-700 text-white" : "bg-zinc-200 text-black"
-                      : isDark ? "text-zinc-500 hover:text-zinc-300" : "text-zinc-400 hover:text-zinc-600"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
+              <div className={`text-lg font-bold font-mono ${balanceColor(config.balance)}`}>
+                {formatCost(config.balance)}
+              </div>
+              <div className="mt-1 h-1 rounded-full bg-zinc-800 overflow-hidden">
+                <div className={`h-full rounded-full transition-all ${balanceBarColor(balanceRatio)}`} style={{ width: `${Math.round(balanceRatio * 100)}%` }} />
+              </div>
+              {daysRemaining !== null && (
+                <div className="text-[9px] mt-0.5 text-zinc-600">~{daysRemaining}d left</div>
+              )}
             </div>
           </div>
 
-          {/* Table */}
-          <div className="overflow-x-auto px-4 pb-4">
-            <table className="w-full text-sm">
-              <thead className={`sticky top-0 z-10 ${isDark ? "bg-[#0f0f12]" : "bg-white"}`}>
-                <tr className={`border-b ${isDark ? "border-zinc-800" : "border-zinc-200"}`}>
-                  {activeColumns.map(({ key, label }) => {
-                    const isNumeric = key !== "model" && key !== "provider";
+          {/* 30-Day Spend Chart (compact) */}
+          <div className="rounded-lg border border-zinc-800 bg-zinc-900/30 p-3 flex-shrink-0">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-xs font-bold text-zinc-300">30-Day Spend</h2>
+              <div className="flex items-center gap-0.5">
+                {(["all", "trials", "builder"] as ChartView[]).map((view) => (
+                  <button
+                    key={view}
+                    onClick={() => setChartView(view)}
+                    className={`px-2 py-0.5 rounded text-[10px] font-bold transition-colors ${
+                      chartView === view
+                        ? view === "trials"
+                          ? "bg-[#FFD700]/20 text-[#FFD700]"
+                          : "bg-[#FF6700]/20 text-[#FF6700]"
+                        : "text-zinc-600 hover:text-zinc-400"
+                    }`}
+                  >
+                    {view === "all" ? "All" : view === "trials" ? "Tri" : "Bld"}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="h-[160px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={dailyTotals} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="billingOrangeGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#FF6700" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#FF6700" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="billingGoldGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#FFD700" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#FFD700" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1a1a1a" />
+                  <XAxis dataKey="date" stroke="#555" tick={{ fontSize: 9, fill: "#777" }} tickFormatter={(d: string) => d.slice(5)} />
+                  <YAxis stroke="#555" tick={{ fontSize: 9, fill: "#777" }} tickFormatter={(v: number) => `$${v.toFixed(1)}`} width={35} />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: "#1a1a1a", border: "1px solid #333", borderRadius: "6px", color: "#fff", fontSize: "11px" }}
+                    formatter={(value: any) => [`$${(typeof value === 'number' ? value : 0).toFixed(4)}`, chartView === "trials" ? "Trials" : chartView === "builder" ? "Builder" : "All"]}
+                    labelFormatter={(label: any) => String(label)}
+                  />
+                  <Area type="monotone" dataKey={chartDataKey} stroke={chartView === "trials" ? "#FFD700" : "#FF6700"} strokeWidth={2} fill={chartView === "trials" ? "url(#billingGoldGrad)" : "url(#billingOrangeGrad)"} />
+                  {chartView === "all" && (
+                    <>
+                      <Area type="monotone" dataKey="trialsCost" stroke="#FFD700" strokeWidth={1} strokeDasharray="4 2" fill="none" />
+                      <Area type="monotone" dataKey="builderCost" stroke="#FF6700" strokeWidth={1} strokeDasharray="3 2" fill="none" />
+                    </>
+                  )}
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Model Breakdown Table (fills remaining space) */}
+          <div className="rounded-lg border border-zinc-800 bg-zinc-900/30 flex-1 flex flex-col overflow-hidden min-h-0">
+            <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-800/50 flex-shrink-0">
+              <h2 className="text-xs font-bold text-zinc-300">Model Breakdown</h2>
+              <span className="text-[10px] text-zinc-600">{sortedModels.length} models</span>
+            </div>
+            <div className="flex-1 overflow-auto">
+              <table className="w-full text-[11px]">
+                <thead className="sticky top-0 z-10 bg-zinc-900">
+                  <tr className="border-b border-zinc-800">
+                    <th onClick={() => handleSort("model")} className="text-left px-3 py-1.5 font-bold text-zinc-500 cursor-pointer">Model<SortIcon k="model" /></th>
+                    <th onClick={() => handleSort("provider")} className="text-left px-2 py-1.5 font-bold text-zinc-500 cursor-pointer">Provider<SortIcon k="provider" /></th>
+                    <th onClick={() => handleSort("callCount")} className="text-right px-2 py-1.5 font-bold text-zinc-500 cursor-pointer">Rounds<SortIcon k="callCount" /></th>
+                    <th onClick={() => handleSort("totalCost")} className="text-right px-2 py-1.5 font-bold text-zinc-500 cursor-pointer">Cost<SortIcon k="totalCost" /></th>
+                    <th className="text-right px-3 py-1.5 font-bold text-zinc-500">Cost/Round</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedModels.length === 0 && (
+                    <tr><td colSpan={5} className="px-3 py-4 text-center text-zinc-600 text-[10px]">No usage data</td></tr>
+                  )}
+                  {sortedModels.map((m, i) => {
+                    const displayCost = getDisplayCost(m);
+                    const costPerRound = m.callCount > 0 ? displayCost / m.callCount : 0;
                     return (
-                      <th
-                        key={key}
-                        onClick={() => handleSort(key)}
-                        className={`${isNumeric ? "text-right" : "text-left"} px-4 py-3 font-semibold cursor-pointer select-none text-xs uppercase tracking-wider ${isDark ? "text-zinc-400" : "text-zinc-500"}`}
-                      >
-                        {label}<SortIcon k={key} />
-                      </th>
+                      <tr key={`${m.provider}/${m.model}`} className={i % 2 === 0 ? "" : "bg-zinc-900/40"}>
+                        <td className="px-3 py-1.5 font-bold text-white truncate max-w-[180px]">{m.model}</td>
+                        <td className="px-2 py-1.5">
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold" style={{ backgroundColor: (PROVIDER_COLORS[m.provider] || "#666") + "22", color: PROVIDER_COLORS[m.provider] || "#888" }}>
+                            {m.provider}
+                          </span>
+                        </td>
+                        <td className="px-2 py-1.5 font-mono text-right text-zinc-400">{m.callCount}</td>
+                        <td className={`px-2 py-1.5 font-mono text-right ${costColor(displayCost)}`}>{formatCost(displayCost)}</td>
+                        <td className="px-3 py-1.5 font-mono text-right text-zinc-400">{formatCost(costPerRound)}</td>
+                      </tr>
                     );
                   })}
-                </tr>
-              </thead>
-              <tbody>
-                {sortedModels.length === 0 && (
-                  <tr><td colSpan={7} className="px-4 py-8 text-center text-zinc-500">No {tableTab} usage data for this period</td></tr>
-                )}
-                {sortedModels.map((m, i) => {
-                  const isLocal = m.provider === "ollama" || m.provider === "lmstudio";
-                  const { cost: displayCost, isCalc } = getDisplayCost(m);
-                  const costPerRound = m.callCount > 0 ? displayCost / m.callCount : 0;
-                  return (
-                    <tr
-                      key={`${m.provider}/${m.model}`}
-                      className={i % 2 === 0
-                        ? ""
-                        : (isDark ? "bg-zinc-900/30" : "bg-zinc-50")
-                      }
-                    >
-                      <td className={`px-4 py-3 font-semibold ${isDark ? "text-[#F5F5F5]" : "text-[#1a1a1a]"}`}>{m.model}</td>
-                      <td className="px-4 py-3">
-                        <span
-                          className="px-2 py-0.5 rounded text-xs font-bold"
-                          style={{ backgroundColor: (PROVIDER_COLORS[m.provider] || "#666") + "22", color: PROVIDER_COLORS[m.provider] || "#888" }}
-                        >
-                          {m.provider}
-                        </span>
-                      </td>
-                      <td className={`px-4 py-3 font-mono text-right ${isDark ? "text-zinc-300" : "text-zinc-700"}`}>{m.callCount}</td>
-                      <td className={`px-4 py-3 font-mono text-right ${isDark ? "text-zinc-300" : "text-zinc-700"}`}>{m.totalTokensIn.toLocaleString()}</td>
-                      <td className={`px-4 py-3 font-mono text-right ${isDark ? "text-zinc-300" : "text-zinc-700"}`}>{m.totalTokensOut.toLocaleString()}</td>
-                      <td className={`px-4 py-3 font-mono text-right ${costColor(displayCost)}`}>
-                        {formatCost(displayCost)}
-                        {isCalc && (
-                          <span className="ml-1.5 px-1 py-0.5 rounded text-[9px] font-bold bg-cyan-500/20 text-cyan-400">calc</span>
-                        )}
-                        {isLocal && (
-                          <span className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400">LOCAL</span>
-                        )}
-                      </td>
-                      <td className={`px-4 py-3 font-mono text-right ${isDark ? "text-zinc-300" : "text-zinc-700"}`}>
-                        {tableTab === "trials"
-                          ? formatCost(costPerRound)
-                          : m.avgTokensPerSecond
-                        }
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 
-        {/* ROW 4: Side-by-side — Top Models + App Breakdown */}
-        <div className="grid grid-cols-2 gap-5">
-          {/* Top Models */}
-          <div className={`rounded-xl border p-5 ${isDark ? "bg-[#0f0f12] border-zinc-800" : "bg-white border-zinc-200"}`}>
-            <h2 className="text-base font-semibold mb-3">Top Models by Spend</h2>
+        {/* RIGHT COLUMN (40%) */}
+        <div className="flex flex-col flex-[4] overflow-hidden p-3 gap-3">
+          {/* Top Models by Spend */}
+          <div className="rounded-lg border border-zinc-800 bg-zinc-900/30 p-3 flex-shrink-0">
+            <h2 className="text-xs font-bold text-zinc-300 mb-2">Top Models by Spend</h2>
             {topModels.length === 0 ? (
-              <div className="text-zinc-500 text-center py-8">No data</div>
+              <div className="text-zinc-600 text-center py-4 text-[10px]">No data</div>
             ) : (
-              <div className="h-[220px]">
+              <div className="h-[180px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={topModels} layout="vertical" margin={{ top: 5, right: 30, left: 80, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={isDark ? "#222" : "#e5e7eb"} />
-                    <XAxis type="number" tick={{ fontSize: 12, fill: isDark ? "#aaa" : "#555" }} tickFormatter={(v: number) => `$${v.toFixed(2)}`} />
-                    <YAxis type="category" dataKey="model" tick={{ fontSize: 12, fill: isDark ? "#ddd" : "#333", fontWeight: "bold" }} width={80} />
-                    <Tooltip
-                      contentStyle={{ backgroundColor: isDark ? "#1a1a1a" : "#fff", border: "1px solid #333", borderRadius: "8px", color: isDark ? "#F5F5F5" : "#1a1a1a", fontWeight: "bold" }}
-                      formatter={(value: number) => [`$${value.toFixed(4)}`, "Cost"]}
-                    />
-                    <Bar dataKey="totalCost" radius={[0, 4, 4, 0]}>
+                  <BarChart data={topModels} layout="vertical" margin={{ top: 2, right: 20, left: 60, bottom: 2 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1a1a1a" />
+                    <XAxis type="number" tick={{ fontSize: 9, fill: "#777" }} tickFormatter={(v: number) => `$${v.toFixed(2)}`} />
+                    <YAxis type="category" dataKey="model" tick={{ fontSize: 9, fill: "#ccc", fontWeight: "bold" }} width={60} />
+                    <Tooltip contentStyle={{ backgroundColor: "#1a1a1a", border: "1px solid #333", borderRadius: "6px", color: "#fff", fontSize: "11px" }} formatter={(value: any) => [`$${(typeof value === 'number' ? value : 0).toFixed(4)}`, "Cost"]} />
+                    <Bar dataKey="totalCost" radius={[0, 3, 3, 0]}>
                       {topModels.map((m, i) => (
                         <Cell key={i} fill={PROVIDER_COLORS[m.provider] || "#FF6700"} />
                       ))}
@@ -586,93 +445,73 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
           </div>
 
           {/* App Breakdown */}
-          <div className={`rounded-xl border p-5 ${isDark ? "bg-[#0f0f12] border-zinc-800" : "bg-white border-zinc-200"}`}>
-            <h2 className="text-base font-semibold mb-3">App Breakdown</h2>
+          <div className="rounded-lg border border-zinc-800 bg-zinc-900/30 p-3 flex-shrink-0">
+            <h2 className="text-xs font-bold text-zinc-300 mb-2">App Breakdown</h2>
             {apps.length === 0 ? (
-              <div className="text-zinc-500 text-center py-8">No data</div>
+              <div className="text-zinc-600 text-center py-4 text-[10px]">No data</div>
             ) : (
-              <div className="h-[220px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={apps} layout="vertical" margin={{ top: 5, right: 30, left: 80, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={isDark ? "#222" : "#e5e7eb"} />
-                    <XAxis type="number" tick={{ fontSize: 12, fill: isDark ? "#aaa" : "#555" }} tickFormatter={(v: number) => `$${v.toFixed(2)}`} />
-                    <YAxis type="category" dataKey="app" tick={{ fontSize: 12, fill: isDark ? "#ddd" : "#333", fontWeight: "bold" }} width={80} />
-                    <Tooltip
-                      contentStyle={{ backgroundColor: isDark ? "#1a1a1a" : "#fff", border: "1px solid #333", borderRadius: "8px", color: isDark ? "#F5F5F5" : "#1a1a1a", fontWeight: "bold" }}
-                      formatter={(value: number) => [`$${value.toFixed(4)}`, "Cost"]}
-                    />
-                    <Bar dataKey="totalCost" radius={[0, 4, 4, 0]}>
-                      {apps.map((a, i) => (
-                        <Cell key={i} fill={APP_COLORS[a.app] || "#6B7280"} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+              <div className="space-y-1.5">
+                {apps.sort((a, b) => b.totalCost - a.totalCost).map((a) => {
+                  const maxCost = Math.max(...apps.map(x => x.totalCost), 0.001);
+                  const pct = (a.totalCost / maxCost) * 100;
+                  const color = ({
+                    builder: "#FF6700", foundry: "#FF6700", "forge-trials": "#FFD700",
+                    "trials-cloud": "#FFD700", guardian: "#10B981", "jury-duty": "#A855F7",
+                    chat: "#06B6D4", debate: "#F43F5E",
+                  } as Record<string, string>)[a.app] || "#6B7280";
+                  return (
+                    <div key={a.app} className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold text-zinc-400 w-20 truncate">{a.app}</span>
+                      <div className="flex-1 h-3 bg-zinc-800 rounded-sm overflow-hidden">
+                        <div className="h-full rounded-sm transition-all" style={{ width: `${pct}%`, backgroundColor: color }} />
+                      </div>
+                      <span className={`text-[10px] font-mono font-bold w-14 text-right ${costColor(a.totalCost)}`}>
+                        {formatCost(a.totalCost)}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
-        </div>
 
-        {/* ROW 5: Alert Settings (collapsible) */}
-        <div className={`rounded-xl border ${isDark ? "bg-[#0f0f12] border-zinc-800" : "bg-white border-zinc-200"}`}>
-          <button
-            onClick={() => setShowSettings(!showSettings)}
-            className={`flex items-center gap-2 w-full px-6 py-4 font-bold text-sm ${isDark ? "text-zinc-300 hover:text-white" : "text-zinc-600 hover:text-black"} transition-colors`}
-          >
-            <Settings className="w-4 h-4" />
-            Alert Settings
-            {showSettings ? <ChevronUp className="w-4 h-4 ml-auto" /> : <ChevronDown className="w-4 h-4 ml-auto" />}
-          </button>
-          {showSettings && (
-            <div className={`px-6 pb-6 border-t ${isDark ? "border-zinc-800" : "border-zinc-200"}`}>
-              <div className="grid grid-cols-4 gap-4 pt-4">
-                <div>
-                  <label className={`block text-sm font-bold mb-1.5 ${isDark ? "text-zinc-300" : "text-zinc-600"}`}>Balance ($)</label>
-                  <input
-                    type="number"
-                    value={editBalance}
-                    onChange={(e) => setEditBalance(e.target.value)}
-                    className={`w-full px-3 py-2 rounded-lg text-sm font-mono ${isDark ? "bg-zinc-900 border-zinc-700 text-white" : "bg-zinc-100 border-zinc-300 text-black"} border`}
-                  />
+          {/* Alert Settings (collapsible, fills remaining space) */}
+          <div className="rounded-lg border border-zinc-800 bg-zinc-900/30 flex-shrink-0">
+            <button
+              onClick={() => setShowSettings(!showSettings)}
+              className="flex items-center gap-1.5 w-full px-3 py-2 font-bold text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors"
+            >
+              <Settings className="w-3 h-3" />
+              Alert Settings
+              {showSettings ? <ChevronUp className="w-3 h-3 ml-auto" /> : <ChevronDown className="w-3 h-3 ml-auto" />}
+            </button>
+            {showSettings && (
+              <div className="px-3 pb-3 border-t border-zinc-800 pt-2">
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { label: "Balance ($)", value: editBalance, set: setEditBalance },
+                    { label: "Alert At ($)", value: editAlertAt, set: setEditAlertAt },
+                    { label: "Daily Cap ($)", value: editDailyCap, set: setEditDailyCap, ph: "No cap" },
+                    { label: "Weekly Cap ($)", value: editWeeklyCap, set: setEditWeeklyCap, ph: "No cap" },
+                  ].map(({ label, value, set, ph }) => (
+                    <div key={label}>
+                      <label className="block text-[10px] font-bold mb-0.5 text-zinc-500">{label}</label>
+                      <input
+                        type="number"
+                        value={value}
+                        onChange={(e) => set(e.target.value)}
+                        placeholder={ph}
+                        className="w-full px-2 py-1 rounded text-[11px] font-mono bg-zinc-900 border border-zinc-700 text-white placeholder:text-zinc-700"
+                      />
+                    </div>
+                  ))}
                 </div>
-                <div>
-                  <label className={`block text-sm font-bold mb-1.5 ${isDark ? "text-zinc-300" : "text-zinc-600"}`}>Alert At ($)</label>
-                  <input
-                    type="number"
-                    value={editAlertAt}
-                    onChange={(e) => setEditAlertAt(e.target.value)}
-                    className={`w-full px-3 py-2 rounded-lg text-sm font-mono ${isDark ? "bg-zinc-900 border-zinc-700 text-white" : "bg-zinc-100 border-zinc-300 text-black"} border`}
-                  />
-                </div>
-                <div>
-                  <label className={`block text-sm font-bold mb-1.5 ${isDark ? "text-zinc-300" : "text-zinc-600"}`}>Daily Cap ($)</label>
-                  <input
-                    type="number"
-                    value={editDailyCap}
-                    onChange={(e) => setEditDailyCap(e.target.value)}
-                    placeholder="No cap"
-                    className={`w-full px-3 py-2 rounded-lg text-sm font-mono ${isDark ? "bg-zinc-900 border-zinc-700 text-white placeholder:text-zinc-600" : "bg-zinc-100 border-zinc-300 text-black"} border`}
-                  />
-                </div>
-                <div>
-                  <label className={`block text-sm font-bold mb-1.5 ${isDark ? "text-zinc-300" : "text-zinc-600"}`}>Weekly Cap ($)</label>
-                  <input
-                    type="number"
-                    value={editWeeklyCap}
-                    onChange={(e) => setEditWeeklyCap(e.target.value)}
-                    placeholder="No cap"
-                    className={`w-full px-3 py-2 rounded-lg text-sm font-mono ${isDark ? "bg-zinc-900 border-zinc-700 text-white placeholder:text-zinc-600" : "bg-zinc-100 border-zinc-300 text-black"} border`}
-                  />
-                </div>
+                <button onClick={saveConfig} className="mt-2 w-full px-3 py-1.5 bg-[#FF6700] hover:bg-[#FF8C00] text-white font-bold rounded text-[11px] transition-colors">
+                  Save
+                </button>
               </div>
-              <button
-                onClick={saveConfig}
-                className="mt-4 px-6 py-2 bg-[#FF6700] hover:bg-[#FF8C00] text-white font-bold rounded-lg text-sm transition-colors duration-200"
-              >
-                Save Settings
-              </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>
