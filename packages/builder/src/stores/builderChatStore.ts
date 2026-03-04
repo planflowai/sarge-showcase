@@ -302,6 +302,23 @@ export const useBuilderChatStore = create<BuilderChatState>()(
       }
       finalizeStreamingMessage(assistantId, tokenCount, latencyMs);
 
+      // Log usage to billing — fire and forget, never block chat
+      try {
+        const tc = tokenCount || countTokens(totalContent);
+        fetch("/api/billing/log", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model,
+            provider,
+            app: "builder",
+            tokensIn: 0,
+            tokensOut: tc,
+            durationMs: latencyMs,
+          }),
+        }).catch(() => {});
+      } catch {}
+
       // Track model attribution for Thread Guardian
       try {
         const guardianStore = useThreadGuardianStore.getState();

@@ -18,6 +18,8 @@ const WorkbenchDashboard = lazy(() => import("@/components/workbench/WorkbenchDa
 const NewProjectWizard = lazy(() => import("@/components/project/NewProjectWizard"));
 const ForgeTrialsDashboard = lazy(() => import("@/components/benchmark/ForgeTrialsDashboard"));
 const TogglePanel = lazy(() => import("@/components/Builder/TogglePanel"));
+const ForgeBillingDashboard = lazy(() => import("@/components/billing/ForgeBillingDashboard"));
+const BillingBar = lazy(() => import("@/components/billing/BillingBar"));
 
 const LoadingFallback = <div className="flex h-full w-full items-center justify-center"><span className="text-zinc-500">Loading...</span></div>;
 
@@ -92,6 +94,14 @@ function HomeInner() {
     const handler = () => setShowOptimize(true);
     window.addEventListener("forge:optimize", handler);
     return () => window.removeEventListener("forge:optimize", handler);
+  }, []);
+
+  // Forge Billing — triggered by forge:billing event from BillingBar
+  const [showBilling, setShowBilling] = useState(false);
+  useEffect(() => {
+    const handler = () => setShowBilling(true);
+    window.addEventListener("forge:billing", handler);
+    return () => window.removeEventListener("forge:billing", handler);
   }, []);
 
   const handleWizardCreated = useCallback(async (projectPath: string, _projectName: string) => {
@@ -180,6 +190,15 @@ function HomeInner() {
     );
   }
 
+  // Forge Billing — full-screen billing dashboard
+  if (showBilling) {
+    return (
+      <Suspense fallback={LoadingFallback}>
+        <ForgeBillingDashboard onClose={() => setShowBilling(false)} />
+      </Suspense>
+    );
+  }
+
   // Workbench command center — full-screen overlay on builder page
   if (workbenchActive) {
     return (
@@ -195,11 +214,18 @@ function HomeInner() {
     <div className="flex h-full w-full">
       <ErrorBoundary fallbackTitle="Builder Error">
         <Suspense fallback={LoadingFallback}>
-          <BuilderPage deployContent={
-            <Suspense fallback={<div className="p-4 text-zinc-500 text-sm">Loading deploy...</div>}>
-              <DeployPanel />
-            </Suspense>
-          } />
+          <BuilderPage
+            deployContent={
+              <Suspense fallback={<div className="p-4 text-zinc-500 text-sm">Loading deploy...</div>}>
+                <DeployPanel />
+              </Suspense>
+            }
+            billingBar={
+              <Suspense fallback={null}>
+                <BillingBar />
+              </Suspense>
+            }
+          />
         </Suspense>
       </ErrorBoundary>
       <JuryToast />

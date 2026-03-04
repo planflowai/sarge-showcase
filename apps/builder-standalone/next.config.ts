@@ -9,7 +9,7 @@ const emptyStub = path.resolve(__dirname, "lib/stubs/empty.ts");
 
 const nextConfig: NextConfig = {
   devIndicators: false,
-  transpilePackages: ["@sarge/core", "@sarge/chat", "@sarge/builder", "@sarge/benchmark", "@sarge/audit"],
+  transpilePackages: ["@sarge/core", "@sarge/chat", "@sarge/builder", "@sarge/benchmark", "@sarge/audit", "@sarge/billing"],
   // Keep audit-heavy Node.js packages out of webpack bundling —
   // lighthouse uses import.meta for path resolution, axe-core/jsdom need native Node APIs
   serverExternalPackages: [

@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { parseFileEditProposals, type FileEditProposal } from "@sarge/core";
 import { extractSummaryFromResponse } from "../lib/builderLogger";
 import { hasEditBlocks } from "../lib/editBlockParser";
+import { formatCost, getRate } from "@sarge/billing";
 
 /**
  * LiveStreamingContent: Renders streaming AI response in real-time
@@ -542,6 +543,13 @@ export default function BuilderMessageBubble({
             </span>
           )}
           {!isUser && latencySec && <span>{latencySec}s</span>}
+          {!isUser && message.tokenCount != null && message.tokenCount > 0 && message.provider && (
+            <span className="font-mono text-[#FF6700]">
+              {message.provider === "ollama" || message.provider === "lmstudio"
+                ? "FREE"
+                : formatCost((message.tokenCount / 1_000_000) * getRate(message.model || "", message.provider).output)}
+            </span>
+          )}
 
           <Button
             variant="ghost"

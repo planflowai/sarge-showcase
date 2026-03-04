@@ -36,7 +36,7 @@ const AssetLibrary = lazy(() => import("./AssetLibrary"));
  * - Terminal (bottom): hidden by default, toggled from sidebar
  */
 
-export default function BuilderPage({ deployContent }: { deployContent?: React.ReactNode } = {}) {
+export default function BuilderPage({ deployContent, billingBar }: { deployContent?: React.ReactNode; billingBar?: React.ReactNode } = {}) {
   const [selectedModel, setSelectedModel] = useState<string | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<string>("deepseek");
   const [webSearch, setWebSearch] = useState(false);
@@ -951,6 +951,9 @@ Please provide the complete modified version of this component. Make only the re
           />
         </div>
       </div>
+
+      {/* Billing bar — persistent cost tracking */}
+      {billingBar}
 
       {/* Terminal — at bottom, hidden by default */}
       <BuilderTerminal
