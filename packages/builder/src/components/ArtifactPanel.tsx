@@ -843,10 +843,12 @@ function ArtifactPanelInner({
             ) : previewContent && code && code.trim().length > 0 ? (
               // srcdoc-based preview for streaming/no project
               // CRITICAL: No key prop - prevents iframe remount which causes white flash
+              // sandbox: no allow-same-origin (prevents iframe from sharing parent state/navigation)
+              //          no allow-popups (prevents opening new windows from preview links)
               <iframe
                 ref={iframeRef}
                 srcDoc={previewContent}
-                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+                sandbox="allow-scripts allow-forms"
                 className="w-full h-full border-0"
                 title="Preview"
                 style={{

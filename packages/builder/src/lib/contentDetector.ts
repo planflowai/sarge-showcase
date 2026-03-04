@@ -20,17 +20,29 @@ export type ContentType = 'html-document' | 'react-jsx' | 'html-snippet' | 'css-
  */
 const NAVIGATION_BLOCKER_SCRIPT = `
 <script>
+// Block all navigation that would leave the preview
 document.addEventListener('click', function(e) {
   var link = e.target.closest('a');
   if (link) {
     var href = link.getAttribute('href');
-    // Block navigation if href exists and is not "#" or javascript:
-    if (href && href !== '#' && !href.startsWith('javascript:')) {
-      e.preventDefault();
-      e.stopPropagation();
+    if (!href) return;
+    // Allow bare # and #section anchor links — scroll within preview
+    if (href === '#' || href.startsWith('#')) {
+      var target = href === '#' ? null : document.querySelector(href);
+      if (target) { e.preventDefault(); target.scrollIntoView({behavior:'smooth'}); }
+      return;
     }
+    // Allow javascript: hrefs (onclick handlers)
+    if (href.startsWith('javascript:')) return;
+    // Block everything else (relative URLs, absolute URLs, etc.)
+    e.preventDefault();
+    e.stopPropagation();
   }
 }, true);
+// Block programmatic navigation attempts
+try {
+  window.addEventListener('beforeunload', function(e) { e.preventDefault(); });
+} catch(e) {}
 </script>
 `;
 
@@ -134,10 +146,10 @@ export function buildPreviewContent(code: string, airGapMode = false): string {
 
 /**
  * Inject navigation blocker and base tag into an existing HTML document
- * Injects <base target="_blank"> and click interceptor right after <head> opening tag
+ * Injects <base target="_self"> and click interceptor right after <head> opening tag
  */
 function injectNavigationBlocker(code: string): string {
-  const headInjection = `<base target="_blank">
+  const headInjection = `<base target="_self">
 ${NAVIGATION_BLOCKER_SCRIPT}`;
 
   // Try to inject right after opening <head> tag
@@ -175,7 +187,7 @@ function wrapReactJSX(code: string, airGapMode = false): string {
     return `<!DOCTYPE html>
 <html>
 <head>
-  <base target="_blank">
+  <base target="_self">
   ${NAVIGATION_BLOCKER_SCRIPT}
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -199,7 +211,7 @@ function wrapReactJSX(code: string, airGapMode = false): string {
   return `<!DOCTYPE html>
 <html>
 <head>
-  <base target="_blank">
+  <base target="_self">
   ${NAVIGATION_BLOCKER_SCRIPT}
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -261,7 +273,7 @@ function wrapHTMLSnippet(code: string, airGapMode = false): string {
   return `<!DOCTYPE html>
 <html>
 <head>
-  <base target="_blank">
+  <base target="_self">
   ${NAVIGATION_BLOCKER_SCRIPT}
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -284,7 +296,7 @@ function wrapCSSOnly(code: string): string {
   return `<!DOCTYPE html>
 <html>
 <head>
-  <base target="_blank">
+  <base target="_self">
   ${NAVIGATION_BLOCKER_SCRIPT}
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -316,7 +328,7 @@ function wrapJSOnly(code: string): string {
   return `<!DOCTYPE html>
 <html>
 <head>
-  <base target="_blank">
+  <base target="_self">
   ${NAVIGATION_BLOCKER_SCRIPT}
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
