@@ -1,7 +1,7 @@
 "use client";
 
-import React, { type RefObject } from "react";
-import { Flame } from "lucide-react";
+import React, { type RefObject, useState, useEffect, useRef } from "react";
+import { Flame, Loader2 } from "lucide-react";
 import type { BenchmarkEvent, RoundResult } from "@sarge/benchmark";
 
 interface Props {
@@ -49,6 +49,37 @@ export function ForgeTrialsProgress({
   const remainingMs = remainingScenarios * avgMs;
   const remainingMin = Math.ceil(remainingMs / 60000);
 
+  // ── Live elapsed timer (counts up while generating) ──
+  const [elapsed, setElapsed] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastEventTimeRef = useRef<number>(Date.now());
+
+  // Track the latest "generating" event to know when generation started
+  const latestEvent = events.length > 0 ? events[events.length - 1] : null;
+  const isGenerating = running && latestEvent &&
+    (latestEvent.type === "round:generating" || latestEvent.type === "round:start" || latestEvent.type === "round:scoring");
+
+  useEffect(() => {
+    if (running && isGenerating) {
+      lastEventTimeRef.current = latestEvent?.timestamp || Date.now();
+      setElapsed(0);
+
+      timerRef.current = setInterval(() => {
+        setElapsed(Math.floor((Date.now() - lastEventTimeRef.current) / 1000));
+      }, 1000);
+
+      return () => {
+        if (timerRef.current) clearInterval(timerRef.current);
+      };
+    } else {
+      setElapsed(0);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    }
+  }, [running, isGenerating, latestEvent?.timestamp]);
+
   // Latest events for the log
   const recentEvents = events.slice(-30);
 
@@ -75,10 +106,16 @@ export function ForgeTrialsProgress({
           />
         </div>
 
-        <div className="flex items-center gap-3 text-base font-[800] text-zinc-200 flex-shrink-0 min-w-[320px] justify-end">
+        <div className="flex items-center gap-3 text-base font-[800] text-zinc-200 flex-shrink-0 min-w-[380px] justify-end">
           {currentModel && running && (
             <span className="text-[#FF6700] font-bold">
               {currentModel}
+            </span>
+          )}
+          {running && isGenerating && elapsed > 0 && (
+            <span className="flex items-center gap-1.5 text-amber-400 font-bold font-mono">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              {elapsed}s
             </span>
           )}
           <span>
@@ -99,6 +136,22 @@ export function ForgeTrialsProgress({
           )}
         </div>
       </div>
+
+      {/* Active Generation Banner (cloud) */}
+      {running && isCloud && isGenerating && (
+        <div className="flex items-center gap-3 mb-2 px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+          <div className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
+          <span className="text-sm font-bold text-amber-300">
+            Generating code with {currentModel}...
+          </span>
+          {elapsed > 0 && (
+            <span className="text-sm font-mono text-amber-400/70">{elapsed}s elapsed</span>
+          )}
+          {currentRound && (
+            <span className="text-sm text-zinc-500 ml-auto">{currentRound}</span>
+          )}
+        </div>
+      )}
 
       {/* Event Log */}
       <div
