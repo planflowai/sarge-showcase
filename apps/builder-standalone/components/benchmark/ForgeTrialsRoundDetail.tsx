@@ -12,6 +12,7 @@ interface Props {
   currentRound?: string | null;
   isCloud?: boolean;
   totalCost?: number;
+  warmupHtml?: string;
 }
 
 type Tab = "preview" | "code" | "breakdown";
@@ -24,6 +25,7 @@ export function ForgeTrialsRoundDetail({
   currentRound,
   isCloud = false,
   totalCost,
+  warmupHtml,
 }: Props) {
   const [tab, setTab] = useState<Tab>("preview");
 
@@ -64,11 +66,37 @@ export function ForgeTrialsRoundDetail({
     return `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:system-ui,sans-serif;padding:1rem}</style></head><body>${code}</body></html>`;
   }, [result?.extractedCode]);
 
-  // ── Running state: show live splash ──
+  // ── Running state: show warmup HTML or live splash ──
   if (!result && running) {
+    // If warmup HTML is available, render it in the preview
+    if (isCloud && warmupHtml) {
+      return (
+        <div className="flex flex-col h-full bg-zinc-950">
+          <div className="px-4 py-2.5 border-b border-[#FF6700]/30 bg-zinc-900/60 flex items-center gap-3">
+            <div className="w-2.5 h-2.5 rounded-full bg-[#FF6700] animate-pulse" />
+            <span className="text-sm font-bold text-[#FFD700]">
+              {currentModel ? `${currentModel} — ` : ""}Cloud Trials Running
+            </span>
+            {elapsed > 0 && (
+              <span className="text-sm font-mono text-amber-400/70">{elapsed}s</span>
+            )}
+            {isCloud && totalCost != null && totalCost > 0 && (
+              <span className="text-sm font-mono text-emerald-400 ml-auto">${totalCost.toFixed(4)}</span>
+            )}
+          </div>
+          <iframe
+            srcDoc={warmupHtml}
+            className="flex-1 w-full bg-zinc-950"
+            sandbox="allow-scripts"
+            title="Forge Trials Warmup"
+          />
+        </div>
+      );
+    }
+
+    // Fallback: animated splash while waiting for warmup
     return (
       <div className="flex flex-col items-center justify-center h-full bg-zinc-950 gap-6 px-8">
-        {/* Animated forge fire */}
         <div className="relative">
           <Flame className="w-24 h-24 text-[#FF6700] animate-pulse drop-shadow-[0_0_30px_rgba(255,103,0,0.6)]" />
           <div className="absolute inset-0 flex items-center justify-center">
@@ -81,40 +109,21 @@ export function ForgeTrialsRoundDetail({
             {isCloud ? "CLOUD" : "LOCAL"} FORGE TRIALS
           </h2>
           <p className="text-lg font-bold text-zinc-300">
-            Testing in progress...
+            Warming up model...
           </p>
         </div>
 
-        {/* Current operation */}
         {currentModel && (
           <div className="w-full max-w-md bg-zinc-900/80 border border-[#FF6700]/20 rounded-xl p-5 space-y-3">
             <div className="flex items-center gap-3">
               <Loader2 className="w-5 h-5 text-[#FF6700] animate-spin flex-shrink-0" />
-              <span className="text-base font-bold text-[#FFD700]">
-                {currentModel}
-              </span>
+              <span className="text-base font-bold text-[#FFD700]">{currentModel}</span>
             </div>
-            {currentRound && (
-              <div className="text-sm font-bold text-zinc-400 pl-8">
-                Scenario: <span className="text-zinc-300">{currentRound}</span>
-              </div>
-            )}
             <div className="flex items-center justify-between pl-8">
-              <span className="text-sm font-mono font-bold text-amber-400">
-                {elapsed}s elapsed
-              </span>
-              {isCloud && totalCost != null && totalCost > 0 && (
-                <span className="text-sm font-mono font-bold text-emerald-400">
-                  ${totalCost.toFixed(4)} spent
-                </span>
-              )}
+              <span className="text-sm font-mono font-bold text-amber-400">{elapsed}s elapsed</span>
             </div>
           </div>
         )}
-
-        <p className="text-sm font-bold text-zinc-600 text-center max-w-sm">
-          Results will appear here as each scenario completes. Click any scored cell in the matrix to review.
-        </p>
       </div>
     );
   }

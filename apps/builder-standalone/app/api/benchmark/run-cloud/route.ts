@@ -9,6 +9,7 @@ import { NextRequest } from "next/server";
 import {
   CLOUD_SCENARIOS,
   scoreResponse,
+  extractCode,
   getCloudTier,
   getCloudModelTier,
   type CloudBenchmarkConfig,
@@ -20,6 +21,15 @@ import {
 } from "@sarge/benchmark";
 
 const RUNS_PER_SCENARIO = 1; // Cloud models are consistent — 1 run per scenario to minimize cost
+
+const WARMUP_PROMPT = `Build a dramatic "FORGE TRIALS" splash page. Single HTML file:
+- Black background (#0a0a0a)
+- Large centered "FORGE TRIALS" title with orange (#FF6700) to gold (#FFD700) CSS gradient text
+- Animated pulsing ember ring around the title using CSS @keyframes
+- Subtitle: "Cloud Model Benchmark — Initializing..."
+- Small animated loading dots below
+- Forge-themed, dark, professional
+Keep it under 80 lines. No external dependencies.`;
 
 // ── Call cloud model via internal /api/test/stream endpoint ──────────
 
@@ -197,6 +207,35 @@ export async function POST(request: NextRequest) {
         message: `Cloud Forge Trials — ${models.length} models × ${scenarios.length} rounds × ${RUNS_PER_SCENARIO} runs`,
         timestamp: Date.now(),
       });
+
+      // ── Warmup: generate splash page to prove model is alive ──
+      if (!abortController.signal.aborted && models.length > 0) {
+        const firstModel = models[0];
+        const warmupResult = await callCloudModel(
+          baseUrl,
+          firstModel.id,
+          firstModel.provider,
+          "You are a code builder. Output a single complete HTML file.",
+          WARMUP_PROMPT,
+          30_000, // 30s timeout for warmup
+          abortController.signal
+        );
+
+        if (warmupResult.content && !warmupResult.error) {
+          const warmupCode = extractCode(warmupResult.content);
+          emit({
+            type: "warmup:complete",
+            modelId: firstModel.id,
+            message: `Warmup complete — ${firstModel.name} is responding`,
+            timestamp: Date.now(),
+            warmupHtml: warmupCode || warmupResult.content,
+          });
+
+          // Log warmup billing
+          const warmupCost = await logBilling(baseUrl, firstModel.id, firstModel.provider, warmupResult.tokenCount, warmupResult.timeMs);
+          totalCost += warmupCost;
+        }
+      }
 
       const allResults: RoundResult[] = [];
       const allScorecards: ModelScorecard[] = [];

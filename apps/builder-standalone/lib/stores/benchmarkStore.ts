@@ -45,6 +45,7 @@ interface BenchmarkState {
   cloudSelectedCell: { modelId: string; scenarioId: string } | null;
   cloudSelectedModels: { id: string; provider: string; name: string }[];
   cloudTotalCost: number;
+  cloudWarmupHtml: string;
 
   // ── Local Actions ──
   startRun: (runId: string, models: string[]) => void;
@@ -74,6 +75,7 @@ interface BenchmarkState {
   cloudCompleteRun: (run: BenchmarkRun) => void;
   cloudSetAbortController: (ctrl: AbortController | null) => void;
   cloudSetTotalCost: (cost: number) => void;
+  cloudSetWarmupHtml: (html: string) => void;
   cloudReset: () => void;
 }
 
@@ -104,6 +106,7 @@ const CLOUD_INITIAL = {
   cloudSelectedCell: null as { modelId: string; scenarioId: string } | null,
   cloudSelectedModels: [] as { id: string; provider: string; name: string }[],
   cloudTotalCost: 0,
+  cloudWarmupHtml: '',
 };
 
 export const useBenchmarkStore = create<BenchmarkState>()(
@@ -203,6 +206,7 @@ export const useBenchmarkStore = create<BenchmarkState>()(
       cloudSetSelectedModels: (models) => set({ cloudSelectedModels: models }),
       cloudSetAbortController: (ctrl) => set({ cloudAbortController: ctrl }),
       cloudSetTotalCost: (cost) => set({ cloudTotalCost: cost }),
+      cloudSetWarmupHtml: (html) => set({ cloudWarmupHtml: html }),
 
       cloudCompleteRun: (run) =>
         set((s) => ({

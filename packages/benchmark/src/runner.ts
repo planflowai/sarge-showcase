@@ -91,6 +91,7 @@ export interface BenchmarkRun {
 
 export type BenchmarkEventType =
   | "run:start"
+  | "warmup:complete"
   | "model:start"
   | "model:loading"
   | "round:start"
@@ -120,6 +121,7 @@ export interface BenchmarkEvent {
   };
   message: string;
   timestamp: number;
+  warmupHtml?: string;
 }
 
 // ── Config ───────────────────────────────────────────────────────────

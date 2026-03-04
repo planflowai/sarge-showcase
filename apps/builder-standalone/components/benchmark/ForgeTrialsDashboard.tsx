@@ -86,6 +86,8 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
     cloudSetAbortController,
     cloudCompleteRun,
     cloudSetTotalCost,
+    cloudSetWarmupHtml,
+    cloudWarmupHtml,
   } = store;
 
   const [localModels, setLocalModels] = useState<string[]>(
@@ -231,6 +233,7 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
             if (event.scenarioId) cloudSetCurrentRound(event.scenarioId);
             if (event.result) cloudAddResult(event.result);
             if (event.scorecard) cloudAddScorecard(event.scorecard);
+            if (event.warmupHtml) cloudSetWarmupHtml(event.warmupHtml);
 
             // Extract cost from message (format: "...$X.XXXX...")
             const costMatch = event.message?.match(/\$(\d+\.\d+)/);
@@ -258,7 +261,7 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
         cloudAddEvent({ type: "run:stopped", message: "Cloud Trials stopped by user.", timestamp: Date.now() });
       }
     }
-  }, [cloudSelectedModels, cloudStartRun, cloudStopRun, cloudAddResult, cloudAddScorecard, cloudAddEvent, cloudSetCurrentModel, cloudSetCurrentRound, cloudSetAbortController, cloudCompleteRun, cloudSetTotalCost]);
+  }, [cloudSelectedModels, cloudStartRun, cloudStopRun, cloudAddResult, cloudAddScorecard, cloudAddEvent, cloudSetCurrentModel, cloudSetCurrentRound, cloudSetAbortController, cloudCompleteRun, cloudSetTotalCost, cloudSetWarmupHtml]);
 
   const handleStart = isCloud ? handleCloudStart : handleLocalStart;
   const handleStop = isCloud ? () => cloudStopRun() : () => stopRun();
@@ -409,6 +412,7 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
             currentRound={activeCurrentRound}
             isCloud={isCloud}
             totalCost={isCloud ? cloudTotalCost : undefined}
+            warmupHtml={isCloud ? cloudWarmupHtml : undefined}
           />
         </div>
       </div>
