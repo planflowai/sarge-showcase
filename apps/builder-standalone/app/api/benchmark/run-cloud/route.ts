@@ -1,7 +1,7 @@
 /**
  * Cloud Forge Trials — Benchmark Runner API
  * POST: Runs cloud model benchmarks, streaming NDJSON progress events.
- * Each model × scenario = 3 runs. Median score is the official result.
+ * Calls cloud provider APIs DIRECTLY (no self-fetch through /api/test/stream).
  * Every call logged to @sarge/billing with context 'trials-cloud'.
  */
 
@@ -20,7 +20,7 @@ import {
   type ScoreBreakdown,
 } from "@sarge/benchmark";
 
-const RUNS_PER_SCENARIO = 1; // Cloud models are consistent — 1 run per scenario to minimize cost
+const RUNS_PER_SCENARIO = 1;
 
 const WARMUP_PROMPT = `Build a dramatic "FORGE TRIALS" splash page. Single HTML file:
 - Black background (#0a0a0a)
@@ -31,96 +31,120 @@ const WARMUP_PROMPT = `Build a dramatic "FORGE TRIALS" splash page. Single HTML 
 - Forge-themed, dark, professional
 Keep it under 80 lines. No external dependencies.`;
 
-// ── Call cloud model via internal /api/test/stream endpoint ──────────
+// ── Result type from direct cloud calls ─────────────────────────────
 
-async function callCloudModel(
-  baseUrl: string,
-  modelId: string,
+interface CloudCallResult {
+  content: string;
+  timeMs: number;
+  timedOut: boolean;
+  tokenCount: number;
+  error?: string;
+}
+
+// ── Direct cloud API calls (no self-fetch) ──────────────────────────
+
+async function callCloudDirect(
   provider: string,
+  modelId: string,
   systemPrompt: string,
   userPrompt: string,
   timeoutMs: number,
   signal: AbortSignal
-): Promise<{ content: string; timeMs: number; timedOut: boolean; tokenCount: number; error?: string }> {
+): Promise<CloudCallResult> {
+  switch (provider) {
+    case "deepseek":
+      return callOpenAICompat(
+        "https://api.deepseek.com/chat/completions",
+        process.env.DEEPSEEK_API_KEY || "",
+        modelId, systemPrompt, userPrompt, 8192, timeoutMs, signal
+      );
+    case "openai":
+      return callOpenAICompat(
+        "https://api.openai.com/v1/chat/completions",
+        process.env.OPENAI_API_KEY || "",
+        modelId, systemPrompt, userPrompt, 4096, timeoutMs, signal
+      );
+    case "xai":
+      return callOpenAICompat(
+        "https://api.x.ai/v1/chat/completions",
+        process.env.XAI_API_KEY || process.env.GROK_API_KEY || "",
+        modelId, systemPrompt, userPrompt, 4096, timeoutMs, signal
+      );
+    case "anthropic":
+      return callAnthropic(modelId, systemPrompt, userPrompt, timeoutMs, signal);
+    case "google":
+      return callGemini(modelId, systemPrompt, userPrompt, timeoutMs, signal);
+    default:
+      return { content: "", timeMs: 0, timedOut: false, tokenCount: 0, error: `Unknown provider: ${provider}` };
+  }
+}
+
+// ── OpenAI-compatible (DeepSeek, OpenAI, xAI) ──────────────────────
+
+async function callOpenAICompat(
+  apiUrl: string,
+  apiKey: string,
+  model: string,
+  systemPrompt: string,
+  userPrompt: string,
+  maxTokens: number,
+  timeoutMs: number,
+  signal: AbortSignal
+): Promise<CloudCallResult> {
   const start = Date.now();
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
-
-  // Combine signals
   const onParentAbort = () => controller.abort();
   signal.addEventListener("abort", onParentAbort);
 
   try {
-    const res = await fetch(`${baseUrl}/api/test/stream`, {
+    const messages: { role: string; content: string }[] = [];
+    if (systemPrompt) messages.push({ role: "system", content: systemPrompt });
+    messages.push({ role: "user", content: userPrompt });
+
+    const res = await fetch(apiUrl, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: modelId,
-        provider,
-        prompt: userPrompt,
-        systemPrompt,
-        source: "cloud",
-      }),
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({ model, messages, max_tokens: maxTokens, stream: true }),
       signal: controller.signal,
     });
 
     if (!res.ok) {
-      return {
-        content: "",
-        timeMs: Date.now() - start,
-        timedOut: false,
-        tokenCount: 0,
-        error: `API error: ${res.status} ${res.statusText}`,
-      };
+      const errText = await res.text().catch(() => "");
+      return { content: "", timeMs: Date.now() - start, timedOut: false, tokenCount: 0, error: `API ${res.status}: ${errText.slice(0, 200)}` };
     }
 
-    // Collect full streamed response
     const reader = res.body?.getReader();
-    if (!reader) {
-      return { content: "", timeMs: Date.now() - start, timedOut: false, tokenCount: 0, error: "No response body" };
-    }
+    if (!reader) return { content: "", timeMs: Date.now() - start, timedOut: false, tokenCount: 0, error: "No response body" };
 
     const decoder = new TextDecoder();
     let content = "";
     let tokenCount = 0;
-    let buffer = "";
+    let sseBuffer = "";
 
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-      buffer += decoder.decode(value, { stream: true });
+      sseBuffer += decoder.decode(value, { stream: true });
 
-      // Parse NDJSON lines: each line is {"message":{"content":"token"}}
-      const lines = buffer.split("\n");
-      buffer = lines.pop() || ""; // Keep incomplete line in buffer
+      const lines = sseBuffer.split("\n");
+      sseBuffer = lines.pop() || "";
 
       for (const line of lines) {
-        if (!line.trim()) continue;
+        if (!line.startsWith("data: ") || line.includes("[DONE]")) continue;
         try {
-          const parsed = JSON.parse(line);
-          const text = parsed?.message?.content || parsed?.message?.reasoning_content || "";
+          const data = JSON.parse(line.slice(6));
+          const delta = data.choices?.[0]?.delta;
+          // ONLY collect content — skip reasoning_content (DeepSeek R1)
+          const text = delta?.content;
           if (text) {
             content += text;
             tokenCount++;
           }
-        } catch {
-          // Not valid JSON — append raw (fallback)
-          content += line;
-        }
-      }
-    }
-
-    // Process any remaining buffer
-    if (buffer.trim()) {
-      try {
-        const parsed = JSON.parse(buffer);
-        const text = parsed?.message?.content || parsed?.message?.reasoning_content || "";
-        if (text) {
-          content += text;
-          tokenCount++;
-        }
-      } catch {
-        content += buffer;
+        } catch {}
       }
     }
 
@@ -133,9 +157,7 @@ async function callCloudModel(
   } catch (err: unknown) {
     const elapsed = Date.now() - start;
     if (err instanceof Error && err.name === "AbortError") {
-      if (signal.aborted) {
-        return { content: "", timeMs: elapsed, timedOut: false, tokenCount: 0, error: "Stopped by user" };
-      }
+      if (signal.aborted) return { content: "", timeMs: elapsed, timedOut: false, tokenCount: 0, error: "Stopped by user" };
       return { content: "", timeMs: elapsed, timedOut: true, tokenCount: 0 };
     }
     return { content: "", timeMs: elapsed, timedOut: false, tokenCount: 0, error: String(err) };
@@ -145,7 +167,180 @@ async function callCloudModel(
   }
 }
 
-// ── Log billing ──────────────────────────────────────────────────────
+// ── Anthropic (Claude) ──────────────────────────────────────────────
+
+async function callAnthropic(
+  model: string,
+  systemPrompt: string,
+  userPrompt: string,
+  timeoutMs: number,
+  signal: AbortSignal
+): Promise<CloudCallResult> {
+  const start = Date.now();
+  const apiKey = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY || "";
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const onParentAbort = () => controller.abort();
+  signal.addEventListener("abort", onParentAbort);
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 4096,
+        stream: true,
+        system: systemPrompt || undefined,
+        messages: [{ role: "user", content: userPrompt }],
+      }),
+      signal: controller.signal,
+    });
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => "");
+      return { content: "", timeMs: Date.now() - start, timedOut: false, tokenCount: 0, error: `Anthropic ${res.status}: ${errText.slice(0, 200)}` };
+    }
+
+    const reader = res.body?.getReader();
+    if (!reader) return { content: "", timeMs: Date.now() - start, timedOut: false, tokenCount: 0, error: "No response body" };
+
+    const decoder = new TextDecoder();
+    let content = "";
+    let tokenCount = 0;
+    let sseBuffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      sseBuffer += decoder.decode(value, { stream: true });
+
+      const lines = sseBuffer.split("\n");
+      sseBuffer = lines.pop() || "";
+
+      for (const line of lines) {
+        if (!line.startsWith("data: ")) continue;
+        try {
+          const data = JSON.parse(line.slice(6));
+          if (data.type === "content_block_delta" && data.delta?.text) {
+            content += data.delta.text;
+            tokenCount++;
+          }
+        } catch {}
+      }
+    }
+
+    return {
+      content,
+      timeMs: Date.now() - start,
+      timedOut: false,
+      tokenCount: Math.max(tokenCount, Math.ceil(content.length / 4)),
+    };
+  } catch (err: unknown) {
+    const elapsed = Date.now() - start;
+    if (err instanceof Error && err.name === "AbortError") {
+      if (signal.aborted) return { content: "", timeMs: elapsed, timedOut: false, tokenCount: 0, error: "Stopped by user" };
+      return { content: "", timeMs: elapsed, timedOut: true, tokenCount: 0 };
+    }
+    return { content: "", timeMs: elapsed, timedOut: false, tokenCount: 0, error: String(err) };
+  } finally {
+    clearTimeout(timer);
+    signal.removeEventListener("abort", onParentAbort);
+  }
+}
+
+// ── Google (Gemini) ─────────────────────────────────────────────────
+
+async function callGemini(
+  model: string,
+  systemPrompt: string,
+  userPrompt: string,
+  timeoutMs: number,
+  signal: AbortSignal
+): Promise<CloudCallResult> {
+  const start = Date.now();
+  const apiKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY || "";
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const onParentAbort = () => controller.abort();
+  signal.addEventListener("abort", onParentAbort);
+
+  try {
+    const contents: any[] = [];
+    if (systemPrompt) {
+      contents.push({ role: "user", parts: [{ text: systemPrompt }] });
+      contents.push({ role: "model", parts: [{ text: "Understood." }] });
+    }
+    contents.push({ role: "user", parts: [{ text: userPrompt }] });
+
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents }),
+        signal: controller.signal,
+      }
+    );
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => "");
+      return { content: "", timeMs: Date.now() - start, timedOut: false, tokenCount: 0, error: `Gemini ${res.status}: ${errText.slice(0, 200)}` };
+    }
+
+    const reader = res.body?.getReader();
+    if (!reader) return { content: "", timeMs: Date.now() - start, timedOut: false, tokenCount: 0, error: "No response body" };
+
+    const decoder = new TextDecoder();
+    let content = "";
+    let tokenCount = 0;
+    let sseBuffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      sseBuffer += decoder.decode(value, { stream: true });
+
+      const lines = sseBuffer.split("\n");
+      sseBuffer = lines.pop() || "";
+
+      for (const line of lines) {
+        if (!line.startsWith("data: ")) continue;
+        try {
+          const data = JSON.parse(line.slice(6));
+          const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text) {
+            content += text;
+            tokenCount++;
+          }
+        } catch {}
+      }
+    }
+
+    return {
+      content,
+      timeMs: Date.now() - start,
+      timedOut: false,
+      tokenCount: Math.max(tokenCount, Math.ceil(content.length / 4)),
+    };
+  } catch (err: unknown) {
+    const elapsed = Date.now() - start;
+    if (err instanceof Error && err.name === "AbortError") {
+      if (signal.aborted) return { content: "", timeMs: elapsed, timedOut: false, tokenCount: 0, error: "Stopped by user" };
+      return { content: "", timeMs: elapsed, timedOut: true, tokenCount: 0 };
+    }
+    return { content: "", timeMs: elapsed, timedOut: false, tokenCount: 0, error: String(err) };
+  } finally {
+    clearTimeout(timer);
+    signal.removeEventListener("abort", onParentAbort);
+  }
+}
+
+// ── Log billing ─────────────────────────────────────────────────────
 
 async function logBilling(
   baseUrl: string,
@@ -162,7 +357,7 @@ async function logBilling(
         model: modelId,
         provider,
         app: "trials-cloud",
-        tokensIn: Math.ceil(tokensOut * 0.3), // Estimate input ~30% of output for prompts
+        tokensIn: Math.ceil(tokensOut * 0.3),
         tokensOut,
         durationMs,
       }),
@@ -188,7 +383,6 @@ export async function POST(request: NextRequest) {
   const baseUrl = new URL(request.url).origin;
   const abortController = new AbortController();
 
-  // Handle client disconnect
   request.signal.addEventListener("abort", () => abortController.abort());
 
   const stream = new ReadableStream({
@@ -204,20 +398,19 @@ export async function POST(request: NextRequest) {
 
       emit({
         type: "run:start",
-        message: `Cloud Forge Trials — ${models.length} models × ${scenarios.length} rounds × ${RUNS_PER_SCENARIO} runs`,
+        message: `Cloud Forge Trials — ${models.length} models × ${scenarios.length} rounds`,
         timestamp: Date.now(),
       });
 
       // ── Warmup: generate splash page to prove model is alive ──
       if (!abortController.signal.aborted && models.length > 0) {
         const firstModel = models[0];
-        const warmupResult = await callCloudModel(
-          baseUrl,
-          firstModel.id,
+        const warmupResult = await callCloudDirect(
           firstModel.provider,
+          firstModel.id,
           "You are a code builder. Output a single complete HTML file.",
           WARMUP_PROMPT,
-          30_000, // 30s timeout for warmup
+          30_000,
           abortController.signal
         );
 
@@ -231,7 +424,6 @@ export async function POST(request: NextRequest) {
             warmupHtml: warmupCode || warmupResult.content,
           });
 
-          // Log warmup billing
           const warmupCost = await logBilling(baseUrl, firstModel.id, firstModel.provider, warmupResult.tokenCount, warmupResult.timeMs);
           totalCost += warmupCost;
         }
@@ -307,17 +499,17 @@ export async function POST(request: NextRequest) {
               },
             });
 
-            const result = await callCloudModel(
-              baseUrl,
-              model.id,
+            // Direct API call — no self-fetch
+            const result = await callCloudDirect(
               model.provider,
+              model.id,
               scenario.systemPrompt,
               scenario.prompt,
               scenario.timeout,
               abortController.signal
             );
 
-            // Log billing for every cloud call
+            // Log billing
             const cost = await logBilling(
               baseUrl,
               model.id,
@@ -347,8 +539,6 @@ export async function POST(request: NextRequest) {
             });
 
             const scored = scoreResponse(result.content, scenario.validation);
-
-            // Override tier with cloud-specific thresholds
             scored.score.tier = getCloudTier(scored.score.total);
 
             runs.push({
@@ -357,7 +547,6 @@ export async function POST(request: NextRequest) {
               timedOut: result.timedOut,
             });
 
-            // Track best response (closest to median or highest score)
             if (!bestScore || scored.score.total > bestScore.total) {
               bestResponse = result.content;
               bestCode = scored.code;
@@ -379,7 +568,6 @@ export async function POST(request: NextRequest) {
                 ]
               : 0;
 
-          // Find the run closest to median score for the detailed breakdown
           let medianBreakdown: ScoreBreakdown = bestScore || {
             codeExtracted: 0,
             validHtml: 0,
@@ -447,7 +635,7 @@ export async function POST(request: NextRequest) {
           modelSize: model.provider,
           results: modelResults,
           overallScore,
-          chainCapable: true, // Cloud models are always chain-capable
+          chainCapable: true,
           tier: getCloudModelTier(overallScore),
           avgTimeMs,
         };
