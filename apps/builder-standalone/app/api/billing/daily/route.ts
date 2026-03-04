@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readUsageEntries } from "@sarge/billing";
+import { readUsageEntries } from "@sarge/billing/src/logger";
 import type { DailyTotal } from "@sarge/billing";
 
 export async function GET(req: NextRequest) {

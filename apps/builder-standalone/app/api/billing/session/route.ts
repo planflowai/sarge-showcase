@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { readSession } from "@sarge/billing";
+import { readSession } from "@sarge/billing/src/logger";
 
 export async function GET() {
   const session = await readSession();

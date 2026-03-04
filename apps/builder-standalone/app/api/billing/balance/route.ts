@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readConfig, writeConfig } from "@sarge/billing";
+import { readConfig, writeConfig } from "@sarge/billing/src/logger";
 
 export async function GET() {
   const config = await readConfig();

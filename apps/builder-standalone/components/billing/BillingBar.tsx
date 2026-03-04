@@ -2,7 +2,14 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { DollarSign } from "lucide-react";
-import { formatCost } from "@sarge/billing";
+
+/** Format cost for display — inlined to avoid @sarge/billing barrel import (logger.ts crashes client) */
+function formatCost(cost: number): string {
+  if (cost === 0) return "$0.00";
+  if (cost < 0.005) return `$${cost.toFixed(4)}`;
+  if (cost < 1) return `$${cost.toFixed(3)}`;
+  return `$${cost.toFixed(2)}`;
+}
 
 export default function BillingBar() {
   const [sessionCost, setSessionCost] = useState(0);

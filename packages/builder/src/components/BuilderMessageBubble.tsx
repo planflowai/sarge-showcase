@@ -16,7 +16,24 @@ import { Button } from "@/components/ui/button";
 import { parseFileEditProposals, type FileEditProposal } from "@sarge/core";
 import { extractSummaryFromResponse } from "../lib/builderLogger";
 import { hasEditBlocks } from "../lib/editBlockParser";
-import { formatCost, getRate } from "@sarge/billing";
+// Inlined from @sarge/billing to avoid barrel import pulling in logger.ts (fs/path crash on client)
+function formatCost(cost: number): string {
+  if (cost === 0) return "$0.00";
+  if (cost < 0.005) return `$${cost.toFixed(4)}`;
+  if (cost < 1) return `$${cost.toFixed(3)}`;
+  return `$${cost.toFixed(2)}`;
+}
+const OUTPUT_RATES: Record<string, number> = {
+  "claude-opus-4.6": 75, "claude-sonnet-4.5": 15, "claude-haiku-4.5": 4, "claude-sonnet-4.6": 15,
+  "gpt-4o": 10, "gpt-4o-mini": 0.6, "gpt-5.2": 12, "o1": 60, "o1-mini": 12,
+  "grok-4": 10, "grok-4.1-fast": 0.5,
+  "gemini-2.5-flash": 3, "gemini-3-flash": 3, "gemini-2.5-pro": 10,
+  "deepseek-chat": 0.28, "deepseek-reasoner": 2.19, "deepseek-v3": 0.28, "deepseek-r1": 2.19,
+};
+function getRate(model: string, provider: string) {
+  if (provider === "ollama" || provider === "lmstudio") return { output: 0 };
+  return { output: OUTPUT_RATES[model] || 0 };
+}
 
 /**
  * LiveStreamingContent: Renders streaming AI response in real-time

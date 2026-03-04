@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { logUsage } from "@sarge/billing";
+import { logUsage } from "@sarge/billing/src/logger";
 
 export async function POST(req: NextRequest) {
   try {

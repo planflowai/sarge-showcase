@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readUsageEntries } from "@sarge/billing";
+import { readUsageEntries } from "@sarge/billing/src/logger";
 import type { PeriodStats, ModelBreakdown, AppBreakdown } from "@sarge/billing";
 
 export async function GET(req: NextRequest) {
