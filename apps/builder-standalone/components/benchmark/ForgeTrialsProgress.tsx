@@ -14,6 +14,8 @@ interface Props {
   totalRounds: number;
   runsPerScenario: number;
   eventLogRef: RefObject<HTMLDivElement | null>;
+  isCloud?: boolean;
+  totalCost?: number;
 }
 
 export function ForgeTrialsProgress({
@@ -26,6 +28,8 @@ export function ForgeTrialsProgress({
   totalRounds,
   runsPerScenario,
   eventLogRef,
+  isCloud = false,
+  totalCost,
 }: Props) {
   // Total individual runs (models × rounds × runs per scenario)
   const totalIndividualRuns = totalModels * totalRounds * runsPerScenario;
@@ -82,6 +86,11 @@ export function ForgeTrialsProgress({
           </span>
           {running && remainingMin > 0 && (
             <span className="text-zinc-400 font-bold">~{remainingMin}m left</span>
+          )}
+          {isCloud && totalCost != null && totalCost > 0 && (
+            <span className={`font-bold font-mono ${running ? "text-amber-400" : "text-emerald-400"}`}>
+              ${totalCost.toFixed(4)}
+            </span>
           )}
           {!running && completedMedianTests > 0 && (
             <span className="text-emerald-400 font-bold">

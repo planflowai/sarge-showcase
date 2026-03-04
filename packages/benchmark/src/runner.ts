@@ -136,6 +136,12 @@ export interface BenchmarkConfig {
   resumeRunId?: string;
 }
 
+/** Cloud benchmark config — models include provider info */
+export interface CloudBenchmarkConfig {
+  models: { id: string; provider: string; name: string }[];
+  scenarioIds?: string[];
+}
+
 // ── Tier Helpers ─────────────────────────────────────────────────────
 
 export function getTier(score: number): Tier {
@@ -150,6 +156,25 @@ export function getModelTier(
   if (overallScore >= 80) return "expert";
   if (overallScore >= 65) return "strong";
   if (overallScore >= 45) return "medium";
+  if (overallScore >= 25) return "basic";
+  return "unusable";
+}
+
+// ── Cloud Tier Helpers ──────────────────────────────────────────────
+
+/** Cloud tiers use stricter thresholds: 90+ pass, 70-89 partial */
+export function getCloudTier(score: number): Tier {
+  if (score >= 90) return "pass";
+  if (score >= 70) return "partial";
+  return "fail";
+}
+
+export function getCloudModelTier(
+  overallScore: number
+): ModelScorecard["tier"] {
+  if (overallScore >= 90) return "expert";
+  if (overallScore >= 70) return "strong";
+  if (overallScore >= 50) return "medium";
   if (overallScore >= 25) return "basic";
   return "unusable";
 }

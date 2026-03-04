@@ -16,13 +16,17 @@ export type {
   BenchmarkEventType,
   BenchmarkEvent,
   BenchmarkConfig,
+  CloudBenchmarkConfig,
 } from "./runner";
 
 // Helpers
-export { getTier, getModelTier } from "./runner";
+export { getTier, getModelTier, getCloudTier, getCloudModelTier } from "./runner";
 
-// Scenarios
+// Scenarios (Local)
 export { BUILDER_SCENARIOS, getScenario, getChainGateScenario } from "./scenarios";
+
+// Scenarios (Cloud)
+export { CLOUD_SCENARIOS, getCloudScenario } from "./cloudScenarios";
 
 // Validator
 export { scoreResponse, extractCode } from "./validator";
