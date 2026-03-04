@@ -305,6 +305,7 @@ export const useBuilderChatStore = create<BuilderChatState>()(
       // Log usage to billing — fire and forget, never block chat
       try {
         const tc = tokenCount || countTokens(totalContent);
+        console.log('[Billing] Logging usage:', { model, provider, tokensOut: tc, durationMs: latencyMs });
         fetch("/api/billing/log", {
           method: "POST",
           headers: { "Content-Type": "application/json" },

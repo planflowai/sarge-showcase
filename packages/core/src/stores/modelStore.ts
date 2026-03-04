@@ -1,6 +1,7 @@
 "use client";
 
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import { providers } from "../lib/providers";
 
 export interface Model {
@@ -9,6 +10,7 @@ export interface Model {
   provider: string;
   contextWindow: number;
   isBuiltIn?: boolean;
+  status?: "active" | "error" | "unchecked";
 }
 
 export type EffectiveModel = Model;
@@ -58,159 +60,241 @@ const getInitialModels = (): Model[] => {
   return models;
 };
 
-export const useModelStore = create<ModelState>((set, get) => ({
-  models: getInitialModels(),
-  currentModel: null,
-  hydrated: false,
-  nicknames: {},
-  voicePersona: "none",
-  builderFlags: {},
-
-  hydrate: () => {
-    // Auto-tag all cloud models as builders on first hydrate
-    const state = get();
-    if (Object.keys(state.builderFlags).length === 0) {
-      const newFlags: Record<string, boolean> = {};
-      // Tag all non-ollama models as builders (cloud providers)
-      state.models.forEach(m => {
-        if (m.provider !== 'ollama') {
-          newFlags[m.id] = true;
-        }
-      });
-      set({ builderFlags: newFlags });
-    }
-
-    // Start async scan but don't block on it
-    set({ hydrated: true });
-
-    // Fetch Ollama models in the background
-    fetch('/api/models/scan')
-      .then(response => {
-        if (response.ok) {
-          return response.json();
-        }
-        throw new Error('Failed to fetch models');
-      })
-      .then(data => {
-        if (data.models && Array.isArray(data.models)) {
-          // Merge scan results with existing models
-          const existingIds = new Set(get().models.map(m => m.id));
-          const newModels = data.models.filter((m: any) => !existingIds.has(m.id));
-          if (newModels.length > 0) {
-            set((state) => {
-              // Auto-tag newly added Ollama models as builders
-              const newFlags = { ...state.builderFlags };
-              newModels.forEach((m: any) => {
-                if (m.provider === 'ollama') {
-                  newFlags[m.id] = true;
-                }
-              });
-              return {
-                models: [...state.models, ...newModels],
-                builderFlags: newFlags,
-              };
-            });
-            console.log('[modelStore] Loaded', newModels.length, 'models from API scan');
-          }
-        }
-      })
-      .catch(err => {
-        console.warn('[modelStore] Failed to scan models, using hardcoded defaults:', err);
-      });
-  },
-
-  setModels: (models) => {
-    set({ models });
-  },
-
-  setCurrentModel: (model) => {
-    set({ currentModel: model });
-  },
-
-  updateModel: (id, updates) => {
-    set((state) => ({
-      models: state.models.map((m) =>
-        m.id === id ? { ...m, ...updates } : m
-      ),
-    }));
-  },
-
-  addModel: (providerId, modelId, modelName) => {
-    set((state) => ({
-      models: [
-        ...state.models,
-        {
-          id: modelId,
-          name: modelName,
-          provider: providerId,
-          contextWindow: 4096,
-        },
-      ],
-    }));
-  },
-
-  removeModel: (providerId, modelId) => {
-    set((state) => ({
-      models: state.models.filter((m) => m.id !== modelId),
-    }));
-  },
-
-  getEffectiveModels: (providerId) => {
-    const state = get();
-    const allModels = state.models && state.models.length > 0 ? state.models : [];
-    if (providerId) {
-      return allModels.filter((m) => m.provider === providerId);
-    }
-    return allModels;
-  },
-
-  getDisplayName: (modelId, fallbackName) => {
-    const state = get();
-    const model = state.models.find((m) => m.id === modelId);
-    return model ? model.name : (fallbackName || modelId);
-  },
-
-  getBuilderModels: () => {
-    const state = get();
-    return state.models.filter((m) => state.builderFlags[m.id]);
-  },
-
-  setNickname: (modelId, nickname) => {
-    set((state) => ({
-      nicknames: { ...state.nicknames, [modelId]: nickname },
-    }));
-  },
-
-  removeNickname: (modelId) => {
-    set((state) => {
-      const newNicknames = { ...state.nicknames };
-      delete newNicknames[modelId];
-      return { nicknames: newNicknames };
-    });
-  },
-
-  setVoicePersona: (persona) => {
-    set({ voicePersona: persona });
-  },
-
-  setBuilderFlag: (modelId, isBuilder, providerId) => {
-    set((state) => ({
-      builderFlags: { ...state.builderFlags, [modelId]: isBuilder },
-    }));
-  },
-
-  isBuilderModel: (modelId, providerId) => {
-    const state = get();
-    return state.builderFlags[modelId] || false;
-  },
-
-  clearAll: () => {
-    set({
-      models: [],
+export const useModelStore = create<ModelState>()(
+  persist(
+    (set, get) => ({
+      models: getInitialModels(),
       currentModel: null,
+      hydrated: false,
       nicknames: {},
       voicePersona: "none",
       builderFlags: {},
+
+      hydrate: () => {
+        // Auto-tag cloud models as builders if they don't have a flag yet
+        const state = get();
+        const newFlags: Record<string, boolean> = { ...state.builderFlags };
+        let changed = false;
+        state.models.forEach(m => {
+          if (m.provider !== 'ollama' && m.provider !== 'lmstudio' && newFlags[m.id] === undefined) {
+            newFlags[m.id] = true;
+            changed = true;
+          }
+        });
+        if (changed) {
+          set({ builderFlags: newFlags });
+        }
+
+        // Start async scan but don't block on it
+        set({ hydrated: true });
+
+        // Fetch Ollama models in the background
+        fetch('/api/models/scan')
+          .then(response => {
+            if (response.ok) {
+              return response.json();
+            }
+            throw new Error('Failed to fetch models');
+          })
+          .then(data => {
+            if (data.models && Array.isArray(data.models)) {
+              // Merge scan results with existing models
+              const existingIds = new Set(get().models.map(m => m.id));
+              const newModels = data.models.filter((m: any) => !existingIds.has(m.id));
+              if (newModels.length > 0) {
+                set((state) => {
+                  // Auto-tag newly added Ollama models as builders
+                  const flags = { ...state.builderFlags };
+                  newModels.forEach((m: any) => {
+                    if (m.provider === 'ollama') {
+                      flags[m.id] = true;
+                    }
+                  });
+                  return {
+                    models: [...state.models, ...newModels],
+                    builderFlags: flags,
+                  };
+                });
+                console.log('[modelStore] Loaded', newModels.length, 'models from API scan');
+              }
+            }
+          })
+          .catch(err => {
+            console.warn('[modelStore] Failed to scan models, using hardcoded defaults:', err);
+          });
+      },
+
+      setModels: (models) => {
+        set({ models });
+      },
+
+      setCurrentModel: (model) => {
+        set({ currentModel: model });
+      },
+
+      updateModel: (id, updates) => {
+        set((state) => ({
+          models: state.models.map((m) =>
+            m.id === id ? { ...m, ...updates } : m
+          ),
+        }));
+      },
+
+      addModel: (providerId, modelId, modelName) => {
+        const existing = get().models.find(m => m.id === modelId && m.provider === providerId);
+        if (existing) return; // Already exists
+
+        set((state) => ({
+          models: [
+            ...state.models,
+            {
+              id: modelId,
+              name: modelName,
+              provider: providerId,
+              contextWindow: 4096,
+              status: "unchecked" as const,
+            },
+          ],
+          // Auto-tag new cloud models as builders
+          builderFlags: {
+            ...state.builderFlags,
+            [modelId]: providerId !== 'ollama' && providerId !== 'lmstudio',
+          },
+        }));
+
+        // Verify the model works — fire and forget
+        verifyModel(modelId, providerId).then(ok => {
+          set((state) => ({
+            models: state.models.map(m =>
+              m.id === modelId && m.provider === providerId
+                ? { ...m, status: ok ? "active" as const : "error" as const }
+                : m
+            ),
+          }));
+          if (ok) {
+            console.log(`[modelStore] Model verified: ${modelId}`);
+          } else {
+            console.warn(`[modelStore] Model failed verification: ${modelId}`);
+          }
+        });
+      },
+
+      removeModel: (providerId, modelId) => {
+        set((state) => ({
+          models: state.models.filter((m) => !(m.id === modelId && m.provider === providerId)),
+        }));
+      },
+
+      getEffectiveModels: (providerId) => {
+        const state = get();
+        const allModels = state.models && state.models.length > 0 ? state.models : [];
+        if (providerId) {
+          return allModels.filter((m) => m.provider === providerId);
+        }
+        return allModels;
+      },
+
+      getDisplayName: (modelId, fallbackName) => {
+        const state = get();
+        const model = state.models.find((m) => m.id === modelId);
+        return model ? model.name : (fallbackName || modelId);
+      },
+
+      getBuilderModels: () => {
+        const state = get();
+        return state.models.filter((m) => state.builderFlags[m.id]);
+      },
+
+      setNickname: (modelId, nickname) => {
+        set((state) => ({
+          nicknames: { ...state.nicknames, [modelId]: nickname },
+        }));
+      },
+
+      removeNickname: (modelId) => {
+        set((state) => {
+          const newNicknames = { ...state.nicknames };
+          delete newNicknames[modelId];
+          return { nicknames: newNicknames };
+        });
+      },
+
+      setVoicePersona: (persona) => {
+        set({ voicePersona: persona });
+      },
+
+      setBuilderFlag: (modelId, isBuilder, providerId) => {
+        set((state) => ({
+          builderFlags: { ...state.builderFlags, [modelId]: isBuilder },
+        }));
+      },
+
+      isBuilderModel: (modelId, providerId) => {
+        const state = get();
+        return state.builderFlags[modelId] || false;
+      },
+
+      clearAll: () => {
+        set({
+          models: getInitialModels(),
+          currentModel: null,
+          nicknames: {},
+          voicePersona: "none",
+          builderFlags: {},
+        });
+      },
+    }),
+    {
+      name: "model-store",
+      partialize: (state) => ({
+        // Only persist custom (non-built-in) models, flags, nicknames
+        models: state.models.filter(m => !m.isBuiltIn),
+        builderFlags: state.builderFlags,
+        nicknames: state.nicknames,
+        voicePersona: state.voicePersona,
+      }),
+      merge: (persisted: any, current) => {
+        const customModels: Model[] = persisted?.models || [];
+        // Merge built-in models with persisted custom models (no duplicates)
+        const builtInIds = new Set(current.models.map(m => m.id));
+        const merged = [
+          ...current.models,
+          ...customModels.filter(m => !builtInIds.has(m.id)),
+        ];
+        return {
+          ...current,
+          models: merged,
+          builderFlags: { ...current.builderFlags, ...(persisted?.builderFlags || {}) },
+          nicknames: { ...current.nicknames, ...(persisted?.nicknames || {}) },
+          voicePersona: persisted?.voicePersona || current.voicePersona,
+        };
+      },
+    }
+  )
+);
+
+/** Quick check if a model responds. Returns true if the provider accepts it. */
+async function verifyModel(modelId: string, provider: string): Promise<boolean> {
+  try {
+    const res = await fetch("/api/test/stream", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: modelId,
+        provider,
+        prompt: "Hi",
+        systemPrompt: "Reply with OK",
+        source: provider === "ollama" || provider === "lmstudio" ? "local" : "cloud",
+      }),
     });
-  },
-}));
+    if (!res.ok) return false;
+    // Read just enough to confirm it streams
+    const reader = res.body?.getReader();
+    if (!reader) return false;
+    const { done, value } = await reader.read();
+    reader.cancel();
+    return !done && value && value.length > 0;
+  } catch {
+    return false;
+  }
+}
