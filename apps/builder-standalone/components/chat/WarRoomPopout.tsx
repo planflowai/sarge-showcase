@@ -92,6 +92,7 @@ export function WarRoomPopout({
     setCurrentStream("");
 
     const ch = new BroadcastChannel("sarge-warroom");
+    const _billingStart = Date.now();
 
     // Signal start
     ch.postMessage({ type: "RESPONSE_START", payload: { slotId } });
@@ -178,6 +179,24 @@ export function WarRoomPopout({
       setMessages((prev) => [...prev, { role: "assistant", content: fullText }]);
       setCurrentStream("");
       ch.postMessage({ type: "RESPONSE_DONE", payload: { slotId, tokens: tokenCount } });
+
+      // Log usage to billing — fire and forget
+      try {
+        if (currentProvider !== "ollama" && currentProvider !== "lmstudio") {
+          fetch("/api/billing/log", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              model: currentModel,
+              provider: currentProvider,
+              app: "war-room",
+              tokensIn: 0,
+              tokensOut: tokenCount,
+              durationMs: Date.now() - _billingStart,
+            }),
+          }).catch(() => {});
+        }
+      } catch {}
     } catch (err: any) {
       if (err.name !== "AbortError") {
         ch.postMessage({ type: "RESPONSE_DONE", payload: { slotId, error: true } });

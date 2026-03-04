@@ -280,6 +280,24 @@ export const useParallelChatStore = create<ParallelChatState>()(persist((set, ge
         latencyMs,
       };
 
+      // Log usage to billing — fire and forget
+      try {
+        if (column.provider !== "ollama" && column.provider !== "lmstudio") {
+          fetch("/api/billing/log", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              model: column.model,
+              provider: column.provider,
+              app: "multi-chat",
+              tokensIn: 0,
+              tokensOut: data.tokens || 0,
+              durationMs: latencyMs,
+            }),
+          }).catch(() => {});
+        }
+      } catch {}
+
       // Queue response for Jury Guardian monitoring
       queueResponse(columnId, {
         messageId: assistantMessage.id,

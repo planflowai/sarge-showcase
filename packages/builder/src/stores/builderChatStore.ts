@@ -399,6 +399,24 @@ export const useBuilderChatStore = create<BuilderChatState>()(
       };
       addMessage(imageMessage);
 
+      // Log image generation to billing — fire and forget
+      try {
+        if (provider !== "ollama" && provider !== "lmstudio") {
+          fetch("/api/billing/log", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              model: model || "image-gen",
+              provider,
+              app: "builder-image",
+              tokensIn: 0,
+              tokensOut: 1000,
+              durationMs: latencyMs,
+            }),
+          }).catch(() => {});
+        }
+      } catch {}
+
       set({ sending: false });
       return data.imageUrl;
     } catch (err) {

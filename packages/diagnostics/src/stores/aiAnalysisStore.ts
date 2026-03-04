@@ -614,6 +614,24 @@ export const useAIAnalysisStore = create<AIAnalysisState>()(
             latencyMs,
           };
           await aiChatAddMessage(assistantMessage);
+
+          // Log usage to billing — fire and forget
+          try {
+            if (provider !== "ollama" && provider !== "lmstudio") {
+              fetch("/api/billing/log", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  model,
+                  provider,
+                  app: "diagnostics",
+                  tokensIn: 0,
+                  tokensOut: data.tokens || 0,
+                  durationMs: latencyMs,
+                }),
+              }).catch(() => {});
+            }
+          } catch {}
         } catch (err) {
           console.error("[AI Chat] Error:", err);
           const errorMessage: AIChatMessage = {

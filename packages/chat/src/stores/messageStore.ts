@@ -414,6 +414,27 @@ export const useMessageStore = create<MessageState>()(
 
       await addMessage(assistantMessage);
 
+      // Log usage to billing — fire and forget, never block chat
+      try {
+        const tc = response.tokens || countTokens(response.content);
+        const effectiveProvider = fallbackInfo?.fallbackProvider || provider;
+        const effectiveModel = fallbackInfo?.fallbackModel || model;
+        if (effectiveProvider !== "ollama" && effectiveProvider !== "lmstudio") {
+          fetch("/api/billing/log", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              model: effectiveModel,
+              provider: effectiveProvider,
+              app: "chat",
+              tokensIn: 0,
+              tokensOut: tc,
+              durationMs: latencyMs,
+            }),
+          }).catch(() => {});
+        }
+      } catch {}
+
       // Track model attribution for Thread Guardian
       try {
         const guardianStore = useThreadGuardianStore.getState();
@@ -505,6 +526,24 @@ export const useMessageStore = create<MessageState>()(
         imageUrl: data.imageUrl,
       };
       await addMessage(imageMessage);
+
+      // Log image generation to billing
+      try {
+        if (provider !== "ollama" && provider !== "lmstudio") {
+          fetch("/api/billing/log", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              model: model || "image-gen",
+              provider,
+              app: "chat-image",
+              tokensIn: 0,
+              tokensOut: 1000, // Approximate for image gen
+              durationMs: latencyMs,
+            }),
+          }).catch(() => {});
+        }
+      } catch {}
     } catch (err) {
       console.error("[generateImage] Error:", err);
       const errorMessage: Message = {

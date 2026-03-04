@@ -118,6 +118,7 @@ export function WorkbenchPopout({ slotNum, monitorNumber, provider: initProvider
     // Prepend builder system instructions to the user prompt
     const fullPrompt = `${BUILDER_SYSTEM}\n\nUser request: ${prompt}`;
 
+    const _billingStart = Date.now();
     try {
       const source = prov === "ollama" || prov === "lmstudio" ? "local" : prov;
       const res = await fetch("/api/test/stream", {
@@ -194,6 +195,24 @@ export function WorkbenchPopout({ slotNum, monitorNumber, provider: initProvider
 
       setMessages((prev) => [...prev, { role: "assistant", content: fullText }]);
       ch.postMessage({ type: "STATUS", slot: slotNum, status: "complete" });
+
+      // Log usage to billing — fire and forget
+      try {
+        if (prov !== "ollama" && prov !== "lmstudio") {
+          fetch("/api/billing/log", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              model,
+              provider: prov,
+              app: "workbench-popout",
+              tokensIn: 0,
+              tokensOut: fullText.split(/\s+/).length,
+              durationMs: Date.now() - _billingStart,
+            }),
+          }).catch(() => {});
+        }
+      } catch {}
     } catch (err: any) {
       if (err?.name !== "AbortError") {
         setMessages((prev) => [...prev, { role: "assistant", content: `Error: ${err?.message ?? "Unknown"}` }]);

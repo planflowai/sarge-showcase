@@ -343,6 +343,7 @@ export async function* runDebate(
 
       // Stream agent response with real-time chunk yields
       let agentContent = "";
+      const _agentBillingStart = Date.now();
       try {
         for await (const chunk of callLLMStream(
           agent.provider,
@@ -368,6 +369,24 @@ export async function* runDebate(
         };
         return;
       }
+
+      // Log usage to billing — fire and forget
+      try {
+        if (agent.provider !== "ollama" && agent.provider !== "lmstudio") {
+          fetch("/api/billing/log", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              model: agent.model,
+              provider: agent.provider,
+              app: "debate",
+              tokensIn: 0,
+              tokensOut: agentContent.split(/\s+/).length,
+              durationMs: Date.now() - _agentBillingStart,
+            }),
+          }).catch(() => {});
+        }
+      } catch {}
 
       // Store response
       roundResponses.push({
@@ -419,6 +438,7 @@ export async function* runDebate(
 
     // Stream judge verdict for this round
     let judgeSummary = "";
+    const _judgeBillingStart = Date.now();
     try {
       for await (const chunk of callLLMStream(
         config.judge.provider,
@@ -443,6 +463,24 @@ export async function* runDebate(
       };
       return;
     }
+
+    // Log judge usage to billing — fire and forget
+    try {
+      if (config.judge.provider !== "ollama" && config.judge.provider !== "lmstudio") {
+        fetch("/api/billing/log", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: config.judge.model,
+            provider: config.judge.provider,
+            app: "debate-judge",
+            tokensIn: 0,
+            tokensOut: judgeSummary.split(/\s+/).length,
+            durationMs: Date.now() - _judgeBillingStart,
+          }),
+        }).catch(() => {});
+      }
+    } catch {}
 
     // Store judge summary for this round
     roundSummaries.push({

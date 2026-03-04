@@ -213,6 +213,24 @@ async function streamSlot(
     const tps = elapsed > 0 ? tokenCount / elapsed : 0;
     useWorkbenchStore.getState().setSlotMetrics(slot.slot, tokenCount, Math.round(tps * 10) / 10);
 
+    // Log usage to billing — fire and forget
+    try {
+      if (slot.provider !== "ollama" && slot.provider !== "lmstudio") {
+        fetch("/api/billing/log", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: slot.model,
+            provider: slot.provider,
+            app: "pit-workspace",
+            tokensIn: 0,
+            tokensOut: tokenCount,
+            durationMs: Date.now() - startTime,
+          }),
+        }).catch(() => {});
+      }
+    } catch {}
+
   } catch (err: any) {
     if (err?.name === "AbortError") {
       useWorkbenchStore.getState().setSlotStatus(slot.slot, "idle");
