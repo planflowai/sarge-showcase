@@ -19,7 +19,7 @@ import {
   type ScoreBreakdown,
 } from "@sarge/benchmark";
 
-const RUNS_PER_SCENARIO = 3;
+const RUNS_PER_SCENARIO = 1; // Cloud models are consistent — 1 run per scenario to minimize cost
 
 // ── Call cloud model via internal /api/test/stream endpoint ──────────
 
@@ -73,13 +73,45 @@ async function callCloudModel(
     const decoder = new TextDecoder();
     let content = "";
     let tokenCount = 0;
+    let buffer = "";
 
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-      const chunk = decoder.decode(value, { stream: true });
-      content += chunk;
-      tokenCount++;
+      buffer += decoder.decode(value, { stream: true });
+
+      // Parse NDJSON lines: each line is {"message":{"content":"token"}}
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || ""; // Keep incomplete line in buffer
+
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        try {
+          const parsed = JSON.parse(line);
+          const text = parsed?.message?.content || parsed?.message?.reasoning_content || "";
+          if (text) {
+            content += text;
+            tokenCount++;
+          }
+        } catch {
+          // Not valid JSON — append raw (fallback)
+          content += line;
+        }
+      }
+    }
+
+    // Process any remaining buffer
+    if (buffer.trim()) {
+      try {
+        const parsed = JSON.parse(buffer);
+        const text = parsed?.message?.content || parsed?.message?.reasoning_content || "";
+        if (text) {
+          content += text;
+          tokenCount++;
+        }
+      } catch {
+        content += buffer;
+      }
     }
 
     return {

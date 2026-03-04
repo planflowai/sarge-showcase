@@ -417,7 +417,7 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
         results={activeResults}
         totalModels={activeModels.length}
         totalRounds={activeScenarios.length}
-        runsPerScenario={3}
+        runsPerScenario={isCloud ? 1 : 3}
         eventLogRef={eventLogRef}
         isCloud={isCloud}
         totalCost={isCloud ? cloudTotalCost : undefined}
