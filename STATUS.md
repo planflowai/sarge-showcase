@@ -251,7 +251,8 @@ Tag: working-2026-03-02-deploy-fix (last tagged)
 
 | Date | Commit | Change |
 |------|--------|--------|
-| Mar 5 | pending | Truth Anchor system (spec lock + SHA-256 hash + per-step verification), 3-strike model escalation (retry → swap → escalate), handoff protocol (brief injection + fast-fail), user-language build log (emoji status, plain English, min 13px), Truth Anchor UI card, strike badges in breakdown |
+| Mar 5 | pending | Build log font size (14px min, timestamps 12px), collapsible sections (Assessment/Violations collapsed, Compiler expanded, breakdown steps collapsible with summaries), copy buttons (Build Log, Assessment, Code, Truth Anchor, Copy Full Report) |
+| Mar 5 | 329f2eb | Truth Anchor system (spec lock + SHA-256 hash + per-step verification), 3-strike model escalation (retry → swap → escalate), handoff protocol (brief injection + fast-fail), user-language build log (emoji status, plain English, min 13px), Truth Anchor UI card, strike badges in breakdown |
 | Mar 5 | c00a1eb | Guardian enforces regression blocks (REJECTED event + lastGoodCode), compiler extractScores reads all 4 Lighthouse categories with fallback paths |
 | Mar 5 | ded0c25 | iframe nav postMessage bridge, compiler extractScores fix, TS7053 keyof casts — all Forge Trials fixes |
 | Mar 5 | 61c7f22 | Delete 3 unmaintained apps + fix remaining 21 — 0 errors achieved (141 → 0) |
