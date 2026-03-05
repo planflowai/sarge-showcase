@@ -430,6 +430,9 @@ export default function SettingsPage() {
   const [testResults, setTestResults] = useState<Record<string, "ok" | "fail" | null>>({});
   const [testingModel, setTestingModel] = useState<string | null>(null);
   const [modelTestResults, setModelTestResults] = useState<Record<string, { status: "ok" | "fail"; error?: string } | null>>({});
+  const [fetchingModels, setFetchingModels] = useState<string | null>(null);
+  const [fetchedModels, setFetchedModels] = useState<Record<string, { id: string; name: string; owned_by?: string }[]>>({});
+  const [fetchError, setFetchError] = useState<Record<string, string>>({});
 
   const { prompts, hydrated: promptsHydrated, hydrate: hydratePrompts, addPrompt, updatePrompt, deletePrompt } = usePromptStore();
   const [newPromptName, setNewPromptName] = useState("");
@@ -551,6 +554,29 @@ export default function SettingsPage() {
       setModelTestResults((prev) => ({ ...prev, [key]: { status: "fail", error: err instanceof Error ? err.message : "Connection failed" } }));
     } finally {
       setTestingModel(null);
+    }
+  };
+
+  const handleFetchModels = async (cp: { id: string; baseUrl: string; envKeyName: string }) => {
+    if (fetchingModels === cp.id) return;
+    setFetchingModels(cp.id);
+    setFetchError((prev) => ({ ...prev, [cp.id]: "" }));
+    try {
+      const res = await fetch("/api/providers/list-models", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ baseUrl: cp.baseUrl, envKeyName: cp.envKeyName }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setFetchError((prev) => ({ ...prev, [cp.id]: data.error || `Error ${res.status}` }));
+        return;
+      }
+      setFetchedModels((prev) => ({ ...prev, [cp.id]: data.models || [] }));
+    } catch (err: any) {
+      setFetchError((prev) => ({ ...prev, [cp.id]: err.message || "Fetch failed" }));
+    } finally {
+      setFetchingModels(null);
     }
   };
 
@@ -804,27 +830,46 @@ export default function SettingsPage() {
                           <div>Base URL: <span className="text-zinc-400 font-mono">{cp.baseUrl}</span></div>
                           <div>API Key: <span className="text-zinc-400 font-mono">{cp.envKeyName}</span></div>
                         </div>
-                        <button
-                          onClick={() => handleTestCustomProvider(cp)}
-                          disabled={testingProvider === cp.id || cp.models.length === 0}
-                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all disabled:opacity-40 ${
-                            testResults[cp.id] === "ok"
-                              ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-400"
-                              : testResults[cp.id] === "fail"
-                              ? "bg-red-500/15 border-red-500/40 text-red-400"
-                              : "bg-zinc-800 border-zinc-600 text-zinc-300 hover:border-[#FF6700]/50 hover:text-[#FFD700]"
-                          }`}
-                        >
-                          {testingProvider === cp.id ? (
-                            <><Loader2 className="h-3 w-3 animate-spin" /> Testing...</>
-                          ) : testResults[cp.id] === "ok" ? (
-                            <><Zap className="h-3 w-3" /> Connected</>
-                          ) : testResults[cp.id] === "fail" ? (
-                            <><Zap className="h-3 w-3" /> Failed</>
-                          ) : (
-                            <><Zap className="h-3 w-3" /> Test Connection</>
-                          )}
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleFetchModels(cp)}
+                            disabled={fetchingModels === cp.id}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all disabled:opacity-40 ${
+                              fetchedModels[cp.id]?.length
+                                ? "bg-indigo-500/15 border-indigo-500/40 text-indigo-400"
+                                : "bg-zinc-800 border-zinc-600 text-zinc-300 hover:border-indigo-500/50 hover:text-indigo-400"
+                            }`}
+                          >
+                            {fetchingModels === cp.id ? (
+                              <><Loader2 className="h-3 w-3 animate-spin" /> Fetching...</>
+                            ) : fetchedModels[cp.id]?.length ? (
+                              <><Database className="h-3 w-3" /> {fetchedModels[cp.id].length} Available</>
+                            ) : (
+                              <><Database className="h-3 w-3" /> Fetch Models</>
+                            )}
+                          </button>
+                          <button
+                            onClick={() => handleTestCustomProvider(cp)}
+                            disabled={testingProvider === cp.id || cp.models.length === 0}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all disabled:opacity-40 ${
+                              testResults[cp.id] === "ok"
+                                ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-400"
+                                : testResults[cp.id] === "fail"
+                                ? "bg-red-500/15 border-red-500/40 text-red-400"
+                                : "bg-zinc-800 border-zinc-600 text-zinc-300 hover:border-[#FF6700]/50 hover:text-[#FFD700]"
+                            }`}
+                          >
+                            {testingProvider === cp.id ? (
+                              <><Loader2 className="h-3 w-3 animate-spin" /> Testing...</>
+                            ) : testResults[cp.id] === "ok" ? (
+                              <><Zap className="h-3 w-3" /> Connected</>
+                            ) : testResults[cp.id] === "fail" ? (
+                              <><Zap className="h-3 w-3" /> Failed</>
+                            ) : (
+                              <><Zap className="h-3 w-3" /> Test Connection</>
+                            )}
+                          </button>
+                        </div>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
                         {cpModels.map((m) => (
@@ -850,6 +895,64 @@ export default function SettingsPage() {
                           </div>
                         ))}
                       </div>
+                      {/* Fetch error */}
+                      {fetchError[cp.id] && (
+                        <div className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+                          {fetchError[cp.id]}
+                        </div>
+                      )}
+                      {/* Fetched models from API */}
+                      {fetchedModels[cp.id]?.length > 0 && (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">Available from API ({fetchedModels[cp.id].length})</span>
+                            <button
+                              onClick={() => {
+                                let added = 0;
+                                for (const m of fetchedModels[cp.id]) {
+                                  if (!cpModels.some((existing) => existing.id === m.id)) {
+                                    addModelToProvider(cp.id, { id: m.id, name: m.name });
+                                    addModel(cp.id, m.id, m.name);
+                                    added++;
+                                  }
+                                }
+                                if (added > 0) setFetchedModels((prev) => ({ ...prev, [cp.id]: [] }));
+                              }}
+                              className="text-[10px] font-bold text-indigo-400 hover:text-indigo-300 px-2 py-0.5 rounded border border-indigo-500/30 hover:border-indigo-500/50 transition-colors"
+                            >
+                              Add All New
+                            </button>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1.5 max-h-48 overflow-y-auto">
+                            {fetchedModels[cp.id].map((m) => {
+                              const alreadyAdded = cpModels.some((existing) => existing.id === m.id);
+                              return (
+                                <div
+                                  key={m.id}
+                                  className={`flex items-center gap-2 rounded border px-2 py-1.5 text-xs ${
+                                    alreadyAdded
+                                      ? "border-emerald-500/30 bg-emerald-500/5 text-zinc-500"
+                                      : "border-indigo-500/20 bg-indigo-500/5 hover:border-indigo-500/40 cursor-pointer text-zinc-300"
+                                  }`}
+                                  onClick={() => {
+                                    if (alreadyAdded) return;
+                                    addModelToProvider(cp.id, { id: m.id, name: m.name });
+                                    addModel(cp.id, m.id, m.name);
+                                  }}
+                                >
+                                  <span className="flex-1 truncate font-mono text-[10px]">{m.id}</span>
+                                  {m.owned_by && <span className="text-[9px] text-zinc-500 flex-shrink-0">{m.owned_by}</span>}
+                                  {alreadyAdded ? (
+                                    <span className="text-[9px] text-emerald-500 flex-shrink-0">added</span>
+                                  ) : (
+                                    <Plus className="h-3 w-3 text-indigo-400 flex-shrink-0" />
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                       {/* Add model + delete provider row */}
                       <div className="flex items-center gap-2 pt-3 border-t border-zinc-300/50 dark:border-zinc-700/50">
                         <Input placeholder="Model ID" value={customNewModelId} onChange={(e) => setCustomNewModelId(e.target.value)} className={`flex-1 text-xs h-8 max-w-[200px] ${inputCls}`} />

@@ -90,6 +90,7 @@ interface BenchmarkState {
   hybridMode: "recommended" | "custom";
   hybridChains: HybridChain[];
   hybridResults: HybridChainResult[];
+  hybridPastRuns: HybridChainResult[];
   hybridEvents: HybridEvent[];
   hybridAbortController: AbortController | null;
   hybridTotalCost: number;
@@ -103,6 +104,8 @@ interface BenchmarkState {
   hybridAddEvent: (event: HybridEvent) => void;
   hybridSetAbortController: (ctrl: AbortController | null) => void;
   hybridSetTotalCost: (cost: number) => void;
+  hybridSaveRun: () => void;
+  hybridClearPastRuns: () => void;
   hybridReset: () => void;
 
   clearAll: () => void;
@@ -144,6 +147,7 @@ const HYBRID_INITIAL = {
   hybridMode: "recommended" as "recommended" | "custom",
   hybridChains: [] as HybridChain[],
   hybridResults: [] as HybridChainResult[],
+  hybridPastRuns: [] as HybridChainResult[],
   hybridEvents: [] as HybridEvent[],
   hybridAbortController: null as AbortController | null,
   hybridTotalCost: 0,
@@ -282,7 +286,17 @@ export const useBenchmarkStore = create<BenchmarkState>()(
         set((s) => ({ hybridEvents: [...s.hybridEvents.slice(-200), event] })),
       hybridSetAbortController: (ctrl) => set({ hybridAbortController: ctrl }),
       hybridSetTotalCost: (cost) => set({ hybridTotalCost: cost }),
-      hybridReset: () => set(HYBRID_INITIAL),
+      hybridSaveRun: () =>
+        set((s) => ({
+          hybridPastRuns: [...s.hybridResults, ...s.hybridPastRuns].slice(0, 50),
+        })),
+      hybridClearPastRuns: () => set({ hybridPastRuns: [] }),
+      hybridReset: () =>
+        set((s) => ({
+          ...HYBRID_INITIAL,
+          // Preserve saved runs across resets
+          hybridPastRuns: s.hybridPastRuns,
+        })),
 
       clearAll: () => set({ ...LOCAL_INITIAL, ...CLOUD_INITIAL, ...HYBRID_INITIAL, activeTab: "local" as TrialsTab }),
     }),
@@ -314,6 +328,7 @@ export const useBenchmarkStore = create<BenchmarkState>()(
           hybridMode: s.hybridMode,
           hybridChains: s.hybridChains,
           hybridResults: s.hybridResults,
+          hybridPastRuns: s.hybridPastRuns,
         };
       },
     }

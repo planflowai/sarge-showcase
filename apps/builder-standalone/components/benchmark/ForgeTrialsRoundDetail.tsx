@@ -92,6 +92,16 @@ export function ForgeTrialsRoundDetail({
     return { value: 0, calc: false };
   }, [result, provider]);
 
+  // Model summary (built from all results for selected model) — must be before early returns
+  const modelResults = result
+    ? allResults.filter((r) => r.modelId === result.modelId)
+    : [];
+  const modelSummary = useMemo(
+    () => buildModelSummary(modelResults, allScenarios),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [modelResults.length, allScenarios.length, result?.modelId]
+  );
+
   // ── Running state: show warmup HTML or live splash ──
   if (!result && running) {
     if (isCloud && warmupHtml) {
@@ -167,16 +177,6 @@ export function ForgeTrialsRoundDetail({
 
   // Round explainer sentence
   const roundExplainer = scenario ? ROUND_EXPLAINERS[scenario.id] : null;
-
-  // Model summary (built from all results for selected model)
-  const modelResults = result
-    ? allResults.filter((r) => r.modelId === result.modelId)
-    : [];
-  const modelSummary = useMemo(
-    () => buildModelSummary(modelResults, allScenarios),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [modelResults.length, allScenarios.length, result?.modelId]
-  );
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: "preview", label: "Preview", icon: <Eye className="w-3.5 h-3.5" /> },

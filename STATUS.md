@@ -228,6 +228,8 @@ Tag: working-2026-03-02-deploy-fix (last tagged)
 | Case-insensitive keywords | Works | Scoring no longer penalizes "faq" vs "FAQ" — all keyword matching is case-insensitive |
 | Anthropic API version | Reverted | 2024-06-01 is invalid — reverted to 2023-06-01 (the only valid version) |
 | Model ping tester | Works | "Test" button on every model in Settings — shows OK/FAIL with error message |
+| Hybrid pastRuns persistence | Works | hybridPastRuns[] in store, persisted via partialize, auto-saved on run complete |
+| Hybrid Saved Trial Data viewer | Works | Collapsible panel in Hybrid tab — grade, scores, date, step progression, JSON export |
 | Remaining cloud models | **Not started** | Gemini, Grok, GPT, Claude — next step |
 | Local trials (Ollama) | **Not tested this session** | 15 scenarios, Ollama backend |
 | Routing summary layer | **Not started** | Depends on complete score matrix |
@@ -236,7 +238,8 @@ Tag: working-2026-03-02-deploy-fix (last tagged)
 
 | Date | Commit | Change |
 |------|--------|--------|
-| Mar 4 | (latest) | Token limits equalized, case-insensitive keywords, Anthropic API 2024-06-01, model ping tester |
+| Mar 4 | (latest) | Hybrid pastRuns persistence + Saved Trial Data viewer + hooks fix + fetch models API |
+| Mar 4 | db898ca | Token limits equalized, case-insensitive keywords, Anthropic API revert, model ping tester |
 | Mar 4 | 0a96600 | Forge Trials — round explainers, criterion explainers, score context, model summary card |
 | Mar 4 | c848430 | Fix cloud trials DeepSeek — timeout content preservation, 180s timeout, diagnostics |
 | Mar 3 | 1dc1f1a | Fix cloud trials — extractCode HTML detection, reasoning token separation, direct API calls |

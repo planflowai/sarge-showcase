@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useMemo } from "react";
 import {
   Play, Square, Plus, Minus, Zap, Wand2, Layers, ChevronDown, ChevronRight,
-  Loader2, Check, X, Edit3,
+  Loader2, Check, X, Edit3, Download, Archive,
 } from "lucide-react";
 import { useBenchmarkStore } from "@/lib/stores/benchmarkStore";
 import { useModelStore } from "@sarge/core";
@@ -14,6 +14,8 @@ import {
   type HybridEvent,
   type HybridChainResult,
   type HybridBenchmarkConfig,
+  getLetterGrade,
+  getGradeColor,
 } from "@sarge/benchmark";
 
 const DEFAULT_ROLES = ["Scaffold", "Enhance", "Refactor", "Finish", "Polish"];
@@ -57,6 +59,9 @@ export function ForgeTrialsHybrid() {
     hybridSetAbortController,
     hybridSetTotalCost,
     hybridReset,
+    hybridPastRuns,
+    hybridSaveRun,
+    hybridClearPastRuns,
     // Cloud scorecards for recommended mode
     cloudScorecards,
     scorecards: localScorecards,
@@ -68,6 +73,7 @@ export function ForgeTrialsHybrid() {
   const [selectedScenario, setSelectedScenario] = useState("cloud-r1-restaurant");
   const [customPrompt, setCustomPrompt] = useState("");
   const [expandedChain, setExpandedChain] = useState<string | null>(null);
+  const [showPastRuns, setShowPastRuns] = useState(false);
 
   // Available models: merge model store + completed trial scorecards
   // This ensures local models that completed trials appear even if not in model store
@@ -394,12 +400,17 @@ export function ForgeTrialsHybrid() {
           } catch {}
         }
       }
+      // Auto-save completed results to pastRuns
+      // Use setTimeout to let final hybridAddResult flush to store
+      setTimeout(() => hybridSaveRun(), 100);
     } catch (err: unknown) {
       if (err instanceof Error && err.name === "AbortError") {
         hybridAddEvent({ type: "hybrid:stopped", message: "Hybrid Trials stopped.", timestamp: Date.now() });
+        // Save partial results on abort too
+        setTimeout(() => hybridSaveRun(), 100);
       }
     }
-  }, [hybridChains, selectedScenario, customPrompt, hybridStartRun, hybridStopRun, hybridAddResult, hybridAddEvent, hybridSetAbortController, hybridSetTotalCost]);
+  }, [hybridChains, selectedScenario, customPrompt, hybridStartRun, hybridStopRun, hybridAddResult, hybridAddEvent, hybridSetAbortController, hybridSetTotalCost, hybridSaveRun]);
 
   // ── Find result for a chain ──
   const getChainResult = (chainId: string): HybridChainResult | undefined =>
@@ -803,6 +814,107 @@ export function ForgeTrialsHybrid() {
           );
         })}
       </div>
+
+      {/* ── Saved Trial Data (Past Runs) ── */}
+      {hybridPastRuns.length > 0 && (
+        <div className="border-t border-zinc-800 flex-shrink-0">
+          <button
+            onClick={() => setShowPastRuns(!showPastRuns)}
+            className="flex items-center gap-2 w-full px-3 py-2 text-left hover:bg-zinc-800/40 transition-colors"
+          >
+            {showPastRuns ? (
+              <ChevronDown className="w-3.5 h-3.5 text-zinc-500" />
+            ) : (
+              <ChevronRight className="w-3.5 h-3.5 text-zinc-500" />
+            )}
+            <Archive className="w-3.5 h-3.5 text-amber-500" />
+            <span className="text-xs font-bold text-zinc-300">Saved Trial Data</span>
+            <span className="text-[10px] text-zinc-500 tabular-nums">{hybridPastRuns.length} run{hybridPastRuns.length !== 1 ? "s" : ""}</span>
+            <div className="flex-1" />
+            <button
+              onClick={(e) => { e.stopPropagation(); hybridClearPastRuns(); setShowPastRuns(false); }}
+              className="text-[10px] text-zinc-600 hover:text-red-400 transition-colors px-1"
+            >
+              Clear All
+            </button>
+          </button>
+          {showPastRuns && (
+            <div className="px-3 pb-3 space-y-1.5 max-h-64 overflow-y-auto">
+              {hybridPastRuns.map((run, ri) => {
+                const grade = getLetterGrade(run.finalScore.total);
+                const gradeColor = getGradeColor(grade);
+                const date = new Date(run.timestamp);
+                const dateStr = `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+                const stepModels = run.steps.map((s) => s.modelId).join(" → ");
+
+                return (
+                  <div
+                    key={`${run.chainId}-${run.timestamp}-${ri}`}
+                    className="border border-zinc-800 rounded-lg px-3 py-2 bg-zinc-900/60 hover:bg-zinc-800/40 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className={`text-sm font-[900] ${gradeColor} min-w-[28px]`}>{grade}</span>
+                      <span className="text-xs font-bold text-white truncate flex-1">{run.chainName}</span>
+                      <span className={`text-xs font-bold tabular-nums ${
+                        run.finalScore.total >= 90 ? "text-emerald-400" :
+                        run.finalScore.total >= 70 ? "text-amber-400" : "text-red-400"
+                      }`}>
+                        {run.finalScore.total}/100
+                      </span>
+                      <span className="text-[10px] text-zinc-500 tabular-nums flex-shrink-0">{dateStr}</span>
+                      <button
+                        onClick={() => {
+                          const blob = new Blob([JSON.stringify(run, null, 2)], { type: "application/json" });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement("a");
+                          a.href = url;
+                          a.download = `hybrid-trial-${run.chainName.replace(/\s+/g, "-").toLowerCase()}-${Date.now()}.json`;
+                          a.click();
+                          URL.revokeObjectURL(url);
+                        }}
+                        className="text-zinc-600 hover:text-indigo-400 transition-colors flex-shrink-0"
+                        title="Export as JSON"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    {/* Step scores row */}
+                    <div className="flex items-center gap-1 mt-1.5">
+                      <span className="text-[9px] text-zinc-600 mr-1">Steps:</span>
+                      {run.steps.map((s, si) => (
+                        <React.Fragment key={si}>
+                          {si > 0 && <span className="text-zinc-700 text-[8px]">→</span>}
+                          <span
+                            className="text-[9px] font-bold px-1 py-px rounded border"
+                            style={{
+                              borderColor: (PROVIDER_COLORS[s.provider] || "#6B7280") + "40",
+                              color: s.score.total >= 90 ? "#34D399" : s.score.total >= 70 ? "#FBBF24" : "#F87171",
+                              backgroundColor: (PROVIDER_COLORS[s.provider] || "#6B7280") + "10",
+                            }}
+                            title={`${s.modelId} (${s.role}) — ${s.score.total}/100`}
+                          >
+                            {s.score.total}
+                          </span>
+                        </React.Fragment>
+                      ))}
+                      <span className="text-[10px] text-zinc-500 ml-auto tabular-nums">
+                        {(run.totalTimeMs / 1000).toFixed(1)}s
+                      </span>
+                      <span className="text-[10px] font-mono text-emerald-400 tabular-nums">
+                        ${run.totalCost.toFixed(4)}
+                      </span>
+                    </div>
+                    {/* Model chain */}
+                    <div className="text-[9px] text-zinc-600 mt-1 font-mono truncate" title={stepModels}>
+                      {stepModels}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Bottom status bar ── */}
       <div className="flex items-center h-8 px-3 border-t border-zinc-800 bg-zinc-900/60 flex-shrink-0 gap-3">
