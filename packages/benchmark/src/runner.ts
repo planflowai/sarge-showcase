@@ -202,7 +202,8 @@ export type HybridEventType =
   | "hybrid:chain-complete"
   | "hybrid:complete"
   | "hybrid:error"
-  | "hybrid:stopped";
+  | "hybrid:stopped"
+  | "hybrid:heartbeat";
 
 export interface HybridEvent {
   type: HybridEventType;

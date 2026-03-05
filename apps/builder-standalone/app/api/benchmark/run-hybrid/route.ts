@@ -450,6 +450,7 @@ async function logBilling(
         tokensOut,
         durationMs,
       }),
+      signal: AbortSignal.timeout(5000), // Don't let billing stall the chain
     });
     if (res.ok) {
       const data = await res.json();
@@ -551,6 +552,21 @@ export async function POST(request: NextRequest) {
 
           const timeout = isFirst ? scenario.timeout : 180_000; // 3 min for non-scaffold steps
 
+          // Heartbeat keeps the NDJSON stream alive during long model calls.
+          // Without this, the connection times out after ~60s of silence and
+          // the frontend never receives the results.
+          let heartbeatCount = 0;
+          const heartbeat = setInterval(() => {
+            heartbeatCount++;
+            emit({
+              type: "hybrid:heartbeat",
+              chainId: chain.id,
+              stepIndex: si,
+              message: `Step ${si + 1}: ${step.modelName} generating... (${heartbeatCount * 10}s)`,
+              timestamp: Date.now(),
+            });
+          }, 10_000);
+
           const result = await callCloudDirect(
             step.provider,
             step.modelId,
@@ -559,6 +575,8 @@ export async function POST(request: NextRequest) {
             timeout,
             abortController.signal
           );
+
+          clearInterval(heartbeat);
 
           const cost = await logBilling(baseUrl, step.modelId, step.provider, result.tokenCount, result.timeMs);
           totalCost += cost;
