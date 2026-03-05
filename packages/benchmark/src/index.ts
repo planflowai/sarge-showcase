@@ -37,3 +37,14 @@ export { CLOUD_SCENARIOS, getCloudScenario } from "./cloudScenarios";
 
 // Validator
 export { scoreResponse, extractCode } from "./validator";
+
+// Explainers (display-only)
+export {
+  ROUND_EXPLAINERS,
+  CRITERION_EXPLAINERS,
+  getScoreExplanation,
+  getLetterGrade,
+  getGradeColor,
+  buildModelSummary,
+} from "./explainers";
+export type { ModelSummary } from "./explainers";

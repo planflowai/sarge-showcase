@@ -15,7 +15,7 @@ import {
   type CloudBenchmarkConfig,
   type RoundResult,
 } from "@sarge/benchmark";
-import { useSettingsStore, useAirGapStore } from "@sarge/core";
+import { useSettingsStore, useAirGapStore, useModelStore } from "@sarge/core";
 import { launchBillingPopout } from "@/lib/billingPopoutManager";
 import { ForgeTrialsMatrix } from "./ForgeTrialsMatrix";
 import { ForgeTrialsControls } from "./ForgeTrialsControls";
@@ -101,6 +101,13 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
     hybridTotalCost,
     clearAll,
   } = store;
+
+  // Ensure model store is hydrated (builder flags, Ollama scan)
+  const modelsHydrated = useModelStore((s) => s.hydrated);
+  const hydrateModels = useModelStore((s) => s.hydrate);
+  useEffect(() => {
+    if (!modelsHydrated) hydrateModels();
+  }, [modelsHydrated, hydrateModels]);
 
   // Header icon state
   const theme = useSettingsStore((s) => s.theme);
@@ -587,6 +594,8 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
               totalCost={isCloud ? cloudTotalCost : undefined}
               warmupHtml={isCloud ? cloudWarmupHtml : undefined}
               provider={isCloud && activeSelectedCell ? cloudSelectedModels.find((m) => m.id === activeSelectedCell.modelId)?.provider : undefined}
+              allResults={activeResults}
+              allScenarios={activeScenarios}
             />
           </div>
         </div>

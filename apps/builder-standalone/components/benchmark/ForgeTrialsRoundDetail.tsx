@@ -2,7 +2,13 @@
 
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { Code, Eye, BarChart3, Clock, Flame, Loader2, CheckCircle, XCircle } from "lucide-react";
-import type { RoundResult, BenchmarkScenario } from "@sarge/benchmark";
+import type { RoundResult, BenchmarkScenario, ScoreBreakdown } from "@sarge/benchmark";
+import {
+  ROUND_EXPLAINERS,
+  CRITERION_EXPLAINERS,
+  getScoreExplanation,
+  buildModelSummary,
+} from "@sarge/benchmark";
 import { getRate, formatCost } from "@sarge/billing";
 
 interface Props {
@@ -15,6 +21,10 @@ interface Props {
   totalCost?: number;
   warmupHtml?: string;
   provider?: string;
+  /** All results for model summary card */
+  allResults?: RoundResult[];
+  /** All scenarios for model summary card */
+  allScenarios?: BenchmarkScenario[];
 }
 
 type Tab = "preview" | "code" | "breakdown";
@@ -29,6 +39,8 @@ export function ForgeTrialsRoundDetail({
   totalCost,
   warmupHtml,
   provider,
+  allResults = [],
+  allScenarios = [],
 }: Props) {
   const [tab, setTab] = useState<Tab>("preview");
 
@@ -152,6 +164,20 @@ export function ForgeTrialsRoundDetail({
   }
 
   const { score } = result;
+
+  // Round explainer sentence
+  const roundExplainer = scenario ? ROUND_EXPLAINERS[scenario.id] : null;
+
+  // Model summary (built from all results for selected model)
+  const modelResults = result
+    ? allResults.filter((r) => r.modelId === result.modelId)
+    : [];
+  const modelSummary = useMemo(
+    () => buildModelSummary(modelResults, allScenarios),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [modelResults.length, allScenarios.length, result?.modelId]
+  );
+
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: "preview", label: "Preview", icon: <Eye className="w-3.5 h-3.5" /> },
     { id: "code", label: "Code", icon: <Code className="w-3.5 h-3.5" /> },
@@ -194,10 +220,15 @@ export function ForgeTrialsRoundDetail({
       {/* ═══ Zone 1: Stats Bar ═══ */}
       <div className="px-5 py-4 border-b border-zinc-800 bg-zinc-900/40 flex-shrink-0">
         {/* Header row */}
-        <h3 className="text-base font-[800] text-zinc-100 truncate mb-3">
+        <h3 className="text-base font-[800] text-zinc-100 truncate mb-1">
           {result.modelId}
           <span className="text-zinc-400 font-bold ml-2">— {scenario.name}</span>
         </h3>
+
+        {/* Round Explainer */}
+        {roundExplainer && (
+          <p className="text-xs text-zinc-500 italic mb-3">{roundExplainer}</p>
+        )}
 
         {/* Metrics row */}
         <div className="flex items-center gap-4 flex-wrap">
@@ -339,18 +370,37 @@ export function ForgeTrialsRoundDetail({
         )}
 
         {tab === "breakdown" && (
-          <div className="p-5 space-y-4">
+          <div className="p-5 space-y-3">
             {breakdownItems.map((item) => {
               const pct = (item.score / item.max) * 100;
+              const criterionKey = Object.entries({
+                "Code Extracted": "codeExtracted",
+                "Valid HTML": "validHtml",
+                "Required Elements": "requiredElements",
+                "Required Keywords": "requiredKeywords",
+                "CSS Criteria": "cssCriteria",
+                "JS Criteria": "jsCriteria",
+                "Code Length": "codeLength",
+              }).find(([label]) => label === item.label)?.[1] || "";
+              const explainer = CRITERION_EXPLAINERS[criterionKey];
+              const scoreExplanation = getScoreExplanation(
+                criterionKey as keyof ScoreBreakdown,
+                item.score,
+                item.max
+              );
               return (
                 <div key={item.label}>
-                  <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center justify-between mb-0.5">
                     <span className="text-sm font-bold text-zinc-200">{item.label}</span>
                     <span className="text-sm font-bold font-mono text-zinc-300">
                       {item.score}/{item.max}
                     </span>
                   </div>
-                  <div className="h-4 bg-zinc-800 rounded-full overflow-hidden">
+                  {/* Breakdown Explainer — what this criterion measures */}
+                  {explainer && (
+                    <p className="text-[11px] text-zinc-500 mb-1">{explainer}</p>
+                  )}
+                  <div className="h-3.5 bg-zinc-800 rounded-full overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all duration-500"
                       style={{
@@ -364,11 +414,90 @@ export function ForgeTrialsRoundDetail({
                       }}
                     />
                   </div>
+                  {/* Score Explainer — dynamic sentence based on actual score */}
+                  {scoreExplanation && (
+                    <p className={`text-[11px] mt-0.5 ${
+                      pct >= 70 ? "text-emerald-500/70" : pct >= 40 ? "text-amber-500/70" : "text-red-400/70"
+                    }`}>
+                      {scoreExplanation}
+                    </p>
+                  )}
                 </div>
               );
             })}
 
-            <div className="mt-6 pt-4 border-t border-zinc-800">
+            {/* ── Model Summary Card ── */}
+            {modelSummary && (
+              <div className="mt-4 pt-4 border-t border-zinc-800">
+                <div className="rounded-xl border border-zinc-700/60 bg-zinc-900/60 p-4 space-y-3">
+                  {/* Grade + Overall */}
+                  <div className="flex items-center gap-3">
+                    <span className={`text-3xl font-[900] ${modelSummary.gradeColor}`}>
+                      {modelSummary.grade}
+                    </span>
+                    <div>
+                      <p className="text-sm font-bold text-zinc-200">{result.modelId}</p>
+                      <p className="text-xs text-zinc-500">
+                        Overall {modelSummary.overallScore}/100 across {modelResults.length} round{modelResults.length !== 1 ? "s" : ""}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Top 3 Rounds */}
+                  <div>
+                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1">Strongest Rounds</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {modelSummary.topRounds.map((r) => (
+                        <span key={r.name} className="text-xs font-bold px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-400/30 text-emerald-300">
+                          {r.name} ({r.score})
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Bottom 2 Rounds */}
+                  <div>
+                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1">Weakest Rounds</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {modelSummary.bottomRounds.map((r) => (
+                        <span key={r.name} className="text-xs font-bold px-2 py-0.5 rounded bg-red-500/10 border border-red-400/30 text-red-300">
+                          {r.name} ({r.score})
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Strengths & Weaknesses */}
+                  {(modelSummary.strengths.length > 0 || modelSummary.weaknesses.length > 0) && (
+                    <div className="grid grid-cols-2 gap-3">
+                      {modelSummary.strengths.length > 0 && (
+                        <div>
+                          <p className="text-[10px] font-bold text-emerald-500/80 uppercase tracking-wider mb-1">Strengths</p>
+                          {modelSummary.strengths.map((s) => (
+                            <p key={s} className="text-[11px] text-zinc-400">+ {s}</p>
+                          ))}
+                        </div>
+                      )}
+                      {modelSummary.weaknesses.length > 0 && (
+                        <div>
+                          <p className="text-[10px] font-bold text-red-400/80 uppercase tracking-wider mb-1">Weaknesses</p>
+                          {modelSummary.weaknesses.map((w) => (
+                            <p key={w} className="text-[11px] text-zinc-400">− {w}</p>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Use Case */}
+                  <p className="text-xs text-zinc-400 italic border-t border-zinc-800 pt-2">
+                    {modelSummary.useCase}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <div className="mt-4 pt-4 border-t border-zinc-800">
               <h4 className="text-sm font-[800] text-zinc-300 uppercase tracking-wider mb-2">Prompt</h4>
               <p className="text-sm font-bold text-zinc-400 leading-relaxed whitespace-pre-wrap">
                 {scenario?.prompt.slice(0, 500)}
