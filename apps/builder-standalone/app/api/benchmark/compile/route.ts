@@ -59,6 +59,7 @@ ${html}
               body: JSON.stringify({
                 contents: [{ role: "user", parts: [{ text: fixPrompt }] }],
               }),
+              signal: AbortSignal.timeout(30000),
             }
           );
 
@@ -92,6 +93,9 @@ ${html}
       } catch {}
     }
   } catch (err: unknown) {
+    if (err instanceof DOMException && err.name === "TimeoutError") {
+      return NextResponse.json({ error: "Compiler timed out after 30 seconds" }, { status: 504 });
+    }
     const msg = err instanceof Error ? err.message : String(err);
     return NextResponse.json({ error: msg }, { status: 500 });
   }

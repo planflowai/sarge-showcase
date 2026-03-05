@@ -43,8 +43,8 @@ interface CompilerState {
   error: string | null;
 }
 
-// Injected into preview iframes: hash links scroll normally, all others open in new tab
-const NAV_FIX_SCRIPT = `<script>document.addEventListener('click',function(e){var a=e.target.closest('a');if(!a)return;var h=a.getAttribute('href');if(!h)return;if(h.startsWith('#'))return;e.preventDefault();e.stopPropagation();window.open(h,'_blank')},true);<\/script>`;
+// Injected into preview iframes: hash links smooth-scroll in place, all others open in new tab
+const NAV_FIX_SCRIPT = `<script>document.addEventListener('click',function(e){var a=e.target.closest('a');if(!a)return;var h=a.getAttribute('href');if(!h)return;e.preventDefault();e.stopPropagation();if(h.startsWith('#')){var el=document.querySelector(h);if(el)el.scrollIntoView({behavior:'smooth'})}else{window.open(h,'_blank')}},true);<\/script>`;
 
 export function HybridDetailPanel({ running, chainResult, events, scenarioId }: Props) {
   const [tab, setTab] = useState<Tab>("preview");
@@ -114,7 +114,15 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
 
   // ── Auto-trigger assessment after chain completes ──
   useEffect(() => {
-    if (!chainResult || !finalHtml || finalHtml.length < 50) return;
+    if (!chainResult) return;
+    // Skip if final step returned no usable output
+    if (!finalHtml || finalHtml.length < 50) {
+      if (chainResult) {
+        setAssessment("Step failed — no output to assess.");
+        setAssessmentLoading(false);
+      }
+      return;
+    }
     const key = `${chainResult.chainId}-${chainResult.timestamp}`;
     if (assessFetchedRef.current === key) return;
     assessFetchedRef.current = key;
@@ -199,7 +207,14 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
   }, []);
 
   useEffect(() => {
-    if (!chainResult || !finalHtml || finalHtml.length < 50) return;
+    if (!chainResult) return;
+    // Skip if final step returned no usable output
+    if (!finalHtml || finalHtml.length < 50) {
+      if (chainResult) {
+        setCompiler({ loading: false, before: null, after: null, fixedHtml: null, error: "Step failed — no output to compile." });
+      }
+      return;
+    }
     const key = `${chainResult.chainId}-${chainResult.timestamp}`;
     if (compileFetchedRef.current === key) return;
     compileFetchedRef.current = key;
@@ -323,7 +338,7 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
           <div className="flex-1 min-h-0">
             <iframe
               srcDoc={previewHtml}
-              sandbox="allow-scripts allow-popups"
+              sandbox="allow-scripts allow-same-origin allow-forms"
               className="w-full h-full border-0 bg-white"
               style={{ opacity: iframeOpacity, transition: "opacity 0.3s ease" }}
               title="Hybrid Live Preview"
@@ -470,7 +485,7 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
             {previewHtml ? (
               <iframe
                 srcDoc={previewHtml}
-                sandbox="allow-scripts allow-popups"
+                sandbox="allow-scripts allow-same-origin allow-forms"
                 className="w-full h-full border-0 bg-white"
                 title="Hybrid Preview"
               />

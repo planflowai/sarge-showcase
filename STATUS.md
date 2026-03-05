@@ -251,7 +251,8 @@ Tag: working-2026-03-02-deploy-fix (last tagged)
 
 | Date | Commit | Change |
 |------|--------|--------|
-| Mar 5 | pending | Fix nested button hydration crash (role="button" inside button → plain span), fix duplicate Mistral key in BuilderModelBar |
+| Mar 5 | pending | iframe nav fix (anchor smooth-scroll, external → new tab, sandbox allow-same-origin+allow-forms), assessment+compiler 30s timeout (AbortSignal.timeout), skip assess/compile on empty output |
+| Mar 5 | e887869 | Fix nested button hydration crash (role="button" inside button → plain span), fix duplicate Mistral key in BuilderModelBar |
 | Mar 5 | 5d724f2 | Extract Thread Guardian + Jury Duty into `packages/guardian/`, wire 3-tier guardian check + jury verdict into hybrid chain, `hybrid:jury` event type, Build Log + Breakdown integration |
 | Mar 5 | ea24453 | Salvage audit — read only inventory (STATUS.md) |
 | Mar 5 | 640c699 | Fix HybridDetailPanel hooks-after-early-return (useMemo/useRef/useEffect above conditional returns) |

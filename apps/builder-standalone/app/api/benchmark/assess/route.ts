@@ -72,6 +72,7 @@ Keep the entire response under 300 words. Be specific, not generic.`;
         body: JSON.stringify({
           contents: [{ role: "user", parts: [{ text: assessPrompt }] }],
         }),
+        signal: AbortSignal.timeout(30000),
       }
     );
 
@@ -90,6 +91,9 @@ Keep the entire response under 300 words. Be specific, not generic.`;
 
     return NextResponse.json({ assessment });
   } catch (err: unknown) {
+    if (err instanceof DOMException && err.name === "TimeoutError") {
+      return NextResponse.json({ error: "Assessment timed out after 30 seconds" }, { status: 504 });
+    }
     const msg = err instanceof Error ? err.message : String(err);
     return NextResponse.json({ error: msg }, { status: 500 });
   }
