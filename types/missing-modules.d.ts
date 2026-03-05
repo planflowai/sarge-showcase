@@ -99,7 +99,19 @@ declare module "@sarge/builder/components/BuilderPage";
 declare module "@sarge/builder/index.client";
 declare module "@sarge/chat/components/forensic/ForensicLogView";
 declare module "@sarge/chat/components/test/TestModeView";
-declare module "@sarge/core/index.server";
+declare module "@sarge/core/index.server" {
+  export function validatePathWithinProject(projectRoot: string, filePath: string): any;
+  export function validateTerminalCommand(command: string): any;
+  export function logForensicEvent(entry: any): void;
+  export function chatWithFallback(...args: any[]): Promise<any>;
+  export const circuitBreaker: any;
+  export const fallbackService: any;
+  export function fetchOllamaModels(): Promise<any>;
+  export function fetchLMStudioModels(): Promise<any>;
+  export function groupOllamaModels(models: any): any;
+  export function processQueuedItem(item: any): Promise<any>;
+  export function fetchSupabaseBuilderLog(): Promise<any>;
+}
 declare module "@sarge/core/lib/utils/debouncedStorage";
 declare module "@sarge/core/stores/airGapStore";
 declare module "@sarge/diagnostics/components/DiagnosticsPage";
@@ -110,11 +122,14 @@ declare module "@sarge/chat/index.client" {
   export const useConversationStore: any;
   export const useMessageStore: any;
   export const useDebateStore: any;
+  export const useParallelChatStore: any;
+  export const useBuilderPromptStore: any;
   export const ParallelChatView: any;
   export const ForensicLogView: any;
   export const TestModeView: any;
   export const ConversationList: any;
   export const DebateView: any;
+  export const InputArea: any;
   export type Attachment = any;
 }
 

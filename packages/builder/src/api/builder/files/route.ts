@@ -12,7 +12,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
-import { validatePathWithinProject, logForensicEvent } from '@sarge/core';
+import { validatePathWithinProject, logForensicEvent } from '@sarge/core/index.server';
 
 // Get the projects directory from environment
 const BUILDER_PROJECTS_DIR = process.env.BUILDER_PROJECTS_DIR || 'L:/ai_builder/projects';

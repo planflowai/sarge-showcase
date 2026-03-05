@@ -4,7 +4,7 @@ import path from 'path';
 import {
   validatePathWithinProject,
   logForensicEvent,
-} from '@sarge/core';
+} from '@sarge/core/index.server';
 
 // Filenames that are always blocked regardless of project path
 const BLOCKED_FILENAMES = [

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { chatWithFallback } from "@sarge/core";
+import { chatWithFallback } from "@sarge/core/index.server";
 import type { Message, Provider } from "@sarge/core";
 
 // Provider display names for user-friendly error messages

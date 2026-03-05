@@ -5,7 +5,7 @@ import { getTemplateById, type ProjectTemplate } from '../../../lib/projectTempl
 import {
   validatePathWithinProject,
   logForensicEvent,
-} from '@sarge/core';
+} from '@sarge/core/index.server';
 
 const BUILDER_PROJECTS_DIR =
   process.env.BUILDER_PROJECTS_DIR ||

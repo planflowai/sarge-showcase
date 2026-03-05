@@ -251,7 +251,8 @@ Tag: working-2026-03-02-deploy-fix (last tagged)
 
 | Date | Commit | Change |
 |------|--------|--------|
-| Mar 5 | pending | TS2307 module stubs — 121 errors eliminated (418 → 297). 46 modules stubbed in `types/missing-modules.d.ts` |
+| Mar 5 | pending | TS2305 exported member fixes — 19 errors eliminated (297 → 278). Import path fixes + stub updates |
+| Mar 5 | 8400840 | TS2307 module stubs — 121 errors eliminated (418 → 297). 46 modules stubbed in `types/missing-modules.d.ts` |
 | Mar 5 | 5f12072 | Delete 30 backup directories — 8,329 errors eliminated (8,747 → 418) |
 | Mar 5 | 48269b2 | iframe nav fix (anchor smooth-scroll, external → new tab, sandbox allow-same-origin+allow-forms), assessment+compiler 30s timeout (AbortSignal.timeout), skip assess/compile on empty output |
 | Mar 5 | e887869 | Fix nested button hydration crash (role="button" inside button → plain span), fix duplicate Mistral key in BuilderModelBar |
@@ -639,9 +640,47 @@ Created `types/missing-modules.d.ts` with 46 module stubs:
 | TS2559 | 1 | 1 | — |
 | **TOTAL** | **418** | **297** | **-121** |
 
+### Round 3: TS2305 Exported Member Fixes (297 → 278)
+
+**14 of 38 TS2305 errors fixed** — remaining 24 all in unmaintained apps.
+
+**Fixes applied:**
+1. Updated `@sarge/chat/index.client` stub — added `useParallelChatStore`, `InputArea`, `useBuilderPromptStore` (5 errors)
+2. Replaced no-body `@sarge/core/index.server` stub with bodied stub declaring all server exports (2 errors)
+3. Changed 6 builder route imports from `@sarge/core` → `@sarge/core/index.server` (6 errors)
+4. Split 2 chat route imports — types on `@sarge/core`, `chatWithFallback` on `@sarge/core/index.server` (1 error)
+
+**Files modified:**
+- `types/missing-modules.d.ts` — bodied stubs for `@sarge/core/index.server` + `@sarge/chat/index.client`
+- `packages/builder/src/api/builder/{list-directory,read-file,terminal,preview,create-project,files}/route.ts` — import path fix
+- `packages/chat/src/api/chat/route.ts` — split import
+- `packages/chat/src/api/chat/export/route.ts` — split import
+
+**24 remaining TS2305 (all unmaintained — NOT FIXED):**
+- `apps/chat-standalone/` — 12 errors (missing `@sarge/chat/index.client` exports: `DebateView`, `ConversationList`, etc.)
+- `apps/trading-standalone/` — 10 errors (missing `@/lib/types/trading` exports: `TradingStore`, `MarketData`, etc.)
+- `apps/chat-standalone/` — 2 errors (`react-resizable-panels` old API: `PanelGroup`, `PanelResizeHandle`)
+
+| Code | Before (R2) | After (R3) | Delta |
+|------|-------------|------------|-------|
+| TS7006 | 219 | 219 | — |
+| TS2305 | 38 | 24 | **-14** |
+| TS2307 | 7 | 7 | — |
+| TS2724 | 10 | 4 | **-6** |
+| TS7053 | 6 | 6 | — |
+| TS2322 | 5 | 5 | — |
+| TS7031 | 4 | 4 | — |
+| TS2740 | 3 | 3 | — |
+| TS2339 | 2 | 2 | — |
+| TS2366 | 1 | 1 | — |
+| TS2630 | 1 | 1 | — |
+| TS2559 | 1 | 1 | — |
+| TS18046 | 1 | 1 | — |
+| **TOTAL** | **297** | **278** | **-19** |
+
 ### Key Insight
 
-The only app under active development (`builder-standalone`) compiles **100% clean** with strict mode. All 297 remaining errors are from unmaintained standalones and root tsconfig resolution mismatches.
+The only app under active development (`builder-standalone`) compiles **100% clean** with strict mode. All 278 remaining errors are from unmaintained standalones and root tsconfig resolution mismatches.
 
 ---
 
