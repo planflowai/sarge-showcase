@@ -4,9 +4,9 @@ import React, { useState, useMemo, useEffect, useRef, useCallback } from "react"
 import {
   Eye, Code, BarChart3, Loader2, ChevronDown, ChevronRight,
   CheckCircle, AlertTriangle, Flame, Clock, DollarSign, Layers,
-  ScrollText, Shield, Scale,
+  ScrollText, Shield, Scale, Lock, ArrowUpCircle, RotateCcw,
 } from "lucide-react";
-import type { HybridChainResult, HybridEvent, StepChangelog } from "@sarge/benchmark";
+import type { HybridChainResult, HybridEvent, StepChangelog, TruthAnchor } from "@sarge/benchmark";
 import { ALL_HYBRID_SCENARIOS, getLetterGrade, getGradeColor } from "@sarge/benchmark";
 
 const PROVIDER_COLORS: Record<string, string> = {
@@ -63,8 +63,18 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
   const prevStepRef = useRef<number | null>(null);
   const prevLiveHtmlRef = useRef("");
 
+  const [truthAnchorOpen, setTruthAnchorOpen] = useState(false);
+
   const scenario = ALL_HYBRID_SCENARIOS.find((s) => s.id === scenarioId);
   const finalHtml = chainResult?.steps?.[chainResult.steps.length - 1]?.extractedCode || "";
+
+  // Extract Truth Anchor from events (emitted at hybrid:start)
+  const truthAnchor: TruthAnchor | null = useMemo(() => {
+    for (const ev of events) {
+      if (ev.type === "hybrid:start" && ev.truthAnchor) return ev.truthAnchor;
+    }
+    return chainResult?.truthAnchor || null;
+  }, [events, chainResult]);
   const finalScore = chainResult?.finalScore;
   const grade = finalScore ? getLetterGrade(finalScore.total) : null;
   const gradeColor = grade ? getGradeColor(grade) : "";
@@ -333,6 +343,25 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
     [events]
   );
 
+  /** Derive build log entry color from message content (user-language emoji rules) */
+  const getLogColor = useCallback((ev: HybridEvent): string => {
+    const msg = ev.message || "";
+    if (ev.type === "hybrid:guardian") {
+      return msg.includes("PASSED") || msg.includes("✅") ? "text-green-400" : "text-red-400";
+    }
+    if (ev.type === "hybrid:jury") {
+      return msg.includes("APPROVED") || msg.includes("✅") ? "text-sky-400" : "text-amber-400";
+    }
+    if (msg.startsWith("✅")) return "text-green-400";
+    if (msg.startsWith("❌")) return "text-red-400";
+    if (msg.startsWith("⚠️")) return "text-amber-400";
+    if (msg.startsWith("🔄")) return "text-amber-400";
+    if (msg.startsWith("⬆️")) return "text-sky-400";
+    if (msg.startsWith("🔒")) return "text-zinc-300";
+    if (msg.startsWith("🏁")) return "text-green-400";
+    return "text-white";
+  }, []);
+
   // Auto-scroll ref for build log
   const buildLogRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -381,16 +410,11 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
               {buildLogEntries.map((ev, i) => (
                 <div
                   key={i}
-                  className={`font-mono text-xs py-0.5 ${
-                    ev.type === "hybrid:guardian"
-                      ? ev.message?.includes("PASSED") ? "text-emerald-400" : "text-red-400"
-                      : ev.type === "hybrid:jury"
-                      ? ev.message?.includes("APPROVED") ? "text-sky-400" : "text-amber-400"
-                      : "text-zinc-400"
-                  }`}
+                  className={`font-mono py-0.5 ${getLogColor(ev)}`}
+                  style={{ fontSize: "13px" }}
                 >
-                  {ev.type === "hybrid:guardian" && "⛨ "}
-                  {ev.type === "hybrid:jury" && "⚖ "}
+                  {ev.type === "hybrid:guardian" && <Shield className="w-3 h-3 inline mr-1" />}
+                  {ev.type === "hybrid:jury" && <Scale className="w-3 h-3 inline mr-1" />}
                   {ev.message}
                 </div>
               ))}
@@ -427,16 +451,11 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
             {buildLogEntries.map((ev, i) => (
               <div
                 key={i}
-                className={`font-mono text-xs py-0.5 ${
-                  ev.type === "hybrid:guardian"
-                    ? ev.message?.includes("PASSED") ? "text-emerald-400" : "text-red-400"
-                    : ev.type === "hybrid:jury"
-                    ? ev.message?.includes("APPROVED") ? "text-sky-400" : "text-amber-400"
-                    : "text-zinc-400"
-                }`}
+                className={`font-mono py-0.5 ${getLogColor(ev)}`}
+                style={{ fontSize: "13px" }}
               >
-                {ev.type === "hybrid:guardian" && "⛨ "}
-                {ev.type === "hybrid:jury" && "⚖ "}
+                {ev.type === "hybrid:guardian" && <Shield className="w-3 h-3 inline mr-1" />}
+                {ev.type === "hybrid:jury" && <Scale className="w-3 h-3 inline mr-1" />}
                 {ev.message}
               </div>
             ))}
@@ -561,6 +580,19 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
                     >
                       {step.modelId}
                     </span>
+                    {/* Strike / attempt badges */}
+                    {(step.attempts ?? 1) > 1 && (
+                      <span className="flex items-center gap-1 text-xs font-bold px-1.5 py-0.5 rounded bg-amber-900/30 text-amber-400 border border-amber-600/30">
+                        <RotateCcw className="w-3 h-3" />
+                        {step.attempts} attempts
+                      </span>
+                    )}
+                    {step.escalatedTo && (
+                      <span className="flex items-center gap-1 text-xs font-bold px-1.5 py-0.5 rounded bg-sky-900/30 text-sky-400 border border-sky-600/30">
+                        <ArrowUpCircle className="w-3 h-3" />
+                        {step.escalatedTo}
+                      </span>
+                    )}
                     <div className="flex-1" />
                     <span className={`text-lg font-[900] ${scoreColor}`}>{step.score.total}</span>
                     {si > 0 && (
@@ -577,10 +609,10 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
                     />
                   </div>
                   {/* Meta */}
-                  <div className="flex items-center gap-3 text-sm text-zinc-200">
-                    <span>{(step.timeMs / 1000).toFixed(1)}s</span>
-                    <span className="font-mono text-emerald-400">${step.cost.toFixed(4)}</span>
-                    <span>
+                  <div className="flex items-center gap-3 text-zinc-200" style={{ fontSize: "13px" }}>
+                    <span><Clock className="w-3 h-3 inline mr-0.5" />{(step.timeMs / 1000).toFixed(1)}s</span>
+                    <span className="font-mono text-green-300"><DollarSign className="w-3 h-3 inline" />{step.cost.toFixed(4)}</span>
+                    <span className="font-bold">
                       {step.provider === "ollama" || step.provider === "lmstudio" ? "LOCAL" : "CLOUD"}
                     </span>
                   </div>
@@ -640,30 +672,17 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
                 {running && <span className="text-xs font-bold text-emerald-400 animate-pulse">LIVE</span>}
               </div>
               {/* Log entries */}
-              <div className="p-3 max-h-[calc(100vh-320px)] overflow-y-auto font-mono text-xs space-y-0.5">
-                {events.filter(e =>
-                  e.type === "hybrid:build-log" || e.type === "hybrid:guardian" || e.type === "hybrid:jury"
-                ).length === 0 ? (
-                  <div className="text-zinc-300 py-4 text-center">
+              <div className="p-3 max-h-[calc(100vh-320px)] overflow-y-auto font-mono space-y-0.5">
+                {buildLogEntries.length === 0 ? (
+                  <div className="text-zinc-300 py-4 text-center" style={{ fontSize: "13px" }}>
                     {running ? "Waiting for events..." : "No build log entries. Run a chain to generate."}
                   </div>
                 ) : (
-                  events
-                    .filter(e => e.type === "hybrid:build-log" || e.type === "hybrid:guardian" || e.type === "hybrid:jury")
-                    .map((ev, i) => (
+                  buildLogEntries.map((ev, i) => (
                       <div
                         key={i}
-                        className={`py-0.5 leading-relaxed ${
-                          ev.type === "hybrid:guardian"
-                            ? ev.message?.includes("PASSED")
-                              ? "text-emerald-400"
-                              : "text-red-400"
-                            : ev.type === "hybrid:jury"
-                            ? ev.message?.includes("APPROVED")
-                              ? "text-sky-400"
-                              : "text-amber-400"
-                            : "text-zinc-300"
-                        }`}
+                        className={`py-0.5 leading-relaxed ${getLogColor(ev)}`}
+                        style={{ fontSize: "13px" }}
                       >
                         {ev.type === "hybrid:guardian" && (
                           <Shield className="w-3 h-3 inline mr-1 flex-shrink-0" />
@@ -672,6 +691,9 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
                           <Scale className="w-3 h-3 inline mr-1 flex-shrink-0" />
                         )}
                         {ev.message}
+                        <span className="text-zinc-500 ml-2">
+                          {new Date(ev.timestamp).toLocaleTimeString()}
+                        </span>
                       </div>
                     ))
                 )}
@@ -707,6 +729,59 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
               ) : (
                 <div className="text-xs text-zinc-300 py-2">Waiting for assessment...</div>
               )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Truth Anchor (collapsible) ── */}
+      {truthAnchor && (
+        <div className="border-t border-zinc-800 flex-shrink-0">
+          <button
+            onClick={() => setTruthAnchorOpen(!truthAnchorOpen)}
+            className="flex items-center gap-2 w-full px-4 py-2 text-left hover:bg-zinc-800/40 transition-colors"
+          >
+            {truthAnchorOpen ? <ChevronDown className="w-3.5 h-3.5 text-zinc-300" /> : <ChevronRight className="w-3.5 h-3.5 text-zinc-300" />}
+            <Lock className="w-3.5 h-3.5 text-amber-400" />
+            <span className="text-xs font-bold text-zinc-300">Truth Anchor</span>
+            <span className="ml-auto text-xs font-mono text-zinc-500">{truthAnchor.hash.slice(0, 8)}...</span>
+          </button>
+          {truthAnchorOpen && (
+            <div className="px-4 pb-3">
+              <div className="bg-zinc-900/60 border border-zinc-800 rounded-lg p-3 space-y-2" style={{ fontSize: "13px" }}>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-white">{truthAnchor.siteType}</span>
+                  <span className="text-zinc-500">·</span>
+                  <span className="text-zinc-400">{truthAnchor.outputFormat}</span>
+                </div>
+                {truthAnchor.requiredSections.length > 0 && (
+                  <div>
+                    <span className="text-zinc-400 font-bold">Sections: </span>
+                    <span className="text-white">{truthAnchor.requiredSections.join(", ")}</span>
+                  </div>
+                )}
+                {truthAnchor.requiredFeatures.length > 0 && (
+                  <div>
+                    <span className="text-zinc-400 font-bold">Features: </span>
+                    <span className="text-white">{truthAnchor.requiredFeatures.join(", ")}</span>
+                  </div>
+                )}
+                {truthAnchor.requiredPages.length > 0 && (
+                  <div>
+                    <span className="text-zinc-400 font-bold">Pages: </span>
+                    <span className="text-white">{truthAnchor.requiredPages.join(", ")}</span>
+                  </div>
+                )}
+                {truthAnchor.styleRequirements.length > 0 && (
+                  <div>
+                    <span className="text-zinc-400 font-bold">Style: </span>
+                    <span className="text-white">{truthAnchor.styleRequirements.join(", ")}</span>
+                  </div>
+                )}
+                <div className="text-zinc-500 font-mono text-xs pt-1 border-t border-zinc-800">
+                  Hash: {truthAnchor.hash} · Locked: {new Date(truthAnchor.timestamp).toLocaleTimeString()}
+                </div>
+              </div>
             </div>
           )}
         </div>

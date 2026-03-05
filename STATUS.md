@@ -251,7 +251,8 @@ Tag: working-2026-03-02-deploy-fix (last tagged)
 
 | Date | Commit | Change |
 |------|--------|--------|
-| Mar 5 | pending | Guardian enforces regression blocks (REJECTED event + lastGoodCode), compiler extractScores reads all 4 Lighthouse categories with fallback paths |
+| Mar 5 | pending | Truth Anchor system (spec lock + SHA-256 hash + per-step verification), 3-strike model escalation (retry → swap → escalate), handoff protocol (brief injection + fast-fail), user-language build log (emoji status, plain English, min 13px), Truth Anchor UI card, strike badges in breakdown |
+| Mar 5 | c00a1eb | Guardian enforces regression blocks (REJECTED event + lastGoodCode), compiler extractScores reads all 4 Lighthouse categories with fallback paths |
 | Mar 5 | ded0c25 | iframe nav postMessage bridge, compiler extractScores fix, TS7053 keyof casts — all Forge Trials fixes |
 | Mar 5 | 61c7f22 | Delete 3 unmaintained apps + fix remaining 21 — 0 errors achieved (141 → 0) |
 | Mar 5 | a899f8f | TS7006 implicit any fixes — 137 errors eliminated (278 → 141). 136 params annotated across 21 files |
@@ -334,6 +335,33 @@ Tag: working-2026-03-02-deploy-fix (last tagged)
 - `hybrid:jury` event type added to `@sarge/benchmark`
 - `JuryVerdict` attached to `HybridChainResult` for persistence
 - **NEW**: Extracted to `packages/guardian/src/jury-duty.ts` (3-tier analysis engine + prompts)
+
+### System 3: Truth Anchor — NEW
+- Extracts build spec from scenario prompt at chain start (before any model runs)
+- `TruthAnchor` interface: siteType, requiredSections, requiredFeatures, requiredPages, styleRequirements, outputFormat
+- SHA-256 hash of original prompt — tamper-proof reference
+- Injected as plain-English spec into every step prompt
+- Per-step verification: checks output for missing required sections
+- Emitted on `hybrid:start` event with full anchor data
+- Collapsible UI card in HybridDetailPanel (Lock icon, hash preview, all fields)
+- Stored in `HybridChainResult.truthAnchor` for persistence
+
+### System 4: 3-Strike Model Escalation — NEW
+- Per step: 3 attempts before accepting whatever is available
+- Strike 1: Same model retry with correction prompt (tells model what's missing)
+- Strike 2: Swap to next model in chain (via `findEscalationModel()`)
+- Strike 3: Accept best available or use lastGoodCode
+- Never repeats a model that already failed (tracked in `usedModels` Set)
+- Escalation model finder: prefers models from later chain steps (assumed stronger), falls back to earlier
+- Strike badges in HybridDetailPanel breakdown: shows attempt count + escalated model name
+- Build log emits user-language messages: 🔄 Retrying, ⬆️ Escalated, ✅ Recovered, ❌ Failed
+
+### System 5: Handoff Protocol — NEW
+- Every step (except first) receives a handoff brief before generating
+- Brief includes: previous model name, sections present in output, specific task, truth anchor hash
+- Fast-fail: if model outputs >200 chars of text before `<!DOCTYPE html>` or `<html>`, triggers retry
+- First step gets truth anchor injection + scenario prompt
+- Subsequent steps get truth anchor + handoff brief + role-specific prompt
 
 ### System 2: Build Log — WORKING (was MISSING)
 - Runner emits `hybrid:build-log` events with timestamps throughout chain execution

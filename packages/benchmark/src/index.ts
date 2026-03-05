@@ -26,6 +26,7 @@ export type {
   HybridEvent,
   JuryVerdict,
   StepChangelog,
+  TruthAnchor,
 } from "./runner";
 
 // Helpers

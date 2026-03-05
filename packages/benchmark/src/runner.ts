@@ -150,6 +150,21 @@ export interface CloudBenchmarkConfig {
   parallel?: boolean;
 }
 
+// ── Truth Anchor ────────────────────────────────────────────────────
+
+export interface TruthAnchor {
+  id: string;
+  timestamp: string;
+  siteType: string;
+  requiredSections: string[];
+  requiredFeatures: string[];
+  requiredPages: string[];
+  styleRequirements: string[];
+  outputFormat: string;
+  hash: string;
+  originalPrompt: string;
+}
+
 // ── Hybrid Chain Types ──────────────────────────────────────────────
 
 export interface HybridStep {
@@ -189,6 +204,10 @@ export interface HybridStepResult {
   tokenCount: number;
   cost: number;
   changelog?: StepChangelog;
+  /** Number of attempts (1 = first try passed, 2-3 = retries/escalation) */
+  attempts?: number;
+  /** Model that was escalated to on strike 3 */
+  escalatedTo?: string;
 }
 
 export interface HybridChainResult {
@@ -200,6 +219,7 @@ export interface HybridChainResult {
   totalCost: number;
   timestamp: number;
   juryVerdict?: JuryVerdict;
+  truthAnchor?: TruthAnchor;
 }
 
 export interface HybridBenchmarkConfig {
@@ -242,6 +262,7 @@ export interface HybridEvent {
   chainResult?: HybridChainResult;
   partialHtml?: string;
   juryVerdict?: JuryVerdict;
+  truthAnchor?: TruthAnchor;
   message: string;
   timestamp: number;
 }

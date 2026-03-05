@@ -1632,8 +1632,9 @@ Two-panel layout (30/70 split) for building and testing multi-model chains.
 - Tab bar: Preview / Code / Breakdown / Build Log
   - Preview: `<iframe srcDoc>` rendering final HTML
   - Code: `<pre>` monospace with full HTML
-  - Breakdown: Per-step cards with score bars, deltas, cost/time, provider badges, per-step changelog (sections added/removed, CSS/JS counts, regression check)
-  - Build Log: Timestamped execution log with guardian decisions (green PASSED / red REJECTED), LIVE badge during execution
+  - Breakdown: Per-step cards with score bars, deltas, cost/time, provider badges, strike badges (attempt count + escalated model), per-step changelog (sections added/removed, CSS/JS counts, regression check)
+  - Build Log: Timestamped execution log with user-language messages (emoji status, plain English), guardian decisions, LIVE badge during execution
+- Truth Anchor card (collapsible): locked spec details — site type, required sections/features/pages, style requirements, SHA-256 hash, lock timestamp
 - AI Assessment (collapsible, auto-triggered):
   - Calls `POST /api/benchmark/assess` → Gemini 2.5 Flash
   - Sections: What Worked / What Didn't / Biggest Improvement / One More Step / Model Swap Suggestion
@@ -1701,16 +1702,43 @@ Two-panel layout (30/70 split) for building and testing multi-model chains.
 - Built-in provider (not custom): Devstral 2, Devstral Small 2, Mistral Medium 3
 - 131K context, 8192 max tokens, Flame icon in ProviderBadge
 
+**Truth Anchor System (SYSTEM 1):**
+- At chain start, extracts and locks the build spec from the scenario prompt
+- `TruthAnchor` interface: siteType, requiredSections, requiredFeatures, requiredPages, styleRequirements, outputFormat, SHA-256 hash
+- Injected as plain-English spec into every step prompt ("You MUST include: Navigation, Hero Section, Menu...")
+- Per-step verification: checks output HTML for missing required sections
+- Collapsible UI card in HybridDetailPanel (Lock icon, hash preview, all fields visible)
+- Stored in `HybridChainResult.truthAnchor` for persistence
+- Emitted on `hybrid:start` event with full anchor data
+
+**3-Strike Model Escalation (SYSTEM 2):**
+- Per step: up to 3 attempts before accepting best available
+- Strike 1: Same model retry with correction prompt (tells model exactly what's missing)
+- Strike 2: Swap to next available model in chain (`findEscalationModel()` — prefers later/stronger models)
+- Strike 3: Accept best available output or use lastGoodCode
+- Never repeats a model that already failed (tracked via `usedModels` Set)
+- Triggered by: validation failure, regression detection, truth anchor misses, guardian rejection, handoff protocol violation
+- Build log messages: 🔄 Retrying, ⬆️ Escalated to [model], ✅ Recovered, ❌ Failed
+- Strike badges shown in breakdown: attempt count + escalated model name
+
+**Handoff Confirmation Protocol:**
+- Every step (except first) receives a handoff brief before generating
+- Brief includes: previous model name, sections present in output, specific task, truth anchor hash
+- Fast-fail: if model outputs >200 chars of text before `<!DOCTYPE html>`, triggers retry
+- First step gets truth anchor + scenario prompt; subsequent steps get truth anchor + handoff + role prompt
+
 **Chain Execution:**
-1. Step 1 (Build) receives the scenario prompt
-2. Each subsequent step receives "Improve this code: [previous step's output]"
-3. Every step scored against scenario rubric
-4. Final score = last step's score
-5. Score progression shown (e.g., 45 → 72 → 88)
-6. Guardian validates each step's output, emits PASSED/REJECTED events
-7. Changelog generated between consecutive steps
-8. Build log entries emitted throughout
-9. On complete: auto-saves to pastRuns, syncs to Supabase `forge_hybrid_runs`, triggers AI assessment + compiler
+1. Truth Anchor extracted and locked from scenario prompt (SHA-256 hash generated)
+2. Step 1 receives truth anchor injection + scenario prompt
+3. Each subsequent step receives handoff brief + truth anchor + role-specific prompt + previous HTML
+4. 3-strike loop per step: retry → swap model → accept best available
+5. Every step scored against scenario rubric
+6. Final score = last step's score
+7. Score progression shown (e.g., 45 → 72 → 88)
+8. Guardian validates each step's output, emits PASSED/REJECTED events
+9. Changelog generated between consecutive steps
+10. Build log entries emitted throughout (user-language, emojis)
+11. On complete: auto-saves to pastRuns, syncs to Supabase `forge_hybrid_runs`, triggers AI assessment + compiler
 
 **Routes:**
 - `POST /api/benchmark/run-hybrid` — chain execution (NDJSON streaming)

@@ -18,7 +18,10 @@ import {
   type ScoreBreakdown,
   type StepChangelog,
   type JuryVerdict,
+  type TruthAnchor,
+  type BenchmarkScenario,
 } from "@sarge/benchmark";
+import { createHash } from "crypto";
 
 // ── Direct cloud API calls (duplicated from run-cloud for isolation) ──
 
@@ -636,6 +639,197 @@ function formatElapsed(startMs: number): string {
   return `${String(min).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
 }
 
+// ── Truth Anchor — extract and lock build spec from scenario ──
+
+function extractTruthAnchor(scenario: BenchmarkScenario, customPrompt?: string): TruthAnchor {
+  const prompt = customPrompt || scenario.prompt;
+  const lower = prompt.toLowerCase();
+
+  // Extract site type from scenario name or prompt
+  const siteTypeMap: Record<string, string> = {
+    restaurant: "restaurant", portfolio: "portfolio", "saas": "SaaS landing page",
+    "e-commerce": "e-commerce store", dashboard: "analytics dashboard",
+    "multi-page": "multi-page site", dental: "medical/wellness", "real estate": "real estate",
+    "law firm": "law firm", wedding: "event/wedding", nonprofit: "nonprofit",
+    fitness: "fitness/gym", "landing page": "landing page", "auto repair": "auto repair",
+    "dog grooming": "dog grooming", plumbing: "local service", events: "entertainment/events",
+  };
+  let siteType = scenario.name;
+  for (const [key, val] of Object.entries(siteTypeMap)) {
+    if (lower.includes(key)) { siteType = val; break; }
+  }
+
+  // Extract required sections from validation + prompt parsing
+  const requiredSections: string[] = [];
+  const sectionKeywords = ["hero", "nav", "navigation", "footer", "header", "menu", "gallery",
+    "contact", "about", "testimonial", "pricing", "services", "team", "faq", "cta",
+    "portfolio", "blog", "sidebar", "banner", "reservation", "checkout", "cart"];
+  for (const kw of sectionKeywords) {
+    if (lower.includes(kw)) requiredSections.push(kw);
+  }
+  // Also add from validation requiredElements
+  for (const el of scenario.validation.requiredElements || []) {
+    const tag = el.replace(/[<>]/g, "").toLowerCase();
+    if (!requiredSections.includes(tag) && sectionKeywords.includes(tag)) {
+      requiredSections.push(tag);
+    }
+  }
+
+  // Extract required features
+  const requiredFeatures: string[] = [];
+  const featureKeywords: Record<string, string> = {
+    "smooth scroll": "smooth scroll", "date picker": "date picker",
+    "carousel": "image carousel", "slider": "image slider",
+    "dark mode": "dark mode toggle", "responsive": "responsive design",
+    "animation": "animations", "form": "interactive form",
+    "modal": "modal/popup", "accordion": "accordion",
+    "mobile menu": "mobile menu", "search": "search functionality",
+  };
+  for (const [key, label] of Object.entries(featureKeywords)) {
+    if (lower.includes(key)) requiredFeatures.push(label);
+  }
+  // Add from JS patterns
+  for (const pat of scenario.validation.jsPatterns || []) {
+    if (!requiredFeatures.some(f => f.toLowerCase().includes(pat.toLowerCase()))) {
+      requiredFeatures.push(pat);
+    }
+  }
+
+  const requiredPages = lower.includes("multi-page") ? ["home", "about", "contact", "services"] : ["single page"];
+  const styleRequirements: string[] = [];
+  if (lower.includes("responsive")) styleRequirements.push("fully responsive");
+  if (lower.includes("professional")) styleRequirements.push("professional design");
+  if (lower.includes("modern")) styleRequirements.push("modern design");
+  if (scenario.validation.cssPatterns?.length) {
+    styleRequirements.push(`CSS patterns: ${(scenario.validation.cssPatterns || []).join(", ")}`);
+  }
+
+  const outputFormat = "single HTML file with inline CSS and JS";
+
+  // Generate tamper-proof hash
+  const hashInput = [siteType, ...requiredSections, ...requiredFeatures, ...requiredPages, outputFormat, prompt].join("|");
+  const hash = createHash("sha256").update(hashInput).digest("hex");
+
+  return {
+    id: `ta-${Date.now()}`,
+    timestamp: new Date().toISOString(),
+    siteType,
+    requiredSections,
+    requiredFeatures,
+    requiredPages,
+    styleRequirements,
+    outputFormat,
+    hash,
+    originalPrompt: prompt,
+  };
+}
+
+/** Build plain-English truth anchor injection for step prompts */
+function buildTruthAnchorInjection(anchor: TruthAnchor, stepInstruction: string): string {
+  return `TRUTH ANCHOR — READ THIS FIRST. DO NOT SKIP.
+You are building a ${anchor.siteType}.
+Required sections you MUST include: ${anchor.requiredSections.join(", ") || "none specified"}
+Required features you MUST include: ${anchor.requiredFeatures.join(", ") || "none specified"}
+Required pages: ${anchor.requiredPages.join(", ")}
+Output format: ${anchor.outputFormat}
+Your specific task this step: ${stepInstruction}
+DO NOT remove anything from the previous step. Only add or improve.
+
+`;
+}
+
+/** Verify step output against Truth Anchor — returns missing sections */
+function verifyAgainstTruthAnchor(code: string, anchor: TruthAnchor): string[] {
+  const lower = code.toLowerCase();
+  const missing: string[] = [];
+  for (const section of anchor.requiredSections) {
+    // Check if section tag or keyword exists in the HTML
+    const sectionLower = section.toLowerCase();
+    if (!lower.includes(sectionLower) && !lower.includes(`id="${sectionLower}"`) && !lower.includes(`class="${sectionLower}`)) {
+      missing.push(section);
+    }
+  }
+  return missing;
+}
+
+/** Build handoff brief for each step */
+function buildHandoffBrief(
+  stepIndex: number,
+  totalSteps: number,
+  prevModelName: string | null,
+  sectionsPresent: string[],
+  stepRole: string,
+  stepInstruction: string,
+  anchHash: string,
+): string {
+  if (stepIndex === 0) return ""; // First step gets full scenario prompt
+  return `HANDOFF BRIEF — Step ${stepIndex + 1} of ${totalSteps}
+Previous step completed by: ${prevModelName || "initial scaffold"}
+What was built: ${sectionsPresent.join(", ") || "base structure"}
+Your role this step: ${stepRole} — ${stepInstruction}
+What you must NOT change: ${sectionsPresent.join(", ")}
+What you must ADD or FIX: ${stepInstruction}
+Truth Anchor hash: ${anchHash.slice(0, 8)}... — your output will be verified against this
+Confirm you understand by starting your output with <!DOCTYPE html>
+Any other text before <!DOCTYPE html> means you failed to read this.
+
+`;
+}
+
+/** Build correction prompt for strike retries */
+function buildCorrectionPrompt(previousHtml: string, missingSections: string[], failReason: string): string {
+  return `Your previous output was missing: ${missingSections.join(", ")}.
+${failReason}
+Fix only these missing pieces. Keep everything else exactly as it was.
+Output the complete corrected HTML starting with <!DOCTYPE html>.
+
+Previous HTML:
+${previousHtml}`;
+}
+
+// ── Escalation Model Finder ──
+
+interface EscalationCandidate {
+  modelId: string;
+  provider: string;
+  modelName: string;
+}
+
+/**
+ * Find an escalation model from the chain's step roster that hasn't been used yet.
+ * Prefers models from later steps (assumed stronger) over earlier ones.
+ * Returns null if all models in the chain have already been tried.
+ */
+function findEscalationModel(
+  steps: { modelId: string; provider: string; modelName: string }[],
+  currentStepIndex: number,
+  usedModels: Set<string>,
+): EscalationCandidate | null {
+  // Collect unique models from steps after the current one (stronger models tend to be later)
+  const candidates: EscalationCandidate[] = [];
+  const seen = new Set<string>();
+
+  // First pass: steps after current (preferred — typically stronger)
+  for (let i = currentStepIndex + 1; i < steps.length; i++) {
+    const key = `${steps[i].provider}:${steps[i].modelId}`;
+    if (!usedModels.has(key) && !seen.has(key)) {
+      seen.add(key);
+      candidates.push({ modelId: steps[i].modelId, provider: steps[i].provider, modelName: steps[i].modelName });
+    }
+  }
+
+  // Second pass: steps before current (fallback)
+  for (let i = 0; i < currentStepIndex; i++) {
+    const key = `${steps[i].provider}:${steps[i].modelId}`;
+    if (!usedModels.has(key) && !seen.has(key)) {
+      seen.add(key);
+      candidates.push({ modelId: steps[i].modelId, provider: steps[i].provider, modelName: steps[i].modelName });
+    }
+  }
+
+  return candidates.length > 0 ? candidates[0] : null;
+}
+
 // ── Thread Guardian 3-Tier Check ──
 
 const GUARDIAN_T1_SYSTEM = `You are a code quality guardian. Analyze the provided HTML output and check:
@@ -1092,15 +1286,19 @@ export async function POST(request: NextRequest) {
         ? `${guardianModelId} (${guardianProvider})`
         : "Hardcoded validation";
 
+      // ── SYSTEM 1: Truth Anchor — lock build spec before any model runs ──
+      const truthAnchor = extractTruthAnchor(scenario, chains[0]?.prompt);
+
       emit({
         type: "hybrid:start",
-        message: `Hybrid Forge Trials — ${chains.length} chains × ${scenario.name} scenario`,
+        truthAnchor,
+        message: `🔨 Building ${truthAnchor.siteType} · ${truthAnchor.requiredSections.length} sections · ${truthAnchor.requiredFeatures.length} features`,
         timestamp: Date.now(),
       });
 
       emit({
         type: "hybrid:build-log",
-        message: `[${formatElapsed(chainStartTime)}] Chain started — Guardian: ${guardianLabel} — Scenario: ${scenario.name}`,
+        message: `🔒 Spec locked · ${truthAnchor.siteType} · ${truthAnchor.requiredSections.length} sections · ${truthAnchor.requiredFeatures.length} features · Hash: ${truthAnchor.hash.slice(0, 8)}...`,
         timestamp: Date.now(),
       });
 
@@ -1115,11 +1313,13 @@ export async function POST(request: NextRequest) {
         let chainTimeMs = 0;
         let previousCode = "";
         let lastGoodCode = "";
+        // Track which models have been used (for escalation — never repeat)
+        const usedModels = new Set<string>();
 
         emit({
           type: "hybrid:chain-start",
           chainId: chain.id,
-          message: `Chain ${ci + 1}/${chains.length}: ${chain.name} (${chain.steps.length} steps)`,
+          message: `🔨 Starting ${chain.steps.length}-step build`,
           timestamp: Date.now(),
         });
 
@@ -1137,249 +1337,329 @@ export async function POST(request: NextRequest) {
             timestamp: Date.now(),
           });
 
-          const stepIsLocal = step.provider === "ollama" || step.provider === "lmstudio";
           emit({
             type: "hybrid:build-log",
             chainId: chain.id,
             stepIndex: si,
-            message: `[${formatElapsed(chainStartTime)}] Step ${si + 1} started — Model: ${step.modelName} (${stepIsLocal ? "local" : "cloud"}) — Role: ${step.role}`,
+            message: `🔨 Step ${si + 1} · ${step.role} · ${step.modelName}`,
             timestamp: Date.now(),
           });
 
-          // First step uses the full scenario prompt; subsequent steps get targeted instructions
           const scenarioPrompt = chain.prompt || scenario.prompt;
-          const userPrompt = isFirst
-            ? scenarioPrompt
-            : getStepPrompt(step.role, previousCode, scenarioPrompt);
+          const timeout = isFirst ? scenario.timeout : 180_000;
+          const stepInstruction = getStepRoleInstruction(step.role) || "Build the complete site";
 
-          const timeout = isFirst ? scenario.timeout : 180_000; // 3 min for non-scaffold steps
+          // Track sections present from previous step for handoff
+          const sectionsPresent = lastGoodCode ? extractSections(lastGoodCode).map(s => s.replace(/<|>/g, "")) : [];
+          const prevModelName = si > 0 ? chain.steps[si - 1].modelName : null;
 
-          // Heartbeat keeps the NDJSON stream alive during long model calls.
-          // Without this, the connection times out after ~60s of silence and
-          // the frontend never receives the results.
-          let heartbeatCount = 0;
-          const heartbeat = setInterval(() => {
-            heartbeatCount++;
-            emit({
-              type: "hybrid:heartbeat",
-              chainId: chain.id,
-              stepIndex: si,
-              message: `Step ${si + 1}: ${step.modelName} generating... (${heartbeatCount * 10}s)`,
-              timestamp: Date.now(),
-            });
-          }, 10_000);
-
-          // Streaming preview — emit partial HTML as model generates
-          let lastStreamEmit = 0;
-          let lastStreamLen = 0;
-          const onChunk = (accumulated: string) => {
-            const now = Date.now();
-            // Throttle: at least 500ms gap AND at least 200 chars new content
-            if (now - lastStreamEmit < 500 || accumulated.length - lastStreamLen < 200) return;
-            // Extract renderable HTML from partial content
-            const html = extractPartialHtml(accumulated);
-            if (!html || html.length < 50) return;
-            lastStreamEmit = now;
-            lastStreamLen = accumulated.length;
-            emit({
-              type: "hybrid:step-streaming",
-              chainId: chain.id,
-              stepIndex: si,
-              partialHtml: html,
-              message: `Step ${si + 1}: streaming ${html.length} chars...`,
-              timestamp: now,
-            });
-          };
-
-          // FIX 2: Local models get strict HTML-only system prompt
-          const isLocal = step.provider === "ollama" || step.provider === "lmstudio";
-          const systemPrompt = isLocal ? LOCAL_MODEL_PREFIX + STEP_SYSTEM : STEP_SYSTEM;
-
-          const result = await callCloudDirect(
-            step.provider,
-            step.modelId,
-            systemPrompt,
-            userPrompt,
-            timeout,
-            abortController.signal,
-            onChunk
-          );
-
-          clearInterval(heartbeat);
-
-          const cost = await logBilling(baseUrl, step.modelId, step.provider, result.tokenCount, result.timeMs);
-          totalCost += cost;
-          chainCost += cost;
-          chainTimeMs += result.timeMs;
-
-          // Extract code for the next step
-          const code = extractCode(result.content) || result.content;
-
-          // Build log — streaming status
-          emit({
-            type: "hybrid:build-log",
-            chainId: chain.id,
-            stepIndex: si,
-            message: `[${formatElapsed(chainStartTime)}] Step ${si + 1} complete — ${code.length} chars — ${formatTime(result.timeMs)}`,
-            timestamp: Date.now(),
-          });
-
-          // FIX 1: Output validation gate — validate before passing to next step
-          const validation = validateStepOutput(code);
+          // ── 3-STRIKE ESCALATION LOOP ──
+          let attempts = 0;
           let stepFailed = false;
-          const hasBody = code.toLowerCase().includes("<body");
+          let finalCode = "";
+          let finalResult: CloudCallResult | null = null;
+          let finalCost = 0;
+          let escalatedTo: string | undefined;
+          let currentModelId = step.modelId;
+          let currentProvider = step.provider;
+          let currentModelName = step.modelName;
+          let strikeMissing: string[] = [];
 
-          if (!validation.valid && !result.error) {
-            stepFailed = true;
-            console.warn(`[HYBRID] Step ${si + 1} output INVALID: ${validation.reason} (${code.length} chars from ${step.modelName})`);
-            emit({
-              type: "hybrid:error",
-              chainId: chain.id,
-              stepIndex: si,
-              message: `Step ${si + 1} output invalid — ${validation.reason}. Using last good output.`,
-              timestamp: Date.now(),
-            });
+          for (let strike = 0; strike < 3; strike++) {
+            if (abortController.signal.aborted) break;
+            attempts++;
+            usedModels.add(`${currentProvider}:${currentModelId}`);
 
-            // Guardian REJECTED event
-            emit({
-              type: "hybrid:guardian",
-              chainId: chain.id,
-              stepIndex: si,
-              message: `Step ${si + 1} output REJECTED — ${validation.reason} — passing Step ${si} HTML forward`,
-              timestamp: Date.now(),
-            });
-
-            emit({
-              type: "hybrid:build-log",
-              chainId: chain.id,
-              stepIndex: si,
-              message: `[${formatElapsed(chainStartTime)}] Thread Guardian: Step ${si + 1} output REJECTED — ${validation.reason}`,
-              timestamp: Date.now(),
-            });
-
-            // Use last known good HTML instead of garbage
-            if (lastGoodCode) {
-              previousCode = lastGoodCode;
+            // Build prompt with Truth Anchor injection + Handoff Brief
+            let userPrompt: string;
+            if (strike > 0) {
+              // Retry/escalation — use correction prompt
+              const failReason = strikeMissing.length > 0
+                ? `Missing sections: ${strikeMissing.join(", ")}`
+                : "Output did not pass validation";
+              userPrompt = buildCorrectionPrompt(lastGoodCode || previousCode, strikeMissing, failReason);
+            } else if (isFirst) {
+              userPrompt = buildTruthAnchorInjection(truthAnchor, stepInstruction) + scenarioPrompt;
+            } else {
+              const handoff = buildHandoffBrief(si, chain.steps.length, prevModelName, sectionsPresent, step.role, stepInstruction, truthAnchor.hash);
+              const basePrompt = getStepPrompt(step.role, previousCode, scenarioPrompt);
+              userPrompt = buildTruthAnchorInjection(truthAnchor, stepInstruction) + handoff + basePrompt;
             }
-            // Don't update previousCode with bad output
-          } else if (code && validation.valid) {
-            // Regression check — detect sections removed from previous step
-            let regressionBlocked = false;
+
+            // Heartbeat
+            let heartbeatCount = 0;
+            const heartbeat = setInterval(() => {
+              heartbeatCount++;
+              emit({
+                type: "hybrid:heartbeat",
+                chainId: chain.id,
+                stepIndex: si,
+                message: `Step ${si + 1}: ${currentModelName} generating... (${heartbeatCount * 10}s)`,
+                timestamp: Date.now(),
+              });
+            }, 10_000);
+
+            // Streaming preview
+            let lastStreamEmit = 0;
+            let lastStreamLen = 0;
+            const onChunk = (accumulated: string) => {
+              const now = Date.now();
+              if (now - lastStreamEmit < 500 || accumulated.length - lastStreamLen < 200) return;
+              const html = extractPartialHtml(accumulated);
+              if (!html || html.length < 50) return;
+              lastStreamEmit = now;
+              lastStreamLen = accumulated.length;
+              emit({
+                type: "hybrid:step-streaming",
+                chainId: chain.id,
+                stepIndex: si,
+                partialHtml: html,
+                message: `Step ${si + 1}: streaming ${html.length} chars...`,
+                timestamp: now,
+              });
+            };
+
+            const isLocal = currentProvider === "ollama" || currentProvider === "lmstudio";
+            const systemPrompt = isLocal ? LOCAL_MODEL_PREFIX + STEP_SYSTEM : STEP_SYSTEM;
+
+            const result = await callCloudDirect(
+              currentProvider, currentModelId, systemPrompt, userPrompt,
+              timeout, abortController.signal, onChunk
+            );
+            clearInterval(heartbeat);
+
+            const cost = await logBilling(baseUrl, currentModelId, currentProvider, result.tokenCount, result.timeMs);
+            totalCost += cost;
+            chainCost += cost;
+            chainTimeMs += result.timeMs;
+            finalCost += cost;
+
+            const code = extractCode(result.content) || result.content;
+            finalCode = code;
+            finalResult = result;
+
+            // Validate output
+            const validation = validateStepOutput(code);
+
+            // Handoff check: if model outputs text before <!DOCTYPE, fast fail
+            if (validation.valid && result.content.trim().length > 0) {
+              const trimmed = result.content.trim();
+              const docIdx = trimmed.toLowerCase().indexOf("<!doctype");
+              const htmlIdx = trimmed.toLowerCase().indexOf("<html");
+              const firstTag = Math.min(docIdx === -1 ? Infinity : docIdx, htmlIdx === -1 ? Infinity : htmlIdx);
+              if (firstTag > 200 && strike < 2) {
+                // Model failed handoff — text before HTML
+                emit({ type: "hybrid:build-log", chainId: chain.id, stepIndex: si,
+                  message: `⚠️ ${currentModelName} didn't follow instructions — retrying`, timestamp: Date.now() });
+                strikeMissing = ["handoff protocol violation"];
+                continue; // next strike
+              }
+            }
+
+            if (!validation.valid && !result.error) {
+              // Invalid output
+              if (strike < 2) {
+                const msg = strike === 0
+                  ? `🔄 Retrying — ${currentModelName} output invalid`
+                  : `🔄 Second attempt — ${currentModelName} still failing`;
+                emit({ type: "hybrid:build-log", chainId: chain.id, stepIndex: si, message: msg, timestamp: Date.now() });
+                strikeMissing = [validation.reason];
+
+                // Strike 2: swap to next model in the chain (if available)
+                if (strike === 1) {
+                  const nextModel = findEscalationModel(chain.steps, si, usedModels);
+                  if (nextModel) {
+                    currentModelId = nextModel.modelId;
+                    currentProvider = nextModel.provider;
+                    currentModelName = nextModel.modelName;
+                    escalatedTo = nextModel.modelName;
+                    emit({ type: "hybrid:build-log", chainId: chain.id, stepIndex: si,
+                      message: `⬆️ Escalated to ${nextModel.modelName}`, timestamp: Date.now() });
+                  }
+                }
+                continue; // next strike
+              }
+              // Strike 3 exhausted — use whatever we got
+              stepFailed = true;
+              break;
+            }
+
+            // Valid HTML — now check regression
             if (si > 0 && lastGoodCode) {
               const regressionChangelog = generateChangelog(lastGoodCode, code);
               if (regressionChangelog.regressionCheck === "FAILED") {
-                regressionBlocked = true;
-                stepFailed = true;
                 const removedStr = regressionChangelog.sectionsRemoved.join(", ");
-                emit({
-                  type: "hybrid:guardian",
-                  chainId: chain.id,
-                  stepIndex: si,
-                  message: `[Guardian T1] Step ${si + 1} output — REJECTED (regression detected — removed: ${removedStr} — passing Step ${si} HTML forward)`,
-                  timestamp: Date.now(),
-                });
-                emit({
-                  type: "hybrid:build-log",
-                  chainId: chain.id,
-                  stepIndex: si,
-                  message: `[${formatElapsed(chainStartTime)}] Guardian T1: Step ${si + 1} output REJECTED — regression detected — removed: ${removedStr}`,
-                  timestamp: Date.now(),
-                });
-                previousCode = lastGoodCode;
+                if (strike < 2) {
+                  const msg = strike === 0
+                    ? `🔄 Retrying — ${currentModelName} removed ${removedStr}`
+                    : `🔄 Second attempt — still missing ${removedStr}`;
+                  emit({ type: "hybrid:build-log", chainId: chain.id, stepIndex: si, message: msg, timestamp: Date.now() });
+                  strikeMissing = regressionChangelog.sectionsRemoved;
+                  if (strike === 1) {
+                    const nextModel = findEscalationModel(chain.steps, si, usedModels);
+                    if (nextModel) {
+                      currentModelId = nextModel.modelId;
+                      currentProvider = nextModel.provider;
+                      currentModelName = nextModel.modelName;
+                      escalatedTo = nextModel.modelName;
+                      emit({ type: "hybrid:build-log", chainId: chain.id, stepIndex: si,
+                        message: `⬆️ Escalated to ${nextModel.modelName}`, timestamp: Date.now() });
+                    }
+                  }
+                  continue; // next strike
+                }
+                // Strike 3 — regression still present, use last good
+                stepFailed = true;
+                emit({ type: "hybrid:guardian", chainId: chain.id, stepIndex: si,
+                  message: `❌ Step ${si + 1} — Missing ${removedStr} · keeping previous version`,
+                  timestamp: Date.now() });
+                break;
               }
             }
 
-            if (!regressionBlocked) {
-              // No regression — run Guardian 3-tier check
-              const scenarioPromptForGuardian = chain.prompt || scenario.prompt;
-              const guardianResults = await runGuardianTieredCheck(
-                code, scenarioPromptForGuardian,
-                guardianModelId, guardianProvider,
-                si, abortController.signal,
-                emit, chainStartTime, chain.id,
-              );
-
-              // If any guardian tier rejected, use last good code
-              const guardianRejected = guardianResults.some(r => !r.passed);
-              if (guardianRejected && lastGoodCode) {
-                emit({
-                  type: "hybrid:build-log",
-                  chainId: chain.id,
-                  stepIndex: si,
-                  message: `[${formatElapsed(chainStartTime)}] Thread Guardian: Step ${si + 1} output flagged — using last good HTML`,
-                  timestamp: Date.now(),
-                });
-                previousCode = lastGoodCode;
-              } else {
-                previousCode = code;
-                lastGoodCode = code;
+            // Truth Anchor verification
+            const taMissing = verifyAgainstTruthAnchor(code, truthAnchor);
+            if (taMissing.length > 0 && strike < 2) {
+              const msg = strike === 0
+                ? `🔄 Retrying — ${currentModelName} missed ${taMissing.join(", ")}`
+                : `🔄 Second attempt — still missing ${taMissing.join(", ")}`;
+              emit({ type: "hybrid:build-log", chainId: chain.id, stepIndex: si, message: msg, timestamp: Date.now() });
+              strikeMissing = taMissing;
+              if (strike === 1) {
+                const nextModel = findEscalationModel(chain.steps, si, usedModels);
+                if (nextModel) {
+                  currentModelId = nextModel.modelId;
+                  currentProvider = nextModel.provider;
+                  currentModelName = nextModel.modelName;
+                  escalatedTo = nextModel.modelName;
+                  emit({ type: "hybrid:build-log", chainId: chain.id, stepIndex: si,
+                    message: `⬆️ Escalated to ${nextModel.modelName}`, timestamp: Date.now() });
+                }
               }
+              continue; // next strike
             }
-          } else {
+
+            // If truth anchor has minor misses on strike 3, just log and continue
+            if (taMissing.length > 0) {
+              emit({ type: "hybrid:build-log", chainId: chain.id, stepIndex: si,
+                message: `⚠️ Spec gaps: ${taMissing.join(", ")} — best available output used`,
+                timestamp: Date.now() });
+            }
+
+            // Run Guardian 3-tier check (only on final successful attempt)
+            const guardianResults = await runGuardianTieredCheck(
+              code, scenarioPrompt, guardianModelId, guardianProvider,
+              si, abortController.signal, emit, chainStartTime, chain.id,
+            );
+            const guardianRejected = guardianResults.some(r => !r.passed);
+            if (guardianRejected && lastGoodCode && strike < 2) {
+              strikeMissing = ["guardian quality check"];
+              if (strike === 1) {
+                const nextModel = findEscalationModel(chain.steps, si, usedModels);
+                if (nextModel) {
+                  currentModelId = nextModel.modelId;
+                  currentProvider = nextModel.provider;
+                  currentModelName = nextModel.modelName;
+                  escalatedTo = nextModel.modelName;
+                  emit({ type: "hybrid:build-log", chainId: chain.id, stepIndex: si,
+                    message: `⬆️ Escalated to ${nextModel.modelName}`, timestamp: Date.now() });
+                }
+              }
+              continue;
+            }
+
+            // All checks passed!
+            if (escalatedTo && attempts > 1) {
+              emit({ type: "hybrid:build-log", chainId: chain.id, stepIndex: si,
+                message: `✅ ${currentModelName} recovered the step`,
+                timestamp: Date.now() });
+            } else {
+              emit({ type: "hybrid:build-log", chainId: chain.id, stepIndex: si,
+                message: `✅ Step ${si + 1} checked — looks good`,
+                timestamp: Date.now() });
+            }
+
+            // Update state
             previousCode = code;
+            lastGoodCode = code;
+            break; // Exit strike loop — success
+          }
+          // ── END 3-STRIKE LOOP ──
+
+          // If step failed after all strikes, use lastGoodCode
+          if (stepFailed && lastGoodCode) {
+            emit({ type: "hybrid:build-log", chainId: chain.id, stepIndex: si,
+              message: `⚠️ Step ${si + 1} incomplete — best available output used`,
+              timestamp: Date.now() });
+            previousCode = lastGoodCode;
+          } else if (stepFailed && !lastGoodCode) {
+            previousCode = finalCode;
           }
 
-          // Generate changelog (diff from previous step)
+          // Generate changelog
           let changelog: StepChangelog | undefined;
           if (si > 0 && lastGoodCode && !stepFailed) {
             const prevStepCode = stepResults[si - 1]?.extractedCode || "";
-            if (prevStepCode) {
-              changelog = generateChangelog(prevStepCode, code);
-            }
+            if (prevStepCode) changelog = generateChangelog(prevStepCode, finalCode);
           }
 
-          // Score this step's output (score the actual output, even if invalid)
-          const scored = scoreResponse(result.content, scenario.validation);
+          // Score the output
+          const scored = scoreResponse(finalResult?.content || "", scenario.validation);
           scored.score.tier = stepFailed ? "fail" : getCloudTier(scored.score.total);
 
           const stepResult: HybridStepResult = {
             stepIndex: si,
-            modelId: step.modelId,
-            provider: step.provider,
+            modelId: escalatedTo ? currentModelId : step.modelId,
+            provider: currentProvider,
             role: step.role,
-            content: result.content,
-            extractedCode: stepFailed && lastGoodCode ? lastGoodCode : code,
+            content: finalResult?.content || "",
+            extractedCode: stepFailed && lastGoodCode ? lastGoodCode : finalCode,
             score: scored.score,
-            timeMs: result.timeMs,
-            tokenCount: result.tokenCount,
-            cost,
+            timeMs: finalResult?.timeMs || 0,
+            tokenCount: finalResult?.tokenCount || 0,
+            cost: finalCost,
             changelog,
+            attempts,
+            escalatedTo,
           };
 
           stepResults.push(stepResult);
 
+          const scoreColor = scored.score.total >= 90 ? "🟢" : scored.score.total >= 70 ? "🟡" : "🔴";
           emit({
             type: "hybrid:step-complete",
             chainId: chain.id,
             stepIndex: si,
             stepResult,
             message: stepFailed
-              ? `${step.role} (${step.modelName}): FAILED — ${validation.reason}`
-              : `${step.role} (${step.modelName}): ${scored.score.total}/100 — ${formatTime(result.timeMs)}`,
+              ? `❌ ${step.role} (${step.modelName}): Failed`
+              : `${scoreColor} ${step.role} (${currentModelName}): ${scored.score.total}/100`,
             timestamp: Date.now(),
           });
 
           // If step errored out with no content, stop the chain
-          if (result.error && !result.content) {
+          if (finalResult?.error && !finalResult.content) {
             emit({
               type: "hybrid:error",
               chainId: chain.id,
               stepIndex: si,
-              message: `Chain "${chain.name}" failed at step ${si + 1} (${step.role}): ${result.error}`,
+              message: `❌ Chain stopped at step ${si + 1}: ${finalResult.error}`,
               timestamp: Date.now(),
             });
             break;
           }
         }
 
-        // Final score = last step's score
+        // Final score
         const finalScore: ScoreBreakdown = stepResults.length > 0
           ? stepResults[stepResults.length - 1].score
           : { codeExtracted: 0, validHtml: 0, requiredElements: 0, requiredKeywords: 0, cssCriteria: 0, jsCriteria: 0, codeLength: 0, total: 0, tier: "fail" };
 
-        // ── Jury Duty — final output verdict (at chain completion only) ──
+        // Jury Duty
         let juryVerdict: JuryVerdict | null = null;
         if (lastGoodCode && !abortController.signal.aborted) {
+          emit({ type: "hybrid:build-log", chainId: chain.id,
+            message: `⚖️ Running quality review...`, timestamp: Date.now() });
           const scenarioPromptForJury = chain.prompt || scenario.prompt;
           juryVerdict = await runJuryVerdict(
             lastGoodCode, scenarioPromptForJury,
@@ -1397,22 +1677,28 @@ export async function POST(request: NextRequest) {
           totalCost: chainCost,
           timestamp: Date.now(),
           juryVerdict: juryVerdict || undefined,
+          truthAnchor,
         };
 
         allChainResults.push(chainResult);
+
+        const elapsedSec = Math.floor(chainTimeMs / 1000);
+        const elapsedMin = Math.floor(elapsedSec / 60);
+        const elapsedRemSec = elapsedSec % 60;
+        const timeStr = elapsedMin > 0 ? `${elapsedMin} min ${elapsedRemSec} sec` : `${elapsedSec} sec`;
 
         emit({
           type: "hybrid:chain-complete",
           chainId: chain.id,
           chainResult,
-          message: `Chain "${chain.name}": ${finalScore.total}/100 — ${formatTime(chainTimeMs)} — $${chainCost.toFixed(4)}`,
+          message: `🏁 Build complete · ${finalScore.total}/100 · ${timeStr} · $${chainCost.toFixed(2)}`,
           timestamp: Date.now(),
         });
 
         emit({
           type: "hybrid:build-log",
           chainId: chain.id,
-          message: `[${formatElapsed(chainStartTime)}] Chain complete — Final score: ${finalScore.total} — Grade: ${finalScore.tier} — Cost: $${chainCost.toFixed(4)}`,
+          message: `🏁 Build complete · ${finalScore.total}/100 · ${timeStr} · $${chainCost.toFixed(2)}`,
           timestamp: Date.now(),
         });
       }
@@ -1420,8 +1706,8 @@ export async function POST(request: NextRequest) {
       emit({
         type: abortController.signal.aborted ? "hybrid:stopped" : "hybrid:complete",
         message: abortController.signal.aborted
-          ? `Hybrid Trials stopped. Cost: $${totalCost.toFixed(4)}`
-          : `Hybrid Trials complete — ${allChainResults.length} chains scored. Total cost: $${totalCost.toFixed(4)}`,
+          ? `⏹️ Stopped · $${totalCost.toFixed(2)}`
+          : `✅ Done · ${allChainResults.length} chain${allChainResults.length > 1 ? "s" : ""} · $${totalCost.toFixed(2)}`,
         timestamp: Date.now(),
       });
 
