@@ -74,6 +74,7 @@ export function ForgeTrialsHybrid() {
   const [customPrompt, setCustomPrompt] = useState("");
   const [expandedChain, setExpandedChain] = useState<string | null>(null);
   const [showPastRuns, setShowPastRuns] = useState(false);
+  const [recommendedMessage, setRecommendedMessage] = useState("");
 
   // Available models: merge model store + completed trial scorecards
   // This ensures local models that completed trials appear even if not in model store
@@ -137,57 +138,31 @@ export function ForgeTrialsHybrid() {
 
   // ── Generate recommended chains ──
   const generateRecommended = useCallback(() => {
-    // Gather scored models
-    const allScorecards = [...localScorecards, ...cloudScorecards];
-    const sorted = [...allScorecards].sort((a, b) => b.overallScore - a.overallScore);
-
-    // Best local
-    const bestLocal = sorted.find((s) => {
-      const m = availableModels.find((am) => am.id === s.modelId);
-      return m?.isLocal;
-    });
-    // Top cloud models
-    const topCloud = sorted
-      .filter((s) => {
-        const m = availableModels.find((am) => am.id === s.modelId);
-        return m && !m.isLocal;
-      })
-      .slice(0, 4);
-
-    if (topCloud.length === 0) {
-      // No cloud scores — use available cloud models as fallback
-      const fallbackCloud = cloudModels.slice(0, 4);
-      if (fallbackCloud.length === 0) return;
-
-      const makeStep = (m: AvailableModel, role: string): HybridStep => ({
-        modelId: m.id, provider: m.provider, modelName: m.name, role,
-      });
-
-      const scaffoldModel = bestLocal
-        ? availableModels.find((m) => m.id === bestLocal.modelId)!
-        : fallbackCloud[0];
-
-      const chains: HybridChain[] = [
-        {
-          id: `rec-${Date.now()}-1`,
-          name: `${scaffoldModel.name} → ${fallbackCloud[0].name}`,
-          steps: [makeStep(scaffoldModel, "Scaffold"), makeStep(fallbackCloud[0], "Enhance")],
-          prompt: "",
-        },
-      ];
-
-      if (fallbackCloud.length >= 2) {
-        chains.push({
-          id: `rec-${Date.now()}-2`,
-          name: `${scaffoldModel.name} → ${fallbackCloud[0].name} → ${fallbackCloud[1].name}`,
-          steps: [makeStep(scaffoldModel, "Scaffold"), makeStep(fallbackCloud[0], "Enhance"), makeStep(fallbackCloud[1], "Refactor")],
-          prompt: "",
-        });
-      }
-
-      setHybridChains(chains);
+    // Recommended mode requires completed trial data — no fallbacks
+    if (localScorecards.length === 0 && cloudScorecards.length === 0) {
+      setRecommendedMessage("Run local and cloud trials first to get recommendations.");
+      setHybridChains([]);
       return;
     }
+    if (localScorecards.length === 0) {
+      setRecommendedMessage("Run local trials first to get scaffold recommendations.");
+      setHybridChains([]);
+      return;
+    }
+    if (cloudScorecards.length === 0) {
+      setRecommendedMessage("Run cloud trials first to get enhance/refactor recommendations.");
+      setHybridChains([]);
+      return;
+    }
+
+    setRecommendedMessage("");
+
+    // Sort trial results by score — local for scaffold, cloud for enhance/refactor
+    const sortedLocal = [...localScorecards].sort((a, b) => b.overallScore - a.overallScore);
+    const sortedCloud = [...cloudScorecards].sort((a, b) => b.overallScore - a.overallScore);
+
+    const bestLocal = sortedLocal[0];
+    const topCloud = sortedCloud.slice(0, 4);
 
     const makeStep = (modelId: string, role: string): HybridStep => {
       const m = availableModels.find((am) => am.id === modelId);
@@ -199,7 +174,7 @@ export function ForgeTrialsHybrid() {
       };
     };
 
-    const scaffoldId = bestLocal?.modelId || topCloud[0].modelId;
+    const scaffoldId = bestLocal.modelId;
     const chains: HybridChain[] = [];
 
     // Chain 1: Scaffold → Best Cloud (2 steps)
@@ -268,34 +243,22 @@ export function ForgeTrialsHybrid() {
     }
 
     setHybridChains(chains.slice(0, 5));
-  }, [localScorecards, cloudScorecards, availableModels, cloudModels, setHybridChains]);
+  }, [localScorecards, cloudScorecards, availableModels, setHybridChains]);
 
   // ── Add a new empty custom chain ──
   const addCustomChain = useCallback(() => {
-    const defaultLocal = localModels[0];
-    const defaultCloud = cloudModels[0];
     const chain: HybridChain = {
       id: `custom-${Date.now()}`,
       name: `Chain ${hybridChains.length + 1}`,
       steps: [
-        {
-          modelId: defaultLocal?.id || defaultCloud?.id || "",
-          provider: defaultLocal?.provider || defaultCloud?.provider || "",
-          modelName: defaultLocal?.name || defaultCloud?.name || "",
-          role: "Scaffold",
-        },
-        {
-          modelId: defaultCloud?.id || defaultLocal?.id || "",
-          provider: defaultCloud?.provider || defaultLocal?.provider || "",
-          modelName: defaultCloud?.name || defaultLocal?.name || "",
-          role: "Enhance",
-        },
+        { modelId: "", provider: "", modelName: "", role: "Scaffold" },
+        { modelId: "", provider: "", modelName: "", role: "Enhance" },
       ],
       prompt: "",
     };
     setHybridChains([...hybridChains, chain]);
     setExpandedChain(chain.id);
-  }, [hybridChains, localModels, cloudModels, setHybridChains]);
+  }, [hybridChains, setHybridChains]);
 
   // ── Update a chain ──
   const updateChain = (chainId: string, updates: Partial<HybridChain>) => {
@@ -311,15 +274,14 @@ export function ForgeTrialsHybrid() {
   const addStep = (chainId: string) => {
     const chain = hybridChains.find((c) => c.id === chainId);
     if (!chain || chain.steps.length >= 5) return;
-    const defaultModel = cloudModels[0] || localModels[0];
     const roleIndex = chain.steps.length;
     updateChain(chainId, {
       steps: [
         ...chain.steps,
         {
-          modelId: defaultModel?.id || "",
-          provider: defaultModel?.provider || "",
-          modelName: defaultModel?.name || "",
+          modelId: "",
+          provider: "",
+          modelName: "",
           role: DEFAULT_ROLES[roleIndex] || `Step ${roleIndex + 1}`,
         },
       ],
@@ -345,6 +307,12 @@ export function ForgeTrialsHybrid() {
   // ── Start hybrid run ──
   const handleStart = useCallback(async () => {
     if (hybridChains.length === 0) return;
+    // Validate all steps have models selected
+    const hasEmptySteps = hybridChains.some((c) => c.steps.some((s) => !s.modelId));
+    if (hasEmptySteps) {
+      hybridAddEvent({ type: "hybrid:error", message: "All steps must have a model selected before running.", timestamp: Date.now() });
+      return;
+    }
 
     const ctrl = new AbortController();
     hybridSetAbortController(ctrl);
@@ -521,7 +489,13 @@ export function ForgeTrialsHybrid() {
 
       {/* ── Chain List + Results ── */}
       <div className="flex-1 overflow-auto p-3 space-y-2">
-        {hybridChains.length === 0 && (
+        {recommendedMessage && hybridMode === "recommended" && (
+          <div className="text-center py-4 px-4">
+            <p className="text-sm font-bold text-amber-400">{recommendedMessage}</p>
+          </div>
+        )}
+
+        {hybridChains.length === 0 && !recommendedMessage && (
           <div className="text-center py-12 text-zinc-600">
             <Layers className="w-8 h-8 mx-auto mb-2 opacity-40" />
             <p className="text-sm font-bold">No chains configured</p>
@@ -592,7 +566,7 @@ export function ForgeTrialsHybrid() {
                           backgroundColor: (PROVIDER_COLORS[step.provider] || "#6B7280") + "10",
                         }}
                       >
-                        {step.modelName.length > 15 ? step.modelName.slice(0, 15) + "…" : step.modelName}
+                        {step.modelName ? (step.modelName.length > 15 ? step.modelName.slice(0, 15) + "…" : step.modelName) : "Select…"}
                       </span>
                     </React.Fragment>
                   ))}
@@ -663,7 +637,7 @@ export function ForgeTrialsHybrid() {
                         {/* Model selector */}
                         {hybridMode === "custom" && !hybridRunning ? (
                           <select
-                            value={`${step.provider}:${step.modelId}`}
+                            value={step.modelId ? `${step.provider}:${step.modelId}` : ""}
                             onChange={(e) => {
                               const [provider, ...rest] = e.target.value.split(":");
                               const modelId = rest.join(":");
@@ -676,8 +650,13 @@ export function ForgeTrialsHybrid() {
                                 });
                               }
                             }}
-                            className="bg-zinc-800 border border-zinc-700 text-xs text-zinc-300 rounded px-1.5 py-0.5 flex-1 min-w-0"
+                            className={`bg-zinc-800 border text-xs rounded px-1.5 py-0.5 flex-1 min-w-0 ${
+                              step.modelId ? "border-zinc-700 text-zinc-300" : "border-amber-600/50 text-amber-400"
+                            }`}
                           >
+                            {!step.modelId && (
+                              <option value="" disabled>— Select a model —</option>
+                            )}
                             {localModels.length > 0 && (
                               <optgroup label="LOCAL — $0.00">
                                 {localModels.map((m) => (

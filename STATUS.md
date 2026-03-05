@@ -220,7 +220,7 @@ Tag: working-2026-03-02-deploy-fix (last tagged)
 | Results persistence | Works | localStorage via Zustand persist (`forge-trials-store`) |
 | Warmup splash | Works | Preview iframe shows splash during first API call |
 | Parallel cloud execution | Works | Toggle in toolbar — providers run simultaneously, rounds sequential within each |
-| Hybrid chain system | Works | Recommended + Custom modes — local AND cloud models from completed trials, LOCAL/CLOUD badges, $0.00 cost for local steps |
+| Hybrid chain system | Works | Recommended (trial-data-only, no fallbacks) + Custom (empty steps, user selects) — LOCAL/CLOUD badges, $0.00 cost for local steps |
 | Hybrid API route | Works | `/api/benchmark/run-hybrid` — chain execution with step-by-step output feeding |
 | Round explainers | Works | One-sentence description per scenario (local R1-R8, cloud R1-R8) — `explainers.ts` |
 | Criterion explainers | Works | What each scoring bar measures + dynamic score explanation sentences |
@@ -243,7 +243,8 @@ Tag: working-2026-03-02-deploy-fix (last tagged)
 
 | Date | Commit | Change |
 |------|--------|--------|
-| Mar 4 | (latest) | HuggingFace provider wired — Llama 3.3 70B, Qwen 3 235B, DeepSeek V3. Base URL updated to router.huggingface.co. All 3 models ping-tested OK. Also fixed @sarge/billing + @sarge/benchmark missing workspace deps. |
+| Mar 4 | (latest) | Hybrid — remove hardcoded fallbacks, recommendations from trial data only. Custom chains start empty with "Select a model" prompt. Recommended mode requires completed local+cloud trials. |
+| Mar 4 | 5f3f4d5 | HuggingFace provider wired — Llama 3.3 70B, Qwen 3 235B, DeepSeek V3. Base URL updated to router.huggingface.co. All 3 models ping-tested OK. Also fixed @sarge/billing + @sarge/benchmark missing workspace deps. |
 | Mar 4 | 5cc2cc7 | Live event ticker + activity panel — real time stream visibility in Forge Trials |
 | Mar 4 | 3ac6684 | Cloud trials audit — silent catch blocks fixed, finally blocks for state cleanup, emit() error logging |
 | Mar 4 | bb62a8a | Hybrid pastRuns persistence + Saved Trial Data viewer + hooks fix + fetch models API |
