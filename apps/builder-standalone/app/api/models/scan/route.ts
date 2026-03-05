@@ -36,5 +36,10 @@ export async function GET() {
     // LM Studio not running — skip
   }
 
-  return NextResponse.json({ results });
+  // Flatten into a single models array with provider field — matches what modelStore.hydrate() expects
+  const models = results.flatMap((r) =>
+    r.models.map((m) => ({ ...m, provider: r.provider, contextWindow: 4096 }))
+  );
+
+  return NextResponse.json({ models, results });
 }
