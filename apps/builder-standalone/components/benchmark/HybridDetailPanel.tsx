@@ -42,6 +42,9 @@ interface CompilerState {
   error: string | null;
 }
 
+// Injected into preview iframes: anchor links scroll within iframe, external links open new tab
+const NAV_FIX_SCRIPT = `<script>document.addEventListener('click',function(e){var a=e.target.closest('a');if(!a)return;e.preventDefault();e.stopPropagation();var h=a.getAttribute('href');if(!h)return;if(h.startsWith('#')&&h.length>1){var el=document.querySelector(h);if(el)el.scrollIntoView({behavior:'smooth'})}else if(h==='#'){window.scrollTo({top:0,behavior:'smooth'})}else if(h.startsWith('http')){window.open(h,'_blank','noopener')}},true);<\/script>`;
+
 export function HybridDetailPanel({ running, chainResult, events, scenarioId }: Props) {
   const [tab, setTab] = useState<Tab>("preview");
   const [assessmentOpen, setAssessmentOpen] = useState(true);
@@ -55,6 +58,7 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
   const assessFetchedRef = useRef<string | null>(null);
   const compileFetchedRef = useRef<string | null>(null);
   const prevStepRef = useRef<number | null>(null);
+  const prevLiveHtmlRef = useRef("");
 
   const scenario = ALL_HYBRID_SCENARIOS.find((s) => s.id === scenarioId);
   const finalHtml = chainResult?.steps?.[chainResult.steps.length - 1]?.extractedCode || "";
@@ -62,32 +66,49 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
   const grade = finalScore ? getLetterGrade(finalScore.total) : null;
   const gradeColor = grade ? getGradeColor(grade) : "";
 
-  // Live preview: prioritize streaming partial HTML > step-complete HTML
+  // Live preview: preserve completed step's output until next step streams enough content
   const liveHtml = useMemo(() => {
-    // Scan backwards: streaming events update most frequently
+    let latestStreaming = "";
+    let latestComplete = "";
     for (let i = events.length - 1; i >= 0; i--) {
       const ev = events[i];
-      if (ev.type === "hybrid:step-streaming" && ev.partialHtml) {
-        return ev.partialHtml;
+      if (!latestStreaming && ev.type === "hybrid:step-streaming" && ev.partialHtml) {
+        latestStreaming = ev.partialHtml;
       }
-      if (ev.type === "hybrid:step-complete" && ev.stepResult?.extractedCode) {
-        return ev.stepResult.extractedCode;
+      if (!latestComplete && ev.type === "hybrid:step-complete" && ev.stepResult?.extractedCode) {
+        latestComplete = ev.stepResult.extractedCode;
+      }
+      if (latestStreaming && latestComplete) break;
+    }
+    // Only use streaming if substantial (2000+ chars with <body>) — prevents
+    // discarding Step 1's valid output while Step 2 is still warming up
+    if (latestStreaming) {
+      const lower = latestStreaming.toLowerCase();
+      if (latestStreaming.length >= 2000 && lower.includes("<body")) {
+        return latestStreaming;
       }
     }
-    return "";
+    return latestComplete || latestStreaming || "";
   }, [events]);
 
   // Use final chain HTML if available, otherwise live/streaming HTML
   const displayHtml = finalHtml || liveHtml;
 
-  // Preview HTML
+  // Preview HTML — inject nav-fix script to prevent parent navigation
   const previewHtml = useMemo(() => {
     if (!displayHtml) return "";
-    const code = displayHtml;
-    if (code.toLowerCase().includes("<!doctype") || code.toLowerCase().includes("<html")) {
-      return code;
+    let code = displayHtml;
+    if (!code.toLowerCase().includes("<!doctype") && !code.toLowerCase().includes("<html")) {
+      code = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:system-ui,sans-serif;padding:1rem}</style></head><body>${code}</body></html>`;
     }
-    return `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:system-ui,sans-serif;padding:1rem}</style></head><body>${code}</body></html>`;
+    // Inject nav-fix before </body> or at end
+    const bodyClose = code.toLowerCase().lastIndexOf("</body>");
+    if (bodyClose !== -1) {
+      code = code.slice(0, bodyClose) + NAV_FIX_SCRIPT + code.slice(bodyClose);
+    } else {
+      code += NAV_FIX_SCRIPT;
+    }
+    return code;
   }, [displayHtml]);
 
   // ── Auto-trigger assessment after chain completes ──
@@ -200,11 +221,12 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
     prevStepRef.current = stepNum;
   }, [running, events]);
 
-  // Fade back to full once streaming content is established
+  // Fade back to full once new step's content actually arrives in display
   useEffect(() => {
-    if (iframeOpacity < 1 && liveHtml.length >= 200) {
+    if (iframeOpacity < 1 && liveHtml !== prevLiveHtmlRef.current) {
       setIframeOpacity(1);
     }
+    prevLiveHtmlRef.current = liveHtml;
   }, [iframeOpacity, liveHtml]);
 
   // ── Score extraction helper ──
