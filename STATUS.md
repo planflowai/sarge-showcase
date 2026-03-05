@@ -251,7 +251,9 @@ Tag: working-2026-03-02-deploy-fix (last tagged)
 
 | Date | Commit | Change |
 |------|--------|--------|
-| Mar 5 | (latest) | Fix hydration error (nested button → span in ForgeTrialsHybrid Past Runs), fix iframe nav links permanently (hash links scroll normally, non-hash → window.open new tab, allow-popups sandbox). |
+| Mar 5 | (latest) | Billing — live provider balances (DeepSeek live $, HuggingFace account, console links for rest), real 2026 model pricing (rates.ts), dashboard overhaul (provider cards, pie chart, history table, CSV export), 3 new API routes (/balances /history /refresh). |
+| Mar 5 | e50167b | Guardian wiring, build log, changelog, model roles, Mistral scanner — full transparency pass. |
+| Mar 5 | 29f0f5d | Fix hydration error (nested button → span in ForgeTrialsHybrid Past Runs), fix iframe nav links permanently (hash links scroll normally, non-hash → window.open new tab, allow-popups sandbox). |
 | Mar 5 | 2e1481f | Hybrid — preserve local Step 1 base during Step 2 stream (2000+body gate), fix iframe nav links (anchor scroll within iframe, external → new tab, never navigate parent app). |
 | Mar 5 | 11069ae | Hybrid — per-step targeted prompts (step 2+ gets role-specific instruction instead of full scenario prompt), body tag validation gate, iframe fade transition on step handoff (0.3s opacity). Models no longer rebuild from scratch each step. |
 | Mar 5 | b646001 | Hybrid — output validation gate (HTML check, 2000 char min, chat response detection) + local model prompt enforcement (strict HTML-only prefix for Ollama/LM Studio). Invalid step output falls back to last known good HTML. |

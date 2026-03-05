@@ -11,7 +11,7 @@ export type {
 } from "./types";
 
 export type { ModelRate } from "./rates";
-export { MODEL_RATES, getRate, getAllRates } from "./rates";
+export { MODEL_RATES, getRate, getAllRates, PROVIDER_CONSOLE_URLS, PROVIDER_BALANCE_APIS } from "./rates";
 export { calculateCost, formatCost } from "./calculator";
 
 // Server-side logger is NOT re-exported here — it uses fs/path which crash client webpack.
