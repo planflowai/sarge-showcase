@@ -1474,6 +1474,12 @@ The bottleneck is never the build. It's always the client.
 - [x] Visual pipeline UI — human-readable proof of optimizations for clients
 - [x] Compliance certificate delivery — auto-generated after post-processing
 - [x] Cloud Forge Trials — launched, DeepSeek running, all results saved and referenceable
+- [x] Hybrid chain guardian wiring — validateStepOutput emits PASSED/REJECTED events, visible in Build Log tab
+- [x] Build Log tab — timestamped execution log in HybridDetailPanel, LIVE badge during runs
+- [x] Per-step changelog — HTML section diffing, CSS/JS counting, regression detection in Breakdown tab
+- [x] Model role tags — 6 roles (Builder/Trials/Chat/Image/Guardian/Code), clickable pills in Settings, filtered dropdowns
+- [x] Mistral built-in provider — Devstral 2, Devstral Small 2, Mistral Medium 3 in provider registry
+- [x] Guardian model assignment — selector in hybrid panel, passed to runner API
 
 ---
 
@@ -1620,10 +1626,11 @@ Two-panel layout (30/70 split) for building and testing multi-model chains.
 
 **Right Panel (HybridDetailPanel):**
 - Stats bar: scenario name, step count, final score, grade badge, time, cost
-- Tab bar: Preview / Code / Breakdown
+- Tab bar: Preview / Code / Breakdown / Build Log
   - Preview: `<iframe srcDoc>` rendering final HTML
   - Code: `<pre>` monospace with full HTML
-  - Breakdown: Per-step cards with score bars, deltas ("+42 from previous"), cost/time, provider badges
+  - Breakdown: Per-step cards with score bars, deltas, cost/time, provider badges, per-step changelog (sections added/removed, CSS/JS counts, regression check)
+  - Build Log: Timestamped execution log with guardian decisions (green PASSED / red REJECTED), LIVE badge during execution
 - AI Assessment (collapsible, auto-triggered):
   - Calls `POST /api/benchmark/assess` → Gemini 2.5 Flash
   - Sections: What Worked / What Didn't / Biggest Improvement / One More Step / Model Swap Suggestion
@@ -1649,13 +1656,44 @@ Two-panel layout (30/70 split) for building and testing multi-model chains.
 | cloud-r17 | Landing Page | hard | Pure conversion — one CTA, no nav, testimonials, urgency |
 | cloud-r18 | Rebuild/Refresh | expert | Given ugly HTML, modernize completely (includes inputHtml) |
 
+**Guardian Model Assignment:**
+- Optional guardian model selector above chain steps
+- Any cloud model can serve as guardian
+- `guardianModelId` + `guardianProvider` passed to runner API
+- Algorithmic validation (HTML check, body tag, chat pattern) always runs
+- Guardian decisions emitted as `hybrid:guardian` events (PASSED/REJECTED)
+
+**Build Log System:**
+- Runner emits `hybrid:build-log` events throughout execution
+- Events: chain start, step start (model + role), step complete (char count), chain complete
+- Displayed in Build Log tab with font-mono, auto-scroll, Shield header
+
+**Per-Step Changelog:**
+- `generateChangelog()` diffs HTML between consecutive steps
+- Tracks: sections added/removed (by name), CSS rules added/removed, JS functions added/removed
+- Regression detection: sections removed → FAILED with details
+- `StepChangelog` interface in `@sarge/benchmark`
+
+**Model Role Tags:**
+- 6 roles: Builder, Trials, Chat, Image, Guardian, Code
+- `modelRoles` state in modelStore (persisted, auto-tagged on hydrate)
+- Settings page: clickable role pills (B/T/C/I/G/X) per model via `ModelRoleTags.tsx`
+- Forge Trials dropdowns filter by "Trials" role
+
+**Mistral Provider:**
+- Built-in provider (not custom): Devstral 2, Devstral Small 2, Mistral Medium 3
+- 131K context, 8192 max tokens, Flame icon in ProviderBadge
+
 **Chain Execution:**
 1. Step 1 (Build) receives the scenario prompt
 2. Each subsequent step receives "Improve this code: [previous step's output]"
 3. Every step scored against scenario rubric
 4. Final score = last step's score
 5. Score progression shown (e.g., 45 → 72 → 88)
-6. On complete: auto-saves to pastRuns, syncs to Supabase `forge_hybrid_runs`, triggers AI assessment + compiler
+6. Guardian validates each step's output, emits PASSED/REJECTED events
+7. Changelog generated between consecutive steps
+8. Build log entries emitted throughout
+9. On complete: auto-saves to pastRuns, syncs to Supabase `forge_hybrid_runs`, triggers AI assessment + compiler
 
 **Routes:**
 - `POST /api/benchmark/run-hybrid` — chain execution (NDJSON streaming)

@@ -17,6 +17,9 @@ export type EffectiveModel = Model;
 
 export type VoicePersona = "default" | "friendly" | "professional" | "casual" | "formal" | "none" | "jarvis" | "friday";
 
+export type ModelRole = "Builder" | "Trials" | "Chat" | "Image" | "Guardian" | "Code";
+export const ALL_MODEL_ROLES: ModelRole[] = ["Builder", "Trials", "Chat", "Image", "Guardian", "Code"];
+
 interface ModelState {
   models: Model[];
   currentModel: Model | null;
@@ -24,6 +27,7 @@ interface ModelState {
   nicknames: Record<string, string>;
   voicePersona: string;
   builderFlags: Record<string, boolean>;
+  modelRoles: Record<string, ModelRole[]>;
   hydrate: () => void;
   setModels: (models: Model[]) => void;
   setCurrentModel: (model: Model | null) => void;
@@ -33,6 +37,9 @@ interface ModelState {
   getEffectiveModels: (providerId?: string) => Model[];
   getDisplayName: (modelId: string, fallbackName?: string) => string;
   getBuilderModels: () => Model[];
+  getModelsByRole: (role: ModelRole) => Model[];
+  hasModelRole: (modelId: string, role: ModelRole) => boolean;
+  setModelRole: (modelId: string, role: ModelRole, enabled: boolean) => void;
   setNickname: (modelId: string, nickname: string) => void;
   removeNickname: (modelId: string) => void;
   setVoicePersona: (persona: string) => void;
@@ -71,6 +78,7 @@ export const useModelStore = create<ModelState>()(
       nicknames: {},
       voicePersona: "none",
       builderFlags: {},
+      modelRoles: {},
 
       hydrate: () => {
         // Auto-tag cloud models as builders if they don't have a flag yet
@@ -85,6 +93,23 @@ export const useModelStore = create<ModelState>()(
         });
         if (changed) {
           set({ builderFlags: newFlags });
+        }
+
+        // Auto-tag model roles if not set yet
+        const roles: Record<string, ModelRole[]> = { ...state.modelRoles };
+        let rolesChanged = false;
+        state.models.forEach(m => {
+          if (!roles[m.id]) {
+            rolesChanged = true;
+            if (m.provider === 'ollama' || m.provider === 'lmstudio') {
+              roles[m.id] = ["Builder", "Trials"];
+            } else {
+              roles[m.id] = ["Builder", "Trials", "Chat"];
+            }
+          }
+        });
+        if (rolesChanged) {
+          set({ modelRoles: roles });
         }
 
         // Start async scan but don't block on it
@@ -167,6 +192,13 @@ export const useModelStore = create<ModelState>()(
             ...state.builderFlags,
             [modelId]: providerId !== 'ollama' && providerId !== 'lmstudio',
           },
+          // Auto-tag roles
+          modelRoles: {
+            ...state.modelRoles,
+            [modelId]: providerId !== 'ollama' && providerId !== 'lmstudio'
+              ? ["Builder", "Trials", "Chat"] as ModelRole[]
+              : ["Builder", "Trials"] as ModelRole[],
+          },
         }));
 
         // Only verify built-in providers (custom providers need base URL which isn't available here)
@@ -212,6 +244,43 @@ export const useModelStore = create<ModelState>()(
       getBuilderModels: () => {
         const state = get();
         return state.models.filter((m) => state.builderFlags[m.id]);
+      },
+
+      getModelsByRole: (role) => {
+        const state = get();
+        return state.models.filter((m) => {
+          const roles = state.modelRoles[m.id];
+          return roles ? roles.includes(role) : false;
+        });
+      },
+
+      hasModelRole: (modelId, role) => {
+        const state = get();
+        const roles = state.modelRoles[modelId];
+        return roles ? roles.includes(role) : false;
+      },
+
+      setModelRole: (modelId, role, enabled) => {
+        set((state) => {
+          const current = state.modelRoles[modelId] || [];
+          let updated: ModelRole[];
+          if (enabled && !current.includes(role)) {
+            updated = [...current, role];
+          } else if (!enabled && current.includes(role)) {
+            updated = current.filter(r => r !== role);
+          } else {
+            return state; // no change
+          }
+          // Keep builderFlags in sync
+          const builderFlags = { ...state.builderFlags };
+          if (role === "Builder") {
+            builderFlags[modelId] = enabled;
+          }
+          return {
+            modelRoles: { ...state.modelRoles, [modelId]: updated },
+            builderFlags,
+          };
+        });
       },
 
       setNickname: (modelId, nickname) => {
@@ -300,6 +369,7 @@ export const useModelStore = create<ModelState>()(
           nicknames: {},
           voicePersona: "none",
           builderFlags: {},
+          modelRoles: {},
         });
       },
     }),
@@ -309,6 +379,7 @@ export const useModelStore = create<ModelState>()(
         // Only persist custom (non-built-in) models, flags, nicknames
         models: state.models.filter(m => !m.isBuiltIn),
         builderFlags: state.builderFlags,
+        modelRoles: state.modelRoles,
         nicknames: state.nicknames,
         voicePersona: state.voicePersona,
       }),
@@ -324,6 +395,7 @@ export const useModelStore = create<ModelState>()(
           ...current,
           models: merged,
           builderFlags: { ...current.builderFlags, ...(persisted?.builderFlags || {}) },
+          modelRoles: { ...current.modelRoles, ...(persisted?.modelRoles || {}) },
           nicknames: { ...current.nicknames, ...(persisted?.nicknames || {}) },
           voicePersona: persisted?.voicePersona || current.voicePersona,
         };

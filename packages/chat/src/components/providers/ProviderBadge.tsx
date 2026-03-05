@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@sarge/core";
-import { Sparkles, Zap, Star, Rocket, Terminal, Code2 } from "lucide-react";
+import { Sparkles, Zap, Star, Rocket, Terminal, Code2, Flame } from "lucide-react";
 import type { Provider } from "@sarge/core";
 import type { LucideIcon } from "lucide-react";
 
@@ -11,6 +11,7 @@ const providerIcons: Record<Provider, LucideIcon> = {
   google: Star,
   xai: Rocket,
   deepseek: Code2,
+  mistral: Flame,
   ollama: Terminal,
   lmstudio: Terminal,
 };

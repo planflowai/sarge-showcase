@@ -166,6 +166,17 @@ export interface HybridChain {
   prompt: string;
 }
 
+export interface StepChangelog {
+  sectionsAdded: string[];
+  sectionsRemoved: string[];
+  cssRulesAdded: number;
+  cssRulesRemoved: number;
+  jsFunctionsAdded: number;
+  jsFunctionsRemoved: number;
+  regressionCheck: "PASSED" | "FAILED";
+  regressionDetails: string[];
+}
+
 export interface HybridStepResult {
   stepIndex: number;
   modelId: string;
@@ -177,6 +188,7 @@ export interface HybridStepResult {
   timeMs: number;
   tokenCount: number;
   cost: number;
+  changelog?: StepChangelog;
 }
 
 export interface HybridChainResult {
@@ -192,6 +204,8 @@ export interface HybridChainResult {
 export interface HybridBenchmarkConfig {
   chains: HybridChain[];
   scenarioId?: string; // default: cloud-r1-restaurant
+  guardianModelId?: string;
+  guardianProvider?: string;
 }
 
 export type HybridEventType =
@@ -204,7 +218,9 @@ export type HybridEventType =
   | "hybrid:complete"
   | "hybrid:error"
   | "hybrid:stopped"
-  | "hybrid:heartbeat";
+  | "hybrid:heartbeat"
+  | "hybrid:guardian"
+  | "hybrid:build-log";
 
 export interface HybridEvent {
   type: HybridEventType;

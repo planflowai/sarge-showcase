@@ -58,6 +58,11 @@ export function ForgeTrialsHybrid() {
   } = store;
 
   const storeModels = useModelStore((s) => s.models);
+  const modelRoles = useModelStore((s) => s.modelRoles);
+
+  // Guardian model state
+  const [guardianModelId, setGuardianModelId] = useState("");
+  const [guardianProvider, setGuardianProvider] = useState("");
 
   // Chain steps — single chain at a time
   const [steps, setSteps] = useState<HybridStep[]>([
@@ -67,20 +72,44 @@ export function ForgeTrialsHybrid() {
   const [showPastRuns, setShowPastRuns] = useState(false);
   const [stepTabs, setStepTabs] = useState<Record<number, "local" | "cloud">>({});
 
-  // ALL local models — every model in Ollama/LM Studio, no filtering
+  // Local models — filtered by "Trials" role (fallback: show all if no roles assigned)
   const localModels = useMemo(() =>
     storeModels
-      .filter((m) => m.provider === "ollama" || m.provider === "lmstudio")
+      .filter((m) => {
+        if (m.provider !== "ollama" && m.provider !== "lmstudio") return false;
+        const roles = modelRoles[m.id];
+        // Fallback: if no roles assigned, show all (backward compat)
+        if (!roles || roles.length === 0) return true;
+        return roles.includes("Trials");
+      })
       .map((m) => ({ id: m.id, provider: m.provider, name: m.name })),
-    [storeModels]
+    [storeModels, modelRoles]
   );
 
-  // ALL cloud models — every configured cloud model, no filtering
+  // Cloud models — filtered by "Trials" role (fallback: show all if no roles assigned)
   const cloudModels = useMemo(() =>
     storeModels
-      .filter((m) => m.provider !== "ollama" && m.provider !== "lmstudio")
+      .filter((m) => {
+        if (m.provider === "ollama" || m.provider === "lmstudio") return false;
+        const roles = modelRoles[m.id];
+        if (!roles || roles.length === 0) return true;
+        return roles.includes("Trials");
+      })
       .map((m) => ({ id: m.id, provider: m.provider, name: m.name })),
-    [storeModels]
+    [storeModels, modelRoles]
+  );
+
+  // Cloud models for Guardian selection — filtered by "Guardian" role
+  const guardianModels = useMemo(() =>
+    storeModels
+      .filter((m) => {
+        if (m.provider === "ollama" || m.provider === "lmstudio") return false;
+        const roles = modelRoles[m.id];
+        // Any cloud model can be guardian, but prefer tagged ones
+        return true;
+      })
+      .map((m) => ({ id: m.id, provider: m.provider, name: m.name })),
+    [storeModels, modelRoles]
   );
 
   // Trial score lookup — informational badge only, never a gate
@@ -150,9 +179,10 @@ export function ForgeTrialsHybrid() {
     hybridStartRun();
 
     try {
-      const config: HybridBenchmarkConfig = {
+      const config: HybridBenchmarkConfig & { guardianModelId?: string; guardianProvider?: string } = {
         chains: [chain],
         scenarioId: hybridSelectedScenario,
+        ...(guardianModelId ? { guardianModelId, guardianProvider } : {}),
       };
 
       const res = await fetch("/api/benchmark/run-hybrid", {
@@ -285,6 +315,36 @@ export function ForgeTrialsHybrid() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* ── GUARDIAN SELECTOR ── */}
+      <div className="px-4 py-2 border-b border-zinc-800/80 bg-zinc-900/20 flex-shrink-0">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-xs font-bold text-zinc-300 uppercase tracking-wider">Thread Guardian</span>
+          <span className="text-xs text-zinc-500">Validates output between steps</span>
+        </div>
+        <select
+          value={guardianModelId ? `${guardianProvider}:${guardianModelId}` : ""}
+          onChange={(e) => {
+            if (!e.target.value) {
+              setGuardianModelId("");
+              setGuardianProvider("");
+              return;
+            }
+            const [prov, ...rest] = e.target.value.split(":");
+            setGuardianModelId(rest.join(":"));
+            setGuardianProvider(prov);
+          }}
+          disabled={hybridRunning}
+          className="w-full bg-zinc-800 border border-zinc-700 text-zinc-200 text-sm rounded px-2 py-1.5"
+        >
+          <option value="">Hardcoded validation (default)</option>
+          {guardianModels.map((m) => (
+            <option key={`${m.provider}:${m.id}`} value={`${m.provider}:${m.id}`}>
+              {m.name} ({m.provider})
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* ── CHAIN STEPS ── */}

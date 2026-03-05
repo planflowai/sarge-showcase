@@ -4,8 +4,9 @@ import React, { useState, useMemo, useEffect, useRef, useCallback } from "react"
 import {
   Eye, Code, BarChart3, Loader2, ChevronDown, ChevronRight,
   CheckCircle, AlertTriangle, Flame, Clock, DollarSign, Layers,
+  ScrollText, Shield,
 } from "lucide-react";
-import type { HybridChainResult, HybridEvent } from "@sarge/benchmark";
+import type { HybridChainResult, HybridEvent, StepChangelog } from "@sarge/benchmark";
 import { ALL_HYBRID_SCENARIOS, getLetterGrade, getGradeColor } from "@sarge/benchmark";
 
 const PROVIDER_COLORS: Record<string, string> = {
@@ -23,7 +24,7 @@ interface Props {
   scenarioId: string;
 }
 
-type Tab = "preview" | "code" | "breakdown";
+type Tab = "preview" | "code" | "breakdown" | "buildlog";
 
 interface AuditScores {
   performance: number;
@@ -291,10 +292,24 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
     );
   }
 
+  // Build log entries from events (filtered)
+  const buildLogEntries = useMemo(() =>
+    events.filter(e => e.type === "hybrid:build-log" || e.type === "hybrid:guardian"),
+    [events]
+  );
+
+  // Auto-scroll ref for build log
+  const buildLogRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (buildLogRef.current) {
+      buildLogRef.current.scrollTop = buildLogRef.current.scrollHeight;
+    }
+  }, [buildLogEntries.length]);
+
   // ── Running state — show live preview if step HTML available ──
   if (running && !chainResult) {
     if (previewHtml) {
-      // A step completed — show live preview with running indicator
+      // A step completed — show live preview with running indicator + live build log
       return (
         <div className="flex flex-col h-full overflow-hidden">
           <div className="flex items-center gap-2 px-4 py-2 border-b border-zinc-800 bg-zinc-900/40 flex-shrink-0">
@@ -305,7 +320,7 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
             <span className="text-sm text-zinc-400 truncate flex-1">{currentMessage}</span>
             <span className="text-xs font-bold text-emerald-400 animate-pulse">LIVE</span>
           </div>
-          <div className="flex-1">
+          <div className="flex-1 min-h-0">
             <iframe
               srcDoc={previewHtml}
               sandbox="allow-scripts allow-popups"
@@ -314,29 +329,67 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
               title="Hybrid Live Preview"
             />
           </div>
+          {/* Live build log ticker */}
+          {buildLogEntries.length > 0 && (
+            <div ref={buildLogRef} className="max-h-32 overflow-y-auto border-t border-zinc-800 bg-zinc-950/80 px-3 py-1.5 flex-shrink-0">
+              {buildLogEntries.map((ev, i) => (
+                <div
+                  key={i}
+                  className={`font-mono text-xs py-0.5 ${
+                    ev.type === "hybrid:guardian"
+                      ? ev.message?.includes("PASSED") ? "text-emerald-400" : "text-red-400"
+                      : "text-zinc-400"
+                  }`}
+                >
+                  {ev.type === "hybrid:guardian" && "⛨ "}
+                  {ev.message}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       );
     }
-    // No step HTML yet — show spinner
+    // No step HTML yet — show spinner + live build log
     return (
-      <div className="flex flex-col items-center justify-center h-full">
-        <div className="relative mb-6">
-          <Flame className="w-16 h-16 text-[#FF6700] drop-shadow-[0_0_20px_rgba(255,103,0,0.4)]" />
-          <Loader2 className="w-8 h-8 animate-spin text-amber-400 absolute -bottom-1 -right-1" />
+      <div className="flex flex-col h-full overflow-hidden">
+        <div className="flex flex-col items-center justify-center flex-1">
+          <div className="relative mb-6">
+            <Flame className="w-16 h-16 text-[#FF6700] drop-shadow-[0_0_20px_rgba(255,103,0,0.4)]" />
+            <Loader2 className="w-8 h-8 animate-spin text-amber-400 absolute -bottom-1 -right-1" />
+          </div>
+          <p className="text-lg font-[900] text-white mb-1">
+            Running Step {(currentStepIndex ?? 0) + 1}...
+          </p>
+          <p className="text-sm text-zinc-400 max-w-md text-center">{currentMessage}</p>
+          <div className="mt-4 flex items-center gap-1">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="w-2 h-2 rounded-full bg-[#FF6700] animate-pulse"
+                style={{ animationDelay: `${i * 0.3}s` }}
+              />
+            ))}
+          </div>
         </div>
-        <p className="text-lg font-[900] text-white mb-1">
-          Running Step {(currentStepIndex ?? 0) + 1}...
-        </p>
-        <p className="text-sm text-zinc-400 max-w-md text-center">{currentMessage}</p>
-        <div className="mt-4 flex items-center gap-1">
-          {[0, 1, 2].map((i) => (
-            <div
-              key={i}
-              className="w-2 h-2 rounded-full bg-[#FF6700] animate-pulse"
-              style={{ animationDelay: `${i * 0.3}s` }}
-            />
-          ))}
-        </div>
+        {/* Live build log ticker */}
+        {buildLogEntries.length > 0 && (
+          <div ref={buildLogRef} className="max-h-40 overflow-y-auto border-t border-zinc-800 bg-zinc-950/80 px-3 py-1.5 flex-shrink-0">
+            {buildLogEntries.map((ev, i) => (
+              <div
+                key={i}
+                className={`font-mono text-xs py-0.5 ${
+                  ev.type === "hybrid:guardian"
+                    ? ev.message?.includes("PASSED") ? "text-emerald-400" : "text-red-400"
+                    : "text-zinc-400"
+                }`}
+              >
+                {ev.type === "hybrid:guardian" && "⛨ "}
+                {ev.message}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     );
   }
@@ -386,6 +439,7 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
           { id: "preview" as Tab, icon: Eye, label: "Preview" },
           { id: "code" as Tab, icon: Code, label: "Code" },
           { id: "breakdown" as Tab, icon: BarChart3, label: "Breakdown" },
+          { id: "buildlog" as Tab, icon: ScrollText, label: "Build Log" },
         ]).map(({ id, icon: Icon, label }) => (
           <button
             key={id}
@@ -439,6 +493,7 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
               const delta = si > 0 ? step.score.total - prevScore : 0;
               const scoreColor = step.score.total >= 90 ? "text-emerald-400" : step.score.total >= 70 ? "text-amber-400" : "text-red-400";
               const barColor = step.score.total >= 90 ? "from-emerald-600 to-emerald-400" : step.score.total >= 70 ? "from-amber-600 to-amber-400" : "from-red-600 to-red-400";
+              const cl = step.changelog;
 
               return (
                 <div key={si} className="bg-zinc-900/40 border border-zinc-800 rounded-xl p-3">
@@ -477,9 +532,92 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
                       {step.provider === "ollama" || step.provider === "lmstudio" ? "LOCAL" : "CLOUD"}
                     </span>
                   </div>
+
+                  {/* Changelog — per-step diff */}
+                  {cl && (
+                    <div className="mt-2 pt-2 border-t border-zinc-800 text-xs space-y-0.5">
+                      {cl.sectionsAdded.length > 0 && (
+                        <div className="text-emerald-400">
+                          + Added: {cl.sectionsAdded.join(", ")} ({cl.sectionsAdded.length} new section{cl.sectionsAdded.length > 1 ? "s" : ""})
+                        </div>
+                      )}
+                      {cl.cssRulesAdded > 0 && (
+                        <div className="text-emerald-400">+ Added: {cl.cssRulesAdded} CSS rules</div>
+                      )}
+                      {cl.cssRulesRemoved > 0 && (
+                        <div className="text-red-400">- Removed: {cl.cssRulesRemoved} CSS rules</div>
+                      )}
+                      {cl.jsFunctionsAdded > 0 && (
+                        <div className="text-emerald-400">+ Added: {cl.jsFunctionsAdded} JS function{cl.jsFunctionsAdded > 1 ? "s" : ""}</div>
+                      )}
+                      {cl.jsFunctionsRemoved > 0 && (
+                        <div className="text-red-400">- Removed: {cl.jsFunctionsRemoved} JS function{cl.jsFunctionsRemoved > 1 ? "s" : ""}</div>
+                      )}
+                      {cl.sectionsRemoved.length > 0 && (
+                        <div className="text-red-400">
+                          - Removed: {cl.sectionsRemoved.join(", ")}
+                        </div>
+                      )}
+                      {cl.sectionsAdded.length === 0 && cl.cssRulesAdded === 0 && cl.jsFunctionsAdded === 0 && (
+                        <div className="text-zinc-500">~ Modified: content updated (no structural changes detected)</div>
+                      )}
+                      <div className={`flex items-center gap-1 mt-1 ${
+                        cl.regressionCheck === "PASSED" ? "text-emerald-400" : "text-red-400"
+                      }`}>
+                        {cl.regressionCheck === "PASSED"
+                          ? <><CheckCircle className="w-3 h-3" /> Regression check: PASSED — all previous sections present</>
+                          : <><AlertTriangle className="w-3 h-3" /> Regression check: FAILED — {cl.regressionDetails.join("; ")}</>
+                        }
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Build Log */}
+        {tab === "buildlog" && (
+          <div className="p-4">
+            <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl overflow-hidden">
+              {/* Header */}
+              <div className="flex items-center gap-2 px-3 py-2 border-b border-zinc-800 bg-zinc-900/80">
+                <Shield className="w-3.5 h-3.5 text-[#FF6700]" />
+                <span className="text-xs font-bold text-zinc-300 uppercase tracking-wider">Build Log</span>
+                {running && <span className="text-xs font-bold text-emerald-400 animate-pulse">LIVE</span>}
+              </div>
+              {/* Log entries */}
+              <div className="p-3 max-h-[calc(100vh-320px)] overflow-y-auto font-mono text-xs space-y-0.5">
+                {events.filter(e =>
+                  e.type === "hybrid:build-log" || e.type === "hybrid:guardian"
+                ).length === 0 ? (
+                  <div className="text-zinc-600 py-4 text-center">
+                    {running ? "Waiting for events..." : "No build log entries. Run a chain to generate."}
+                  </div>
+                ) : (
+                  events
+                    .filter(e => e.type === "hybrid:build-log" || e.type === "hybrid:guardian")
+                    .map((ev, i) => (
+                      <div
+                        key={i}
+                        className={`py-0.5 leading-relaxed ${
+                          ev.type === "hybrid:guardian"
+                            ? ev.message?.includes("PASSED")
+                              ? "text-emerald-400"
+                              : "text-red-400"
+                            : "text-zinc-300"
+                        }`}
+                      >
+                        {ev.type === "hybrid:guardian" && (
+                          <Shield className="w-3 h-3 inline mr-1 flex-shrink-0" />
+                        )}
+                        {ev.message}
+                      </div>
+                    ))
+                )}
+              </div>
+            </div>
           </div>
         )}
       </div>

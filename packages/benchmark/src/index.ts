@@ -24,6 +24,7 @@ export type {
   HybridBenchmarkConfig,
   HybridEventType,
   HybridEvent,
+  StepChangelog,
 } from "./runner";
 
 // Helpers

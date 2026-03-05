@@ -44,12 +44,17 @@ export function ForgeTrialsControls({
 }: Props) {
   const storeModels = useModelStore((s) => s.models);
   const builderFlags = useModelStore((s) => s.builderFlags);
+  const modelRoles = useModelStore((s) => s.modelRoles);
 
-  // Build cloud provider groups dynamically from model store
+  // Build cloud provider groups dynamically from model store — filter by "Trials" role
   const cloudProviderGroups = useMemo(() => {
-    const cloudBuilderModels = storeModels.filter(
-      (m) => m.provider !== "ollama" && m.provider !== "lmstudio" && builderFlags[m.id]
-    );
+    const cloudBuilderModels = storeModels.filter((m) => {
+      if (m.provider === "ollama" || m.provider === "lmstudio") return false;
+      const roles = modelRoles[m.id];
+      // If roles exist, check for "Trials"; fallback to builderFlags for backward compat
+      if (roles && roles.length > 0) return roles.includes("Trials");
+      return builderFlags[m.id];
+    });
     const grouped: Record<string, { id: string; name: string }[]> = {};
     cloudBuilderModels.forEach((m) => {
       if (!grouped[m.provider]) grouped[m.provider] = [];

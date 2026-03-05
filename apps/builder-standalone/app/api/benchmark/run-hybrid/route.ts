@@ -16,6 +16,7 @@ import {
   type HybridStepResult,
   type HybridChainResult,
   type ScoreBreakdown,
+  type StepChangelog,
 } from "@sarge/benchmark";
 
 // ── Direct cloud API calls (duplicated from run-cloud for isolation) ──
@@ -560,11 +561,85 @@ function extractPartialHtml(content: string): string {
   return "";
 }
 
+// ── Changelog generation — simple HTML diff between steps ──
+
+function extractSections(html: string): string[] {
+  const matches = html.match(/<(section|header|footer|nav|main|article|aside)[^>]*>/gi) || [];
+  return matches.map(m => {
+    // Try to get id or class for identification
+    const idMatch = m.match(/id=["']([^"']+)["']/i);
+    const classMatch = m.match(/class=["']([^"']+)["']/i);
+    const tagMatch = m.match(/<(\w+)/);
+    const tag = tagMatch ? tagMatch[1] : "unknown";
+    if (idMatch) return `<${tag}#${idMatch[1]}>`;
+    if (classMatch) return `<${tag}.${classMatch[1].split(/\s+/)[0]}>`;
+    return `<${tag}>`;
+  });
+}
+
+function countCssRules(html: string): number {
+  const styleBlocks = html.match(/<style[^>]*>([\s\S]*?)<\/style>/gi) || [];
+  let count = 0;
+  for (const block of styleBlocks) {
+    const inner = block.replace(/<\/?style[^>]*>/gi, "");
+    // Count rule selectors (lines with { )
+    const rules = inner.match(/[^{}]+\{/g) || [];
+    count += rules.length;
+  }
+  return count;
+}
+
+function countJsFunctions(html: string): number {
+  const scriptBlocks = html.match(/<script[^>]*>([\s\S]*?)<\/script>/gi) || [];
+  let count = 0;
+  for (const block of scriptBlocks) {
+    const inner = block.replace(/<\/?script[^>]*>/gi, "");
+    const fns = inner.match(/function\s+\w+|const\s+\w+\s*=\s*(?:\([^)]*\)|[^=])\s*=>/g) || [];
+    count += fns.length;
+  }
+  return count;
+}
+
+function generateChangelog(previousCode: string, currentCode: string): StepChangelog {
+  const prevSections = extractSections(previousCode);
+  const currSections = extractSections(currentCode);
+  const prevCss = countCssRules(previousCode);
+  const currCss = countCssRules(currentCode);
+  const prevJs = countJsFunctions(previousCode);
+  const currJs = countJsFunctions(currentCode);
+
+  const added = currSections.filter(s => !prevSections.includes(s));
+  const removed = prevSections.filter(s => !currSections.includes(s));
+
+  const regressionDetails: string[] = [];
+  if (removed.length > 0) {
+    regressionDetails.push(`Missing from previous step: ${removed.join(", ")}`);
+  }
+
+  return {
+    sectionsAdded: added,
+    sectionsRemoved: removed,
+    cssRulesAdded: Math.max(0, currCss - prevCss),
+    cssRulesRemoved: Math.max(0, prevCss - currCss),
+    jsFunctionsAdded: Math.max(0, currJs - prevJs),
+    jsFunctionsRemoved: Math.max(0, prevJs - currJs),
+    regressionCheck: removed.length === 0 ? "PASSED" : "FAILED",
+    regressionDetails,
+  };
+}
+
+function formatElapsed(startMs: number): string {
+  const elapsed = Math.floor((Date.now() - startMs) / 1000);
+  const min = Math.floor(elapsed / 60);
+  const sec = elapsed % 60;
+  return `${String(min).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
+}
+
 // ── POST handler ──
 
 export async function POST(request: NextRequest) {
-  const config: HybridBenchmarkConfig = await request.json();
-  const { chains, scenarioId } = config;
+  const config: HybridBenchmarkConfig & { guardianModelId?: string; guardianProvider?: string } = await request.json();
+  const { chains, scenarioId, guardianModelId, guardianProvider } = config;
 
   const scenario = scenarioId
     ? ALL_HYBRID_SCENARIOS.find((s) => s.id === scenarioId) || CLOUD_SCENARIOS[0]
@@ -587,9 +662,20 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      const chainStartTime = Date.now();
+      const guardianLabel = guardianModelId
+        ? `${guardianModelId} (${guardianProvider})`
+        : "Hardcoded validation";
+
       emit({
         type: "hybrid:start",
         message: `Hybrid Forge Trials — ${chains.length} chains × ${scenario.name} scenario`,
+        timestamp: Date.now(),
+      });
+
+      emit({
+        type: "hybrid:build-log",
+        message: `[${formatElapsed(chainStartTime)}] Chain started — Guardian: ${guardianLabel} — Scenario: ${scenario.name}`,
         timestamp: Date.now(),
       });
 
@@ -623,6 +709,15 @@ export async function POST(request: NextRequest) {
             chainId: chain.id,
             stepIndex: si,
             message: `Step ${si + 1}/${chain.steps.length}: ${step.role} → ${step.modelName}`,
+            timestamp: Date.now(),
+          });
+
+          const stepIsLocal = step.provider === "ollama" || step.provider === "lmstudio";
+          emit({
+            type: "hybrid:build-log",
+            chainId: chain.id,
+            stepIndex: si,
+            message: `[${formatElapsed(chainStartTime)}] Step ${si + 1} started — Model: ${step.modelName} (${stepIsLocal ? "local" : "cloud"}) — Role: ${step.role}`,
             timestamp: Date.now(),
           });
 
@@ -695,9 +790,20 @@ export async function POST(request: NextRequest) {
           // Extract code for the next step
           const code = extractCode(result.content) || result.content;
 
+          // Build log — streaming status
+          emit({
+            type: "hybrid:build-log",
+            chainId: chain.id,
+            stepIndex: si,
+            message: `[${formatElapsed(chainStartTime)}] Step ${si + 1} complete — ${code.length} chars — ${formatTime(result.timeMs)}`,
+            timestamp: Date.now(),
+          });
+
           // FIX 1: Output validation gate — validate before passing to next step
           const validation = validateStepOutput(code);
           let stepFailed = false;
+          const hasBody = code.toLowerCase().includes("<body");
+
           if (!validation.valid && !result.error) {
             stepFailed = true;
             console.warn(`[HYBRID] Step ${si + 1} output INVALID: ${validation.reason} (${code.length} chars from ${step.modelName})`);
@@ -708,16 +814,60 @@ export async function POST(request: NextRequest) {
               message: `Step ${si + 1} output invalid — ${validation.reason}. Using last good output.`,
               timestamp: Date.now(),
             });
+
+            // Guardian REJECTED event
+            emit({
+              type: "hybrid:guardian",
+              chainId: chain.id,
+              stepIndex: si,
+              message: `Step ${si + 1} output REJECTED — ${validation.reason} — passing Step ${si} HTML forward`,
+              timestamp: Date.now(),
+            });
+
+            emit({
+              type: "hybrid:build-log",
+              chainId: chain.id,
+              stepIndex: si,
+              message: `[${formatElapsed(chainStartTime)}] Thread Guardian: Step ${si + 1} output REJECTED — ${validation.reason}`,
+              timestamp: Date.now(),
+            });
+
             // Use last known good HTML instead of garbage
             if (lastGoodCode) {
               previousCode = lastGoodCode;
             }
             // Don't update previousCode with bad output
           } else if (code && validation.valid) {
+            // Guardian PASSED event
+            emit({
+              type: "hybrid:guardian",
+              chainId: chain.id,
+              stepIndex: si,
+              message: `Step ${si + 1} output PASSED — ${code.length} chars, valid HTML, body tag ${hasBody ? "present" : "missing"}, no chat patterns detected`,
+              timestamp: Date.now(),
+            });
+
+            emit({
+              type: "hybrid:build-log",
+              chainId: chain.id,
+              stepIndex: si,
+              message: `[${formatElapsed(chainStartTime)}] Thread Guardian: Step ${si + 1} output approved — passing to Step ${si + 2}`,
+              timestamp: Date.now(),
+            });
+
             previousCode = code;
             lastGoodCode = code;
           } else {
             previousCode = code;
+          }
+
+          // Generate changelog (diff from previous step)
+          let changelog: StepChangelog | undefined;
+          if (si > 0 && lastGoodCode && !stepFailed) {
+            const prevStepCode = stepResults[si - 1]?.extractedCode || "";
+            if (prevStepCode) {
+              changelog = generateChangelog(prevStepCode, code);
+            }
           }
 
           // Score this step's output (score the actual output, even if invalid)
@@ -735,6 +885,7 @@ export async function POST(request: NextRequest) {
             timeMs: result.timeMs,
             tokenCount: result.tokenCount,
             cost,
+            changelog,
           };
 
           stepResults.push(stepResult);
@@ -785,6 +936,13 @@ export async function POST(request: NextRequest) {
           chainId: chain.id,
           chainResult,
           message: `Chain "${chain.name}": ${finalScore.total}/100 — ${formatTime(chainTimeMs)} — $${chainCost.toFixed(4)}`,
+          timestamp: Date.now(),
+        });
+
+        emit({
+          type: "hybrid:build-log",
+          chainId: chain.id,
+          message: `[${formatElapsed(chainStartTime)}] Chain complete — Final score: ${finalScore.total} — Grade: ${finalScore.tier} — Cost: $${chainCost.toFixed(4)}`,
           timestamp: Date.now(),
         });
       }

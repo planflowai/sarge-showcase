@@ -291,6 +291,50 @@ Tag: working-2026-03-02-deploy-fix (last tagged)
 
 ---
 
+---
+
+## Transparency Audit — 2026-03-05
+
+### System 1: Thread Guardian — WORKING (was DECORATIVE)
+- `validateStepOutput()` in run-hybrid makes REAL validation decisions (HTML check, body tag, chat pattern detection)
+- Now emits `hybrid:guardian` events (PASSED/REJECTED) after every step — visible in Build Log tab
+- Guardian decisions color-coded: green (PASSED) / red (REJECTED)
+- Guardian model selector in hybrid panel (optional — algorithmic validation always runs)
+- `guardianModelId` + `guardianProvider` passed through API config
+
+### System 2: Build Log — WORKING (was MISSING)
+- Runner emits `hybrid:build-log` events with timestamps throughout chain execution
+- Events: chain start, step start (model + role), step complete (char count), chain complete (final score)
+- New "Build Log" tab in HybridDetailPanel — font-mono, auto-scrolling, Shield icon header
+- LIVE badge during execution, real-time entries as they stream in
+
+### System 3: Changelog per Step — WORKING (was DECORATIVE)
+- `generateChangelog()` in run-hybrid: HTML section diffing, CSS rule counting, JS function counting
+- `StepChangelog` interface in `@sarge/benchmark`: sectionsAdded/Removed, cssRules, jsFunctions, regressionCheck
+- Breakdown tab shows per-step changelog with section names, CSS/JS counts, regression badge
+- Regression detection: sections removed between steps → FAILED + details
+
+### System 4: Model Role Tags — WORKING (was PARTIAL)
+- `ModelRole` type: Builder, Trials, Chat, Image, Guardian, Code
+- `modelRoles` state in modelStore (persisted), auto-tagged on hydrate
+- Settings page: clickable role tag pills (B/T/C/I/G/X) per model — `ModelRoleTags.tsx` component
+- Forge Trials dropdowns filter by "Trials" role (backward-compat fallback)
+- `setModelRole("Builder", ...)` keeps `builderFlags` in sync
+
+### System 5: Mistral in Forge Trials — WORKING (was DECORATIVE)
+- Added as built-in provider in `packages/core/src/lib/providers/index.ts`
+- 3 models: Devstral 2, Devstral Small 2, Mistral Medium 3 (131K context)
+- `"mistral"` in `Provider` type union, Flame icon in ProviderBadge
+- Appears automatically in all provider dropdowns — no manual setup
+
+### System 6: Guardian Model Assignment — WORKING (was MISSING)
+- Guardian selector dropdown in ForgeTrialsHybrid.tsx (above chain steps)
+- Any cloud model can be assigned as guardian
+- `guardianModelId` + `guardianProvider` passed to API, logged in build log
+- Guardian is optional — algorithmic validation always runs
+
+---
+
 ### Known Issues
 
 | # | Severity | Component | Description |

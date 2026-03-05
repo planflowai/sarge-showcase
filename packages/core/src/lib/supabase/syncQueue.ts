@@ -153,11 +153,11 @@ export async function fetchSupabaseConversations(): Promise<Conversation[]> {
       title: (row.title as string) || "Untitled",
       messages: [],
       contextFiles: [],
-      provider: (row.provider as string) || "ollama",
+      provider: ((row.provider as string) || "ollama") as import("../types").Provider,
       model: (row.model as string) || "",
       createdAt: new Date(row.created_at as string),
       updatedAt: new Date(row.updated_at as string),
-      mode: row.mode as string | undefined,
+      mode: (row.mode as string | undefined) as import("../types").ChatMode | undefined,
     }));
   } catch (error) {
     console.warn("[SyncQueue] Fetch conversations error:", error);

@@ -4,6 +4,7 @@ export type Provider =
   | "google"
   | "xai"
   | "deepseek"
+  | "mistral"
   | "ollama"
   | "lmstudio";
 

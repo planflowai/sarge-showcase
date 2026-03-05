@@ -51,6 +51,7 @@ const SettingsKnowledge = dynamic(
   { loading: () => <div className="animate-pulse text-xs text-zinc-400 py-8 text-center">Loading knowledge vault…</div> }
 );
 import { RollCall } from "@/components/settings/RollCall";
+import { ModelRoleTags } from "@/components/settings/ModelRoleTags";
 
 type Section = "general" | "models" | "registry" | "rollcall" | "orchestration" | "roles" | "prompts" | "security" | "knowledge" | "logic" | "questions" | "poisons" | "sync" | "guardian" | "trading" | "build-docs";
 
@@ -401,7 +402,7 @@ export default function SettingsPage() {
   const [newPin, setNewPin] = useState("");
   const [confirmNewPin, setConfirmNewPin] = useState("");
 
-  const { hydrated: modelsHydrated, hydrate: hydrateModels, addModel, removeModel, getEffectiveModels, nicknames, setNickname, removeNickname, getDisplayName, voicePersona, setVoicePersona, builderFlags, setBuilderFlag, isBuilderModel } = useModelStore();
+  const { hydrated: modelsHydrated, hydrate: hydrateModels, addModel, removeModel, getEffectiveModels, nicknames, setNickname, removeNickname, getDisplayName, voicePersona, setVoicePersona, builderFlags, setBuilderFlag, isBuilderModel, modelRoles, setModelRole, hasModelRole } = useModelStore();
   const [expandedProvider, setExpandedProvider] = useState<string | null>(null);
   const [newModelId, setNewModelId] = useState("");
   const [newModelName, setNewModelName] = useState("");
@@ -722,7 +723,7 @@ export default function SettingsPage() {
             <div>
               <h2 className="mb-1 text-sm font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-500">Models</h2>
               <p className="mb-4 text-xs font-medium text-zinc-600 dark:text-zinc-500">
-                Add or remove models per provider. Click <Hammer className="inline h-3 w-3 text-indigo-500" /> to tag a model for the Builder. Click <Pencil className="inline h-3 w-3" /> to set a nickname.
+                Add or remove models per provider. Click <Hammer className="inline h-3 w-3 text-indigo-500" /> to tag a model for the Builder. Click <Pencil className="inline h-3 w-3" /> to set a nickname. Role tags: <span className="text-[9px] font-bold text-indigo-400">B</span>uilder <span className="text-[9px] font-bold text-amber-400">T</span>rials <span className="text-[9px] font-bold text-sky-400">C</span>hat <span className="text-[9px] font-bold text-pink-400">I</span>mage <span className="text-[9px] font-bold text-emerald-400">G</span>uardian <span className="text-[9px] font-bold text-violet-400">X</span>=Code
               </p>
             </div>
 
@@ -788,10 +789,6 @@ export default function SettingsPage() {
                       envKeyName: newProviderEnvKey.trim(),
                       color: newProviderColor,
                       models: defaultModels,
-                    });
-                    // Register models in the model store so they appear in builder + trials
-                    defaultModels.forEach((m) => {
-                      addModel(id, m.id, m.name);
                     });
                     setShowAddProvider(false);
                     setSelectedKnownProvider("");
@@ -883,6 +880,7 @@ export default function SettingsPage() {
                               ) : (
                                 <span className="text-zinc-800 dark:text-zinc-200 truncate block">{m.name}</span>
                               )}
+                              <ModelRoleTags modelId={m.id} />
                             </div>
                             <div className="flex items-center gap-1.5 flex-shrink-0">
                               <button onClick={() => setBuilderFlag(m.id, !isBuilderModel(m.id, cp.id))} className={`transition-colors ${isBuilderModel(m.id, cp.id) ? 'text-indigo-500' : 'text-zinc-400 hover:text-indigo-400'}`} title={isBuilderModel(m.id, cp.id) ? "Remove from Builder" : "Add to Builder"}>
@@ -905,7 +903,7 @@ export default function SettingsPage() {
                       {fetchedModels[cp.id]?.length > 0 && (
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">Available from API ({fetchedModels[cp.id].length})</span>
+                            <span className="text-sm font-bold text-white uppercase tracking-wider">Available from API ({fetchedModels[cp.id].length})</span>
                             <button
                               onClick={() => {
                                 let added = 0;
@@ -918,21 +916,21 @@ export default function SettingsPage() {
                                 }
                                 if (added > 0) setFetchedModels((prev) => ({ ...prev, [cp.id]: [] }));
                               }}
-                              className="text-[10px] font-bold text-indigo-400 hover:text-indigo-300 px-2 py-0.5 rounded border border-indigo-500/30 hover:border-indigo-500/50 transition-colors"
+                              className="text-sm font-bold text-white hover:text-indigo-300 px-2 py-1 rounded border border-indigo-500/30 hover:border-indigo-500/50 transition-colors"
                             >
                               Add All New
                             </button>
                           </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1.5 max-h-48 overflow-y-auto">
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-64 overflow-y-auto">
                             {fetchedModels[cp.id].map((m) => {
                               const alreadyAdded = cpModels.some((existing) => existing.id === m.id);
                               return (
                                 <div
                                   key={m.id}
-                                  className={`flex items-center gap-2 rounded border px-2 py-1.5 text-xs ${
+                                  className={`flex items-center gap-2 rounded border px-3 py-2 text-sm ${
                                     alreadyAdded
-                                      ? "border-emerald-500/30 bg-emerald-500/5 text-zinc-500"
-                                      : "border-indigo-500/20 bg-indigo-500/5 hover:border-indigo-500/40 cursor-pointer text-zinc-300"
+                                      ? "border-emerald-500/30 bg-emerald-500/5 text-zinc-400"
+                                      : "border-indigo-500/20 bg-indigo-500/5 hover:border-indigo-500/40 cursor-pointer text-white"
                                   }`}
                                   onClick={() => {
                                     if (alreadyAdded) return;
@@ -940,12 +938,12 @@ export default function SettingsPage() {
                                     addModel(cp.id, m.id, m.name);
                                   }}
                                 >
-                                  <span className="flex-1 truncate font-mono text-[10px]">{m.id}</span>
-                                  {m.owned_by && <span className="text-[9px] text-zinc-500 flex-shrink-0">{m.owned_by}</span>}
+                                  <span className="flex-1 truncate font-mono text-sm font-bold">{m.id}</span>
+                                  {m.owned_by && <span className="text-xs text-zinc-400 flex-shrink-0">{m.owned_by}</span>}
                                   {alreadyAdded ? (
-                                    <span className="text-[9px] text-emerald-500 flex-shrink-0">added</span>
+                                    <span className="text-xs text-emerald-500 font-bold flex-shrink-0">added</span>
                                   ) : (
-                                    <Plus className="h-3 w-3 text-indigo-400 flex-shrink-0" />
+                                    <Plus className="h-4 w-4 text-indigo-400 flex-shrink-0" />
                                   )}
                                 </div>
                               );
@@ -1047,6 +1045,7 @@ export default function SettingsPage() {
                                   ) : (
                                     <span className="text-zinc-800 dark:text-zinc-200 truncate block">{m.name}</span>
                                   )}
+                                  <ModelRoleTags modelId={m.id} />
                                 </div>
                                 <div className="flex items-center gap-1.5 flex-shrink-0">
                                   {(() => {
