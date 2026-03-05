@@ -281,18 +281,7 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
   const currentStepIndex = events.length > 0 ? events[events.length - 1].stepIndex : undefined;
   const currentMessage = events.length > 0 ? events[events.length - 1].message : "";
 
-  // ── No result yet: show placeholder ──
-  if (!chainResult && !running) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full text-zinc-300">
-        <Layers className="w-12 h-12 mb-3 opacity-30" />
-        <p className="text-sm font-bold">No chain results yet</p>
-        <p className="text-xs mt-1">Configure and run a hybrid chain to see results here</p>
-      </div>
-    );
-  }
-
-  // Build log entries from events (filtered)
+  // Build log entries from events (filtered) — must be above early returns (React hooks rule)
   const buildLogEntries = useMemo(() =>
     events.filter(e => e.type === "hybrid:build-log" || e.type === "hybrid:guardian"),
     [events]
@@ -305,6 +294,17 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
       buildLogRef.current.scrollTop = buildLogRef.current.scrollHeight;
     }
   }, [buildLogEntries.length]);
+
+  // ── No result yet: show placeholder ──
+  if (!chainResult && !running) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-zinc-300">
+        <Layers className="w-12 h-12 mb-3 opacity-30" />
+        <p className="text-sm font-bold">No chain results yet</p>
+        <p className="text-xs mt-1">Configure and run a hybrid chain to see results here</p>
+      </div>
+    );
+  }
 
   // ── Running state — show live preview if step HTML available ──
   if (running && !chainResult) {
