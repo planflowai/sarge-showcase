@@ -245,4 +245,22 @@ hr{border:3px solid green}.button{background:lime;color:black;padding:10px 20px;
       minLength: 5000,
     },
   },
+
+  // ── R19: Level 11 Events (Real Client) ───────────────────────
+  {
+    id: "level11-events",
+    name: "Level 11 Events (real client)",
+    difficulty: "expert",
+    timeout: 180_000,
+    systemPrompt: CLOUD_SYSTEM_PROMPT,
+    prompt:
+      "Rebuild the Level 11 Events website — a premium entertainment company serving Bar/Bat Mitzvahs, weddings, corporate events, fundraisers, and social events. Offices in Minneapolis and New York. Tagline: 'A Higher Degree of Entertainment.' Services: DJs, Emcees, Musicians, Dancers, Sound & Lighting Technicians, Photobooths. Build a complete single-file HTML site with: animated dark hero section with the tagline, smooth scroll navigation (Home/Services/About/Photobooths/Contact), services grid with icons and descriptions for each event type, testimonials carousel, photobooth highlight section, contact form with event type selector and date picker, footer with social links and copyright. Dark elegant theme — black background, gold/amber accents. Fully responsive. Single HTML file, all CSS in style tag, all JS in script tag. No external dependencies except CDN libraries (Tailwind, Font Awesome, Google Fonts). Professional grade.",
+    validation: {
+      requiredElements: ["header", "nav", "section", "form", "input", "select", "button", "footer"],
+      requiredKeywords: ["Level 11", "Higher Degree", "Entertainment", "DJ", "Emcee", "Photobooth", "Minneapolis", "wedding"],
+      cssPatterns: ["@media", "flex", "animation", "@keyframes", "transition", "gradient"],
+      jsPatterns: ["addEventListener", "querySelector", "scroll", "classList"],
+      minLength: 6000,
+    },
+  },
 ];

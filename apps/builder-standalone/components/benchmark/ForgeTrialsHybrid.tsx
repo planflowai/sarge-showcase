@@ -266,7 +266,7 @@ export function ForgeTrialsHybrid() {
             value={hybridSelectedScenario}
             onChange={(e) => setHybridSelectedScenario(e.target.value)}
             disabled={hybridRunning}
-            className="w-full bg-zinc-800 border border-zinc-700 text-zinc-300 text-xs rounded px-2 py-1.5"
+            className="w-full bg-zinc-800 border border-zinc-700 text-zinc-200 text-sm rounded px-2 py-1.5"
           >
             {ALL_HYBRID_SCENARIOS.map((s) => (
               <option key={s.id} value={s.id}>
@@ -276,10 +276,10 @@ export function ForgeTrialsHybrid() {
           </select>
           {selectedScenarioObj && (
             <div className="mt-1 flex items-center gap-2">
-              <span className={`text-xs font-bold uppercase ${DIFFICULTY_COLORS[selectedScenarioObj.difficulty] || "text-zinc-400"}`}>
+              <span className={`text-sm font-bold uppercase ${DIFFICULTY_COLORS[selectedScenarioObj.difficulty] || "text-zinc-200"}`}>
                 {selectedScenarioObj.difficulty}
               </span>
-              <span className="text-xs text-zinc-400">
+              <span className="text-sm text-zinc-200">
                 {selectedScenarioObj.timeout ? `${selectedScenarioObj.timeout / 1000}s timeout` : ""}
               </span>
             </div>
@@ -295,7 +295,7 @@ export function ForgeTrialsHybrid() {
             placeholder="Overrides scenario prompt when filled..."
             disabled={hybridRunning}
             rows={2}
-            className="w-full bg-zinc-800 border border-zinc-700 text-zinc-300 text-xs rounded px-2 py-1.5 placeholder-zinc-600 resize-none"
+            className="w-full bg-zinc-800 border border-zinc-700 text-zinc-200 text-sm rounded px-2 py-1.5 placeholder-zinc-500 resize-none"
           />
         </div>
 
@@ -336,7 +336,7 @@ export function ForgeTrialsHybrid() {
             >
               {/* Step header */}
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-xs font-bold text-zinc-400 w-6 flex-shrink-0">
+                <span className="text-sm font-bold text-zinc-200 w-6 flex-shrink-0">
                   S{si + 1}
                 </span>
                 <input
@@ -344,7 +344,7 @@ export function ForgeTrialsHybrid() {
                   value={step.role}
                   onChange={(e) => updateStepRole(si, e.target.value)}
                   disabled={hybridRunning}
-                  className="bg-transparent border-none text-xs font-bold text-white outline-none flex-1 min-w-0"
+                  className="bg-transparent border-none text-sm font-bold text-white outline-none flex-1 min-w-0"
                 />
                 {isRunningStep && (
                   <Loader2 className="w-3 h-3 animate-spin text-amber-400 flex-shrink-0" />
@@ -352,7 +352,7 @@ export function ForgeTrialsHybrid() {
                 {steps.length > 1 && !hybridRunning && (
                   <button
                     onClick={() => removeStep(si)}
-                    className="text-zinc-400 hover:text-red-400 transition-colors flex-shrink-0"
+                    className="text-zinc-200 hover:text-red-400 transition-colors flex-shrink-0"
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -371,7 +371,7 @@ export function ForgeTrialsHybrid() {
                   }
                 }}
                 disabled={hybridRunning}
-                className={`w-full bg-zinc-800 border text-xs rounded px-2 py-1.5 mb-1 ${
+                className={`w-full bg-zinc-800 border text-sm rounded px-2 py-1.5 mb-1 ${
                   step.modelId ? "border-zinc-700 text-zinc-300" : "border-amber-600/50 text-amber-400"
                 }`}
               >
@@ -400,19 +400,19 @@ export function ForgeTrialsHybrid() {
 
               {/* Cost estimate */}
               <div className="flex items-center justify-between">
-                <span className={`text-xs font-mono ${
+                <span className={`text-sm font-mono ${
                   step.provider === "ollama" || step.provider === "lmstudio"
-                    ? "text-zinc-400" : step.provider ? "text-emerald-400" : "text-zinc-500"
+                    ? "text-zinc-200" : step.provider ? "text-emerald-400" : "text-zinc-300"
                 }`}>
                   {!step.provider ? "" :
                     step.provider === "ollama" || step.provider === "lmstudio" ? "Est: $0.00" : "Est: ~$0.015"}
                 </span>
                 {step.modelId && (
                   <span
-                    className="text-xs font-bold px-1.5 py-0.5 rounded border"
+                    className="text-sm font-bold px-1.5 py-0.5 rounded border"
                     style={{
                       borderColor: (PROVIDER_COLORS[step.provider] || "#6B7280") + "60",
-                      color: PROVIDER_COLORS[step.provider] || "#9CA3AF",
+                      color: PROVIDER_COLORS[step.provider] || "#D4D4D8",
                     }}
                   >
                     {step.provider === "ollama" || step.provider === "lmstudio" ? "LOCAL" : "CLOUD"}
@@ -427,7 +427,7 @@ export function ForgeTrialsHybrid() {
         {!hybridRunning && steps.length < 5 && (
           <button
             onClick={addStep}
-            className="flex items-center gap-1 px-3 py-1.5 w-full justify-center text-xs font-bold text-zinc-300 hover:text-white border border-dashed border-zinc-700 hover:border-zinc-500 rounded-lg transition-all"
+            className="flex items-center gap-1 px-3 py-1.5 w-full justify-center text-sm font-bold text-zinc-200 hover:text-white border border-dashed border-zinc-700 hover:border-zinc-500 rounded-lg transition-all"
           >
             <Plus className="w-3 h-3" />
             Add Step
@@ -437,8 +437,8 @@ export function ForgeTrialsHybrid() {
         {/* Total estimate */}
         {steps.some((s) => s.modelId) && (
           <div className="flex items-center justify-between pt-2 mt-1 border-t border-zinc-800">
-            <span className="text-xs font-bold text-zinc-300">Total Est:</span>
-            <span className="text-xs font-mono font-bold text-emerald-400">
+            <span className="text-sm font-bold text-zinc-200">Total Est:</span>
+            <span className="text-sm font-mono font-bold text-emerald-400">
               ${totalEstimate.toFixed(4)}
             </span>
           </div>
@@ -451,7 +451,7 @@ export function ForgeTrialsHybrid() {
           <button
             onClick={handleStart}
             disabled={!canRun}
-            className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-xs transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+            className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-sm transition-all disabled:opacity-30 disabled:cursor-not-allowed"
           >
             <Play className="w-3.5 h-3.5" />
             RUN
@@ -459,7 +459,7 @@ export function ForgeTrialsHybrid() {
         ) : (
           <button
             onClick={() => hybridStopRun()}
-            className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg text-xs transition-all"
+            className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg text-sm transition-all"
           >
             <Square className="w-3.5 h-3.5" />
             STOP
@@ -468,7 +468,7 @@ export function ForgeTrialsHybrid() {
         <button
           onClick={handleClear}
           disabled={hybridRunning}
-          className="px-3 py-2 bg-zinc-800 hover:bg-red-900/30 border border-zinc-700 hover:border-red-700 text-zinc-500 hover:text-red-300 font-bold rounded-lg text-xs transition-all disabled:opacity-30"
+          className="px-3 py-2 bg-zinc-800 hover:bg-red-900/30 border border-zinc-700 hover:border-red-700 text-zinc-200 hover:text-red-300 font-bold rounded-lg text-sm transition-all disabled:opacity-30"
         >
           CLEAR
         </button>
@@ -480,16 +480,16 @@ export function ForgeTrialsHybrid() {
           {hybridRunning && currentEvent && (
             <>
               <Loader2 className="w-3 h-3 animate-spin text-amber-400 flex-shrink-0" />
-              <span className="text-xs text-zinc-300 truncate flex-1">{currentEvent.message}</span>
+              <span className="text-sm text-zinc-200 truncate flex-1">{currentEvent.message}</span>
             </>
           )}
           {!hybridRunning && hybridResults.length > 0 && (
-            <span className="text-xs font-bold text-emerald-400">
+            <span className="text-sm font-bold text-emerald-400">
               Complete — {hybridResults[hybridResults.length - 1]?.finalScore?.total ?? "?"}/100
             </span>
           )}
           {hybridTotalCost > 0 && (
-            <span className="text-xs font-mono font-bold text-emerald-400 ml-auto">
+            <span className="text-sm font-mono font-bold text-emerald-400 ml-auto">
               ${hybridTotalCost.toFixed(4)}
             </span>
           )}
@@ -503,14 +503,14 @@ export function ForgeTrialsHybrid() {
             onClick={() => setShowPastRuns(!showPastRuns)}
             className="flex items-center gap-2 w-full px-3 py-2 text-left hover:bg-zinc-800/40 transition-colors"
           >
-            {showPastRuns ? <ChevronDown className="w-3.5 h-3.5 text-zinc-400" /> : <ChevronRight className="w-3.5 h-3.5 text-zinc-400" />}
+            {showPastRuns ? <ChevronDown className="w-3.5 h-3.5 text-zinc-200" /> : <ChevronRight className="w-3.5 h-3.5 text-zinc-200" />}
             <Archive className="w-3.5 h-3.5 text-amber-500" />
-            <span className="text-xs font-bold text-zinc-300">Past Runs</span>
-            <span className="text-xs text-zinc-400 tabular-nums">{hybridPastRuns.length}</span>
+            <span className="text-sm font-bold text-zinc-200">Past Runs</span>
+            <span className="text-sm text-zinc-200 tabular-nums">{hybridPastRuns.length}</span>
             <div className="flex-1" />
             <button
               onClick={(e) => { e.stopPropagation(); hybridClearPastRuns(); setShowPastRuns(false); }}
-              className="text-xs text-zinc-400 hover:text-red-400 transition-colors px-1"
+              className="text-sm text-zinc-200 hover:text-red-400 transition-colors px-1"
             >
               Clear All
             </button>
@@ -528,19 +528,19 @@ export function ForgeTrialsHybrid() {
                   >
                     <div className="flex items-center gap-2">
                       <span className={`text-sm font-[900] ${gradeColor} min-w-[24px]`}>{grade}</span>
-                      <span className={`text-xs font-bold tabular-nums ${
+                      <span className={`text-sm font-bold tabular-nums ${
                         run.finalScore.total >= 90 ? "text-emerald-400" :
                         run.finalScore.total >= 70 ? "text-amber-400" : "text-red-400"
                       }`}>
                         {run.finalScore.total}/100
                       </span>
-                      <span className="text-xs text-zinc-300">
+                      <span className="text-sm text-zinc-200">
                         {run.steps.length} steps
                       </span>
-                      <span className="text-xs text-zinc-300 tabular-nums">
+                      <span className="text-sm text-zinc-200 tabular-nums">
                         {(run.totalTimeMs / 1000).toFixed(1)}s
                       </span>
-                      <span className="text-xs font-mono text-emerald-400 tabular-nums">
+                      <span className="text-sm font-mono text-emerald-400 tabular-nums">
                         ${run.totalCost.toFixed(4)}
                       </span>
                       <div className="flex-1" />
@@ -554,7 +554,7 @@ export function ForgeTrialsHybrid() {
                           a.click();
                           URL.revokeObjectURL(url);
                         }}
-                        className="text-zinc-400 hover:text-indigo-400 transition-colors"
+                        className="text-zinc-200 hover:text-indigo-400 transition-colors"
                         title="Export"
                       >
                         <Download className="w-3 h-3" />
@@ -564,9 +564,9 @@ export function ForgeTrialsHybrid() {
                     <div className="flex items-center gap-1 mt-1">
                       {run.steps.map((s, si) => (
                         <React.Fragment key={si}>
-                          {si > 0 && <span className="text-zinc-500 text-xs">→</span>}
+                          {si > 0 && <span className="text-zinc-300 text-sm">→</span>}
                           <span
-                            className="text-xs font-bold px-1.5 py-0.5 rounded border"
+                            className="text-sm font-bold px-1.5 py-0.5 rounded border"
                             style={{
                               borderColor: (PROVIDER_COLORS[s.provider] || "#6B7280") + "40",
                               color: s.score.total >= 90 ? "#34D399" : s.score.total >= 70 ? "#FBBF24" : "#F87171",

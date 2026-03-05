@@ -641,24 +641,24 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
       {/* ── Progress Strip (compact, below toolbar) ── */}
       <div className="flex items-center h-8 px-3 border-b border-zinc-800/50 bg-zinc-900/40 flex-shrink-0 gap-3">
         {/* Left: model count */}
-        <span className="text-[10px] font-bold text-zinc-500 flex-shrink-0">
+        <span className="text-sm font-bold text-zinc-200 flex-shrink-0">
           Models ({activeModels.length}/{isCloud ? "∞" : availableLocalModels.length})
         </span>
 
         {/* Progress bar */}
-        <div className="flex-1 h-[3px] bg-zinc-800 rounded-full overflow-hidden max-w-[300px]">
+        <div className="flex-1 h-2 bg-zinc-800 rounded-full overflow-hidden max-w-[300px]">
           <div
             className="h-full rounded-full transition-all duration-500 ease-out"
             style={{
               width: `${progress}%`,
               background: "linear-gradient(90deg, #FF6700, #FF8C00, #FFD700)",
-              boxShadow: activeRunning ? "0 0 6px rgba(255, 103, 0, 0.3)" : "none",
+              boxShadow: activeRunning ? "0 0 8px rgba(255, 103, 0, 0.5)" : "none",
             }}
           />
         </div>
 
         {/* Progress text */}
-        <span className="text-[10px] font-bold text-zinc-400 tabular-nums flex-shrink-0">
+        <span className="text-sm font-bold text-zinc-200 tabular-nums flex-shrink-0">
           {progress.toFixed(0)}%
         </span>
 
