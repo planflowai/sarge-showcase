@@ -378,7 +378,7 @@ async function streamAnthropic(model: string, prompt: string, systemPrompt?: str
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
-      'anthropic-version': '2024-06-01',
+      'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
       model,

@@ -226,7 +226,7 @@ Tag: working-2026-03-02-deploy-fix (last tagged)
 | Token limits equalized | Works | All cloud providers now 8192 tokens (was 4096 for OpenAI/xAI/custom) |
 | max_completion_tokens | Works | GPT-5, o1, o3, o4, nano, reasoning models use max_completion_tokens |
 | Case-insensitive keywords | Works | Scoring no longer penalizes "faq" vs "FAQ" — all keyword matching is case-insensitive |
-| Anthropic API version | Works | Updated from 2023-06-01 to 2024-06-01 across all 8 files |
+| Anthropic API version | Reverted | 2024-06-01 is invalid — reverted to 2023-06-01 (the only valid version) |
 | Model ping tester | Works | "Test" button on every model in Settings — shows OK/FAIL with error message |
 | Remaining cloud models | **Not started** | Gemini, Grok, GPT, Claude — next step |
 | Local trials (Ollama) | **Not tested this session** | 15 scenarios, Ollama backend |

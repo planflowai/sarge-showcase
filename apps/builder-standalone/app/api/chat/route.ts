@@ -120,7 +120,7 @@ async function callAnthropic(model: string, messages: ChatMessage[], apiKey: str
     method: "POST",
     headers: {
       "x-api-key": apiKey,
-      "anthropic-version": "2024-06-01",
+      "anthropic-version": "2023-06-01",
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
