@@ -182,3 +182,8 @@ footer{background:#333;color:white;padding:20px;text-align:center}</style></head
 export function getCloudScenario(id: string): BenchmarkScenario | undefined {
   return CLOUD_SCENARIOS.find((s) => s.id === id);
 }
+
+// ── Combined set for Hybrid tab ──
+import { HYBRID_SCENARIOS } from "./hybridScenarios";
+export { HYBRID_SCENARIOS };
+export const ALL_HYBRID_SCENARIOS: BenchmarkScenario[] = [...CLOUD_SCENARIOS, ...HYBRID_SCENARIOS];

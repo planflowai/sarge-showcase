@@ -21,10 +21,11 @@ import { ForgeTrialsMatrix } from "./ForgeTrialsMatrix";
 import { ForgeTrialsControls } from "./ForgeTrialsControls";
 import { ForgeTrialsRoundDetail } from "./ForgeTrialsRoundDetail";
 import { ForgeTrialsHybrid } from "./ForgeTrialsHybrid";
+import { HybridDetailPanel } from "./HybridDetailPanel";
 import Link from "next/link";
 
-// All 15 default local builder models
-const DEFAULT_LOCAL_MODELS = [
+// Fallback local models if Ollama scan fails
+const FALLBACK_LOCAL_MODELS: string[] = [
   "qwen2.5-coder:7b",
   "deepseek-coder:6.7b",
   "codellama:7b",
@@ -131,6 +132,9 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
     setCloudParallel,
     hybridRunning,
     hybridTotalCost,
+    hybridResults,
+    hybridEvents,
+    hybridSelectedScenario,
     clearAll,
   } = store;
 
@@ -149,9 +153,32 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
   const airGapEnabled = useAirGapStore((s) => s.airGapEnabled);
   const toggleAirGap = useAirGapStore((s) => s.toggleAirGap);
 
+  const [availableLocalModels, setAvailableLocalModels] = useState<string[]>(FALLBACK_LOCAL_MODELS);
   const [localModels, setLocalModels] = useState<string[]>(
-    selectedModels.length > 0 ? selectedModels : DEFAULT_LOCAL_MODELS
+    selectedModels.length > 0 ? selectedModels : FALLBACK_LOCAL_MODELS
   );
+  const [ollamaModelsLoaded, setOllamaModelsLoaded] = useState(false);
+
+  // Fetch installed Ollama models on mount
+  useEffect(() => {
+    if (ollamaModelsLoaded) return;
+    (async () => {
+      try {
+        const res = await fetch("http://127.0.0.1:11434/api/tags", { signal: AbortSignal.timeout(5000) });
+        if (!res.ok) return;
+        const data = await res.json();
+        const names: string[] = (data.models || []).map((m: { name: string }) => m.name).sort();
+        if (names.length > 0) {
+          setAvailableLocalModels(names);
+          if (selectedModels.length === 0) setLocalModels(names);
+        }
+      } catch {
+        // Ollama not running — keep fallback
+      } finally {
+        setOllamaModelsLoaded(true);
+      }
+    })();
+  }, [ollamaModelsLoaded, selectedModels.length]);
 
   // ── Live Activity Tracking ──
   const [activityLog, setActivityLog] = useState<ActivityEntry[]>([]);
@@ -615,7 +642,7 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
       <div className="flex items-center h-8 px-3 border-b border-zinc-800/50 bg-zinc-900/40 flex-shrink-0 gap-3">
         {/* Left: model count */}
         <span className="text-[10px] font-bold text-zinc-500 flex-shrink-0">
-          Models ({activeModels.length}/{isCloud ? "∞" : DEFAULT_LOCAL_MODELS.length})
+          Models ({activeModels.length}/{isCloud ? "∞" : availableLocalModels.length})
         </span>
 
         {/* Progress bar */}
@@ -758,7 +785,19 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
 
       {/* ── Main Content ── */}
       {isHybrid ? (
-        <ForgeTrialsHybrid />
+        <div className="flex flex-1 overflow-hidden">
+          <div className="flex-[3] overflow-y-auto border-r border-zinc-800">
+            <ForgeTrialsHybrid />
+          </div>
+          <div className="flex-[7] flex flex-col overflow-hidden">
+            <HybridDetailPanel
+              running={hybridRunning}
+              chainResult={hybridResults.length > 0 ? hybridResults[hybridResults.length - 1] : null}
+              events={hybridEvents}
+              scenarioId={hybridSelectedScenario}
+            />
+          </div>
+        </div>
       ) : (
         <div className="flex flex-1 overflow-hidden">
           {/* Left: Controls + Matrix (60%) */}
@@ -768,7 +807,7 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
               setModels={(ids) => {
                 if (!isCloud) setLocalModels(ids);
               }}
-              defaultModels={isCloud ? [] : DEFAULT_LOCAL_MODELS}
+              defaultModels={isCloud ? [] : availableLocalModels}
               running={activeRunning}
               isCloud={isCloud}
               cloudModels={cloudSelectedModels}

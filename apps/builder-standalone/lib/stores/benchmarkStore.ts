@@ -14,7 +14,7 @@ import type {
   HybridEvent,
   HybridChain,
 } from "@sarge/benchmark";
-import { syncTrialResult, syncBillingEntry } from "@sarge/core";
+import { syncTrialResult, syncBillingEntry, syncHybridRun } from "@sarge/core";
 import type { TrialResultRow, BillingRow } from "@sarge/core";
 
 /** Fire-and-forget Supabase sync for a completed round */
@@ -132,10 +132,14 @@ interface BenchmarkState {
   hybridEvents: HybridEvent[];
   hybridAbortController: AbortController | null;
   hybridTotalCost: number;
+  hybridSelectedScenario: string;
+  hybridCustomPrompt: string;
 
   // ── Hybrid Actions ──
   setHybridMode: (mode: "recommended" | "custom") => void;
   setHybridChains: (chains: HybridChain[]) => void;
+  setHybridSelectedScenario: (id: string) => void;
+  setHybridCustomPrompt: (prompt: string) => void;
   hybridStartRun: () => void;
   hybridStopRun: () => void;
   hybridAddResult: (result: HybridChainResult) => void;
@@ -189,6 +193,8 @@ const HYBRID_INITIAL = {
   hybridEvents: [] as HybridEvent[],
   hybridAbortController: null as AbortController | null,
   hybridTotalCost: 0,
+  hybridSelectedScenario: "cloud-r1-restaurant",
+  hybridCustomPrompt: "",
 };
 
 export const useBenchmarkStore = create<BenchmarkState>()(
@@ -313,6 +319,8 @@ export const useBenchmarkStore = create<BenchmarkState>()(
       // ── Hybrid Actions ──
       setHybridMode: (mode) => set({ hybridMode: mode }),
       setHybridChains: (chains) => set({ hybridChains: chains }),
+      setHybridSelectedScenario: (id) => set({ hybridSelectedScenario: id }),
+      setHybridCustomPrompt: (prompt) => set({ hybridCustomPrompt: prompt }),
       hybridStartRun: () =>
         set({
           hybridRunning: true,
@@ -331,10 +339,28 @@ export const useBenchmarkStore = create<BenchmarkState>()(
         set((s) => ({ hybridEvents: [...s.hybridEvents.slice(-200), event] })),
       hybridSetAbortController: (ctrl) => set({ hybridAbortController: ctrl }),
       hybridSetTotalCost: (cost) => set({ hybridTotalCost: cost }),
-      hybridSaveRun: () =>
-        set((s) => ({
+      hybridSaveRun: () => {
+        const results = get().hybridResults;
+        const scenario = get().hybridSelectedScenario;
+        const customPrompt = get().hybridCustomPrompt;
+        // Fire-and-forget Supabase sync
+        for (const result of results) {
+          syncHybridRun({
+            scenario,
+            custom_prompt: customPrompt || undefined,
+            chain: { name: result.chainName, steps: result.steps.map(s => ({ modelId: s.modelId, provider: s.provider, role: s.role })) },
+            step_results: result.steps.map(s => ({ stepIndex: s.stepIndex, modelId: s.modelId, provider: s.provider, role: s.role, score: s.score.total, timeMs: s.timeMs, cost: s.cost })),
+            final_score: result.finalScore?.total ?? 0,
+            final_grade: result.finalScore?.tier ?? "fail",
+            total_cost_usd: result.totalCost,
+            total_time_seconds: parseFloat((result.totalTimeMs / 1000).toFixed(2)),
+            status: "success",
+          }).catch(() => {});
+        }
+        return set((s) => ({
           hybridPastRuns: [...s.hybridResults, ...s.hybridPastRuns].slice(0, 50),
-        })),
+        }));
+      },
       hybridClearPastRuns: () => set({ hybridPastRuns: [] }),
       hybridReset: () =>
         set((s) => ({
@@ -374,6 +400,8 @@ export const useBenchmarkStore = create<BenchmarkState>()(
           hybridChains: s.hybridChains,
           hybridResults: s.hybridResults,
           hybridPastRuns: s.hybridPastRuns,
+          hybridSelectedScenario: s.hybridSelectedScenario,
+          hybridCustomPrompt: s.hybridCustomPrompt,
         };
       },
     }

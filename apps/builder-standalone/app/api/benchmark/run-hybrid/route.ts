@@ -7,6 +7,7 @@
 import { NextRequest } from "next/server";
 import {
   CLOUD_SCENARIOS,
+  ALL_HYBRID_SCENARIOS,
   scoreResponse,
   extractCode,
   getCloudTier,
@@ -479,7 +480,7 @@ export async function POST(request: NextRequest) {
   const { chains, scenarioId } = config;
 
   const scenario = scenarioId
-    ? CLOUD_SCENARIOS.find((s) => s.id === scenarioId) || CLOUD_SCENARIOS[0]
+    ? ALL_HYBRID_SCENARIOS.find((s) => s.id === scenarioId) || CLOUD_SCENARIOS[0]
     : CLOUD_SCENARIOS[0]; // Default: R1 Restaurant
 
   const baseUrl = new URL(request.url).origin;

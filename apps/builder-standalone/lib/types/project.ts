@@ -100,7 +100,7 @@ export const TOGGLE_INFO: {
   {
     key: "performance",
     label: "Performance Boost",
-    description: "Image compression, lazy-load",
+    description: "Lazy-load images, minify CSS/JS",
     color: "#eab308",
   },
   {

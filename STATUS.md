@@ -220,8 +220,12 @@ Tag: working-2026-03-02-deploy-fix (last tagged)
 | Results persistence | Works | localStorage via Zustand persist (`forge-trials-store`) |
 | Warmup splash | Works | Preview iframe shows splash during first API call |
 | Parallel cloud execution | Works | Toggle in toolbar — providers run simultaneously, rounds sequential within each |
-| Hybrid chain system | Works | Recommended (trial-data-only, no fallbacks) + Custom (empty steps, user selects) — LOCAL/CLOUD badges, $0.00 cost for local steps |
+| Hybrid chain system | **Rebuilt** | Full rebuild: 2-panel layout (30/70 split), 18 scenarios, single chain editor with 1-5 steps, LOCAL/CLOUD model selection, cost estimates, AI assessment (Gemini 2.5 Flash), compiler loop (@sarge/audit), Supabase sync |
 | Hybrid API route | Works | `/api/benchmark/run-hybrid` — chain execution with step-by-step output feeding |
+| Hybrid compile API | **New** | `/api/benchmark/compile` — writes HTML to temp, runs runAudit(), AI fix loop via Gemini |
+| Hybrid assess API | **New** | `/api/benchmark/assess` — Gemini 2.5 Flash plain-English assessment |
+| HybridDetailPanel | **New** | Right panel: Preview/Code/Breakdown tabs, AI Assessment (collapsible), Compiler with before/after scores, violation list, PASSED/NEEDS REVIEW badge |
+| 18 hybrid scenarios | **New** | R1-R8 (existing cloud) + R9-R18 (new: Local Service, Medical, Restaurant Full, Real Estate, Law Firm, Event/Wedding, Nonprofit, Fitness, Landing Page, Rebuild) |
 | Round explainers | Works | One-sentence description per scenario (local R1-R8, cloud R1-R8) — `explainers.ts` |
 | Criterion explainers | Works | What each scoring bar measures + dynamic score explanation sentences |
 | Model summary card | Works | Grade (A+ to F), top 3/bottom 2 rounds, strengths/weaknesses, use case |
@@ -243,7 +247,8 @@ Tag: working-2026-03-02-deploy-fix (last tagged)
 
 | Date | Commit | Change |
 |------|--------|--------|
-| Mar 4 | (latest) | Supabase migration — 11 tables DDL (`supabase/migration.sql`), forgeSync module (`packages/core/src/lib/supabase/forgeSync.ts`), dual-write for trials+billing in benchmarkStore, conversation sync re-enabled in syncQueue.ts, migration API route. |
+| Mar 4 | (latest) | Hybrid page — full rebuild with compiler loop, AI assessment, 18 scenarios, Supabase logging. New files: hybridScenarios.ts, HybridDetailPanel.tsx, compile/route.ts, assess/route.ts, analytics/collect/route.ts. Rewrote ForgeTrialsHybrid.tsx (left panel). Dashboard wired for 30/70 split layout. |
+| Mar 4 | 4564c37 | Supabase migration — 11 tables DDL (`supabase/migration.sql`), forgeSync module (`packages/core/src/lib/supabase/forgeSync.ts`), dual-write for trials+billing in benchmarkStore, conversation sync re-enabled in syncQueue.ts, migration API route. |
 | Mar 4 | 03eaef7 | Hybrid — remove hardcoded fallbacks, recommendations from trial data only. Custom chains start empty with "Select a model" prompt. Recommended mode requires completed local+cloud trials. |
 | Mar 4 | 5f3f4d5 | HuggingFace provider wired — Llama 3.3 70B, Qwen 3 235B, DeepSeek V3. Base URL updated to router.huggingface.co. All 3 models ping-tested OK. Also fixed @sarge/billing + @sarge/benchmark missing workspace deps. |
 | Mar 4 | 5cc2cc7 | Live event ticker + activity panel — real time stream visibility in Forge Trials |
@@ -303,23 +308,23 @@ Tag: working-2026-03-02-deploy-fix (last tagged)
 
 | Table | Status | Dual-Write | Notes |
 |-------|--------|------------|-------|
-| conversations | **Migration pending** | syncQueue.ts | Upsert on create/update, fetch with proper schema |
-| messages | **Migration pending** | forgeSync.ts | Per-message insert |
-| forge_trial_results | **Migration pending** | benchmarkStore.ts | Fire-and-forget on each round complete (local + cloud) |
-| forge_billing | **Migration pending** | benchmarkStore.ts | Piggybacks on trial results when cost > 0 |
-| forge_hybrid_runs | **Migration pending** | forgeSync.ts (not yet wired) | Manual sync available |
-| forge_build_history | **Migration pending** | Not wired | Future: builder session tracking |
-| forge_compiler_results | **Migration pending** | Not wired | Future: compiler output tracking |
-| forge_model_registry | **Migration pending** | Not wired | Future: model metadata sync |
-| forge_certificates | **Migration pending** | Not wired | Future: trial certificates |
-| builder_logs | **Migration pending** | syncQueue.ts | Upsert by project_name |
-| user_settings | **Migration pending** | Not wired | Future: settings backup |
+| conversations | **Active** (RLS) | syncQueue.ts | Upsert on create/update, fetch with proper schema |
+| messages | **Active** (RLS) | forgeSync.ts | Per-message insert |
+| forge_trial_results | **Active** (RLS) | benchmarkStore.ts | Fire-and-forget on each round complete (local + cloud) |
+| forge_billing | **Active** (RLS) | benchmarkStore.ts | Piggybacks on trial results when cost > 0 |
+| forge_hybrid_runs | **Active** (RLS) | forgeSync.ts (not yet wired) | Manual sync available |
+| forge_build_history | **Active** (RLS) | Not wired | Future: builder session tracking |
+| forge_compiler_results | **Active** (RLS) | Not wired | Future: compiler output tracking |
+| forge_model_registry | **Active** (RLS) | Not wired | Future: model metadata sync |
+| forge_certificates | **Active** (RLS) | Not wired | Future: trial certificates |
+| builder_logs | **Active** (RLS) | syncQueue.ts | Upsert by project_name |
+| user_settings | **Active** (RLS) | Not wired | Future: settings backup |
 | llm_sessions | Exists (289 rows) | sync.ts | Forensic session tracking |
 | llm_responses | Exists (5,586 rows) | sync.ts | Forensic log entries |
 | llm_judge_verdicts | Exists (232 rows) | sync.ts | Judge verdicts |
 | llm_endpoints_snapshot | Exists (874 rows) | sync.ts | Endpoint snapshots |
 
-**Migration file**: `supabase/migration.sql` — run in Supabase SQL Editor or add `SUPABASE_SERVICE_ROLE_KEY` to `.env.local` and POST `/api/supabase/migrate`.
+**Migration complete** — all 11 tables created with RLS policies on 2026-03-04.
 
 ---
 

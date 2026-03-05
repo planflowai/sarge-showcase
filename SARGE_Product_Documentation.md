@@ -1607,30 +1607,60 @@ Toggle "Run Parallel" in the cloud trials toolbar to run all providers simultane
 
 ### The Hybrid Test System
 
-Hybrid chains test multi-model pipelines where each step feeds output to the next. Two modes:
+Two-panel layout (30/70 split) for building and testing multi-model chains.
 
-**Recommended Mode:**
-- Auto-generates up to 5 chains from completed trial scorecards
-- Local model always scaffolds first (cheapest)
-- Top cloud models used for Enhance/Refactor/Finish steps
-- Chains: Quick Pair (2-step), Triple Chain (3-step), Reverse Triple, Full Pipeline (4-step), Cloud Elite
+**Left Panel (Controls):**
+- Scenario dropdown: 18 scenarios (R1–R8 existing + R9–R18 industry-specific)
+- Custom prompt textarea (overrides scenario when filled)
+- Chain steps editor: 1–5 steps with editable role labels (Build, Improve, Refine, Polish, Check)
+- Per-step model dropdown showing models from completed trials (LOCAL optgroup + CLOUD optgroup)
+- Cost estimates per step ($0.00 for local, ~$0.015 for cloud)
+- RUN / STOP / CLEAR buttons
+- Past runs list (collapsible) with grade, score, time, cost, score progression, JSON export
 
-**Custom Mode:**
-- User picks models manually per step (2–5 steps per chain)
-- Renameable role labels (Scaffold, Enhance, Refactor, Finish, or custom)
-- Up to 10 chains
+**Right Panel (HybridDetailPanel):**
+- Stats bar: scenario name, step count, final score, grade badge, time, cost
+- Tab bar: Preview / Code / Breakdown
+  - Preview: `<iframe srcDoc>` rendering final HTML
+  - Code: `<pre>` monospace with full HTML
+  - Breakdown: Per-step cards with score bars, deltas ("+42 from previous"), cost/time, provider badges
+- AI Assessment (collapsible, auto-triggered):
+  - Calls `POST /api/benchmark/assess` → Gemini 2.5 Flash
+  - Sections: What Worked / What Didn't / Biggest Improvement / One More Step / Model Swap Suggestion
+- Compiler (collapsible, auto-triggered):
+  - Calls `POST /api/benchmark/compile` → writes HTML to temp, runs `@sarge/audit` (html-validate + axe-core + Lighthouse)
+  - 4 score cards: Performance, Accessibility, SEO, Best Practices (green ≥90, amber 70–89, red <70)
+  - AI Fix Loop: if any score < 80, auto-calls compile with `fix: true` → Gemini fixes violations → re-audits
+  - Before/After scores side by side
+  - PASSED (green) or NEEDS REVIEW (amber) badge
+  - Violations list with severity badges
+
+**New Scenarios (R9–R18):**
+| ID | Name | Difficulty | Focus |
+|----|------|------------|-------|
+| cloud-r9 | Local Service | hard | Plumber/HVAC — phone#, service area, reviews, contact form |
+| cloud-r10 | Medical/Wellness | hard | Dentist/medspa — booking CTA, trust signals, credentials |
+| cloud-r11 | Restaurant Full | expert | Full menu, hours, reservations, location map |
+| cloud-r12 | Real Estate Agent | hard | Listings grid, agent bio, neighborhood guides, lead capture |
+| cloud-r13 | Law Firm | hard | Practice areas, attorney bios, credibility, conservative |
+| cloud-r14 | Event/Wedding | hard | Countdown timer, gallery, RSVP, schedule |
+| cloud-r15 | Nonprofit | hard | Mission, donation button, volunteer signup, events calendar |
+| cloud-r16 | Fitness/Gym | hard | Class schedule, trainer bios, membership pricing, trial signup |
+| cloud-r17 | Landing Page | hard | Pure conversion — one CTA, no nav, testimonials, urgency |
+| cloud-r18 | Rebuild/Refresh | expert | Given ugly HTML, modernize completely (includes inputHtml) |
 
 **Chain Execution:**
-1. Step 1 (Scaffold) receives the scenario prompt
+1. Step 1 (Build) receives the scenario prompt
 2. Each subsequent step receives "Improve this code: [previous step's output]"
-3. Every step is scored against the scenario rubric
+3. Every step scored against scenario rubric
 4. Final score = last step's score
-5. Score progression shown per chain (e.g., 45 → 72 → 88)
+5. Score progression shown (e.g., 45 → 72 → 88)
+6. On complete: auto-saves to pastRuns, syncs to Supabase `forge_hybrid_runs`, triggers AI assessment + compiler
 
-**Route:** `POST /api/benchmark/run-hybrid` — accepts `HybridBenchmarkConfig` with chains array
-**Default scenario:** R1 Restaurant (selectable from dropdown)
-**Custom prompt:** Optional override for the first step
-**Results:** Persisted to benchmarkStore, exportable
+**Routes:**
+- `POST /api/benchmark/run-hybrid` — chain execution (NDJSON streaming)
+- `POST /api/benchmark/compile` — audit HTML via @sarge/audit, optional AI fix loop
+- `POST /api/benchmark/assess` — Gemini 2.5 Flash plain-English assessment
 
 **Success criteria:** Hybrid chain score ≥ best individual model score, at lower total cost.
 
@@ -1897,7 +1927,7 @@ This section exists because the platform grows faster than memory. Reference thi
 | messages | forgeSync.ts | (manual) | Chat messages — role, content, model, tokens, cost |
 | forge_trial_results | forgeSync.ts | benchmarkStore.addResult / cloudAddResult | Per-round trial scores — model, scenario, score, grade, tokens, cost, timing |
 | forge_billing | forgeSync.ts | benchmarkStore (on cost > 0) | Token billing — provider, model, tokens in/out, cost, run type |
-| forge_hybrid_runs | forgeSync.ts | (not yet wired) | Hybrid chain results — chain config, step results, final score |
+| forge_hybrid_runs | forgeSync.ts | benchmarkStore.hybridSaveRun() | Hybrid chain results — chain config, step results, final score |
 | forge_build_history | — | (not yet wired) | Builder session tracking |
 | forge_compiler_results | — | (not yet wired) | Compiler output tracking |
 | forge_model_registry | — | (not yet wired) | Model metadata sync |
@@ -2058,6 +2088,9 @@ L:\ai_builder\projects\
 - `POST /api/benchmark/run` — Local Forge Trials runner (NDJSON streaming)
 - `POST /api/benchmark/run-cloud` — Cloud Forge Trials runner (direct API calls, NDJSON streaming, parallel optional)
 - `POST /api/benchmark/run-hybrid` — Hybrid chain runner (multi-model chains, NDJSON streaming)
+- `POST /api/benchmark/compile` — Audit HTML via @sarge/audit, optional AI fix loop (Gemini 2.5 Flash)
+- `POST /api/benchmark/assess` — AI assessment via Gemini 2.5 Flash (plain-English analysis)
+- `POST /api/analytics/collect` — Analytics event collector (stub, returns 200)
 - `GET /api/benchmark/results` — Retrieve saved trial results
 
 **Billing:**
