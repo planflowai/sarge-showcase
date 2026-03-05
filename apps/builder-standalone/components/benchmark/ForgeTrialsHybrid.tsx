@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useMemo } from "react";
 import {
-  Play, Square, Plus, Minus, Layers, ChevronDown, ChevronRight,
+  Play, Square, Plus, Layers, ChevronDown, ChevronRight,
   Loader2, X, Archive, Download,
 } from "lucide-react";
 import { useBenchmarkStore } from "@/lib/stores/benchmarkStore";
@@ -12,7 +12,6 @@ import {
   type HybridChain,
   type HybridStep,
   type HybridEvent,
-  type HybridChainResult,
   type HybridBenchmarkConfig,
   getLetterGrade,
   getGradeColor,
@@ -32,13 +31,6 @@ const DIFFICULTY_COLORS: Record<string, string> = {
   easy: "text-emerald-400", medium: "text-amber-400",
   hard: "text-orange-400", expert: "text-red-400",
 };
-
-interface AvailableModel {
-  id: string;
-  provider: string;
-  name: string;
-  isLocal: boolean;
-}
 
 export function ForgeTrialsHybrid() {
   const store = useBenchmarkStore();
@@ -66,7 +58,6 @@ export function ForgeTrialsHybrid() {
   } = store;
 
   const storeModels = useModelStore((s) => s.models);
-  const builderFlags = useModelStore((s) => s.builderFlags);
 
   // Chain steps — single chain at a time
   const [steps, setSteps] = useState<HybridStep[]>([
@@ -74,59 +65,33 @@ export function ForgeTrialsHybrid() {
     { modelId: "", provider: "", modelName: "", role: "Improve" },
   ]);
   const [showPastRuns, setShowPastRuns] = useState(false);
+  const [stepTabs, setStepTabs] = useState<Record<number, "local" | "cloud">>({});
 
-  // Available models: ALL local models + trial-completed cloud + builder-flagged cloud
-  const availableModels: AvailableModel[] = useMemo(() => {
-    const seen = new Set<string>();
-    const result: AvailableModel[] = [];
-
-    // 1. ALL local models from model store (no builder flag required)
+  // ALL local models — every model in Ollama/LM Studio, no filtering
+  const localModels = useMemo(() =>
     storeModels
       .filter((m) => m.provider === "ollama" || m.provider === "lmstudio")
-      .forEach((m) => {
-        const key = `${m.provider}:${m.id}`;
-        if (!seen.has(key)) {
-          seen.add(key);
-          result.push({ id: m.id, provider: m.provider, name: m.name, isLocal: true });
-        }
-      });
+      .map((m) => ({ id: m.id, provider: m.provider, name: m.name })),
+    [storeModels]
+  );
 
-    // 2. Local scorecard models (completed local trials — may include models no longer in store)
-    localScorecards.forEach((sc) => {
-      const key = `ollama:${sc.modelId}`;
-      if (!seen.has(key)) {
-        seen.add(key);
-        result.push({ id: sc.modelId, provider: "ollama", name: sc.modelId, isLocal: true });
-      }
-    });
-
-    // 3. Cloud scorecard models (completed cloud trials)
-    cloudScorecards.forEach((sc) => {
-      const provider = sc.modelSize || "unknown";
-      const key = `${provider}:${sc.modelId}`;
-      if (!seen.has(key)) {
-        seen.add(key);
-        const storeModel = storeModels.find((m) => m.id === sc.modelId && m.provider === provider);
-        result.push({ id: sc.modelId, provider, name: storeModel?.name || sc.modelId, isLocal: false });
-      }
-    });
-
-    // 4. Builder-flagged cloud models from store
+  // ALL cloud models — every configured cloud model, no filtering
+  const cloudModels = useMemo(() =>
     storeModels
-      .filter((m) => builderFlags[m.id] && m.provider !== "ollama" && m.provider !== "lmstudio")
-      .forEach((m) => {
-        const key = `${m.provider}:${m.id}`;
-        if (!seen.has(key)) {
-          seen.add(key);
-          result.push({ id: m.id, provider: m.provider, name: m.name, isLocal: false });
-        }
-      });
+      .filter((m) => m.provider !== "ollama" && m.provider !== "lmstudio")
+      .map((m) => ({ id: m.id, provider: m.provider, name: m.name })),
+    [storeModels]
+  );
 
-    return result;
-  }, [storeModels, builderFlags, localScorecards, cloudScorecards]);
-
-  const localModels = availableModels.filter((m) => m.isLocal);
-  const cloudModels = availableModels.filter((m) => !m.isLocal);
+  // Trial score lookup — informational badge only, never a gate
+  const getTrialScore = useCallback((modelId: string, provider: string): number | null => {
+    if (provider === "ollama" || provider === "lmstudio") {
+      const sc = localScorecards.find((s) => s.modelId === modelId);
+      return sc ? sc.overallScore : null;
+    }
+    const sc = cloudScorecards.find((s) => s.modelId === modelId);
+    return sc ? sc.overallScore : null;
+  }, [localScorecards, cloudScorecards]);
 
   // ── Step management ──
   const addStep = () => {
@@ -367,13 +332,40 @@ export function ForgeTrialsHybrid() {
                 )}
               </div>
 
-              {/* Model selector */}
+              {/* LOCAL / CLOUD tabs */}
+              <div className="flex gap-0.5 mb-1.5">
+                <button
+                  onClick={() => setStepTabs((t) => ({ ...t, [si]: "local" }))}
+                  disabled={hybridRunning}
+                  className={`flex-1 text-xs font-bold uppercase py-1 rounded-l transition-colors ${
+                    (stepTabs[si] || "local") === "local"
+                      ? "bg-zinc-700 text-white"
+                      : "bg-zinc-800/60 text-zinc-400 hover:text-zinc-200"
+                  }`}
+                >
+                  LOCAL ({localModels.length})
+                </button>
+                <button
+                  onClick={() => setStepTabs((t) => ({ ...t, [si]: "cloud" }))}
+                  disabled={hybridRunning}
+                  className={`flex-1 text-xs font-bold uppercase py-1 rounded-r transition-colors ${
+                    (stepTabs[si] || "local") === "cloud"
+                      ? "bg-zinc-700 text-white"
+                      : "bg-zinc-800/60 text-zinc-400 hover:text-zinc-200"
+                  }`}
+                >
+                  CLOUD ({cloudModels.length})
+                </button>
+              </div>
+
+              {/* Model dropdown for selected tab */}
               <select
                 value={step.modelId ? `${step.provider}:${step.modelId}` : ""}
                 onChange={(e) => {
                   const [provider, ...rest] = e.target.value.split(":");
                   const modelId = rest.join(":");
-                  const m = availableModels.find((am) => am.id === modelId && am.provider === provider);
+                  const list = (stepTabs[si] || "local") === "local" ? localModels : cloudModels;
+                  const m = list.find((am) => am.id === modelId && am.provider === provider);
                   if (m) {
                     updateStep(si, { modelId: m.id, provider: m.provider, modelName: m.name });
                   }
@@ -386,24 +378,14 @@ export function ForgeTrialsHybrid() {
                 {!step.modelId && (
                   <option value="" disabled>Select a model</option>
                 )}
-                {localModels.length > 0 && (
-                  <optgroup label="LOCAL — $0.00">
-                    {localModels.map((m) => (
-                      <option key={`${m.provider}:${m.id}`} value={`${m.provider}:${m.id}`}>
-                        {m.name}
-                      </option>
-                    ))}
-                  </optgroup>
-                )}
-                {cloudModels.length > 0 && (
-                  <optgroup label="CLOUD — paid">
-                    {cloudModels.map((m) => (
-                      <option key={`${m.provider}:${m.id}`} value={`${m.provider}:${m.id}`}>
-                        {m.name} ({m.provider})
-                      </option>
-                    ))}
-                  </optgroup>
-                )}
+                {((stepTabs[si] || "local") === "local" ? localModels : cloudModels).map((m) => {
+                  const score = getTrialScore(m.id, m.provider);
+                  return (
+                    <option key={`${m.provider}:${m.id}`} value={`${m.provider}:${m.id}`}>
+                      {m.name}{m.provider !== "ollama" && m.provider !== "lmstudio" ? ` (${m.provider})` : ""}{score !== null ? ` — ${score}/100` : ""}
+                    </option>
+                  );
+                })}
               </select>
 
               {/* Cost estimate */}

@@ -251,7 +251,8 @@ Tag: working-2026-03-02-deploy-fix (last tagged)
 
 | Date | Commit | Change |
 |------|--------|--------|
-| Mar 5 | (latest) | Cloud runner — heartbeat keepalive (10s), billing timeout (5s), stopped flag on emit failure. All 3 runners now have identical stream-death protection. |
+| Mar 5 | (latest) | Hybrid — remove trial gate from model dropdowns. LOCAL/CLOUD tabs per step. All Ollama + all cloud models always visible. Trial scores shown as informational badges only. |
+| Mar 5 | 0e52e4c | Cloud runner — heartbeat keepalive (10s), billing timeout (5s), stopped flag on emit failure. All 3 runners now have identical stream-death protection. |
 | Mar 5 | 13701a0 | Local runner — heartbeat keepalive + abort signal propagation. |
 | Mar 5 | 464f68a | Hybrid runner — heartbeat keepalive + billing timeout. |
 | Mar 5 | b535a33 | Fix local trials stalling — hybridRunning never reset after run (stuck RUN button), finally block cleanup, lmstudio provider, font bumps across all benchmark components. |
