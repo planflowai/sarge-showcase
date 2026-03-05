@@ -198,6 +198,7 @@ export type HybridEventType =
   | "hybrid:start"
   | "hybrid:chain-start"
   | "hybrid:step-start"
+  | "hybrid:step-streaming"
   | "hybrid:step-complete"
   | "hybrid:chain-complete"
   | "hybrid:complete"
@@ -211,6 +212,7 @@ export interface HybridEvent {
   stepIndex?: number;
   stepResult?: HybridStepResult;
   chainResult?: HybridChainResult;
+  partialHtml?: string;
   message: string;
   timestamp: number;
 }

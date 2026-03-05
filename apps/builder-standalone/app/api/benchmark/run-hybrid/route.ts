@@ -41,7 +41,8 @@ async function callCloudDirect(
   systemPrompt: string,
   userPrompt: string,
   timeoutMs: number,
-  signal: AbortSignal
+  signal: AbortSignal,
+  onChunk?: (content: string) => void
 ): Promise<CloudCallResult> {
   const TOKEN_LIMIT = 8192;
   switch (provider) {
@@ -49,31 +50,31 @@ async function callCloudDirect(
       return callOpenAICompat(
         "https://api.deepseek.com/chat/completions",
         process.env.DEEPSEEK_API_KEY || "",
-        modelId, systemPrompt, userPrompt, TOKEN_LIMIT, timeoutMs, signal
+        modelId, systemPrompt, userPrompt, TOKEN_LIMIT, timeoutMs, signal, onChunk
       );
     case "openai":
       return callOpenAICompat(
         "https://api.openai.com/v1/chat/completions",
         process.env.OPENAI_API_KEY || "",
-        modelId, systemPrompt, userPrompt, TOKEN_LIMIT, timeoutMs, signal
+        modelId, systemPrompt, userPrompt, TOKEN_LIMIT, timeoutMs, signal, onChunk
       );
     case "xai":
       return callOpenAICompat(
         "https://api.x.ai/v1/chat/completions",
         process.env.XAI_API_KEY || process.env.GROK_API_KEY || "",
-        modelId, systemPrompt, userPrompt, TOKEN_LIMIT, timeoutMs, signal
+        modelId, systemPrompt, userPrompt, TOKEN_LIMIT, timeoutMs, signal, onChunk
       );
     case "anthropic":
-      return callAnthropic(modelId, systemPrompt, userPrompt, timeoutMs, signal);
+      return callAnthropic(modelId, systemPrompt, userPrompt, timeoutMs, signal, onChunk);
     case "google":
-      return callGemini(modelId, systemPrompt, userPrompt, timeoutMs, signal);
+      return callGemini(modelId, systemPrompt, userPrompt, timeoutMs, signal, onChunk);
     case "ollama":
-      return callOllama(modelId, systemPrompt, userPrompt, timeoutMs, signal);
+      return callOllama(modelId, systemPrompt, userPrompt, timeoutMs, signal, onChunk);
     case "lmstudio":
       return callOpenAICompat(
         process.env.LMSTUDIO_BASE_URL || "http://127.0.0.1:1234/v1/chat/completions",
         "lm-studio",
-        modelId, systemPrompt, userPrompt, TOKEN_LIMIT, timeoutMs, signal
+        modelId, systemPrompt, userPrompt, TOKEN_LIMIT, timeoutMs, signal, onChunk
       );
     default: {
       const envKey = `${provider.toUpperCase()}_API_KEY`;
@@ -90,7 +91,7 @@ async function callCloudDirect(
       if (!apiKey || !baseUrl) {
         return { content: "", timeMs: 0, timedOut: false, tokenCount: 0, error: `No API key or base URL for provider: ${provider}` };
       }
-      return callOpenAICompat(baseUrl, apiKey, modelId, systemPrompt, userPrompt, TOKEN_LIMIT, timeoutMs, signal);
+      return callOpenAICompat(baseUrl, apiKey, modelId, systemPrompt, userPrompt, TOKEN_LIMIT, timeoutMs, signal, onChunk);
     }
   }
 }
@@ -102,7 +103,8 @@ async function callOllama(
   systemPrompt: string,
   userPrompt: string,
   timeoutMs: number,
-  signal: AbortSignal
+  signal: AbortSignal,
+  onChunk?: (content: string) => void
 ): Promise<CloudCallResult> {
   const start = Date.now();
   const controller = new AbortController();
@@ -150,6 +152,7 @@ async function callOllama(
           if (data.message?.content) {
             content += data.message.content;
             tokenCount++;
+            onChunk?.(content);
           }
         } catch {}
       }
@@ -184,7 +187,8 @@ async function callOpenAICompat(
   userPrompt: string,
   maxTokens: number,
   timeoutMs: number,
-  signal: AbortSignal
+  signal: AbortSignal,
+  onChunk?: (content: string) => void
 ): Promise<CloudCallResult> {
   const start = Date.now();
   const controller = new AbortController();
@@ -237,7 +241,7 @@ async function callOpenAICompat(
         try {
           const data = JSON.parse(line.slice(6));
           const text = data.choices?.[0]?.delta?.content;
-          if (text) { content += text; tokenCount++; }
+          if (text) { content += text; tokenCount++; onChunk?.(content); }
         } catch {}
       }
     }
@@ -268,7 +272,8 @@ async function callAnthropic(
   systemPrompt: string,
   userPrompt: string,
   timeoutMs: number,
-  signal: AbortSignal
+  signal: AbortSignal,
+  onChunk?: (content: string) => void
 ): Promise<CloudCallResult> {
   const start = Date.now();
   const apiKey = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY || "";
@@ -322,6 +327,7 @@ async function callAnthropic(
           if (data.type === "content_block_delta" && data.delta?.text) {
             content += data.delta.text;
             tokenCount++;
+            onChunk?.(content);
           }
         } catch {}
       }
@@ -353,7 +359,8 @@ async function callGemini(
   systemPrompt: string,
   userPrompt: string,
   timeoutMs: number,
-  signal: AbortSignal
+  signal: AbortSignal,
+  onChunk?: (content: string) => void
 ): Promise<CloudCallResult> {
   const start = Date.now();
   const apiKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY || "";
@@ -405,7 +412,7 @@ async function callGemini(
         try {
           const data = JSON.parse(line.slice(6));
           const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (text) { content += text; tokenCount++; }
+          if (text) { content += text; tokenCount++; onChunk?.(content); }
         } catch {}
       }
     }
@@ -478,6 +485,30 @@ function getStepPrompt(role: string, previousCode: string): string {
       // Custom role — generic "improve" prompt
       return `You are performing the "${role}" step on an existing website. Here is the current code:\n\n\`\`\`html\n${previousCode}\n\`\`\`\n\nApply your "${role}" improvements while keeping all existing functionality. Output the complete improved HTML file.`;
   }
+}
+
+// ── Partial HTML extraction for streaming preview ──
+// Unlike extractCode (needs closing tags), this grabs whatever HTML exists so far.
+function extractPartialHtml(content: string): string {
+  // Try code fence: ```html\n...  (no closing fence needed)
+  const fenceMatch = content.match(/```(?:html)?\s*\n([\s\S]+)/i);
+  if (fenceMatch) {
+    let code = fenceMatch[1];
+    // Strip trailing ``` if present
+    const closeIdx = code.lastIndexOf("```");
+    if (closeIdx !== -1) code = code.slice(0, closeIdx);
+    return code.trim();
+  }
+  // Try raw HTML: find <!DOCTYPE or <html
+  const lower = content.toLowerCase();
+  const start = Math.min(
+    lower.indexOf("<!doctype") !== -1 ? lower.indexOf("<!doctype") : Infinity,
+    lower.indexOf("<html") !== -1 ? lower.indexOf("<html") : Infinity
+  );
+  if (start !== Infinity) {
+    return content.slice(start).trim();
+  }
+  return "";
 }
 
 // ── POST handler ──
@@ -567,13 +598,36 @@ export async function POST(request: NextRequest) {
             });
           }, 10_000);
 
+          // Streaming preview — emit partial HTML as model generates
+          let lastStreamEmit = 0;
+          let lastStreamLen = 0;
+          const onChunk = (accumulated: string) => {
+            const now = Date.now();
+            // Throttle: at least 500ms gap AND at least 200 chars new content
+            if (now - lastStreamEmit < 500 || accumulated.length - lastStreamLen < 200) return;
+            // Extract renderable HTML from partial content
+            const html = extractPartialHtml(accumulated);
+            if (!html || html.length < 50) return;
+            lastStreamEmit = now;
+            lastStreamLen = accumulated.length;
+            emit({
+              type: "hybrid:step-streaming",
+              chainId: chain.id,
+              stepIndex: si,
+              partialHtml: html,
+              message: `Step ${si + 1}: streaming ${html.length} chars...`,
+              timestamp: now,
+            });
+          };
+
           const result = await callCloudDirect(
             step.provider,
             step.modelId,
             STEP_SYSTEM,
             userPrompt,
             timeout,
-            abortController.signal
+            abortController.signal,
+            onChunk
           );
 
           clearInterval(heartbeat);

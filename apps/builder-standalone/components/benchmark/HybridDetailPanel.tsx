@@ -60,10 +60,14 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
   const grade = finalScore ? getLetterGrade(finalScore.total) : null;
   const gradeColor = grade ? getGradeColor(grade) : "";
 
-  // Live preview: extract HTML from step-complete events as they arrive (before full chain completes)
+  // Live preview: prioritize streaming partial HTML > step-complete HTML
   const liveHtml = useMemo(() => {
+    // Scan backwards: streaming events update most frequently
     for (let i = events.length - 1; i >= 0; i--) {
       const ev = events[i];
+      if (ev.type === "hybrid:step-streaming" && ev.partialHtml) {
+        return ev.partialHtml;
+      }
       if (ev.type === "hybrid:step-complete" && ev.stepResult?.extractedCode) {
         return ev.stepResult.extractedCode;
       }
@@ -71,7 +75,7 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
     return "";
   }, [events]);
 
-  // Use final chain HTML if available, otherwise live step HTML
+  // Use final chain HTML if available, otherwise live/streaming HTML
   const displayHtml = finalHtml || liveHtml;
 
   // Preview HTML

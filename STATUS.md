@@ -251,7 +251,8 @@ Tag: working-2026-03-02-deploy-fix (last tagged)
 
 | Date | Commit | Change |
 |------|--------|--------|
-| Mar 5 | (latest) | Hybrid — live preview updates after each step completes. iframe shows HTML as soon as step-complete event arrives, not after full chain. LIVE badge during run. |
+| Mar 5 | (latest) | Hybrid — streaming live preview. Model tokens pipe into iframe in real time via `hybrid:step-streaming` events (throttled 500ms/200chars). User sees HTML build visually as model generates. All 5 providers (Ollama, OpenAI-compat, Anthropic, Gemini, + defaults) emit onChunk callbacks. |
+| Mar 5 | 9a8fd0a | Hybrid — live preview updates after each step completes. iframe shows HTML as soon as step-complete event arrives, not after full chain. LIVE badge during run. |
 | Mar 5 | c27e96b+8333246 | Hybrid — remove trial gate, LOCAL/CLOUD tabs per step, model scan API fix (flatten results for modelStore hydration). |
 | Mar 5 | 0e52e4c | Cloud runner — heartbeat keepalive (10s), billing timeout (5s), stopped flag on emit failure. All 3 runners now have identical stream-death protection. |
 | Mar 5 | 13701a0 | Local runner — heartbeat keepalive + abort signal propagation. |
