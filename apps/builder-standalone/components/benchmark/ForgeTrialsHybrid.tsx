@@ -235,6 +235,14 @@ export function ForgeTrialsHybrid() {
       if (err instanceof Error && err.name === "AbortError") {
         hybridAddEvent({ type: "hybrid:stopped", message: "Hybrid run stopped.", timestamp: Date.now() });
         setTimeout(() => hybridSaveRun(), 100);
+      } else {
+        hybridAddEvent({ type: "hybrid:error", message: `Run failed: ${err instanceof Error ? err.message : String(err)}`, timestamp: Date.now() });
+      }
+    } finally {
+      // Always ensure running state is cleaned up
+      const { hybridRunning: stillRunning } = useBenchmarkStore.getState();
+      if (stillRunning) {
+        useBenchmarkStore.setState({ hybridRunning: false, hybridAbortController: null });
       }
     }
   }, [canRun, steps, hybridSelectedScenario, hybridCustomPrompt, hybridStartRun, hybridAddResult, hybridAddEvent, hybridSetAbortController, hybridSetTotalCost, hybridSaveRun]);

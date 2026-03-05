@@ -247,7 +247,8 @@ Tag: working-2026-03-02-deploy-fix (last tagged)
 
 | Date | Commit | Change |
 |------|--------|--------|
-| Mar 4 | (latest) | Hybrid — font fixes (all content text-sm/zinc-200 minimum), progress bar 8px tall, Level 11 Events scenario (19th scenario, expert). |
+| Mar 4 | (latest) | Fix local trials stalling — hybridRunning never reset after run (stuck RUN button), finally block cleanup, lmstudio provider, font bumps across all benchmark components. |
+| Mar 4 | 67e7138 | Hybrid — font fixes (all content text-sm/zinc-200 minimum), progress bar 8px tall, Level 11 Events scenario (19th scenario, expert). |
 | Mar 4 | 5d5f420 | Hybrid readability — prompt preview white/bold/readable, all labels bumped from 9-10px zinc-500/600 to 12px zinc-300/400. Every text element readable, not decorative. |
 | Mar 4 | d8cce9a | Hybrid fixes — local models in dropdowns (all Ollama/LM Studio models shown without builder flag), scenario prompt preview (shows what AI receives, updates when custom prompt filled). |
 | Mar 4 | 65951d8 | Hybrid page — full rebuild with compiler loop, AI assessment, 18 scenarios, Supabase logging. New files: hybridScenarios.ts, HybridDetailPanel.tsx, compile/route.ts, assess/route.ts, analytics/collect/route.ts. Rewrote ForgeTrialsHybrid.tsx (left panel). Dashboard wired for 30/70 split layout. |

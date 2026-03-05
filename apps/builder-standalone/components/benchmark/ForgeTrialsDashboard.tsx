@@ -598,10 +598,10 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
             <button
               onClick={() => setCloudParallel(!cloudParallel)}
               disabled={cloudRunning}
-              className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold transition-all ml-2 border ${
+              className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-bold transition-all ml-2 border ${
                 cloudParallel
                   ? "bg-emerald-900/20 border-emerald-600/40 text-emerald-400"
-                  : "bg-zinc-900 border-zinc-700 text-zinc-600 hover:text-zinc-400"
+                  : "bg-zinc-900 border-zinc-700 text-zinc-300 hover:text-zinc-200"
               } disabled:opacity-30`}
               title="Run providers in parallel"
             >
@@ -664,33 +664,33 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
 
         {/* Status */}
         {activeRunning && activeCurrentModel ? (
-          <div className="flex items-center gap-1.5 text-[10px] flex-shrink-0 min-w-0">
+          <div className="flex items-center gap-1.5 text-sm flex-shrink-0 min-w-0">
             <Loader2 className="w-3 h-3 animate-spin text-amber-400 flex-shrink-0" />
             <span className="text-[#FF6700] font-bold truncate max-w-[150px]">{activeCurrentModel}</span>
-            {activeCurrentRound && <span className="text-zinc-600">· {activeCurrentRound}</span>}
+            {activeCurrentRound && <span className="text-zinc-300">· {activeCurrentRound}</span>}
           </div>
         ) : !activeRunning && completedMedianTests > 0 ? (
-          <span className="text-[10px] font-bold text-emerald-400 flex-shrink-0">Complete</span>
+          <span className="text-sm font-bold text-emerald-400 flex-shrink-0">Complete</span>
         ) : (
-          <span className="text-[10px] text-zinc-600 flex-shrink-0">Ready</span>
+          <span className="text-sm text-zinc-300 flex-shrink-0">Ready</span>
         )}
 
         {/* Event ticker + stall warning */}
         {anyRunning && eventCount > 0 && stallStatus === "ok" && (
-          <div className="flex items-center gap-1.5 text-[10px] flex-shrink-0">
+          <div className="flex items-center gap-1.5 text-xs flex-shrink-0">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-zinc-400 tabular-nums">{eventCount}</span>
-            {lastEventAgo > 0 && <span className="text-zinc-600">{lastEventAgo}s</span>}
+            <span className="text-zinc-200 tabular-nums">{eventCount}</span>
+            {lastEventAgo > 0 && <span className="text-zinc-300">{lastEventAgo}s</span>}
           </div>
         )}
         {stallStatus === "warning" && (
-          <div className="flex items-center gap-1 text-[10px] text-amber-400 font-bold flex-shrink-0">
+          <div className="flex items-center gap-1 text-xs text-amber-400 font-bold flex-shrink-0">
             <AlertTriangle className="w-3 h-3" />
             <span>Stream may be stalled ({lastEventAgo}s)</span>
           </div>
         )}
         {stallStatus === "dead" && (
-          <div className="flex items-center gap-1 text-[10px] text-red-400 font-bold flex-shrink-0 animate-pulse">
+          <div className="flex items-center gap-1 text-xs text-red-400 font-bold flex-shrink-0 animate-pulse">
             <AlertTriangle className="w-3 h-3" />
             <span>Stream appears dead — consider stopping ({lastEventAgo}s)</span>
           </div>
@@ -700,10 +700,10 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
         {!isHybrid && (
           <button
             onClick={() => setActivityOpen(!activityOpen)}
-            className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold transition-all border flex-shrink-0 ${
+            className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs font-bold transition-all border flex-shrink-0 ${
               activityOpen
                 ? "bg-[#FF6700]/15 border-[#FF6700]/50 text-[#FFD700]"
-                : "bg-zinc-800/60 border-zinc-700 text-zinc-600 hover:text-zinc-400"
+                : "bg-zinc-800/60 border-zinc-700 text-zinc-300 hover:text-zinc-200"
             }`}
             title="Toggle live activity log"
           >
@@ -715,16 +715,16 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
         {/* Timing + Cost */}
         <div className="flex items-center gap-2 ml-auto flex-shrink-0">
           {!isHybrid && activeRunning && remainingMin > 0 && (
-            <span className="text-[10px] text-zinc-500">~{remainingMin}m</span>
+            <span className="text-xs text-zinc-300">~{remainingMin}m</span>
           )}
           {isCloud && cloudTotalCost > 0 && (
-            <span className="text-[10px] font-mono font-bold text-emerald-400">${cloudTotalCost.toFixed(4)}</span>
+            <span className="text-xs font-mono font-bold text-emerald-400">${cloudTotalCost.toFixed(4)}</span>
           )}
           {isHybrid && hybridTotalCost > 0 && (
-            <span className="text-[10px] font-mono font-bold text-emerald-400">${hybridTotalCost.toFixed(4)}</span>
+            <span className="text-xs font-mono font-bold text-emerald-400">${hybridTotalCost.toFixed(4)}</span>
           )}
           {!isHybrid && (
-            <span className="text-[10px] tabular-nums text-zinc-500">
+            <span className="text-xs tabular-nums text-zinc-300">
               R{completedMedianTests}/{activeModels.length * activeScenarios.length}
             </span>
           )}
@@ -736,30 +736,30 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
         <div className="border-b border-zinc-800/50 bg-zinc-900/60 flex-shrink-0" style={{ maxHeight: "200px" }}>
           <div className="flex items-center h-7 px-3 border-b border-zinc-800/30">
             <Activity className="w-3 h-3 text-[#FF6700] mr-1.5" />
-            <span className="text-[10px] font-bold text-zinc-400 flex-1">
+            <span className="text-xs font-bold text-zinc-200 flex-1">
               Live Activity — {eventCount} events
             </span>
             <button
               onClick={() => { setActivityLog([]); setEventCount(0); }}
               disabled={activityLog.length === 0}
-              className="text-[10px] text-zinc-600 hover:text-zinc-400 disabled:opacity-30 px-1.5 transition-colors"
+              className="text-xs text-zinc-300 hover:text-zinc-100 disabled:opacity-30 px-1.5 transition-colors"
             >
               Clear
             </button>
             <button
               onClick={() => setActivityOpen(false)}
-              className="text-[10px] text-zinc-600 hover:text-zinc-400 px-1"
+              className="text-xs text-zinc-300 hover:text-zinc-100 px-1"
             >
               ✕
             </button>
           </div>
           <div className="overflow-y-auto px-2 py-0.5" style={{ maxHeight: "170px" }}>
             {activityLog.length === 0 ? (
-              <div className="text-[10px] text-zinc-700 py-3 text-center">No events yet — start a trial to see live stream data</div>
+              <div className="text-xs text-zinc-300 py-3 text-center">No events yet — start a trial to see live stream data</div>
             ) : (
               activityLog.map((entry) => (
-                <div key={entry.id} className="flex items-center gap-2 py-[3px] text-[10px] border-b border-zinc-800/20 last:border-0">
-                  <span className={`font-mono font-bold text-[9px] px-1.5 py-0.5 rounded ${getEventColor(entry.type)}`}>
+                <div key={entry.id} className="flex items-center gap-2 py-[3px] text-xs border-b border-zinc-800/20 last:border-0">
+                  <span className={`font-mono font-bold text-xs px-1.5 py-0.5 rounded ${getEventColor(entry.type)}`}>
                     {formatEventLabel(entry.type)}
                   </span>
                   {entry.modelId && (

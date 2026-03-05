@@ -26,6 +26,11 @@ const PROVIDER_LABELS: Record<string, string> = {
   xai: "xAI",
   google: "Google",
   deepseek: "DeepSeek",
+  mistral: "Mistral",
+  huggingface: "HuggingFace",
+  perplexity: "Perplexity",
+  together: "Together",
+  groq: "Groq",
 };
 
 export function ForgeTrialsControls({
@@ -166,7 +171,7 @@ export function ForgeTrialsControls({
         <div className="grid grid-cols-3 gap-x-4 gap-y-2">
           {cloudProviderGroups.map((group) => (
             <div key={group.provider}>
-              <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1">
+              <div className="text-xs font-bold text-zinc-300 uppercase tracking-wider mb-1">
                 {group.label}
               </div>
               <div className="flex flex-wrap gap-1">

@@ -69,6 +69,12 @@ async function callCloudDirect(
       return callGemini(modelId, systemPrompt, userPrompt, timeoutMs, signal);
     case "ollama":
       return callOllama(modelId, systemPrompt, userPrompt, timeoutMs, signal);
+    case "lmstudio":
+      return callOpenAICompat(
+        process.env.LMSTUDIO_BASE_URL || "http://127.0.0.1:1234/v1/chat/completions",
+        "lm-studio",
+        modelId, systemPrompt, userPrompt, TOKEN_LIMIT, timeoutMs, signal
+      );
     default: {
       const envKey = `${provider.toUpperCase()}_API_KEY`;
       const baseUrlKey = `${provider.toUpperCase()}_BASE_URL`;

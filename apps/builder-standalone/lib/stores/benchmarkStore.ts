@@ -359,6 +359,8 @@ export const useBenchmarkStore = create<BenchmarkState>()(
         }
         return set((s) => ({
           hybridPastRuns: [...s.hybridResults, ...s.hybridPastRuns].slice(0, 50),
+          hybridRunning: false,
+          hybridAbortController: null,
         }));
       },
       hybridClearPastRuns: () => set({ hybridPastRuns: [] }),

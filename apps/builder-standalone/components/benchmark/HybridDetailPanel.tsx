@@ -256,10 +256,10 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
     <div className="flex flex-col h-full overflow-hidden">
       {/* ── Stats Bar ── */}
       <div className="flex items-center gap-3 px-4 py-2 border-b border-zinc-800 bg-zinc-900/40 flex-shrink-0">
-        <span className="text-xs font-bold text-zinc-400 truncate max-w-[180px]">
+        <span className="text-sm font-bold text-zinc-200 truncate max-w-[180px]">
           {scenario?.name || scenarioId}
         </span>
-        <span className="text-[10px] text-zinc-600">
+        <span className="text-sm text-zinc-200">
           Steps: {chainResult?.steps.length || 0}
         </span>
         {finalScore && (
@@ -278,11 +278,11 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
         <div className="flex-1" />
         {chainResult && (
           <>
-            <div className="flex items-center gap-1 text-[10px] text-zinc-500">
+            <div className="flex items-center gap-1 text-sm text-zinc-200">
               <Clock className="w-3 h-3" />
               {(chainResult.totalTimeMs / 1000).toFixed(1)}s
             </div>
-            <div className="flex items-center gap-1 text-[10px] font-mono text-emerald-400">
+            <div className="flex items-center gap-1 text-sm font-mono text-emerald-400">
               <DollarSign className="w-3 h-3" />
               {chainResult.totalCost.toFixed(4)}
             </div>
@@ -353,13 +353,13 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
               return (
                 <div key={si} className="bg-zinc-900/40 border border-zinc-800 rounded-xl p-3">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-[10px] font-bold text-zinc-600">S{si + 1}</span>
-                    <span className="text-xs font-bold text-white">{step.role}</span>
+                    <span className="text-sm font-bold text-zinc-200">S{si + 1}</span>
+                    <span className="text-sm font-bold text-white">{step.role}</span>
                     <span
-                      className="text-[9px] font-bold px-1.5 py-0.5 rounded border"
+                      className="text-xs font-bold px-1.5 py-0.5 rounded border"
                       style={{
                         borderColor: (PROVIDER_COLORS[step.provider] || "#6B7280") + "40",
-                        color: PROVIDER_COLORS[step.provider] || "#6B7280",
+                        color: PROVIDER_COLORS[step.provider] || "#D4D4D8",
                       }}
                     >
                       {step.modelId}
@@ -367,7 +367,7 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
                     <div className="flex-1" />
                     <span className={`text-lg font-[900] ${scoreColor}`}>{step.score.total}</span>
                     {si > 0 && (
-                      <span className={`text-[10px] font-bold ${delta > 0 ? "text-emerald-400" : delta < 0 ? "text-red-400" : "text-zinc-600"}`}>
+                      <span className={`text-sm font-bold ${delta > 0 ? "text-emerald-400" : delta < 0 ? "text-red-400" : "text-zinc-300"}`}>
                         {delta > 0 ? `+${delta}` : delta}
                       </span>
                     )}
@@ -380,9 +380,9 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
                     />
                   </div>
                   {/* Meta */}
-                  <div className="flex items-center gap-3 text-[10px] text-zinc-500">
+                  <div className="flex items-center gap-3 text-sm text-zinc-200">
                     <span>{(step.timeMs / 1000).toFixed(1)}s</span>
-                    <span className="font-mono text-emerald-400/70">${step.cost.toFixed(4)}</span>
+                    <span className="font-mono text-emerald-400">${step.cost.toFixed(4)}</span>
                     <span>
                       {step.provider === "ollama" || step.provider === "lmstudio" ? "LOCAL" : "CLOUD"}
                     </span>
@@ -432,12 +432,12 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
             onClick={() => setCompilerOpen(!compilerOpen)}
             className="flex items-center gap-2 w-full px-4 py-2 text-left hover:bg-zinc-800/40 transition-colors"
           >
-            {compilerOpen ? <ChevronDown className="w-3.5 h-3.5 text-zinc-500" /> : <ChevronRight className="w-3.5 h-3.5 text-zinc-500" />}
+            {compilerOpen ? <ChevronDown className="w-3.5 h-3.5 text-zinc-200" /> : <ChevronRight className="w-3.5 h-3.5 text-zinc-200" />}
             <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
             <span className="text-xs font-bold text-zinc-300">Compiler</span>
             {compiler.loading && <Loader2 className="w-3 h-3 animate-spin text-amber-400" />}
             {!compiler.loading && compiler.before && (
-              <span className={`ml-auto text-[10px] font-bold px-2 py-0.5 rounded ${
+              <span className={`ml-auto text-sm font-bold px-2 py-0.5 rounded ${
                 (compiler.after || compiler.before).passed
                   ? "bg-emerald-900/30 text-emerald-400 border border-emerald-600/30"
                   : "bg-amber-900/30 text-amber-400 border border-amber-600/30"
@@ -463,7 +463,7 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
                   {compiler.after ? (
                     // Before / After view
                     <div>
-                      <div className="text-[10px] font-bold text-zinc-500 uppercase mb-1.5">Before → After</div>
+                      <div className="text-sm font-bold text-zinc-200 uppercase mb-1.5">Before → After</div>
                       <div className="grid grid-cols-4 gap-2">
                         {(["performance", "accessibility", "seo", "bestPractices"] as const).map((key) => {
                           const label = key === "bestPractices" ? "Best Practices" : key.charAt(0).toUpperCase() + key.slice(1);
@@ -473,7 +473,7 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
                           const beforeColor = before >= 90 ? "text-emerald-400" : before >= 70 ? "text-amber-400" : "text-red-400";
                           return (
                             <div key={key} className="bg-zinc-900/40 border border-zinc-800 rounded-lg p-2 text-center">
-                              <div className="text-[9px] font-bold text-zinc-500 uppercase mb-1">{label}</div>
+                              <div className="text-xs font-bold text-zinc-300 uppercase mb-1">{label}</div>
                               <div className="flex items-center justify-center gap-1">
                                 <span className={`text-sm font-bold ${beforeColor} line-through opacity-50`}>{before}</span>
                                 <span className="text-zinc-600">→</span>
@@ -494,7 +494,7 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
                         const bgColor = score >= 90 ? "border-emerald-800/30" : score >= 70 ? "border-amber-800/30" : "border-red-800/30";
                         return (
                           <div key={key} className={`bg-zinc-900/40 border ${bgColor} rounded-lg p-2 text-center`}>
-                            <div className="text-[9px] font-bold text-zinc-500 uppercase mb-1">{label}</div>
+                            <div className="text-xs font-bold text-zinc-300 uppercase mb-1">{label}</div>
                             <div className={`text-lg font-[900] ${color}`}>{score}</div>
                           </div>
                         );
@@ -505,13 +505,13 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
                   {/* Violations */}
                   {compiler.before.violations.length > 0 && (
                     <div>
-                      <div className="text-[10px] font-bold text-zinc-500 uppercase mb-1">
+                      <div className="text-sm font-bold text-zinc-200 uppercase mb-1">
                         Violations ({compiler.before.violations.length})
                       </div>
                       <div className="space-y-1 max-h-32 overflow-y-auto">
                         {compiler.before.violations.slice(0, 10).map((v, vi) => (
-                          <div key={vi} className="flex items-start gap-2 text-[10px] bg-zinc-900/40 border border-zinc-800 rounded px-2 py-1">
-                            <span className={`font-bold flex-shrink-0 px-1 py-px rounded text-[8px] uppercase ${
+                          <div key={vi} className="flex items-start gap-2 text-xs bg-zinc-900/40 border border-zinc-800 rounded px-2 py-1">
+                            <span className={`font-bold flex-shrink-0 px-1 py-px rounded text-xs uppercase ${
                               v.severity === "critical" || v.severity === "serious"
                                 ? "bg-red-900/40 text-red-400"
                                 : v.severity === "moderate"
@@ -520,12 +520,12 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
                             }`}>
                               {v.severity}
                             </span>
-                            <span className="text-zinc-400 font-mono flex-shrink-0">{v.rule}</span>
-                            <span className="text-zinc-500 truncate">{v.message}</span>
+                            <span className="text-zinc-200 font-mono flex-shrink-0">{v.rule}</span>
+                            <span className="text-zinc-300 truncate">{v.message}</span>
                           </div>
                         ))}
                         {compiler.before.violations.length > 10 && (
-                          <div className="text-[10px] text-zinc-600 px-2">
+                          <div className="text-sm text-zinc-300 px-2">
                             +{compiler.before.violations.length - 10} more
                           </div>
                         )}
@@ -534,7 +534,7 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
                   )}
                 </div>
               ) : (
-                <div className="text-xs text-zinc-600 py-2">Waiting for compiler...</div>
+                <div className="text-sm text-zinc-300 py-2">Waiting for compiler...</div>
               )}
             </div>
           )}
