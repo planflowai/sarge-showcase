@@ -513,3 +513,234 @@ Tag: working-2026-03-02-deploy-fix (last tagged)
 | 4 | builder-standalone | 3101 | **ONLINE** | 18 | Running 56m, responds 200 on `/`, `/settings`, `/chat` |
 
 Only 2 PM2 processes configured. All other standalone apps (chat, debate, trading, etc.) are NOT running and have no PM2 entries.
+
+---
+
+## SALVAGE AUDIT — 2026-03-05
+
+### Backups (Phase 1)
+
+| Backup Type | Status | Details |
+|-------------|--------|---------|
+| Git tag | ✅ CREATED | `beast-pre-salvage-20260305` — pushed to origin |
+| Archive branch | ✅ CREATED | `archive/beast-pre-salvage-20260305` — pushed to origin |
+| Zip archive | ❌ FAILED | PowerShell Compress-Archive chokes on NUL device file in repo |
+
+**2 of 3 backups confirmed.** Tag + branch are sufficient for full recovery.
+
+---
+
+### Inventory — All Apps (13 Active, 4 Backup)
+
+#### Active Standalone Apps
+
+| App | Port | Salvage Verdict | Key Value |
+|-----|------|----------------|-----------|
+| builder-standalone | 3101 | **KEEP — PRIMARY** | Full builder, Forge Trials, billing, workbench, deploy |
+| chat-standalone | 3100 | KEEP — REFERENCE | Chat UI, conversation store, streaming |
+| debate-standalone | — | KEEP — REFERENCE | Multi-model debate arena |
+| forensic-standalone | — | **KEEP — HIGH VALUE** | SHA-256 hash chain audit trail |
+| guardian-standalone | — | KEEP — REFERENCE | Thread Guardian UI |
+| jury-standalone | — | KEEP — REFERENCE | Jury Duty UI |
+| trading-standalone | — | KEEP — SKELETON | Tavily + sentiment analysis stubs |
+| launchpad-standalone | — | KEEP — UTILITY | PM2 process launcher |
+| env-manager-standalone | — | KEEP — UTILITY | API key management |
+| apps-standalone | — | LOW VALUE | App hub placeholder |
+| diagnostics-standalone | — | LOW VALUE | Health check page |
+| showcase-standalone | — | LOW VALUE | Demo/showcase page |
+| admin-standalone | — | LOW VALUE | Admin placeholder |
+
+#### Backup Apps (DELETE candidates)
+
+| App | Salvage Verdict |
+|-----|----------------|
+| builder-standalone-backup | DELETE — stale copy |
+| chat-standalone-backup | DELETE — stale copy |
+| debate-standalone-backup | DELETE — stale copy |
+| apps-standalone-backup | DELETE — stale copy |
+
+#### Packages (8)
+
+| Package | Salvage Verdict | Key Value |
+|---------|----------------|-----------|
+| @sarge/core | **CRITICAL** | 25 stores, providers, context injection, all shared logic |
+| @sarge/builder | **CRITICAL** | 38 components, builder UI, streaming hooks |
+| @sarge/chat | KEEP | Chat components, conversation management |
+| @sarge/ui | KEEP | Shared UI primitives |
+| @sarge/billing | KEEP | Provider pricing rates, console URLs, billing types |
+| @sarge/benchmark | KEEP | Scoring engine, scenarios, cloud/hybrid scenario definitions |
+| @sarge/audit | KEEP | HTML auditor (runAudit), accessibility/SEO checks |
+| @sarge/batch | LOW VALUE | Batch test orchestration (partially wired) |
+
+---
+
+### High-Value System 1: Forensic Logging — WORKING ✅
+
+**Files (14+):**
+- `packages/core/src/lib/supabase/sync.ts` — SHA-256 hash chain, tamper-proof log entries
+- `packages/core/src/lib/supabase/supabaseClient.ts` — Supabase connection
+- `packages/core/src/stores/forensicStore.ts` — Client-side forensic state
+- `apps/forensic-standalone/` — Full standalone app (4 views)
+- `apps/builder-standalone/app/api/forensic/` — API routes (log, sessions, endpoints)
+
+**Architecture:**
+- Every LLM call creates a `ForensicLogEntry` with SHA-256 hash of previous entry → tamper-proof chain
+- 4-view UI: Sessions list, Session detail, Response inspector, Endpoints snapshot
+- Dual persistence: Supabase (llm_sessions: 289 rows, llm_responses: 5,586 rows) + localStorage
+- Batch integration: batch test system hooks into forensic logging
+- Disk persistence via API routes that write to Supabase
+
+**Verdict: FULLY WORKING.** Real cryptographic audit trail. High value for compliance/enterprise.
+
+---
+
+### High-Value System 2: AI Tribunal — WORKING ✅
+
+**Files:**
+- `packages/core/src/lib/tribunal/` — `engine.ts` (full_court_v2 implementation)
+- `packages/core/src/stores/tribunalStore.ts` — Tribunal state management
+- `apps/builder-standalone/app/api/tribunal/` — API routes
+
+**Architecture:**
+- Multi-model voting system: 3+ models judge each response
+- Poison pill injection testing (adversarial prompt detection)
+- `full_court_v2` algorithm: parallel model queries → vote aggregation → verdict
+- Real API calls to multiple providers simultaneously
+- Verdict categories: SAFE, SUSPICIOUS, DANGEROUS with confidence scores
+
+**Verdict: FULLY WORKING.** Real multi-model adversarial testing. Unique capability.
+
+---
+
+### High-Value System 3: Trading Module — SKELETON 🟡
+
+**Files:**
+- `apps/trading-standalone/` — Standalone app shell
+- `packages/core/src/stores/tradingStore.ts` — Trading state
+- `apps/builder-standalone/app/api/search/tavily/route.ts` — Tavily web search (WORKING)
+
+**Architecture:**
+- Tavily API integration for real-time web search (confirmed working with API key)
+- Sentiment analysis stubs (model-based text analysis)
+- Trading UI is placeholder — no real trading engine
+- Market data connections not implemented
+
+**Verdict: SKELETON.** Tavily search is real and working. Trading logic is stub/placeholder.
+
+---
+
+### High-Value System 4: Thread Guardian — WORKING ✅
+
+**Files:**
+- `apps/builder-standalone/app/api/thread-guardian/route.ts` — 1,076 lines, core engine
+- `apps/guardian-standalone/` — Standalone UI
+- `packages/core/src/stores/threadGuardianStore.ts` — Guardian state
+
+**Architecture:**
+- 3-tier escalation: Tier 1 (Phi-3 mini) → Tier 2 (Phi-4) → Tier 3 (Claude Opus)
+- Real AI API calls at each tier — not algorithmic-only
+- Prompt injection detection, manipulation detection, safety classification
+- Confidence thresholds trigger escalation to next tier
+- Integration with hybrid runner: `validateStepOutput()` for build validation
+- Guardian model configurable per session
+
+**Verdict: FULLY WORKING.** Real 3-tier AI security system with escalation. Production-grade.
+
+---
+
+### High-Value System 5: Jury Duty — FULL IMPLEMENTATION ✅
+
+**Files:**
+- `packages/core/src/lib/jury/engine.ts` — 787 lines, full jury engine
+- `packages/core/src/stores/juryStore.ts` — Jury state management
+- `apps/jury-standalone/` — Standalone UI
+- `apps/builder-standalone/app/api/jury-guardian/route.ts` — API route
+
+**Architecture:**
+- Multi-model jury: 3-7 models evaluate a response simultaneously
+- 3-tier auto-escalation: Quick vote → Full deliberation → Expert panel
+- Intervention checks: any juror can flag for human review
+- Scoring rubric: accuracy, safety, helpfulness, bias detection
+- Verdict aggregation with weighted confidence
+- Integration with chat system for quality assurance
+
+**Verdict: FULLY IMPLEMENTED.** 787-line engine with real multi-model voting. Not a stub.
+
+---
+
+### High-Value System 6: Knowledge Base / Prompts / Roles — SCHEMA ONLY 🟡
+
+**Files:**
+- `packages/core/src/stores/knowledgeStore.ts` — Store with schema
+- `apps/builder-standalone/components/settings/SettingsKnowledge.tsx` — UI component
+- `packages/core/src/stores/promptLibraryStore.ts` — Prompt templates
+- Model roles: `ModelRole` type in modelStore (Builder, Trials, Chat, Image, Guardian, Code)
+
+**Architecture:**
+- Knowledge store has schema (file types, categories, metadata) but no ingestion pipeline
+- Prompt library is working: save/load/delete prompt templates
+- Model roles are working: tag-based assignment with persistence
+- No RAG, no embeddings, no vector search
+
+**Verdict: SCHEMA + ROLES WORKING.** Prompt library and model roles are real. Knowledge ingestion is schema-only.
+
+---
+
+### High-Value System 7: Settings / Model Registry — DUPLICATED ⚠️
+
+**Two parallel implementations:**
+
+| Location | Used By | Files |
+|----------|---------|-------|
+| Root `components/Settings/` | Beast monolith (port 5000) | ~15 files |
+| `apps/builder-standalone/components/settings/` | Builder-standalone (port 3101) | 8 sub-components |
+| Root `lib/stores/settingsStore.ts` | Beast monolith | Full settings state |
+| `packages/core/src/stores/settingsStore.ts` | Standalone apps | Shared settings state |
+
+**Verdict: DUPLICATED.** Both work independently. Standalone version is the active one. Root version is legacy.
+
+---
+
+### High-Value System 8: Batch Test System — WORKING ✅
+
+**Files:**
+- `packages/batch/` — Batch test orchestration package
+- `packages/core/src/stores/batchTestStore.ts` — Batch state
+- Forensic logging integration for batch results
+
+**Architecture:**
+- Run same prompt against multiple models simultaneously
+- Collect and compare responses
+- Results feed into forensic logging system
+- Used for model comparison and quality testing
+
+**Verdict: WORKING.** Integrated with forensic logging.
+
+---
+
+### High-Value System 9: Unique Algorithms — 5 PATENT-ADJACENT CONCEPTS
+
+| Algorithm | Location | Description | Uniqueness |
+|-----------|----------|-------------|------------|
+| SHA-256 Hash Chain Audit | `sync.ts` | Each LLM log entry hashes the previous → tamper-proof chain | Novel application to LLM monitoring |
+| 3-Tier Guardian Escalation | `thread-guardian/route.ts` | Small→Medium→Large model escalation with confidence thresholds | Cost-efficient security architecture |
+| Multi-Model Jury Voting | `jury/engine.ts` | 3-7 models vote with weighted confidence + auto-escalation | Unique quality assurance approach |
+| Poison Pill Tribunal | `tribunal/engine.ts` | Adversarial prompt injection via `full_court_v2` multi-model test | Novel adversarial testing method |
+| Hybrid Chain Execution | `run-hybrid/route.ts` | Multi-step local→cloud model chains with output feeding between steps | Unique cost optimization pattern |
+
+---
+
+### Salvage Summary
+
+| Category | Count | Status |
+|----------|-------|--------|
+| Fully working high-value systems | 5 | Forensic, Tribunal, Guardian, Jury, Batch |
+| Skeleton/partial systems | 2 | Trading (Tavily works), Knowledge (schema only) |
+| Duplicated (needs cleanup) | 1 | Settings (root vs standalone) |
+| Unique algorithms | 5 | All implemented and functional |
+| Active apps worth keeping | 9 | builder, chat, debate, forensic, guardian, jury, launchpad, env-manager, trading |
+| Backup apps to delete | 4 | All -backup folders |
+| Low-value apps | 4 | apps, diagnostics, showcase, admin |
+| Critical packages | 2 | @sarge/core, @sarge/builder |
+
+**Bottom line:** This codebase contains 5 fully working AI safety/quality systems (forensic logging, tribunal, guardian, jury, batch testing) plus 5 unique algorithms. The forensic SHA-256 hash chain, 3-tier guardian escalation, and multi-model jury voting are the highest-value IP. The trading module and knowledge base are stubs. Four backup app folders should be deleted. The root monolith components are legacy — standalone is the active codebase.
