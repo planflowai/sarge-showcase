@@ -85,6 +85,54 @@ export const BASIC_SCENARIOS: BenchmarkScenario[] = [
       minLength: 2000,
     },
   },
+  {
+    id: "basic-faq-page",
+    name: "FAQ Page",
+    difficulty: "easy",
+    timeout: 60_000,
+    systemPrompt: CLOUD_SYSTEM_PROMPT,
+    prompt:
+      "Build a clean FAQ page for a SaaS product called 'CloudSync'. Include: page title and search bar at top that filters questions in real-time, 4 FAQ categories (Getting Started, Billing, Features, Troubleshooting) each with 3-4 questions. Each question is an accordion — click to expand/collapse the answer. Only one answer open at a time. Smooth slide animation on expand. Clean minimal design, white background, blue accent color. Responsive. Output a single complete HTML file with all CSS in a style tag and all JS in a script tag.",
+    validation: {
+      requiredElements: ["h1", "h2", "input", "button"],
+      requiredKeywords: ["CloudSync", "FAQ", "billing", "features"],
+      cssPatterns: ["flex", "transition"],
+      jsPatterns: ["addEventListener", "classList"],
+      minLength: 1500,
+    },
+  },
+  {
+    id: "basic-photo-gallery",
+    name: "Photo Gallery",
+    difficulty: "easy",
+    timeout: 60_000,
+    systemPrompt: CLOUD_SYSTEM_PROMPT,
+    prompt:
+      "Build a simple photo gallery page for a photographer named 'Mia Torres'. Include: page title with photographer name and tagline 'Capturing Life's Moments', filter buttons at top (All, Portraits, Landscapes, Events, Street), a responsive grid of 12 photo cards (use colored placeholder divs with category labels instead of real images), clicking a card opens a lightbox modal with larger view and close button, smooth fade-in animation on the grid items. Minimal dark theme. Responsive — 4 columns desktop, 2 tablet, 1 mobile. Output a single complete HTML file with all CSS in a style tag and all JS in a script tag.",
+    validation: {
+      requiredElements: ["h1", "button", "div"],
+      requiredKeywords: ["Mia Torres", "gallery", "portrait", "landscape"],
+      cssPatterns: ["grid", "@media", "transition"],
+      jsPatterns: ["addEventListener", "classList"],
+      minLength: 1500,
+    },
+  },
+  {
+    id: "basic-class-schedule",
+    name: "Class Schedule",
+    difficulty: "easy",
+    timeout: 60_000,
+    systemPrompt: CLOUD_SYSTEM_PROMPT,
+    prompt:
+      "Build a weekly class schedule page for 'Zenith Yoga Studio'. Include: studio name and tagline at top, a visual weekly schedule grid (Monday through Sunday as columns, time slots 6AM-8PM as rows). Show 8-10 classes scattered across the week (Vinyasa Flow, Hatha, Hot Yoga, Yin, Meditation, Power Yoga). Each class block is color-coded by type with the class name, instructor, and time. Legend at bottom showing class type colors. Clean, calming design — soft greens and whites. Responsive — grid scrolls horizontally on mobile. Output a single complete HTML file with all CSS in a style tag.",
+    validation: {
+      requiredElements: ["h1", "table", "th", "td"],
+      requiredKeywords: ["Zenith", "yoga", "vinyasa", "Monday", "schedule"],
+      cssPatterns: ["grid", "@media", "background"],
+      jsPatterns: [],
+      minLength: 1500,
+    },
+  },
 ];
 
 // ══════════════════════════════════════════════════════════════════
@@ -151,6 +199,54 @@ export const MEDIUM_SCENARIOS: BenchmarkScenario[] = [
     validation: {
       requiredElements: ["header", "nav", "section", "form", "input", "select", "button", "footer"],
       requiredKeywords: ["Sweet Layers", "Austin", "cake", "catering", "order"],
+      cssPatterns: ["@media", "flex", "grid", "transition"],
+      jsPatterns: ["addEventListener", "querySelector"],
+      minLength: 3500,
+    },
+  },
+  {
+    id: "medium-salon",
+    name: "Hair Salon",
+    difficulty: "medium",
+    timeout: 90_000,
+    systemPrompt: CLOUD_SYSTEM_PROMPT,
+    prompt:
+      "Build a website for 'Luxe Hair Studio' — a modern hair salon in Miami, FL. Phone: (305) 555-0178. Include: hero with salon name and 'Book Now' CTA, services section organized by category (Cuts, Color, Treatments, Styling, Extensions) with prices for each, stylist profiles section (4 stylists with photo placeholders, specialties, and experience), gallery section with 6 before/after photo pair placeholders, client reviews section (4 reviews), appointment booking form (name, email, phone, service dropdown, preferred stylist dropdown, date, time preference), products section (3-4 featured hair products), location with hours, social media links. Chic, elegant design — black/rose gold. Responsive with mobile hamburger menu. Output a single complete HTML file with all CSS in a style tag and all JS in a script tag.",
+    validation: {
+      requiredElements: ["header", "nav", "section", "form", "input", "select", "button", "footer"],
+      requiredKeywords: ["Luxe Hair", "Miami", "booking", "stylist", "color", "cuts"],
+      cssPatterns: ["@media", "flex", "grid", "transition"],
+      jsPatterns: ["addEventListener", "querySelector"],
+      minLength: 3500,
+    },
+  },
+  {
+    id: "medium-yoga",
+    name: "Yoga Studio",
+    difficulty: "medium",
+    timeout: 90_000,
+    systemPrompt: CLOUD_SYSTEM_PROMPT,
+    prompt:
+      "Build a website for 'Serenity Yoga & Wellness' — a yoga studio in Portland, Oregon. Include: hero with calming background overlay and 'Start Your Journey' CTA, about section with studio philosophy, class offerings section (6 classes: Vinyasa, Hatha, Yin, Hot Yoga, Meditation, Prenatal) with descriptions and difficulty levels, weekly schedule displayed as a styled grid/table, instructor bios (3 instructors with photo placeholders and certifications), pricing section (drop-in $20, 5-class pack $85, unlimited monthly $149), new student special banner, testimonials (3 reviews), contact form (name, email, experience level dropdown, class interest checkboxes), location with hours, newsletter signup. Calm, zen design — soft earth tones, plenty of whitespace. Responsive. Output a single complete HTML file with all CSS in a style tag and all JS in a script tag.",
+    validation: {
+      requiredElements: ["header", "nav", "section", "form", "input", "select", "button", "footer"],
+      requiredKeywords: ["Serenity", "yoga", "Portland", "vinyasa", "schedule", "pricing"],
+      cssPatterns: ["@media", "flex", "grid", "transition"],
+      jsPatterns: ["addEventListener", "querySelector"],
+      minLength: 3500,
+    },
+  },
+  {
+    id: "medium-travel-blog",
+    name: "Travel Blog",
+    difficulty: "medium",
+    timeout: 90_000,
+    systemPrompt: CLOUD_SYSTEM_PROMPT,
+    prompt:
+      "Build a travel blog homepage for 'Wanderlust Diaries' — a travel blog by 'Sophie Park'. Include: hero with blog name, tagline 'Stories From Around the World', and animated background, featured article section (1 large card with image placeholder, title, excerpt, date), recent posts grid (6 article cards with image placeholders, titles, excerpts, dates, and category tags like Asia/Europe/Americas), sidebar with author bio and photo placeholder, category filter buttons, popular destinations section (4 destination cards with stats — articles count, best season), newsletter signup section with email form, footer with social links and recent posts list. Clean, editorial design — white background, serif headings, accent color. Responsive. Output a single complete HTML file with all CSS in a style tag and all JS in a script tag.",
+    validation: {
+      requiredElements: ["header", "nav", "section", "article", "form", "input", "button", "footer"],
+      requiredKeywords: ["Wanderlust", "Sophie", "travel", "blog", "newsletter", "destination"],
       cssPatterns: ["@media", "flex", "grid", "transition"],
       jsPatterns: ["addEventListener", "querySelector"],
       minLength: 3500,

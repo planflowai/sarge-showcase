@@ -6,7 +6,7 @@ import {
   Loader2, X, Archive, Download, Zap, DollarSign, Trophy, Hand,
 } from "lucide-react";
 import { useBenchmarkStore } from "@/lib/stores/benchmarkStore";
-import { useModelStore } from "@sarge/core";
+import { useModelStore, groupOllamaModels } from "@sarge/core";
 import {
   ALL_HYBRID_SCENARIOS,
   BASIC_SCENARIOS,
@@ -347,26 +347,36 @@ export function ForgeTrialsHybrid() {
             disabled={hybridRunning}
             className="w-full bg-zinc-800 border border-zinc-700 text-zinc-200 text-sm rounded px-2 py-1.5"
           >
-            <optgroup label="── Basic Sites (Easy)">
+            <optgroup label={`── Basic Sites · Easy (${BASIC_SCENARIOS.length})`}>
               {BASIC_SCENARIOS.map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
+                <option key={s.id} value={s.id}>{s.name} — {s.timeout! / 1000}s</option>
               ))}
             </optgroup>
-            <optgroup label="── Medium Sites">
+            <optgroup label={`── Medium Sites (${MEDIUM_SCENARIOS.length})`}>
               {MEDIUM_SCENARIOS.map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
+                <option key={s.id} value={s.id}>{s.name} — {s.timeout! / 1000}s</option>
               ))}
             </optgroup>
-            <optgroup label="── Production Sites (Hard)">
-              {[...CLOUD_SCENARIOS, ...HYBRID_SCENARIOS].filter((s) => s.difficulty === "hard").map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </optgroup>
-            <optgroup label="── Expert Builds">
-              {[...CLOUD_SCENARIOS, ...HYBRID_SCENARIOS].filter((s) => s.difficulty === "expert").map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </optgroup>
+            {(() => {
+              const hardScenarios = [...CLOUD_SCENARIOS, ...HYBRID_SCENARIOS].filter((s) => s.difficulty === "hard");
+              return (
+                <optgroup label={`── Production Sites · Hard (${hardScenarios.length})`}>
+                  {hardScenarios.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name} — {s.timeout! / 1000}s</option>
+                  ))}
+                </optgroup>
+              );
+            })()}
+            {(() => {
+              const expertScenarios = [...CLOUD_SCENARIOS, ...HYBRID_SCENARIOS].filter((s) => s.difficulty === "expert");
+              return (
+                <optgroup label={`── Expert Builds (${expertScenarios.length})`}>
+                  {expertScenarios.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name} — {s.timeout! / 1000}s</option>
+                  ))}
+                </optgroup>
+              );
+            })()}
           </select>
           {selectedScenarioObj && (
             <div className="mt-1 flex items-center gap-2">
@@ -468,11 +478,22 @@ export function ForgeTrialsHybrid() {
           className="w-full bg-zinc-800 border border-zinc-700 text-zinc-200 text-sm rounded px-2 py-1.5"
         >
           <option value="">Hardcoded validation (default)</option>
-          {guardianModels.map((m) => (
-            <option key={`${m.provider}:${m.id}`} value={`${m.provider}:${m.id}`}>
-              {m.name} ({m.provider})
-            </option>
-          ))}
+          {(() => {
+            const groups = new Map<string, typeof guardianModels>();
+            for (const m of guardianModels) {
+              if (!groups.has(m.provider)) groups.set(m.provider, []);
+              groups.get(m.provider)!.push(m);
+            }
+            return Array.from(groups.entries()).map(([provider, models]) => (
+              <optgroup key={provider} label={`── ${provider.charAt(0).toUpperCase() + provider.slice(1)} (${models.length})`}>
+                {models.map((m: { id: string; provider: string; name: string }) => (
+                  <option key={`${m.provider}:${m.id}`} value={`${m.provider}:${m.id}`}>
+                    {m.name}
+                  </option>
+                ))}
+              </optgroup>
+            ));
+          })()}
         </select>
       </div>
 
@@ -584,7 +605,7 @@ export function ForgeTrialsHybrid() {
                     </button>
                   </div>
 
-                  {/* Model dropdown — grouped by provider */}
+                  {/* Model dropdown — grouped by tier (local) or provider (cloud) */}
                   <select
                     value={step.modelId ? `${step.provider}:${step.modelId}` : ""}
                     onChange={(e) => {
@@ -605,7 +626,28 @@ export function ForgeTrialsHybrid() {
                       <option value="" disabled>Select a model</option>
                     )}
                     {(() => {
-                      const list = (stepTabs[si] || "local") === "local" ? localModels : cloudModels;
+                      const isLocal = (stepTabs[si] || "local") === "local";
+                      const list = isLocal ? localModels : cloudModels;
+
+                      if (isLocal) {
+                        // Group local models by capability tier
+                        const tierGroups = groupOllamaModels(list.map((m: { id: string }) => m.id));
+                        return tierGroups.map((group: { label: string; models: { id: string; name: string; hint: string }[] }) => (
+                          <optgroup key={group.label} label={`── ${group.label}`}>
+                            {group.models.map((gm: { id: string; name: string; hint: string }) => {
+                              const original = list.find((m: { id: string }) => m.id === gm.id);
+                              const score = getTrialScore(gm.id, original?.provider || "ollama");
+                              return (
+                                <option key={`${original?.provider || "ollama"}:${gm.id}`} value={`${original?.provider || "ollama"}:${gm.id}`}>
+                                  {gm.name}{gm.hint ? ` (${gm.hint})` : ""}{score !== null ? ` — ${score}/100` : ""}
+                                </option>
+                              );
+                            })}
+                          </optgroup>
+                        ));
+                      }
+
+                      // Cloud: group by provider
                       const groups = new Map<string, typeof list>();
                       for (const m of list) {
                         const key = m.provider;
@@ -613,7 +655,7 @@ export function ForgeTrialsHybrid() {
                         groups.get(key)!.push(m);
                       }
                       return Array.from(groups.entries()).map(([provider, models]) => (
-                        <optgroup key={provider} label={provider.charAt(0).toUpperCase() + provider.slice(1)}>
+                        <optgroup key={provider} label={`── ${provider.charAt(0).toUpperCase() + provider.slice(1)} (${models.length})`}>
                           {models.map((m: { id: string; provider: string; name: string }) => {
                             const score = getTrialScore(m.id, m.provider);
                             return (

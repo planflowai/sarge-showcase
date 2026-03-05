@@ -26,20 +26,32 @@ document.addEventListener('click', function(e) {
   if (link) {
     var href = link.getAttribute('href');
     if (!href) return;
-    // Allow bare # and #section anchor links — scroll within preview
-    if (href === '#' || href.startsWith('#')) {
-      var target = href === '#' ? null : document.querySelector(href);
-      if (target) { e.preventDefault(); target.scrollIntoView({behavior:'smooth'}); }
-      return;
-    }
     // Allow javascript: hrefs (onclick handlers)
     if (href.startsWith('javascript:')) return;
+    // Handle # and #section anchor links — scroll within preview
+    if (href === '#' || href.startsWith('#')) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (href !== '#') {
+        try {
+          var target = document.querySelector(href);
+          if (target) target.scrollIntoView({behavior:'smooth'});
+        } catch(err) {}
+      }
+      return;
+    }
+    // Allow tel: and mailto: links to open natively
+    if (href.startsWith('tel:') || href.startsWith('mailto:')) return;
     // Block everything else (relative URLs, absolute URLs, etc.)
     e.preventDefault();
     e.stopPropagation();
   }
 }, true);
-// Block programmatic navigation attempts
+// Block form submissions that navigate away
+document.addEventListener('submit', function(e) {
+  e.preventDefault();
+}, true);
+// Block programmatic navigation
 try {
   window.addEventListener('beforeunload', function(e) { e.preventDefault(); });
 } catch(e) {}

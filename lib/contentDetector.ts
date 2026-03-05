@@ -20,17 +20,41 @@ export type ContentType = 'html-document' | 'react-jsx' | 'html-snippet' | 'css-
  */
 const NAVIGATION_BLOCKER_SCRIPT = `
 <script>
+// Block all navigation that would leave the preview
 document.addEventListener('click', function(e) {
   var link = e.target.closest('a');
   if (link) {
     var href = link.getAttribute('href');
-    // Block navigation if href exists and is not "#" or javascript:
-    if (href && href !== '#' && !href.startsWith('javascript:')) {
+    if (!href) return;
+    // Allow javascript: hrefs (onclick handlers)
+    if (href.startsWith('javascript:')) return;
+    // Handle # and #section anchor links — scroll within preview
+    if (href === '#' || href.startsWith('#')) {
       e.preventDefault();
       e.stopPropagation();
+      if (href !== '#') {
+        try {
+          var target = document.querySelector(href);
+          if (target) target.scrollIntoView({behavior:'smooth'});
+        } catch(err) {}
+      }
+      return;
     }
+    // Allow tel: and mailto: links to open natively
+    if (href.startsWith('tel:') || href.startsWith('mailto:')) return;
+    // Block everything else (relative URLs, absolute URLs, etc.)
+    e.preventDefault();
+    e.stopPropagation();
   }
 }, true);
+// Block form submissions that navigate away
+document.addEventListener('submit', function(e) {
+  e.preventDefault();
+}, true);
+// Block programmatic navigation
+try {
+  window.addEventListener('beforeunload', function(e) { e.preventDefault(); });
+} catch(e) {}
 </script>
 `;
 
