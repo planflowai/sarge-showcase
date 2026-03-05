@@ -237,17 +237,24 @@ Tag: working-2026-03-02-deploy-fix (last tagged)
 | Hybrid pastRuns persistence | Works | hybridPastRuns[] in store, persisted via partialize, auto-saved on run complete |
 | Hybrid Saved Trial Data viewer | Works | Collapsible panel in Hybrid tab — grade, scores, date, step progression, JSON export |
 | Stream error handling | **Fixed** | Silent `catch {}` replaced with `console.warn` on client + server emit(); `finally` blocks ensure `running` state cleanup |
+| Heartbeat keepalive (all 3 runners) | **Fixed** | All runners emit events every 10s during API calls — prevents browser closing connection at ~60s silence |
+| Billing timeout (cloud + hybrid) | **Fixed** | `AbortSignal.timeout(5000)` on logBilling — dead billing endpoint cannot stall runner |
+| Stopped flag on emit failure (all 3) | **Fixed** | `emit()` returns false + sets `stopped=true` on enqueue failure — runner stops immediately instead of burning API credits on dead stream |
+| Abort signal propagation (local) | **Fixed** | `req.signal` abort → AbortController → Ollama fetch — client disconnect stops model generation |
 | Live event ticker | Works | Progress strip shows event count, seconds since last event, stall warnings (10s amber, 30s red) |
 | Live activity panel | Works | Collapsible panel below progress strip — scrolling event log with type badges, model/round/score, timestamps, max 100 entries |
 | Remaining cloud models | **Not started** | Gemini, Grok, GPT, Claude — next step |
-| Local trials (Ollama) | **Not tested this session** | 15 scenarios, Ollama backend |
+| Local trials (Ollama) | **Fixed** | Heartbeat + abort propagation added. cogito:8b runs take 3-11min per scenario (legitimate for complex HTML). |
 | Routing summary layer | **Not started** | Depends on complete score matrix |
 
 ### Recent Changes (Since Last Status)
 
 | Date | Commit | Change |
 |------|--------|--------|
-| Mar 4 | (latest) | Fix local trials stalling — hybridRunning never reset after run (stuck RUN button), finally block cleanup, lmstudio provider, font bumps across all benchmark components. |
+| Mar 5 | (latest) | Cloud runner — heartbeat keepalive (10s), billing timeout (5s), stopped flag on emit failure. All 3 runners now have identical stream-death protection. |
+| Mar 5 | 13701a0 | Local runner — heartbeat keepalive + abort signal propagation. |
+| Mar 5 | 464f68a | Hybrid runner — heartbeat keepalive + billing timeout. |
+| Mar 5 | b535a33 | Fix local trials stalling — hybridRunning never reset after run (stuck RUN button), finally block cleanup, lmstudio provider, font bumps across all benchmark components. |
 | Mar 4 | 67e7138 | Hybrid — font fixes (all content text-sm/zinc-200 minimum), progress bar 8px tall, Level 11 Events scenario (19th scenario, expert). |
 | Mar 4 | 5d5f420 | Hybrid readability — prompt preview white/bold/readable, all labels bumped from 9-10px zinc-500/600 to 12px zinc-300/400. Every text element readable, not decorative. |
 | Mar 4 | d8cce9a | Hybrid fixes — local models in dropdowns (all Ollama/LM Studio models shown without builder flag), scenario prompt preview (shows what AI receives, updates when custom prompt filled). |

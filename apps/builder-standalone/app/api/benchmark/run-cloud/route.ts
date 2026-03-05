@@ -172,8 +172,8 @@ async function callOpenAICompat(
         try {
           const data = JSON.parse(line.slice(6));
           const delta = data.choices?.[0]?.delta;
-          // ONLY collect content — skip reasoning_content (DeepSeek R1)
-          const text = delta?.content;
+          // Collect content — fall back to reasoning_content for thinking models (Qwen3, etc.)
+          const text = delta?.content || delta?.reasoning_content;
           if (text) {
             content += text;
             tokenCount++;
@@ -421,6 +421,7 @@ async function logBilling(
         tokensOut,
         durationMs,
       }),
+      signal: AbortSignal.timeout(5000), // Don't let billing stall the runner
     });
     if (res.ok) {
       const data = await res.json();
@@ -449,12 +450,16 @@ export async function POST(request: NextRequest) {
     async start(controller) {
       const encoder = new TextEncoder();
       let totalCost = 0;
+      let stopped = false;
 
-      function emit(event: BenchmarkEvent) {
+      function emit(event: BenchmarkEvent): boolean {
         try {
           controller.enqueue(encoder.encode(JSON.stringify(event) + "\n"));
+          return true;
         } catch (err) {
           console.warn("[CLOUD TRIAL] emit() failed — stream may be closed:", err instanceof Error ? err.message : String(err));
+          stopped = true;
+          return false;
         }
       }
 
@@ -465,8 +470,21 @@ export async function POST(request: NextRequest) {
       });
 
       // ── Warmup: generate splash page to prove model is alive ──
-      if (!abortController.signal.aborted && models.length > 0) {
+      if (!abortController.signal.aborted && !stopped && models.length > 0) {
         const firstModel = models[0];
+
+        let warmupHbCount = 0;
+        const warmupHeartbeat = setInterval(() => {
+          warmupHbCount++;
+          emit({
+            type: "round:generating",
+            modelId: firstModel.id,
+            scenarioId: "warmup",
+            message: `Warmup: ${firstModel.name} generating... (${warmupHbCount * 10}s)`,
+            timestamp: Date.now(),
+          });
+        }, 10_000);
+
         const warmupResult = await callCloudDirect(
           firstModel.provider,
           firstModel.id,
@@ -475,8 +493,9 @@ export async function POST(request: NextRequest) {
           30_000,
           abortController.signal
         );
+        clearInterval(warmupHeartbeat);
 
-        if (warmupResult.content && !warmupResult.error) {
+        if (warmupResult.content && !warmupResult.error && !stopped) {
           const warmupCode = extractCode(warmupResult.content);
           emit({
             type: "warmup:complete",
@@ -499,7 +518,7 @@ export async function POST(request: NextRequest) {
         model: typeof models[0],
         modelIndex: number
       ) {
-        if (abortController.signal.aborted) return;
+        if (abortController.signal.aborted || stopped) return;
 
         const modelResults: RoundResult[] = [];
 
@@ -518,7 +537,7 @@ export async function POST(request: NextRequest) {
         });
 
         for (let si = 0; si < scenarios.length; si++) {
-          if (abortController.signal.aborted) break;
+          if (abortController.signal.aborted || stopped) break;
 
           const scenario = scenarios[si];
 
@@ -547,7 +566,7 @@ export async function POST(request: NextRequest) {
           let roundCost = 0;
 
           for (let run = 0; run < RUNS_PER_SCENARIO; run++) {
-            if (abortController.signal.aborted) break;
+            if (abortController.signal.aborted || stopped) break;
 
             emit({
               type: "round:generating",
@@ -567,6 +586,20 @@ export async function POST(request: NextRequest) {
             });
 
             console.log(`[CLOUD TRIAL] >>> ${model.name} — ${scenario.name} — Run ${run + 1}/${RUNS_PER_SCENARIO}`);
+
+            // Heartbeat keepalive — prevents browser closing connection during long API calls
+            let hbCount = 0;
+            const heartbeat = setInterval(() => {
+              hbCount++;
+              emit({
+                type: "round:generating",
+                modelId: model.id,
+                scenarioId: scenario.id,
+                message: `${model.name} generating... (${hbCount * 10}s)`,
+                timestamp: Date.now(),
+              });
+            }, 10_000);
+
             const result = await callCloudDirect(
               model.provider,
               model.id,
@@ -575,6 +608,10 @@ export async function POST(request: NextRequest) {
               scenario.timeout,
               abortController.signal
             );
+            clearInterval(heartbeat);
+
+            if (stopped) break;
+
             console.log(`[CLOUD TRIAL] <<< ${model.name} — ${scenario.name}: ${result.content.length} chars, timedOut=${result.timedOut}, error=${result.error || "none"}`);
 
             const cost = await logBilling(
@@ -745,7 +782,7 @@ export async function POST(request: NextRequest) {
         await Promise.all(
           Object.values(providerGroups).map(async (group) => {
             for (const { model, index } of group) {
-              if (abortController.signal.aborted) break;
+              if (abortController.signal.aborted || stopped) break;
               await runModelBenchmark(model, index);
             }
           })
@@ -753,14 +790,15 @@ export async function POST(request: NextRequest) {
       } else {
         // Sequential: one model at a time
         for (let mi = 0; mi < models.length; mi++) {
-          if (abortController.signal.aborted) break;
+          if (abortController.signal.aborted || stopped) break;
           await runModelBenchmark(models[mi], mi);
         }
       }
 
+      const wasStopped = abortController.signal.aborted || stopped;
       emit({
-        type: abortController.signal.aborted ? "run:stopped" : "run:complete",
-        message: abortController.signal.aborted
+        type: wasStopped ? "run:stopped" : "run:complete",
+        message: wasStopped
           ? `Cloud Trials stopped. Cost: $${totalCost.toFixed(4)}`
           : `Cloud Trials complete — ${allResults.length} rounds scored. Total cost: $${totalCost.toFixed(4)}`,
         timestamp: Date.now(),
