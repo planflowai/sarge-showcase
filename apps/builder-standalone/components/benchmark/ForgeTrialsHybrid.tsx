@@ -69,17 +69,62 @@ export function ForgeTrialsHybrid() {
   const [customPrompt, setCustomPrompt] = useState("");
   const [expandedChain, setExpandedChain] = useState<string | null>(null);
 
-  // Available models for chain building
+  // Available models: merge model store + completed trial scorecards
+  // This ensures local models that completed trials appear even if not in model store
   const availableModels: AvailableModel[] = useMemo(() => {
-    return storeModels
+    const seen = new Set<string>();
+    const result: AvailableModel[] = [];
+
+    // 1. Models from store with builder flags
+    storeModels
       .filter((m) => builderFlags[m.id])
-      .map((m) => ({
-        id: m.id,
-        provider: m.provider,
-        name: m.name,
-        isLocal: m.provider === "ollama" || m.provider === "lmstudio",
-      }));
-  }, [storeModels, builderFlags]);
+      .forEach((m) => {
+        const key = `${m.provider}:${m.id}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          result.push({
+            id: m.id,
+            provider: m.provider,
+            name: m.name,
+            isLocal: m.provider === "ollama" || m.provider === "lmstudio",
+          });
+        }
+      });
+
+    // 2. Local scorecard models (from completed local trials)
+    localScorecards.forEach((sc) => {
+      const key = `ollama:${sc.modelId}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        result.push({
+          id: sc.modelId,
+          provider: "ollama",
+          name: sc.modelId,
+          isLocal: true,
+        });
+      }
+    });
+
+    // 3. Cloud scorecard models (from completed cloud trials)
+    cloudScorecards.forEach((sc) => {
+      // modelSize holds the provider for cloud scorecards
+      const provider = sc.modelSize || "unknown";
+      const key = `${provider}:${sc.modelId}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        // Try to get a friendly name from the model store
+        const storeModel = storeModels.find((m) => m.id === sc.modelId && m.provider === provider);
+        result.push({
+          id: sc.modelId,
+          provider,
+          name: storeModel?.name || sc.modelId,
+          isLocal: false,
+        });
+      }
+    });
+
+    return result;
+  }, [storeModels, builderFlags, localScorecards, cloudScorecards]);
 
   const localModels = availableModels.filter((m) => m.isLocal);
   const cloudModels = availableModels.filter((m) => !m.isLocal);
@@ -623,30 +668,39 @@ export function ForgeTrialsHybrid() {
                             className="bg-zinc-800 border border-zinc-700 text-xs text-zinc-300 rounded px-1.5 py-0.5 flex-1 min-w-0"
                           >
                             {localModels.length > 0 && (
-                              <optgroup label="Local">
+                              <optgroup label="LOCAL — $0.00">
                                 {localModels.map((m) => (
                                   <option key={`${m.provider}:${m.id}`} value={`${m.provider}:${m.id}`}>
-                                    {m.name}
+                                    [LOCAL] {m.name}
                                   </option>
                                 ))}
                               </optgroup>
                             )}
                             {cloudModels.length > 0 && (
-                              <optgroup label="Cloud">
+                              <optgroup label="CLOUD — paid">
                                 {cloudModels.map((m) => (
                                   <option key={`${m.provider}:${m.id}`} value={`${m.provider}:${m.id}`}>
-                                    {m.name} ({m.provider})
+                                    [CLOUD] {m.name} ({m.provider})
                                   </option>
                                 ))}
                               </optgroup>
                             )}
                           </select>
                         ) : (
-                          <span
-                            className="text-xs font-bold truncate flex-1"
-                            style={{ color: PROVIDER_COLORS[step.provider] || "#9CA3AF" }}
-                          >
-                            {step.modelName}
+                          <span className="flex items-center gap-1 flex-1 min-w-0">
+                            <span className={`text-[8px] font-bold px-1 py-px rounded ${
+                              step.provider === "ollama" || step.provider === "lmstudio"
+                                ? "bg-zinc-700 text-zinc-300"
+                                : "bg-sky-900/40 text-sky-400"
+                            }`}>
+                              {step.provider === "ollama" || step.provider === "lmstudio" ? "LOCAL" : "CLOUD"}
+                            </span>
+                            <span
+                              className="text-xs font-bold truncate"
+                              style={{ color: PROVIDER_COLORS[step.provider] || "#9CA3AF" }}
+                            >
+                              {step.modelName}
+                            </span>
                           </span>
                         )}
 
@@ -660,10 +714,26 @@ export function ForgeTrialsHybrid() {
                           </span>
                         )}
 
-                        {/* Step time */}
+                        {/* Step time + cost */}
                         {stepResult && (
                           <span className="text-[10px] text-zinc-500 tabular-nums flex-shrink-0">
                             {(stepResult.timeMs / 1000).toFixed(1)}s
+                          </span>
+                        )}
+                        {stepResult && (
+                          <span className={`text-[10px] font-mono tabular-nums flex-shrink-0 ${
+                            stepResult.cost === 0 ? "text-zinc-600" : "text-emerald-400"
+                          }`}>
+                            ${stepResult.cost.toFixed(4)}
+                          </span>
+                        )}
+                        {/* Cost estimate for unfinished steps */}
+                        {!stepResult && !isRunningStep && (
+                          <span className={`text-[9px] font-mono flex-shrink-0 ${
+                            step.provider === "ollama" || step.provider === "lmstudio"
+                              ? "text-zinc-600" : "text-zinc-500"
+                          }`}>
+                            {step.provider === "ollama" || step.provider === "lmstudio" ? "$0.00" : "$$"}
                           </span>
                         )}
 

@@ -218,7 +218,7 @@ Tag: working-2026-03-02-deploy-fix (last tagged)
 | Results persistence | Works | localStorage via Zustand persist (`forge-trials-store`) |
 | Warmup splash | Works | Preview iframe shows splash during first API call |
 | Parallel cloud execution | Works | Toggle in toolbar — providers run simultaneously, rounds sequential within each |
-| Hybrid chain system | Works | Recommended (auto from scores) + Custom (manual model/step picker) modes |
+| Hybrid chain system | Works | Recommended + Custom modes — local AND cloud models from completed trials, LOCAL/CLOUD badges, $0.00 cost for local steps |
 | Hybrid API route | Works | `/api/benchmark/run-hybrid` — chain execution with step-by-step output feeding |
 | Remaining cloud models | **Not started** | Gemini, Grok, GPT, Claude — next step |
 | Local trials (Ollama) | **Not tested this session** | 15 scenarios, Ollama backend |
