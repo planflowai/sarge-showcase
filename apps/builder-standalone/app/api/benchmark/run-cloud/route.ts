@@ -88,7 +88,7 @@ async function callCloudDirect(
       const apiKey = process.env[envKey] || "";
       const KNOWN_BASE_URLS: Record<string, string> = {
         mistral: "https://api.mistral.ai/v1/chat/completions",
-        huggingface: "https://api-inference.huggingface.co/v1/chat/completions",
+        huggingface: "https://router.huggingface.co/v1/chat/completions",
         perplexity: "https://api.perplexity.ai/chat/completions",
         together: "https://api.together.xyz/v1/chat/completions",
         groq: "https://api.groq.com/openai/v1/chat/completions",

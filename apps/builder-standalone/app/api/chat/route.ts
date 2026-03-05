@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
         // Custom provider fallback — OpenAI-compatible
         const KNOWN_BASE_URLS: Record<string, string> = {
           mistral: "https://api.mistral.ai/v1",
-          huggingface: "https://api-inference.huggingface.co/v1",
+          huggingface: "https://router.huggingface.co/v1",
           perplexity: "https://api.perplexity.ai",
           together: "https://api.together.xyz/v1",
           groq: "https://api.groq.com/openai/v1",

@@ -29,7 +29,7 @@ export const KNOWN_PROVIDERS: Omit<CustomProvider, "models">[] = [
   {
     id: "huggingface",
     name: "HuggingFace",
-    baseUrl: "https://api-inference.huggingface.co/v1",
+    baseUrl: "https://router.huggingface.co/v1",
     envKeyName: "HUGGINGFACE_API_KEY",
     color: "#FFD21E",
   },
@@ -65,7 +65,8 @@ export const DEFAULT_MODELS: Record<string, CustomProviderModel[]> = {
   ],
   huggingface: [
     { id: "meta-llama/Llama-3.3-70B-Instruct", name: "Llama 3.3 70B" },
-    { id: "Qwen/Qwen3-72B", name: "Qwen 3 72B" },
+    { id: "Qwen/Qwen3-235B-A22B", name: "Qwen 3 235B" },
+    { id: "deepseek-ai/DeepSeek-V3", name: "DeepSeek V3" },
   ],
 };
 

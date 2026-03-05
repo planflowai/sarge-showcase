@@ -44,6 +44,8 @@ const ROTATION_URLS: Record<string, string> = {
   GOOGLE_API_KEY: "https://aistudio.google.com/apikey",
   XAI_API_KEY: "https://console.x.ai",
   DEEPSEEK_API_KEY: "https://platform.deepseek.com/api_keys",
+  MISTRAL_API_KEY: "https://console.mistral.ai/api-keys",
+  HUGGINGFACE_API_KEY: "https://huggingface.co/settings/tokens",
   TAVILY_API_KEY: "https://app.tavily.com",
   GITHUB_TOKEN: "https://github.com/settings/tokens",
 };

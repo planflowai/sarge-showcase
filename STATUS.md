@@ -57,6 +57,8 @@ Tag: working-2026-03-02-deploy-fix (last tagged)
 | Gemini tab | Works | Filters builder-tagged Gemini models |
 | Grok tab | Works | Filters builder-tagged Grok models |
 | DeepSeek tab | Works | Filters builder-tagged DeepSeek models |
+| Mistral tab | Works | Custom provider — OpenAI-compatible, 3 default models |
+| HuggingFace tab | Works | Custom provider — router.huggingface.co/v1, 3 default models (Llama 3.3 70B, Qwen 3 235B, DeepSeek V3) |
 | Ollama tab | Works | Fetches local models from 127.0.0.1:11434 |
 | LM Studio tab | Works | Fetches local models from LM Studio |
 | Model dropdown | Works | Shows builder-tagged models for selected provider |
@@ -241,7 +243,8 @@ Tag: working-2026-03-02-deploy-fix (last tagged)
 
 | Date | Commit | Change |
 |------|--------|--------|
-| Mar 4 | (latest) | Live event ticker + activity panel — real time stream visibility in Forge Trials |
+| Mar 4 | (latest) | HuggingFace provider wired — Llama 3.3 70B, Qwen 3 235B, DeepSeek V3. Base URL updated to router.huggingface.co. All 3 models ping-tested OK. Also fixed @sarge/billing + @sarge/benchmark missing workspace deps. |
+| Mar 4 | 5cc2cc7 | Live event ticker + activity panel — real time stream visibility in Forge Trials |
 | Mar 4 | 3ac6684 | Cloud trials audit — silent catch blocks fixed, finally blocks for state cleanup, emit() error logging |
 | Mar 4 | bb62a8a | Hybrid pastRuns persistence + Saved Trial Data viewer + hooks fix + fetch models API |
 | Mar 4 | db898ca | Token limits equalized, case-insensitive keywords, Anthropic API revert, model ping tester |

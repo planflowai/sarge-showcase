@@ -170,6 +170,7 @@ const AI_PROVIDER_KEYS = [
   "GROQ",
   "COHERE",
   "MISTRAL",
+  "HUGGINGFACE",
 ];
 
 const LOCAL_KEYS = [
