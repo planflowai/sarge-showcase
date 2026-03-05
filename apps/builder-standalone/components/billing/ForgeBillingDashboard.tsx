@@ -134,6 +134,27 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
     return history.filter(e => new Date(e.timestamp).getTime() >= cutoff);
   }, [history, historyPeriod]);
 
+  // Group history by date for collapsible day sections
+  const groupedHistory = useMemo(() => {
+    const groups: Record<string, UsageEntry[]> = {};
+    for (const e of filteredHistory) {
+      const dayKey = new Date(e.timestamp).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+      if (!groups[dayKey]) groups[dayKey] = [];
+      groups[dayKey].push(e);
+    }
+    return Object.entries(groups);
+  }, [filteredHistory]);
+
+  // Track which day groups are collapsed
+  const [collapsedDays, setCollapsedDays] = useState<Set<string>>(new Set());
+  const toggleDay = (day: string) => {
+    setCollapsedDays(prev => {
+      const next = new Set(prev);
+      if (next.has(day)) next.delete(day); else next.add(day);
+      return next;
+    });
+  };
+
   const fetchBalances = useCallback(async (force = false) => {
     setBalancesLoading(true);
     try {
@@ -294,9 +315,9 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
                   <span className="text-sm font-bold text-white capitalize">{pb.provider}</span>
                   <StatusIcon status={pb.status} />
                 </div>
-                {/* Balance display — live API or manual */}
+                {/* Balance display — live API or manual, colored to match provider */}
                 {displayBalance !== undefined ? (
-                  <div className="text-2xl font-bold font-mono text-emerald-400">${displayBalance.toFixed(2)}</div>
+                  <div className="text-2xl font-bold font-mono" style={{ color }}>${displayBalance.toFixed(2)}</div>
                 ) : isEditing ? null : (
                   <div className="text-sm font-bold text-zinc-300 text-center">{pb.message || "—"}</div>
                 )}
@@ -439,17 +460,17 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
                     const rate = getRate(m.model, m.provider);
                     return (
                       <tr key={`${m.provider}/${m.model}`} className={i % 2 === 0 ? "" : "bg-zinc-800/30"}>
-                        <td className="px-3 py-2.5 font-bold text-white text-sm truncate max-w-[200px]">{m.model}</td>
+                        <td className="px-3 py-2.5 font-bold text-white text-base truncate max-w-[200px]">{m.model}</td>
                         <td className="px-3 py-2.5">
-                          <span className="px-2.5 py-1 rounded text-sm font-bold" style={{ backgroundColor: (PROVIDER_COLORS[m.provider] || "#666") + "33", color: PROVIDER_COLORS[m.provider] || "#ccc" }}>
+                          <span className="px-2.5 py-1 rounded text-base font-bold" style={{ backgroundColor: (PROVIDER_COLORS[m.provider] || "#666") + "33", color: PROVIDER_COLORS[m.provider] || "#ccc" }}>
                             {m.provider}
                           </span>
                         </td>
-                        <td className="px-3 py-2.5 font-mono text-right text-zinc-200 text-sm">{m.totalTokensIn.toLocaleString()}</td>
-                        <td className="px-3 py-2.5 font-mono text-right text-zinc-200 text-sm">{m.totalTokensOut.toLocaleString()}</td>
-                        <td className="px-3 py-2.5 font-mono text-right text-white text-sm font-bold">{m.callCount}</td>
-                        <td className={`px-3 py-2.5 font-mono text-right text-sm font-bold ${costColor(displayCost)}`}>{formatCost(displayCost)}</td>
-                        <td className="px-3 py-2.5 font-mono text-right text-zinc-300 text-sm">
+                        <td className="px-3 py-2.5 font-mono text-right text-zinc-200 text-base">{m.totalTokensIn.toLocaleString()}</td>
+                        <td className="px-3 py-2.5 font-mono text-right text-zinc-200 text-base">{m.totalTokensOut.toLocaleString()}</td>
+                        <td className="px-3 py-2.5 font-mono text-right text-white text-base font-bold">{m.callCount}</td>
+                        <td className={`px-3 py-2.5 font-mono text-right text-base font-bold ${costColor(displayCost)}`}>{formatCost(displayCost)}</td>
+                        <td className="px-3 py-2.5 font-mono text-right text-zinc-300 text-base">
                           {rate.input > 0 ? `$${rate.input}/$${rate.output}` : "free"}
                         </td>
                       </tr>
@@ -519,7 +540,7 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
             )}
           </div>
 
-          {/* Per-Run History — Collapsible + Period Filter */}
+          {/* Per-Run History — Collapsible + Period Filter + Grouped by Day */}
           <div className="rounded-lg border border-zinc-700 bg-zinc-900/40 flex-1 flex flex-col overflow-hidden min-h-0">
             <button
               onClick={() => setHistoryOpen(!historyOpen)}
@@ -541,39 +562,49 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
             </button>
             {historyOpen && (
               <div className="flex-1 overflow-auto">
-                <table className="w-full">
-                  <thead className="sticky top-0 z-10 bg-zinc-900">
-                    <tr className="border-b border-zinc-700">
-                      <th className="text-left px-3 py-2 font-bold text-white text-sm">Time</th>
-                      <th className="text-left px-3 py-2 font-bold text-white text-sm">Model</th>
-                      <th className="text-right px-3 py-2 font-bold text-white text-sm">In</th>
-                      <th className="text-right px-3 py-2 font-bold text-white text-sm">Out</th>
-                      <th className="text-right px-3 py-2 font-bold text-white text-sm">Cost</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredHistory.length === 0 && (
-                      <tr><td colSpan={5} className="px-3 py-4 text-center text-zinc-300 text-sm font-bold">{historyLoading ? "Loading..." : "No runs this period"}</td></tr>
-                    )}
-                    {filteredHistory.slice(0, 200).map((e, i) => {
-                      const recalcCost = e.cost > 0 ? e.cost : calculateCost(e.model, e.provider, e.tokensIn, e.tokensOut);
-                      return (
-                        <tr key={e.id || i} className={`${i % 2 === 0 ? "" : "bg-zinc-800/30"} hover:bg-zinc-800/50`}>
-                          <td className="px-3 py-2 text-zinc-200 text-sm font-bold whitespace-nowrap">
-                            {new Date(e.timestamp).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
-                          </td>
-                          <td className="px-3 py-2">
-                            <div className="text-sm font-bold text-white truncate max-w-[140px]">{e.model}</div>
-                            <div className="text-xs font-bold text-zinc-400">{e.app}</div>
-                          </td>
-                          <td className="px-3 py-2 font-mono text-right text-zinc-200 text-sm">{e.tokensIn.toLocaleString()}</td>
-                          <td className="px-3 py-2 font-mono text-right text-zinc-200 text-sm">{e.tokensOut.toLocaleString()}</td>
-                          <td className={`px-3 py-2 font-mono text-right text-sm font-bold ${costColor(recalcCost)}`}>{formatCost(recalcCost)}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                {filteredHistory.length === 0 && (
+                  <div className="px-3 py-4 text-center text-zinc-300 text-base font-bold">{historyLoading ? "Loading..." : "No runs this period"}</div>
+                )}
+                {groupedHistory.map(([dayLabel, entries]) => {
+                  const dayTotal = entries.reduce((s, e) => s + (e.cost > 0 ? e.cost : calculateCost(e.model, e.provider, e.tokensIn, e.tokensOut)), 0);
+                  const isCollapsed = collapsedDays.has(dayLabel);
+                  return (
+                    <div key={dayLabel}>
+                      <button onClick={() => toggleDay(dayLabel)}
+                        className="flex items-center justify-between w-full px-3 py-2 bg-zinc-800/60 hover:bg-zinc-800 border-b border-zinc-700 transition-colors">
+                        <div className="flex items-center gap-2">
+                          {isCollapsed ? <ChevronRight className="w-4 h-4 text-zinc-400" /> : <ChevronDown className="w-4 h-4 text-zinc-400" />}
+                          <span className="text-base font-bold text-white">{dayLabel}</span>
+                          <span className="text-sm font-bold text-zinc-400">{entries.length} runs</span>
+                        </div>
+                        <span className={`text-base font-mono font-bold ${costColor(dayTotal)}`}>{formatCost(dayTotal)}</span>
+                      </button>
+                      {!isCollapsed && (
+                        <table className="w-full">
+                          <tbody>
+                            {entries.map((e, i) => {
+                              const recalcCost = e.cost > 0 ? e.cost : calculateCost(e.model, e.provider, e.tokensIn, e.tokensOut);
+                              return (
+                                <tr key={e.id || `${dayLabel}-${i}`} className={`${i % 2 === 0 ? "" : "bg-zinc-800/30"} hover:bg-zinc-800/50`}>
+                                  <td className="px-3 py-2 text-zinc-200 text-base font-bold whitespace-nowrap w-24">
+                                    {new Date(e.timestamp).toLocaleString("en-US", { hour: "2-digit", minute: "2-digit" })}
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <div className="text-base font-bold text-white truncate max-w-[160px]">{e.model}</div>
+                                    <div className="text-xs font-bold text-zinc-400">{e.app}</div>
+                                  </td>
+                                  <td className="px-3 py-2 font-mono text-right text-zinc-200 text-base">{e.tokensIn.toLocaleString()}</td>
+                                  <td className="px-3 py-2 font-mono text-right text-zinc-200 text-base">{e.tokensOut.toLocaleString()}</td>
+                                  <td className={`px-3 py-2 font-mono text-right text-base font-bold ${costColor(recalcCost)}`}>{formatCost(recalcCost)}</td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
