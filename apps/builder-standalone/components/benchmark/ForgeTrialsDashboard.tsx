@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Flame, ArrowLeft, Play, Square, Download, Cloud, Cpu, Trash2,
   Shield, ShieldOff, Plane, Radio, DollarSign, Moon, Sun, Settings, Loader2,
-  Layers, ToggleLeft, ToggleRight,
+  Layers, ToggleLeft, ToggleRight, Activity, AlertTriangle, ChevronDown, ChevronUp,
 } from "lucide-react";
 import { useBenchmarkStore } from "@/lib/stores/benchmarkStore";
 import {
@@ -41,6 +41,38 @@ const DEFAULT_LOCAL_MODELS = [
   "mistral:7b",
   "gemma3:4b",
 ];
+
+// ── Activity Log Helpers ──────────────────────────────────────────────
+
+interface ActivityEntry {
+  id: number;
+  type: string;
+  modelId?: string;
+  scenarioId?: string;
+  score?: number;
+  message: string;
+  timestamp: number;
+}
+
+function getEventColor(type: string): string {
+  if (type.includes("complete")) return "bg-emerald-900/40 text-emerald-400";
+  if (type.includes("error")) return "bg-red-900/40 text-red-400";
+  if (type.includes("stopped") || type.includes("skipped")) return "bg-zinc-700/40 text-zinc-400";
+  if (type.includes("generating") || type.includes("scoring") || type.includes("loading")) return "bg-amber-900/40 text-amber-400";
+  if (type.includes("start")) return "bg-blue-900/40 text-blue-400";
+  if (type.includes("warmup")) return "bg-purple-900/40 text-purple-400";
+  return "bg-zinc-800/40 text-zinc-500";
+}
+
+function formatEventLabel(type: string): string {
+  const labels: Record<string, string> = {
+    "run:start": "START", "run:complete": "COMPLETE", "run:stopped": "STOPPED", "run:error": "ERROR",
+    "model:start": "MODEL", "model:complete": "MODEL \u2713", "model:loading": "LOADING", "model:skipped": "SKIP",
+    "round:start": "ROUND", "round:generating": "GEN", "round:scoring": "SCORE", "round:complete": "ROUND \u2713",
+    "warmup:complete": "WARMUP \u2713",
+  };
+  return labels[type] || type;
+}
 
 interface Props {
   onClose: () => void;
@@ -121,6 +153,29 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
     selectedModels.length > 0 ? selectedModels : DEFAULT_LOCAL_MODELS
   );
 
+  // ── Live Activity Tracking ──
+  const [activityLog, setActivityLog] = useState<ActivityEntry[]>([]);
+  const [activityOpen, setActivityOpen] = useState(false);
+  const [stallStatus, setStallStatus] = useState<"ok" | "warning" | "dead">("ok");
+  const [eventCount, setEventCount] = useState(0);
+  const [lastEventAgo, setLastEventAgo] = useState(0);
+  const lastEventTimeRef = useRef(0);
+  const activityIdRef = useRef(0);
+
+  const logActivity = useCallback((event: BenchmarkEvent) => {
+    lastEventTimeRef.current = Date.now();
+    setEventCount((c) => c + 1);
+    setActivityLog((prev) => [{
+      id: activityIdRef.current++,
+      type: event.type,
+      modelId: event.modelId,
+      scenarioId: event.scenarioId,
+      score: event.result?.score?.total,
+      message: event.message,
+      timestamp: event.timestamp,
+    }, ...prev].slice(0, 100));
+  }, []);
+
   // Determine which data to show based on active tab
   const isCloud = activeTab === "cloud";
   const isHybrid = activeTab === "hybrid";
@@ -136,6 +191,24 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
     ? cloudSelectedModels.map((m) => m.id)
     : localModels;
   const anyRunning = running || cloudRunning || hybridRunning;
+
+  // Stall detection — checks every second during active runs
+  useEffect(() => {
+    if (!anyRunning) {
+      setStallStatus("ok");
+      setLastEventAgo(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      if (!lastEventTimeRef.current) return;
+      const elapsed = Date.now() - lastEventTimeRef.current;
+      setLastEventAgo(Math.floor(elapsed / 1000));
+      if (elapsed > 30000) setStallStatus("dead");
+      else if (elapsed > 10000) setStallStatus("warning");
+      else setStallStatus("ok");
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [anyRunning]);
 
   // Progress calculations
   const runsPerScenario = isCloud ? 1 : 3;
@@ -158,6 +231,7 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
     const ctrl = new AbortController();
     setAbortController(ctrl);
     startRun(runId, localModels);
+    setActivityLog([]); setEventCount(0); lastEventTimeRef.current = Date.now(); activityIdRef.current = 0;
 
     try {
       const config: BenchmarkConfig = {
@@ -197,6 +271,7 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
           try {
             const event: BenchmarkEvent = JSON.parse(line);
             addEvent(event);
+            logActivity(event);
             if (event.modelId) setCurrentModel(event.modelId);
             if (event.scenarioId) setCurrentRound(event.scenarioId);
             if (event.result) addResult(event.result);
@@ -242,7 +317,7 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
         });
       }
     }
-  }, [localModels, startRun, stopRun, addResult, addScorecard, addEvent, setCurrentModel, setCurrentRound, setAbortController, completeRun]);
+  }, [localModels, startRun, stopRun, addResult, addScorecard, addEvent, setCurrentModel, setCurrentRound, setAbortController, completeRun, logActivity]);
 
   // ── Cloud: Start benchmark run ──
   const handleCloudStart = useCallback(async () => {
@@ -252,6 +327,7 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
     const ctrl = new AbortController();
     cloudSetAbortController(ctrl);
     cloudStartRun(runId, cloudSelectedModels);
+    setActivityLog([]); setEventCount(0); lastEventTimeRef.current = Date.now(); activityIdRef.current = 0;
 
     try {
       const config: CloudBenchmarkConfig = {
@@ -287,6 +363,7 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
           try {
             const event: BenchmarkEvent = JSON.parse(line);
             cloudAddEvent(event);
+            logActivity(event);
             if (event.modelId) cloudSetCurrentModel(event.modelId);
             if (event.scenarioId) cloudSetCurrentRound(event.scenarioId);
             if (event.result) cloudAddResult(event.result);
@@ -340,7 +417,7 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
         });
       }
     }
-  }, [cloudSelectedModels, cloudParallel, cloudStartRun, cloudStopRun, cloudAddResult, cloudAddScorecard, cloudAddEvent, cloudSetCurrentModel, cloudSetCurrentRound, cloudSetAbortController, cloudCompleteRun, cloudSetTotalCost, cloudSetWarmupHtml]);
+  }, [cloudSelectedModels, cloudParallel, cloudStartRun, cloudStopRun, cloudAddResult, cloudAddScorecard, cloudAddEvent, cloudSetCurrentModel, cloudSetCurrentRound, cloudSetAbortController, cloudCompleteRun, cloudSetTotalCost, cloudSetWarmupHtml, logActivity]);
 
   const handleStart = isCloud ? handleCloudStart : handleLocalStart;
   const handleStop = isHybrid
@@ -571,6 +648,43 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
           <span className="text-[10px] text-zinc-600 flex-shrink-0">Ready</span>
         )}
 
+        {/* Event ticker + stall warning */}
+        {anyRunning && eventCount > 0 && stallStatus === "ok" && (
+          <div className="flex items-center gap-1.5 text-[10px] flex-shrink-0">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-zinc-400 tabular-nums">{eventCount}</span>
+            {lastEventAgo > 0 && <span className="text-zinc-600">{lastEventAgo}s</span>}
+          </div>
+        )}
+        {stallStatus === "warning" && (
+          <div className="flex items-center gap-1 text-[10px] text-amber-400 font-bold flex-shrink-0">
+            <AlertTriangle className="w-3 h-3" />
+            <span>Stream may be stalled ({lastEventAgo}s)</span>
+          </div>
+        )}
+        {stallStatus === "dead" && (
+          <div className="flex items-center gap-1 text-[10px] text-red-400 font-bold flex-shrink-0 animate-pulse">
+            <AlertTriangle className="w-3 h-3" />
+            <span>Stream appears dead — consider stopping ({lastEventAgo}s)</span>
+          </div>
+        )}
+
+        {/* Activity log toggle */}
+        {!isHybrid && (
+          <button
+            onClick={() => setActivityOpen(!activityOpen)}
+            className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold transition-all border flex-shrink-0 ${
+              activityOpen
+                ? "bg-[#FF6700]/15 border-[#FF6700]/50 text-[#FFD700]"
+                : "bg-zinc-800/60 border-zinc-700 text-zinc-600 hover:text-zinc-400"
+            }`}
+            title="Toggle live activity log"
+          >
+            <Activity className="w-3 h-3" />
+            {activityOpen ? <ChevronUp className="w-2.5 h-2.5" /> : <ChevronDown className="w-2.5 h-2.5" />}
+          </button>
+        )}
+
         {/* Timing + Cost */}
         <div className="flex items-center gap-2 ml-auto flex-shrink-0">
           {!isHybrid && activeRunning && remainingMin > 0 && (
@@ -589,6 +703,58 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
           )}
         </div>
       </div>
+
+      {/* ── Live Activity Panel (collapsible) ── */}
+      {activityOpen && !isHybrid && (
+        <div className="border-b border-zinc-800/50 bg-zinc-900/60 flex-shrink-0" style={{ maxHeight: "200px" }}>
+          <div className="flex items-center h-7 px-3 border-b border-zinc-800/30">
+            <Activity className="w-3 h-3 text-[#FF6700] mr-1.5" />
+            <span className="text-[10px] font-bold text-zinc-400 flex-1">
+              Live Activity — {eventCount} events
+            </span>
+            <button
+              onClick={() => { setActivityLog([]); setEventCount(0); }}
+              disabled={activityLog.length === 0}
+              className="text-[10px] text-zinc-600 hover:text-zinc-400 disabled:opacity-30 px-1.5 transition-colors"
+            >
+              Clear
+            </button>
+            <button
+              onClick={() => setActivityOpen(false)}
+              className="text-[10px] text-zinc-600 hover:text-zinc-400 px-1"
+            >
+              ✕
+            </button>
+          </div>
+          <div className="overflow-y-auto px-2 py-0.5" style={{ maxHeight: "170px" }}>
+            {activityLog.length === 0 ? (
+              <div className="text-[10px] text-zinc-700 py-3 text-center">No events yet — start a trial to see live stream data</div>
+            ) : (
+              activityLog.map((entry) => (
+                <div key={entry.id} className="flex items-center gap-2 py-[3px] text-[10px] border-b border-zinc-800/20 last:border-0">
+                  <span className={`font-mono font-bold text-[9px] px-1.5 py-0.5 rounded ${getEventColor(entry.type)}`}>
+                    {formatEventLabel(entry.type)}
+                  </span>
+                  {entry.modelId && (
+                    <span className="text-zinc-400 truncate max-w-[140px]">{entry.modelId}</span>
+                  )}
+                  {entry.scenarioId && (
+                    <span className="text-zinc-600 truncate max-w-[100px]">· {entry.scenarioId}</span>
+                  )}
+                  {entry.score !== undefined && (
+                    <span className={`font-bold tabular-nums ${entry.score >= 90 ? "text-emerald-400" : entry.score >= 70 ? "text-amber-400" : "text-red-400"}`}>
+                      {entry.score}/100
+                    </span>
+                  )}
+                  <span className="text-zinc-700 ml-auto tabular-nums flex-shrink-0">
+                    {new Date(entry.timestamp).toLocaleTimeString()}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── Main Content ── */}
       {isHybrid ? (

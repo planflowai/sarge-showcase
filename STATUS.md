@@ -231,6 +231,8 @@ Tag: working-2026-03-02-deploy-fix (last tagged)
 | Hybrid pastRuns persistence | Works | hybridPastRuns[] in store, persisted via partialize, auto-saved on run complete |
 | Hybrid Saved Trial Data viewer | Works | Collapsible panel in Hybrid tab — grade, scores, date, step progression, JSON export |
 | Stream error handling | **Fixed** | Silent `catch {}` replaced with `console.warn` on client + server emit(); `finally` blocks ensure `running` state cleanup |
+| Live event ticker | Works | Progress strip shows event count, seconds since last event, stall warnings (10s amber, 30s red) |
+| Live activity panel | Works | Collapsible panel below progress strip — scrolling event log with type badges, model/round/score, timestamps, max 100 entries |
 | Remaining cloud models | **Not started** | Gemini, Grok, GPT, Claude — next step |
 | Local trials (Ollama) | **Not tested this session** | 15 scenarios, Ollama backend |
 | Routing summary layer | **Not started** | Depends on complete score matrix |
@@ -239,7 +241,8 @@ Tag: working-2026-03-02-deploy-fix (last tagged)
 
 | Date | Commit | Change |
 |------|--------|--------|
-| Mar 4 | (latest) | Cloud trials audit — silent catch blocks fixed, finally blocks for state cleanup, emit() error logging |
+| Mar 4 | (latest) | Live event ticker + activity panel — real time stream visibility in Forge Trials |
+| Mar 4 | 3ac6684 | Cloud trials audit — silent catch blocks fixed, finally blocks for state cleanup, emit() error logging |
 | Mar 4 | bb62a8a | Hybrid pastRuns persistence + Saved Trial Data viewer + hooks fix + fetch models API |
 | Mar 4 | db898ca | Token limits equalized, case-insensitive keywords, Anthropic API revert, model ping tester |
 | Mar 4 | 0a96600 | Forge Trials — round explainers, criterion explainers, score context, model summary card |
