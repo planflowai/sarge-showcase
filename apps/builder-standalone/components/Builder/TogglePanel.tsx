@@ -88,7 +88,7 @@ interface Props {
 }
 
 export default function TogglePanel({ onClose }: Props) {
-  const projectPath = useBuilderStore((s) => s.projectPath);
+  const projectPath = useBuilderStore((s: any) => s.projectPath);
 
   // Toggle states
   const [toggles, setToggles] = useState<ProjectToggles>({ ...DEFAULT_TOGGLES });
@@ -165,7 +165,7 @@ export default function TogglePanel({ onClose }: Props) {
 
   const handleToggle = useCallback(
     (key: keyof ProjectToggles) => {
-      setToggles((prev) => {
+      setToggles((prev: any) => {
         const next = { ...prev, [key]: !prev[key] };
         saveToggles(next, toggleConfig);
         return next;
@@ -176,7 +176,7 @@ export default function TogglePanel({ onClose }: Props) {
 
   const handleConfigChange = useCallback(
     (key: "calendly" | "mailchimp", field: string, value: string) => {
-      setToggleConfig((prev) => {
+      setToggleConfig((prev: any) => {
         const next = {
           ...prev,
           [key]: { ...prev[key], [field]: value },
@@ -190,7 +190,7 @@ export default function TogglePanel({ onClose }: Props) {
 
   const selectAll = () => {
     const all = Object.fromEntries(
-      TOGGLE_INFO.map((t) => [t.key, true])
+      TOGGLE_INFO.map((t: any) => [t.key, true])
     ) as unknown as ProjectToggles;
     setToggles(all);
     saveToggles(all, toggleConfig);
@@ -198,7 +198,7 @@ export default function TogglePanel({ onClose }: Props) {
 
   const deselectAll = () => {
     const none = Object.fromEntries(
-      TOGGLE_INFO.map((t) => [t.key, false])
+      TOGGLE_INFO.map((t: any) => [t.key, false])
     ) as unknown as ProjectToggles;
     setToggles(none);
     saveToggles(none, toggleConfig);
@@ -209,7 +209,7 @@ export default function TogglePanel({ onClose }: Props) {
     saveToggles({ ...DEFAULT_TOGGLES }, toggleConfig);
   };
 
-  const anyEnabled = TOGGLE_INFO.some((t) => toggles[t.key]);
+  const anyEnabled = TOGGLE_INFO.some((t: any) => toggles[t.key]);
 
   // Run independent audit
   const handleAudit = useCallback(async () => {
@@ -284,13 +284,13 @@ export default function TogglePanel({ onClose }: Props) {
 
     // Set all enabled toggles to "running", disabled to "idle"
     const initStatuses: Record<string, ToggleStatus> = {};
-    TOGGLE_INFO.forEach((t) => {
+    TOGGLE_INFO.forEach((t: any) => {
       initStatuses[t.key] = toggles[t.key] ? "running" : "idle";
     });
     setStatuses(initStatuses);
 
     // Add initial log
-    const enabledNames = TOGGLE_INFO.filter((t) => toggles[t.key]).map((t) => t.label);
+    const enabledNames = TOGGLE_INFO.filter((t: any) => toggles[t.key]).map((t: any) => t.label);
     setLogLines([`Starting optimization — ${enabledNames.length} toggles enabled...`]);
 
     try {
@@ -457,7 +457,7 @@ export default function TogglePanel({ onClose }: Props) {
         {/* Left — Toggle Cards 60% */}
         <div className="w-[60%] overflow-y-auto pr-2 custom-scrollbar">
           <div className="grid grid-cols-2 gap-4">
-            {TOGGLE_INFO.map((info) => {
+            {TOGGLE_INFO.map((info: any) => {
               const Icon = TOGGLE_ICONS[info.key] || Zap;
               const isOn = toggles[info.key];
               const status = statuses[info.key] || "idle";
@@ -682,7 +682,7 @@ export default function TogglePanel({ onClose }: Props) {
                   .filter((r) => r.status !== "skipped")
                   .map((r) => {
                     const info = TOGGLE_INFO.find(
-                      (t) => t.label === r.toggle || t.key === r.toggle.toLowerCase()
+                      (t: any) => t.label === r.toggle || t.key === r.toggle.toLowerCase()
                     );
                     return (
                       <VerificationCard

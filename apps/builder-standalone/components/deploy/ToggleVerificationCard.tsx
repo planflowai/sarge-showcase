@@ -105,9 +105,9 @@ export default function ToggleVerificationCard({
   }
 
   // Group checks: pass first, then warn, then fail
-  const passed = result.checks.filter((c) => c.status === "pass");
-  const warnings = result.checks.filter((c) => c.status === "warn");
-  const failures = result.checks.filter((c) => c.status === "fail");
+  const passed = result.checks.filter((c: any) => c.status === "pass");
+  const warnings = result.checks.filter((c: any) => c.status === "warn");
+  const failures = result.checks.filter((c: any) => c.status === "fail");
   const hasMultipleGroups =
     (passed.length > 0 ? 1 : 0) + (warnings.length > 0 ? 1 : 0) + (failures.length > 0 ? 1 : 0) > 1;
 
@@ -156,7 +156,7 @@ export default function ToggleVerificationCard({
         {/* Passed checks */}
         {passed.length > 0 && (
           <div className="space-y-2">
-            {passed.map((check, i) => (
+            {passed.map((check: any, i: any) => (
               <div key={`p-${i}`} className="flex items-start gap-3" style={{ lineHeight: "1.8" }}>
                 <CheckIcon status="pass" />
                 <span className="text-sm text-zinc-200">{check.label}</span>
@@ -173,7 +173,7 @@ export default function ToggleVerificationCard({
         {/* Warning checks */}
         {warnings.length > 0 && (
           <div className="space-y-2">
-            {warnings.map((check, i) => (
+            {warnings.map((check: any, i: any) => (
               <div key={`w-${i}`} className="flex items-start gap-3" style={{ lineHeight: "1.8" }}>
                 <CheckIcon status="warn" />
                 <div className="flex-1 min-w-0">
@@ -195,7 +195,7 @@ export default function ToggleVerificationCard({
         {/* Failed checks */}
         {failures.length > 0 && (
           <div className="space-y-2">
-            {failures.map((check, i) => (
+            {failures.map((check: any, i: any) => (
               <div key={`f-${i}`} className="flex items-start gap-3" style={{ lineHeight: "1.8" }}>
                 <CheckIcon status="fail" />
                 <div className="flex-1 min-w-0">

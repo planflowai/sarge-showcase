@@ -56,9 +56,9 @@ function HomeInner() {
   const wbModel    = searchParams.get("model")    ?? "";
 
   // Workbench command center state
-  const workbenchActive = useWorkbenchStore((s) => s.active);
-  const lockedCode      = useWorkbenchStore((s) => s.lockedCode);
-  const clearLocked     = useWorkbenchStore((s) => s.clearLocked);
+  const workbenchActive = useWorkbenchStore((s: any) => s.active);
+  const lockedCode      = useWorkbenchStore((s: any) => s.lockedCode);
+  const clearLocked     = useWorkbenchStore((s: any) => s.clearLocked);
 
   // When Lock Winner fires: inject code into artifact panel then clear
   useEffect(() => {

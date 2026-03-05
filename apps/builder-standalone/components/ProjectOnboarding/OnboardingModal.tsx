@@ -381,7 +381,7 @@ export function OnboardingModal({
                     Features ({activeToggleCount})
                   </span>
                   <div className="flex flex-wrap gap-1.5">
-                    {TOGGLE_INFO.filter((t) => toggles[t.key]).map((t) => (
+                    {TOGGLE_INFO.filter((t: any) => toggles[t.key]).map((t: any) => (
                       <span
                         key={t.key}
                         className="px-2 py-0.5 rounded-full text-xs font-semibold"

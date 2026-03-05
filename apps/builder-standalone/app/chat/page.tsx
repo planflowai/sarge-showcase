@@ -25,16 +25,16 @@ export default function ChatPage() {
   const hydrateRoles = useRoleStore((s) => s.hydrate);
 
   // Parallel chat mode
-  const parallelEnabled = useParallelChatStore((s) => s.enabled);
-  const parallelHydrated = useParallelChatStore((s) => s.hydrated);
-  const hydrateParallel = useParallelChatStore((s) => s.hydrate);
-  const toggleParallelMode = useParallelChatStore((s) => s.toggleParallelMode);
-  const sendToAll = useParallelChatStore((s) => s.sendToAll);
-  const parallelColumns = useParallelChatStore((s) => s.columns);
+  const parallelEnabled = useParallelChatStore((s: any) => s.enabled);
+  const parallelHydrated = useParallelChatStore((s: any) => s.hydrated);
+  const hydrateParallel = useParallelChatStore((s: any) => s.hydrate);
+  const toggleParallelMode = useParallelChatStore((s: any) => s.toggleParallelMode);
+  const sendToAll = useParallelChatStore((s: any) => s.sendToAll);
+  const parallelColumns = useParallelChatStore((s: any) => s.columns);
 
   // War Room mode
-  const warRoomEnabled = useWarRoomStore((s) => s.enabled);
-  const setWarRoomEnabled = useWarRoomStore((s) => s.setEnabled);
+  const warRoomEnabled = useWarRoomStore((s: any) => s.enabled);
+  const setWarRoomEnabled = useWarRoomStore((s: any) => s.setEnabled);
 
   // Message + provider stores for page-level send
   const { messages, sending, sendMessage, generateImage } = useMessageStore();
@@ -104,9 +104,9 @@ export default function ChatPage() {
   }, [currentConversationId, currentProvider, currentModel, generateImage]);
 
   // Bottom bar status
-  const parallelAnySending = parallelColumns.some((c) => c.sending);
+  const parallelAnySending = parallelColumns.some((c: any) => c.sending);
   const hasMessages = parallelEnabled
-    ? parallelColumns.some((c) => c.messages.length > 0)
+    ? parallelColumns.some((c: any) => c.messages.length > 0)
     : messages.length > 0;
   const inputDisabled = parallelEnabled ? parallelAnySending : sending;
   const supportsImageGen = ["openai", "xai", "google"].includes(currentProvider) && !parallelEnabled;

@@ -66,12 +66,12 @@ export function Header() {
   const setTheme = useSettingsStore((s) => s.setTheme);
 
   // Workbench (War Room — chat standalone)
-  const warRoomEnabled = useWarRoomStore((s) => s.enabled);
-  const setWarRoomEnabled = useWarRoomStore((s) => s.setEnabled);
+  const warRoomEnabled = useWarRoomStore((s: any) => s.enabled);
+  const setWarRoomEnabled = useWarRoomStore((s: any) => s.setEnabled);
 
   // Workbench (Builder Command Center)
-  const workbenchActive = useWorkbenchStore((s) => s.active);
-  const setWorkbenchActive = useWorkbenchStore((s) => s.setActive);
+  const workbenchActive = useWorkbenchStore((s: any) => s.active);
+  const setWorkbenchActive = useWorkbenchStore((s: any) => s.setActive);
 
   // Air-gap mode
   const airGapEnabled = useAirGapStore((s) => s.airGapEnabled);

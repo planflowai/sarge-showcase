@@ -251,7 +251,8 @@ Tag: working-2026-03-02-deploy-fix (last tagged)
 
 | Date | Commit | Change |
 |------|--------|--------|
-| Mar 5 | pending | TS2305 exported member fixes — 19 errors eliminated (297 → 278). Import path fixes + stub updates |
+| Mar 5 | pending | TS7006 implicit any fixes — 137 errors eliminated (278 → 141). 136 params annotated across 21 files |
+| Mar 5 | b190a91 | TS2305 exported member fixes — 19 errors eliminated (297 → 278). Import path fixes + stub updates |
 | Mar 5 | 8400840 | TS2307 module stubs — 121 errors eliminated (418 → 297). 46 modules stubbed in `types/missing-modules.d.ts` |
 | Mar 5 | 5f12072 | Delete 30 backup directories — 8,329 errors eliminated (8,747 → 418) |
 | Mar 5 | 48269b2 | iframe nav fix (anchor smooth-scroll, external → new tab, sandbox allow-same-origin+allow-forms), assessment+compiler 30s timeout (AbortSignal.timeout), skip assess/compile on empty output |
@@ -678,9 +679,60 @@ Created `types/missing-modules.d.ts` with 46 module stubs:
 | TS18046 | 1 | 1 | — |
 | **TOTAL** | **297** | **278** | **-19** |
 
+### Round 4a: TS7006 Implicit Any Fixes (278 → 141)
+
+**136 TS7006 parameters annotated** across 21 builder-standalone files + 1 TS2554 stub fix.
+
+**Files fixed (21):**
+- `app/api/toggles/run/route.ts` (3)
+- `app/chat/page.tsx` (10)
+- `app/page.tsx` (3)
+- `components/benchmark/ForgeTrialsDashboard.tsx` (8)
+- `components/benchmark/ForgeTrialsHybrid.tsx` (6)
+- `components/Builder/TogglePanel.tsx` (11)
+- `components/Builder/VerificationCard.tsx` (6)
+- `components/chat/ChatSidebar.tsx` (5)
+- `components/chat/ChatToolbar.tsx` (4)
+- `components/chat/WarRoomDashboard.tsx` (22)
+- `components/ChatDrawer.tsx` (1)
+- `components/deploy/DeployPanel.tsx` (1)
+- `components/deploy/ToggleVerificationCard.tsx` (9)
+- `components/layout/Header.tsx` (4)
+- `components/project/NewProjectWizard.tsx` (5)
+- `components/ProjectOnboarding/OnboardingModal.tsx` (2)
+- `components/ProjectOnboarding/ProjectStatusBar.tsx` (2)
+- `components/ProjectOnboarding/ToggleSelector.tsx` (2)
+- `components/workbench/WorkbenchCard.tsx` (6)
+- `components/workbench/WorkbenchDashboard.tsx` (16)
+- `lib/toggles/pipeline.ts` (10)
+- `types/missing-modules.d.ts` — fixed `validateTerminalCommand` stub signature (TS2554)
+
+**83 remaining TS7006 (all unmaintained — NOT FIXED):**
+- `apps/chat-standalone/` — 25 errors (3 files)
+- `apps/trading-standalone/` — 41 errors (4 files)
+- `apps/war-room/` — 17 errors (1 file)
+
+| Code | Before (R3) | After (R4a) | Delta |
+|------|-------------|-------------|-------|
+| TS7006 | 219 | 83 | **-136** |
+| TS2305 | 24 | 24 | — |
+| TS2307 | 7 | 7 | — |
+| TS2724 | 4 | 4 | — |
+| TS7053 | 6 | 6 | — |
+| TS2322 | 5 | 5 | — |
+| TS7031 | 4 | 4 | — |
+| TS2740 | 3 | 3 | — |
+| TS2339 | 2 | 2 | — |
+| TS2554 | — | 0 | **(new → fixed)** |
+| TS2366 | 1 | 1 | — |
+| TS2630 | 1 | 1 | — |
+| TS2559 | 1 | 1 | — |
+| TS18046 | 1 | 0 | **-1** |
+| **TOTAL** | **278** | **141** | **-137** |
+
 ### Key Insight
 
-The only app under active development (`builder-standalone`) compiles **100% clean** with strict mode. All 278 remaining errors are from unmaintained standalones and root tsconfig resolution mismatches.
+The only app under active development (`builder-standalone`) compiles **100% clean** with strict mode. All 141 remaining errors are from unmaintained standalones and root tsconfig resolution mismatches.
 
 ---
 

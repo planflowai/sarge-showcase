@@ -23,7 +23,7 @@ export function ToggleSelector({ toggles, onChange }: ToggleSelectorProps) {
         </span>
       </div>
 
-      {TOGGLE_INFO.map((toggle, i) => {
+      {TOGGLE_INFO.map((toggle: any, i: any) => {
         const isOn = toggles[toggle.key];
         const isProfessional = i < 4;
 

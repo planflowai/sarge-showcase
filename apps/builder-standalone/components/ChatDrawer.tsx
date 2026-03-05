@@ -18,7 +18,7 @@ const TABS: { key: Tab; label: string }[] = [
 export default function ChatDrawer() {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<Tab>("chat");
-  const currentConversationId = useConversationStore((s) => s.currentConversationId);
+  const currentConversationId = useConversationStore((s: any) => s.currentConversationId);
 
   const toggle = useCallback(() => setOpen((o) => !o), []);
 

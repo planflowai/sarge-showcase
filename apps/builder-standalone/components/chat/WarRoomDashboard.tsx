@@ -73,8 +73,8 @@ function ProgressBar({ status, color, tokens }: { status: SlotStatus; color: str
 function CloudDropdown({ slot }: { slot: MonitorSlot }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const setSlotProvider = useWarRoomStore((s) => s.setSlotProvider);
-  const setSlotModel = useWarRoomStore((s) => s.setSlotModel);
+  const setSlotProvider = useWarRoomStore((s: any) => s.setSlotProvider);
+  const setSlotModel = useWarRoomStore((s: any) => s.setSlotModel);
 
   useEffect(() => {
     if (!open) return;
@@ -146,8 +146,8 @@ function CloudDropdown({ slot }: { slot: MonitorSlot }) {
 function OllamaDropdown({ slot, models }: { slot: MonitorSlot; models: LocalModel[] }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const setSlotProvider = useWarRoomStore((s) => s.setSlotProvider);
-  const setSlotModel = useWarRoomStore((s) => s.setSlotModel);
+  const setSlotProvider = useWarRoomStore((s: any) => s.setSlotProvider);
+  const setSlotModel = useWarRoomStore((s: any) => s.setSlotModel);
 
   useEffect(() => {
     if (!open) return;
@@ -352,21 +352,21 @@ export function WarRoomDashboard() {
   const [copiedAnswers, setCopiedAnswers] = useState(false);
   const [sessionSaved, setSessionSaved] = useState(false);
 
-  const mode = useWarRoomStore((s) => s.mode);
-  const setMode = useWarRoomStore((s) => s.setMode);
-  const slots = useWarRoomStore((s) => s.slots);
-  const setSlotStatus = useWarRoomStore((s) => s.setSlotStatus);
-  const setEnabled = useWarRoomStore((s) => s.setEnabled);
+  const mode = useWarRoomStore((s: any) => s.mode);
+  const setMode = useWarRoomStore((s: any) => s.setMode);
+  const slots = useWarRoomStore((s: any) => s.slots);
+  const setSlotStatus = useWarRoomStore((s: any) => s.setSlotStatus);
+  const setEnabled = useWarRoomStore((s: any) => s.setEnabled);
 
   const modeSlotIds = MODE_SLOT_IDS[mode];
-  const visibleSlots = slots.filter((s) => modeSlotIds.includes(s.id));
-  const activeSlots = visibleSlots.filter((s) => s.enabled);
+  const visibleSlots = slots.filter((s: any) => modeSlotIds.includes(s.id));
+  const activeSlots = visibleSlots.filter((s: any) => s.enabled);
 
   // ─── Effects ───
 
   // Pre-cache screens on mount
   useEffect(() => {
-    checkWindowManagement().then((status) => {
+    checkWindowManagement().then((status: any) => {
       if (status === "granted" || status === "prompt") prefetchScreens();
     });
   }, []);
@@ -419,7 +419,7 @@ export function WarRoomDashboard() {
   const handleLaunch = useCallback(() => {
     if (stepMode && stepQueue.length > 0) {
       const nextSlotId = stepQueue[0];
-      const slot = visibleSlots.find((s) => s.id === nextSlotId);
+      const slot = visibleSlots.find((s: any) => s.id === nextSlotId);
       if (slot) {
         const ok = launchSingleSlot(slot, activeSlots.indexOf(slot));
         if (ok) {
@@ -491,7 +491,7 @@ export function WarRoomDashboard() {
 
   const handleCopyAll = useCallback(() => {
     const texts = visibleSlots
-      .map((s) => {
+      .map((s: any) => {
         const text = slotResponses[s.id];
         if (!text) return null;
         const name = `${PROVIDER_META[s.provider]?.name ?? s.provider} (Mon ${s.monitorNumber})`;
@@ -508,7 +508,7 @@ export function WarRoomDashboard() {
 
   const handleCopyAnswers = useCallback(() => {
     const texts = visibleSlots
-      .map((s) => slotResponses[s.id])
+      .map((s: any) => slotResponses[s.id])
       .filter(Boolean)
       .join("\n\n---\n\n");
     if (texts) {
@@ -523,7 +523,7 @@ export function WarRoomDashboard() {
       const session = {
         timestamp: Date.now(),
         mode,
-        slots: visibleSlots.map((s) => ({
+        slots: visibleSlots.map((s: any) => ({
           id: s.id,
           provider: s.provider,
           model: s.model,
@@ -543,7 +543,7 @@ export function WarRoomDashboard() {
 
   const handleCompare = useCallback(() => {
     const responses = visibleSlots
-      .map((s) => {
+      .map((s: any) => {
         const text = slotResponses[s.id];
         if (!text) return null;
         return `[${PROVIDER_META[s.provider]?.name ?? s.provider}]: ${text}`;
@@ -559,7 +559,7 @@ export function WarRoomDashboard() {
   }, [visibleSlots, slotResponses]);
 
   const handleCrossCheck = useCallback(() => {
-    const slotsWithResponses = visibleSlots.filter((s) => slotResponses[s.id]);
+    const slotsWithResponses = visibleSlots.filter((s: any) => slotResponses[s.id]);
     if (slotsWithResponses.length < 2) return;
     for (let i = 0; i < slotsWithResponses.length; i++) {
       const checker = slotsWithResponses[i];
@@ -601,7 +601,7 @@ export function WarRoomDashboard() {
         delete next[slotId];
         return next;
       });
-      const slot = visibleSlots.find((s) => s.id === slotId);
+      const slot = visibleSlots.find((s: any) => s.id === slotId);
       if (slot && (slot.status === "complete" || slot.status === "error"))
         setSlotStatus(slotId, "idle");
     },
@@ -623,7 +623,7 @@ export function WarRoomDashboard() {
         ? "grid-cols-3"
         : "grid-cols-2 grid-rows-2";
 
-  const hasResponses = visibleSlots.some((s) => slotResponses[s.id]);
+  const hasResponses = visibleSlots.some((s: any) => slotResponses[s.id]);
 
   const tbtn =
     "flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-bold text-zinc-400 hover:text-zinc-200 bg-zinc-800/40 hover:bg-zinc-800/80 border border-zinc-700/30 transition-all disabled:opacity-30 disabled:pointer-events-none";
@@ -709,7 +709,7 @@ export function WarRoomDashboard() {
               className="flex items-center gap-1.5 px-4 py-1.5 rounded-md text-xs font-bold bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 border border-amber-500/20 animate-pulse transition-all"
             >
               <MonitorUp className="h-3.5 w-3.5" />
-              MON {slots.find((s) => s.id === stepQueue[0])?.monitorNumber} (
+              MON {slots.find((s: any) => s.id === stepQueue[0])?.monitorNumber} (
               {stepQueue.length} left)
             </button>
           ) : (
@@ -736,7 +736,7 @@ export function WarRoomDashboard() {
 
       {/* ═══ CARDS GRID ═══ */}
       <div className={`grid ${gridClass} gap-3 p-4 flex-1 overflow-auto`}>
-        {visibleSlots.map((slot) => (
+        {visibleSlots.map((slot: any) => (
           <StatusCard
             key={slot.id}
             slot={slot}

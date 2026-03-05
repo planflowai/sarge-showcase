@@ -58,8 +58,8 @@ function ModelDropdown({ slot }: { slot: WorkbenchSlot }) {
   const [ollamaModels, setOllamaModels] = useState<LocalModel[]>([]);
   const [ollamaLoading, setOllamaLoading] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const setSlotProvider = useWorkbenchStore((s) => s.setSlotProvider);
-  const setSlotModel    = useWorkbenchStore((s) => s.setSlotModel);
+  const setSlotProvider = useWorkbenchStore((s: any) => s.setSlotProvider);
+  const setSlotModel    = useWorkbenchStore((s: any) => s.setSlotModel);
 
   const meta = PROVIDER_META[slot.provider] ?? { color: "#71717a", name: slot.provider };
   const cloudProvider = CLOUD_PROVIDERS.find((p) => p.id === slot.provider);
@@ -281,11 +281,11 @@ export default function WorkbenchCard({
   onRecall,
   onLockWinner,
 }: WorkbenchCardProps) {
-  const toggleSelected = useWorkbenchStore((s) => s.toggleSlotSelected);
-  const setSlotStatus  = useWorkbenchStore((s) => s.setSlotStatus);
+  const toggleSelected = useWorkbenchStore((s: any) => s.toggleSlotSelected);
+  const setSlotStatus  = useWorkbenchStore((s: any) => s.setSlotStatus);
   const showToast      = useUIStore((s) => s.showToast);
-  const projectPath    = useBuilderStore((s) => s.projectPath);
-  const projectName    = useBuilderStore((s) => s.projectName);
+  const projectPath    = useBuilderStore((s: any) => s.projectPath);
+  const projectName    = useBuilderStore((s: any) => s.projectName);
   const meta      = PROVIDER_META[slot.provider] ?? { color: "#71717a", name: slot.provider };
   const statusCfg = STATUS_CONFIG[slot.status];
 

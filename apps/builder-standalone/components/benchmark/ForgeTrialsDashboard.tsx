@@ -215,7 +215,7 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
   const activeCurrentRound = isCloud ? cloudCurrentRound : currentRound;
   const activeScenarios = isCloud ? CLOUD_SCENARIOS : BUILDER_SCENARIOS;
   const activeModels = isCloud
-    ? cloudSelectedModels.map((m) => m.id)
+    ? cloudSelectedModels.map((m: any) => m.id)
     : localModels;
   const anyRunning = running || cloudRunning || hybridRunning;
 
@@ -246,7 +246,7 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
 
   // Estimate remaining time
   const avgMs = activeResults.length > 0
-    ? activeResults.reduce((sum, r) => sum + r.timeMs, 0) / activeResults.length * runsPerScenario
+    ? activeResults.reduce((sum: any, r: any) => sum + r.timeMs, 0) / activeResults.length * runsPerScenario
     : 90000 * runsPerScenario;
   const remainingScenarios = (activeModels.length * activeScenarios.length) - completedMedianTests;
   const remainingMs = remainingScenarios * avgMs;
@@ -408,7 +408,7 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
                 id: runId,
                 startedAt: Date.now(),
                 completedAt: Date.now(),
-                models: cloudSelectedModels.map((m) => m.id),
+                models: cloudSelectedModels.map((m: any) => m.id),
                 scenarios: CLOUD_SCENARIOS.map((s) => s.id),
                 results: useBenchmarkStore.getState().cloudResults,
                 scorecards: useBenchmarkStore.getState().cloudScorecards,
@@ -436,7 +436,7 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
           id: state.cloudCurrentRunId || "unknown",
           startedAt: Date.now(),
           completedAt: Date.now(),
-          models: cloudSelectedModels.map((m) => m.id),
+          models: cloudSelectedModels.map((m: any) => m.id),
           scenarios: CLOUD_SCENARIOS.map((s) => s.id),
           results: state.cloudResults,
           scorecards: state.cloudScorecards,
@@ -471,7 +471,7 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
   // Find the selected result for detail panel
   const selectedResult: RoundResult | undefined = activeSelectedCell
     ? activeResults.find(
-        (r) => r.modelId === activeSelectedCell.modelId && r.scenarioId === activeSelectedCell.scenarioId
+        (r: any) => r.modelId === activeSelectedCell.modelId && r.scenarioId === activeSelectedCell.scenarioId
       )
     : undefined;
 
@@ -803,7 +803,7 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
           {/* Left: Controls + Matrix (60%) */}
           <div className="flex flex-col flex-[6] border-r border-zinc-800 overflow-hidden">
             <ForgeTrialsControls
-              models={isCloud ? cloudSelectedModels.map((m) => m.id) : localModels}
+              models={isCloud ? cloudSelectedModels.map((m: any) => m.id) : localModels}
               setModels={(ids) => {
                 if (!isCloud) setLocalModels(ids);
               }}
@@ -840,7 +840,7 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
               isCloud={isCloud}
               totalCost={isCloud ? cloudTotalCost : undefined}
               warmupHtml={isCloud ? cloudWarmupHtml : undefined}
-              provider={isCloud && activeSelectedCell ? cloudSelectedModels.find((m) => m.id === activeSelectedCell.modelId)?.provider : undefined}
+              provider={isCloud && activeSelectedCell ? cloudSelectedModels.find((m: any) => m.id === activeSelectedCell.modelId)?.provider : undefined}
               allResults={activeResults}
               allScenarios={activeScenarios}
             />

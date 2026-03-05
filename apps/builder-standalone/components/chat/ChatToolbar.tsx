@@ -19,8 +19,8 @@ interface Props {
 export function ChatToolbar({ conversationId }: Props) {
   const { currentProvider, currentModel, setProvider, setModel } = useProviderStore();
   const { hydrated, hydrate, getDisplayName, getEffectiveModels } = useModelStore();
-  const messages = useMessageStore((s) => s.messages);
-  const clearMessages = useMessageStore((s) => s.clearMessages);
+  const messages = useMessageStore((s: any) => s.messages);
+  const clearMessages = useMessageStore((s: any) => s.clearMessages);
 
   const [ollamaModels, setOllamaModels] = useState<LocalModel[]>([]);
   const [ollamaLoading, setOllamaLoading] = useState(false);
@@ -61,7 +61,7 @@ export function ChatToolbar({ conversationId }: Props) {
   };
 
   const handleSaveChat = () => {
-    const visible = messages.filter((m) => m.role !== "system");
+    const visible = messages.filter((m: any) => m.role !== "system");
     if (visible.length === 0) return;
 
     const lines: string[] = [
@@ -115,7 +115,7 @@ export function ChatToolbar({ conversationId }: Props) {
     setConfirmClear(false);
   };
 
-  const hasMessages = messages.filter((m) => m.role !== "system").length > 0;
+  const hasMessages = messages.filter((m: any) => m.role !== "system").length > 0;
 
   return (
     <div className="flex-shrink-0 flex items-center gap-2 px-3 py-1.5 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/70">

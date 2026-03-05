@@ -101,7 +101,7 @@ declare module "@sarge/chat/components/forensic/ForensicLogView";
 declare module "@sarge/chat/components/test/TestModeView";
 declare module "@sarge/core/index.server" {
   export function validatePathWithinProject(projectRoot: string, filePath: string): any;
-  export function validateTerminalCommand(command: string): any;
+  export function validateTerminalCommand(command: string, projectPath?: string): any;
   export function logForensicEvent(entry: any): void;
   export function chatWithFallback(...args: any[]): Promise<any>;
   export const circuitBreaker: any;

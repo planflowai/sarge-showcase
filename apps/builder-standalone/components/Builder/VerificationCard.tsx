@@ -234,7 +234,7 @@ export default function VerificationCard({ result, onRerun, onRevert, color }: P
           bgColor="rgba(6,78,59,0.15)"
           defaultOpen
         >
-          {v.fixed.map((item, i) => (
+          {v.fixed.map((item: any, i: any) => (
             <DiffRow key={i} item={item} />
           ))}
         </Section>
@@ -249,7 +249,7 @@ export default function VerificationCard({ result, onRerun, onRevert, color }: P
           bgColor="rgba(120,53,15,0.15)"
           defaultOpen
         >
-          {v.warnings.map((item, i) => (
+          {v.warnings.map((item: any, i: any) => (
             <WarningRow key={i} item={item} />
           ))}
         </Section>
@@ -263,7 +263,7 @@ export default function VerificationCard({ result, onRerun, onRevert, color }: P
           borderColor="rgba(248,113,113,0.2)"
           bgColor="rgba(127,29,29,0.15)"
         >
-          {v.manual.map((item, i) => (
+          {v.manual.map((item: any, i: any) => (
             <ManualRow key={i} item={item} />
           ))}
         </Section>

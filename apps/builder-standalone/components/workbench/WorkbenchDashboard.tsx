@@ -132,9 +132,9 @@ export default function WorkbenchDashboard() {
   const [deployTargets, setDeployTargets] = useState<DeployTarget[]>(["github"]);
 
   // Project info from builder store
-  const projectName = useBuilderStore((s) => s.projectName);
-  const projectPath = useBuilderStore((s) => s.projectPath);
-  const fileTree    = useBuilderStore((s) => s.fileTree);
+  const projectName = useBuilderStore((s: any) => s.projectName);
+  const projectPath = useBuilderStore((s: any) => s.projectPath);
+  const fileTree    = useBuilderStore((s: any) => s.fileTree);
 
   // Deploy store
   const { pushProject, isDeploying } = useDeployStore();
@@ -153,9 +153,9 @@ export default function WorkbenchDashboard() {
   }, []);
 
   // Mon 4 command center preview — shows the builder's current artifact
-  const artifactHydrated = useArtifactStore((s) => s.hydrated);
-  const artifactCode = useArtifactStore((s) => s.code);
-  const artifactStreamingCode = useArtifactStore((s) => s.streamingCode);
+  const artifactHydrated = useArtifactStore((s: any) => s.hydrated);
+  const artifactCode = useArtifactStore((s: any) => s.code);
+  const artifactStreamingCode = useArtifactStore((s: any) => s.streamingCode);
   const mon4Preview = artifactHydrated ? (artifactStreamingCode || artifactCode) : "";
 
   // Poll open window count
@@ -179,7 +179,7 @@ export default function WorkbenchDashboard() {
         useWorkbenchStore.getState().setSlotPreview(slot, html, code ?? "");
       }
       if (type === "CODE"         && slot != null && code) {
-        const prev = useWorkbenchStore.getState().slots.find((s) => s.slot === slot);
+        const prev = useWorkbenchStore.getState().slots.find((s: any) => s.slot === slot);
         useWorkbenchStore.getState().setSlotPreview(slot, prev?.previewHtml ?? html ?? "", code);
       }
     };
@@ -230,7 +230,7 @@ export default function WorkbenchDashboard() {
   const handleSend = useCallback(() => {
     const text = prompt.trim();
     if (!text) return;
-    const selectedSlots = slots.filter((s) => s.selected);
+    const selectedSlots = slots.filter((s: any) => s.selected);
     if (selectedSlots.length === 0) return;
 
     // Fire parallel streaming builds from the dashboard
@@ -256,7 +256,7 @@ export default function WorkbenchDashboard() {
     abortAllStreams();
     // Clear preview/code then reset status to idle
     const store = useWorkbenchStore.getState();
-    store.slots.forEach((s) => {
+    store.slots.forEach((s: any) => {
       // setSlotPreview sets status to "complete", so we set idle after
       store.setSlotPreview(s.slot, "", "");
     });
@@ -273,7 +273,7 @@ export default function WorkbenchDashboard() {
 
   // ── Build actions — broadcast to selected monitors ──
   const broadcastBuildAction = useCallback((action: string, promptPrefix: string) => {
-    const selectedSlots = slots.filter((s) => s.selected);
+    const selectedSlots = slots.filter((s: any) => s.selected);
     if (selectedSlots.length === 0) {
       showToast({ message: "No monitors selected", type: "warning" });
       return;
@@ -386,7 +386,7 @@ export default function WorkbenchDashboard() {
 
   // ─── Grid layout ─────────────────────────────────────────────────────────────
   const [s1, s2, s3, s4, s5] = slots;
-  const selectedCount = slots.filter((s) => s.selected).length;
+  const selectedCount = slots.filter((s: any) => s.selected).length;
 
   return (
     <div className="flex flex-col h-full w-full bg-zinc-100 dark:bg-zinc-950 overflow-hidden">
@@ -668,7 +668,7 @@ export default function WorkbenchDashboard() {
               Broadcast To
             </span>
             <div className="flex items-center gap-2 flex-wrap justify-center">
-              {slots.map((s) => {
+              {slots.map((s: any) => {
                 const colors = ["#a855f7", "#3b82f6", "#22c55e", "#ec4899", "#f97316"];
                 const c = colors[s.slot - 1] ?? "#71717a";
                 return (
@@ -688,16 +688,16 @@ export default function WorkbenchDashboard() {
               })}
               <button
                 onClick={() => {
-                  const allSelected = slots.every((s) => s.selected);
+                  const allSelected = slots.every((s: any) => s.selected);
                   if (allSelected) {
-                    slots.forEach((s) => { if (s.selected) useWorkbenchStore.getState().toggleSlotSelected(s.slot); });
+                    slots.forEach((s: any) => { if (s.selected) useWorkbenchStore.getState().toggleSlotSelected(s.slot); });
                   } else {
-                    slots.forEach((s) => { if (!s.selected) useWorkbenchStore.getState().toggleSlotSelected(s.slot); });
+                    slots.forEach((s: any) => { if (!s.selected) useWorkbenchStore.getState().toggleSlotSelected(s.slot); });
                   }
                 }}
                 className="px-4 py-2.5 rounded-xl text-sm font-bold border-2 border-dashed border-zinc-300 dark:border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-all"
               >
-                {slots.every((s) => s.selected) ? "Deselect All" : "All"}
+                {slots.every((s: any) => s.selected) ? "Deselect All" : "All"}
               </button>
               <span className="text-xs font-bold text-zinc-400 dark:text-zinc-300 self-center pl-2">
                 {selectedCount} / 5

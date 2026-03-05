@@ -101,9 +101,9 @@ export async function POST(req: Request) {
       mailchimpActionUrl: toggleConfig?.mailchimp?.actionUrl || "",
     });
 
-    const successCount = results.filter((r) => r.status === "success").length;
-    const skipCount = results.filter((r) => r.status === "skipped").length;
-    const failCount = results.filter((r) => r.status === "failed").length;
+    const successCount = results.filter((r: any) => r.status === "success").length;
+    const skipCount = results.filter((r: any) => r.status === "skipped").length;
+    const failCount = results.filter((r: any) => r.status === "failed").length;
 
     return NextResponse.json({
       success: true,

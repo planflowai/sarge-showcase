@@ -152,9 +152,9 @@ export async function runTogglePipeline(
             label: `${report.warnings} warning${report.warnings !== 1 ? "s" : ""} detected`,
             status: "warn",
             detail: report.issues
-              .filter((i) => i.severity === "warning")
+              .filter((i: any) => i.severity === "warning")
               .slice(0, 3)
-              .map((i) => i.message)
+              .map((i: any) => i.message)
               .join("; "),
           });
         }
@@ -163,9 +163,9 @@ export async function runTogglePipeline(
             label: `${report.failed} check${report.failed !== 1 ? "s" : ""} failed`,
             status: "fail",
             detail: report.issues
-              .filter((i) => i.severity === "error")
+              .filter((i: any) => i.severity === "error")
               .slice(0, 3)
-              .map((i) => i.message)
+              .map((i: any) => i.message)
               .join("; "),
           });
         }
@@ -179,7 +179,7 @@ export async function runTogglePipeline(
         if (report.fixes.langAdded) verification.fixed.push({ label: "Language attribute added to <html>", before: "<html>", after: '<html lang="en">', section: "html" });
         if (report.fixes.headingsFixed > 0) verification.fixed.push({ label: `${report.fixes.headingsFixed} heading(s) fixed`, before: truncate(beforeHeadings), after: truncate(afterHeadings), section: "headings" });
         if (report.fixes.altTextAdded > 0) verification.fixed.push({ label: `${report.fixes.altTextAdded} image alt text(s) added`, before: truncate(beforeImages), after: truncate(afterImages), section: "images" });
-        for (const issue of report.issues.filter(i => i.severity === "warning").slice(0, 5)) {
+        for (const issue of report.issues.filter((i: any) => i.severity === "warning").slice(0, 5)) {
           verification.warnings.push({ label: issue.message, detail: issue.message });
         }
         verification.manual.push({ label: "Keyboard navigation", instruction: "Tab through your site to verify all interactive elements are reachable" });
@@ -448,10 +448,10 @@ export async function runTogglePipeline(
         const checks: ToggleCheck[] = [];
         if (report.metaTagsAdded.length > 0) {
           // Parse which specific tags were added
-          const hasTitle = report.metaTagsAdded.some((t) => t.includes("title"));
-          const hasDescription = report.metaTagsAdded.some((t) => t.includes("description"));
-          const hasOG = report.metaTagsAdded.some((t) => t.includes("og:"));
-          const hasTwitter = report.metaTagsAdded.some((t) => t.includes("twitter:"));
+          const hasTitle = report.metaTagsAdded.some((t: any) => t.includes("title"));
+          const hasDescription = report.metaTagsAdded.some((t: any) => t.includes("description"));
+          const hasOG = report.metaTagsAdded.some((t: any) => t.includes("og:"));
+          const hasTwitter = report.metaTagsAdded.some((t: any) => t.includes("twitter:"));
 
           if (hasTitle) {
             checks.push({ label: "Page title — set", status: "pass" });
@@ -532,7 +532,7 @@ export async function runTogglePipeline(
         for (const w of report.headingWarnings) {
           verification.warnings.push({ label: w, detail: w });
         }
-        if (!report.metaTagsAdded.some(t => t.includes("og:image"))) {
+        if (!report.metaTagsAdded.some((t: any) => t.includes("og:image"))) {
           verification.manual.push({ label: "og:image missing", instruction: "Upload a social preview image (1200\u00d7630px recommended) and add <meta property=\"og:image\" content=\"URL\"> to <head>" });
         }
 

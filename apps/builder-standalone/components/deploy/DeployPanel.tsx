@@ -497,7 +497,7 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
                           <button
                             key={key}
                             onClick={() =>
-                              setSelectedToggles((prev) => ({ ...prev, [key]: !prev[key] }))
+                              setSelectedToggles((prev: any) => ({ ...prev, [key]: !prev[key] }))
                             }
                             className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left transition-colors ${
                               isChecked

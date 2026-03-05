@@ -29,7 +29,7 @@ export function ProjectStatusBar({ projectPath }: ProjectStatusBarProps) {
 
   if (!meta) return null;
 
-  const activeToggles = TOGGLE_INFO.filter((t) => meta.toggles[t.key]);
+  const activeToggles = TOGGLE_INFO.filter((t: any) => meta.toggles[t.key]);
   const deployTargets = [
     { key: "github", label: "GitHub", url: meta.deployUrls.github },
     { key: "vercel", label: "Vercel", url: meta.deployUrls.vercel },
@@ -71,7 +71,7 @@ export function ProjectStatusBar({ projectPath }: ProjectStatusBarProps) {
         <>
           <div className="w-px h-3 bg-zinc-300 dark:bg-zinc-700" />
           <div className="flex items-center gap-1">
-            {activeToggles.map((t) => (
+            {activeToggles.map((t: any) => (
               <span
                 key={t.key}
                 className="px-1.5 py-0.5 rounded text-xs font-semibold whitespace-nowrap"

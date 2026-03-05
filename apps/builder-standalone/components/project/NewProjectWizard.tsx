@@ -160,7 +160,7 @@ export default function NewProjectWizard({
 
   // Toggle individual
   const toggleOne = useCallback((key: keyof ProjectToggles) => {
-    setToggles((prev) => ({ ...prev, [key]: !prev[key] }));
+    setToggles((prev: any) => ({ ...prev, [key]: !prev[key] }));
     setSelectedPackage("custom");
   }, []);
 
@@ -442,7 +442,7 @@ export default function NewProjectWizard({
                         </span>
                         <div className="flex flex-wrap gap-1 mt-3">
                           {pkg.toggleKeys.map((key) => {
-                            const info = TOGGLE_INFO.find((t) => t.key === key);
+                            const info = TOGGLE_INFO.find((t: any) => t.key === key);
                             return (
                               <span
                                 key={key}
@@ -472,7 +472,7 @@ export default function NewProjectWizard({
                   </span>
                 </p>
                 <div className="space-y-2">
-                  {TOGGLE_INFO.map((info) => {
+                  {TOGGLE_INFO.map((info: any) => {
                     const key = info.key as keyof ProjectToggles;
                     const isOn = toggles[key];
                     return (
@@ -556,7 +556,7 @@ export default function NewProjectWizard({
                     Active Features ({activeToggles})
                   </span>
                   <div className="flex flex-wrap gap-2 mt-2">
-                    {TOGGLE_INFO.filter((t) => toggles[t.key as keyof ProjectToggles]).map((info) => (
+                    {TOGGLE_INFO.filter((t: any) => toggles[t.key as keyof ProjectToggles]).map((info: any) => (
                       <span
                         key={info.key}
                         className="px-3 py-1 text-xs font-bold rounded-full"

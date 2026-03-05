@@ -115,10 +115,10 @@ export function ForgeTrialsHybrid() {
   // Trial score lookup — informational badge only, never a gate
   const getTrialScore = useCallback((modelId: string, provider: string): number | null => {
     if (provider === "ollama" || provider === "lmstudio") {
-      const sc = localScorecards.find((s) => s.modelId === modelId);
+      const sc = localScorecards.find((s: any) => s.modelId === modelId);
       return sc ? sc.overallScore : null;
     }
-    const sc = cloudScorecards.find((s) => s.modelId === modelId);
+    const sc = cloudScorecards.find((s: any) => s.modelId === modelId);
     return sc ? sc.overallScore : null;
   }, [localScorecards, cloudScorecards]);
 
@@ -567,7 +567,7 @@ export function ForgeTrialsHybrid() {
           </button>
           {showPastRuns && (
             <div className="px-3 pb-3 space-y-1.5 max-h-48 overflow-y-auto">
-              {hybridPastRuns.map((run, ri) => {
+              {hybridPastRuns.map((run: any, ri: any) => {
                 const grade = getLetterGrade(run.finalScore.total);
                 const gradeColor = getGradeColor(grade);
 
@@ -612,7 +612,7 @@ export function ForgeTrialsHybrid() {
                     </div>
                     {/* Score progression */}
                     <div className="flex items-center gap-1 mt-1">
-                      {run.steps.map((s, si) => (
+                      {run.steps.map((s: any, si: any) => (
                         <React.Fragment key={si}>
                           {si > 0 && <span className="text-zinc-300 text-sm">→</span>}
                           <span

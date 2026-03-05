@@ -28,9 +28,9 @@ export function ChatSidebar({ conversationId }: ChatSidebarProps) {
   const [localError, setLocalError] = useState<string | null>(null);
 
   // Conversation stores
-  const createConversation = useConversationStore((s) => s.createConversation);
-  const clearMessages = useMessageStore((s) => s.clearMessages);
-  const messages = useMessageStore((s) => s.messages);
+  const createConversation = useConversationStore((s: any) => s.createConversation);
+  const clearMessages = useMessageStore((s: any) => s.clearMessages);
+  const messages = useMessageStore((s: any) => s.messages);
 
   // Provider / model stores
   const {
@@ -90,7 +90,7 @@ export function ChatSidebar({ conversationId }: ChatSidebarProps) {
   };
 
   const handleSaveChat = () => {
-    const visible = messages.filter((m) => m.role !== "system");
+    const visible = messages.filter((m: any) => m.role !== "system");
     if (!visible.length) return;
     const lines: string[] = [
       `# Chat Export`,
@@ -134,7 +134,7 @@ export function ChatSidebar({ conversationId }: ChatSidebarProps) {
 
   const builtInCloudProviders = providers.filter((p) => p.type === "cloud");
   const localProviders = providers.filter((p) => p.type === "local");
-  const hasMessages = messages.filter((m) => m.role !== "system").length > 0;
+  const hasMessages = messages.filter((m: any) => m.role !== "system").length > 0;
 
   // Merge custom providers with built-in cloud providers
   const allCloudProviders = useMemo(() => {
