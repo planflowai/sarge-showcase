@@ -1,7 +1,7 @@
 # S.A.R.G.E. — System Status Report
 
 Generated: 2026-03-04
-Commit: c848430
+Commit: 0a96600
 Branch: sargebuild-v1
 Tag: working-2026-03-02-deploy-fix (last tagged)
 
@@ -220,6 +220,14 @@ Tag: working-2026-03-02-deploy-fix (last tagged)
 | Parallel cloud execution | Works | Toggle in toolbar — providers run simultaneously, rounds sequential within each |
 | Hybrid chain system | Works | Recommended + Custom modes — local AND cloud models from completed trials, LOCAL/CLOUD badges, $0.00 cost for local steps |
 | Hybrid API route | Works | `/api/benchmark/run-hybrid` — chain execution with step-by-step output feeding |
+| Round explainers | Works | One-sentence description per scenario (local R1-R8, cloud R1-R8) — `explainers.ts` |
+| Criterion explainers | Works | What each scoring bar measures + dynamic score explanation sentences |
+| Model summary card | Works | Grade (A+ to F), top 3/bottom 2 rounds, strengths/weaknesses, use case |
+| Token limits equalized | Works | All cloud providers now 8192 tokens (was 4096 for OpenAI/xAI/custom) |
+| max_completion_tokens | Works | GPT-5, o1, o3, o4, nano, reasoning models use max_completion_tokens |
+| Case-insensitive keywords | Works | Scoring no longer penalizes "faq" vs "FAQ" — all keyword matching is case-insensitive |
+| Anthropic API version | Works | Updated from 2023-06-01 to 2024-06-01 across all 8 files |
+| Model ping tester | Works | "Test" button on every model in Settings — shows OK/FAIL with error message |
 | Remaining cloud models | **Not started** | Gemini, Grok, GPT, Claude — next step |
 | Local trials (Ollama) | **Not tested this session** | 15 scenarios, Ollama backend |
 | Routing summary layer | **Not started** | Depends on complete score matrix |
@@ -228,6 +236,8 @@ Tag: working-2026-03-02-deploy-fix (last tagged)
 
 | Date | Commit | Change |
 |------|--------|--------|
+| Mar 4 | (latest) | Token limits equalized, case-insensitive keywords, Anthropic API 2024-06-01, model ping tester |
+| Mar 4 | 0a96600 | Forge Trials — round explainers, criterion explainers, score context, model summary card |
 | Mar 4 | c848430 | Fix cloud trials DeepSeek — timeout content preservation, 180s timeout, diagnostics |
 | Mar 3 | 1dc1f1a | Fix cloud trials — extractCode HTML detection, reasoning token separation, direct API calls |
 | Mar 3 | 5f84e08 | Add warmup call to cloud trials — splash page renders in preview within seconds |

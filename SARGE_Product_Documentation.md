@@ -2177,6 +2177,11 @@ This is the execution order. Each step depends on the previous step completing c
 | Streaming Safeguards | **DONE** | 120s inactivity timeout, error handling, force-clear on restore |
 | Forge Animations | **DONE** | 6 animations, pure CSS, 3 size variants |
 | Benchmark Results Persistence | **DONE** | Zustand persist — survives page refresh (localStorage key: `forge-trials-store`) |
+| Forge Trials — Round/Criterion Explainers | **DONE** | One-sentence round descriptions, criterion explanations, dynamic score context, model summary card |
+| Token Limits Equalized | **DONE** | All cloud providers 8192 tokens. GPT-5/o-series use max_completion_tokens. No model gets fewer tokens than another |
+| Case-Insensitive Keyword Scoring | **DONE** | requiredKeywords matching is now case-insensitive across all scenarios |
+| Anthropic API Version | **DONE** | Updated to 2024-06-01 across all 8 files in packages/ and apps/builder-standalone/ |
+| Model Ping Tester | **DONE** | "Test" button on every model in Settings — OK/FAIL/error message, works for all providers |
 
 ### What's PARTIALLY Done
 

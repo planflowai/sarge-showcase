@@ -426,6 +426,10 @@ export default function SettingsPage() {
   const [selectedKnownProvider, setSelectedKnownProvider] = useState<string>("");
   const [customNewModelId, setCustomNewModelId] = useState("");
   const [customNewModelName, setCustomNewModelName] = useState("");
+  const [testingProvider, setTestingProvider] = useState<string | null>(null);
+  const [testResults, setTestResults] = useState<Record<string, "ok" | "fail" | null>>({});
+  const [testingModel, setTestingModel] = useState<string | null>(null);
+  const [modelTestResults, setModelTestResults] = useState<Record<string, { status: "ok" | "fail"; error?: string } | null>>({});
 
   const { prompts, hydrated: promptsHydrated, hydrate: hydratePrompts, addPrompt, updatePrompt, deletePrompt } = usePromptStore();
   const [newPromptName, setNewPromptName] = useState("");
@@ -465,6 +469,90 @@ export default function SettingsPage() {
       .catch(() => { setLmstudioModels([]); setLmstudioError("Cannot reach LM Studio. Make sure it's running on port 1240."); })
       .finally(() => setLmstudioLoading(false));
   }, [expandedProvider]);
+
+  const handleTestCustomProvider = async (cp: { id: string; models: { id: string; name: string }[] }) => {
+    if (testingProvider === cp.id || cp.models.length === 0) return;
+    setTestingProvider(cp.id);
+    setTestResults((prev) => ({ ...prev, [cp.id]: null }));
+    try {
+      const res = await fetch("/api/test/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: cp.models[0].id,
+          provider: cp.id,
+          prompt: "Say OK",
+          systemPrompt: "Reply with OK",
+          source: "cloud",
+        }),
+      });
+      if (!res.ok) {
+        setTestResults((prev) => ({ ...prev, [cp.id]: "fail" }));
+        return;
+      }
+      const reader = res.body?.getReader();
+      if (!reader) { setTestResults((prev) => ({ ...prev, [cp.id]: "fail" })); return; }
+      const { done, value } = await reader.read();
+      reader.cancel();
+      setTestResults((prev) => ({ ...prev, [cp.id]: !done && value && value.length > 0 ? "ok" : "fail" }));
+    } catch {
+      setTestResults((prev) => ({ ...prev, [cp.id]: "fail" }));
+    } finally {
+      setTestingProvider(null);
+    }
+  };
+
+  const handleTestModel = async (modelId: string, providerId: string) => {
+    const key = `${providerId}:${modelId}`;
+    if (testingModel === key) return;
+    setTestingModel(key);
+    setModelTestResults((prev) => ({ ...prev, [key]: null }));
+    try {
+      const res = await fetch("/api/test/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: modelId,
+          provider: providerId,
+          prompt: "Say OK",
+          systemPrompt: "Reply with OK",
+          source: providerId === "ollama" || providerId === "lmstudio" ? "local" : "cloud",
+        }),
+      });
+      if (!res.ok) {
+        const errText = await res.text().catch(() => "");
+        let errorMsg = `HTTP ${res.status}`;
+        try {
+          const errJson = JSON.parse(errText);
+          errorMsg = errJson.error || errorMsg;
+        } catch {
+          if (errText.length > 0 && errText.length < 200) errorMsg = errText;
+        }
+        if (errorMsg.toLowerCase().includes("not found") || errorMsg.toLowerCase().includes("does not exist") || errorMsg.includes("404")) {
+          setModelTestResults((prev) => ({ ...prev, [key]: { status: "fail", error: `Unknown model ID — check provider docs` } }));
+        } else {
+          setModelTestResults((prev) => ({ ...prev, [key]: { status: "fail", error: errorMsg } }));
+        }
+        return;
+      }
+      const reader = res.body?.getReader();
+      if (!reader) {
+        setModelTestResults((prev) => ({ ...prev, [key]: { status: "fail", error: "No response body" } }));
+        return;
+      }
+      const { done, value } = await reader.read();
+      reader.cancel();
+      if (!done && value && value.length > 0) {
+        setModelTestResults((prev) => ({ ...prev, [key]: { status: "ok" } }));
+      } else {
+        setModelTestResults((prev) => ({ ...prev, [key]: { status: "fail", error: "Empty response" } }));
+      }
+    } catch (err: unknown) {
+      setModelTestResults((prev) => ({ ...prev, [key]: { status: "fail", error: err instanceof Error ? err.message : "Connection failed" } }));
+    } finally {
+      setTestingModel(null);
+    }
+  };
 
   const apiKeyLabels: Record<string, string> = {
     anthropic: "ANTHROPIC_API_KEY",
@@ -711,9 +799,32 @@ export default function SettingsPage() {
                   </button>
                   {isExpanded && (
                     <div className="border-t border-zinc-300 dark:border-zinc-700 px-4 py-3 space-y-3">
-                      <div className="text-[10px] text-zinc-500 space-y-0.5">
-                        <div>Base URL: <span className="text-zinc-400 font-mono">{cp.baseUrl}</span></div>
-                        <div>API Key: <span className="text-zinc-400 font-mono">{cp.envKeyName}</span></div>
+                      <div className="flex items-center justify-between">
+                        <div className="text-[10px] text-zinc-500 space-y-0.5">
+                          <div>Base URL: <span className="text-zinc-400 font-mono">{cp.baseUrl}</span></div>
+                          <div>API Key: <span className="text-zinc-400 font-mono">{cp.envKeyName}</span></div>
+                        </div>
+                        <button
+                          onClick={() => handleTestCustomProvider(cp)}
+                          disabled={testingProvider === cp.id || cp.models.length === 0}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all disabled:opacity-40 ${
+                            testResults[cp.id] === "ok"
+                              ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-400"
+                              : testResults[cp.id] === "fail"
+                              ? "bg-red-500/15 border-red-500/40 text-red-400"
+                              : "bg-zinc-800 border-zinc-600 text-zinc-300 hover:border-[#FF6700]/50 hover:text-[#FFD700]"
+                          }`}
+                        >
+                          {testingProvider === cp.id ? (
+                            <><Loader2 className="h-3 w-3 animate-spin" /> Testing...</>
+                          ) : testResults[cp.id] === "ok" ? (
+                            <><Zap className="h-3 w-3" /> Connected</>
+                          ) : testResults[cp.id] === "fail" ? (
+                            <><Zap className="h-3 w-3" /> Failed</>
+                          ) : (
+                            <><Zap className="h-3 w-3" /> Test Connection</>
+                          )}
+                        </button>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
                         {cpModels.map((m) => (
@@ -835,6 +946,27 @@ export default function SettingsPage() {
                                   )}
                                 </div>
                                 <div className="flex items-center gap-1.5 flex-shrink-0">
+                                  {(() => {
+                                    const testKey = `${p.id}:${m.id}`;
+                                    const isTesting = testingModel === testKey;
+                                    const result = modelTestResults[testKey];
+                                    return (
+                                      <button
+                                        onClick={() => handleTestModel(m.id, p.id)}
+                                        disabled={isTesting}
+                                        className={`transition-colors text-[9px] font-bold px-1.5 py-0.5 rounded border ${
+                                          result?.status === "ok"
+                                            ? "text-emerald-400 border-emerald-500/40 bg-emerald-500/10"
+                                            : result?.status === "fail"
+                                            ? "text-red-400 border-red-500/40 bg-red-500/10"
+                                            : "text-zinc-400 border-zinc-600 hover:text-sky-400 hover:border-sky-500/40"
+                                        }`}
+                                        title={result?.error || (result?.status === "ok" ? "Connected" : "Test model connection")}
+                                      >
+                                        {isTesting ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : result?.status === "ok" ? "OK" : result?.status === "fail" ? "FAIL" : "Test"}
+                                      </button>
+                                    );
+                                  })()}
                                   <button onClick={() => setBuilderFlag(m.id, !isBuilderModel(m.id, p.id))} className={`transition-colors ${isBuilderModel(m.id, p.id) ? 'text-indigo-500' : 'text-zinc-400 hover:text-indigo-400'}`} title={isBuilderModel(m.id, p.id) ? "Remove from Builder" : "Add to Builder"}>
                                     <Hammer className="h-3 w-3" />
                                   </button>

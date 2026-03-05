@@ -319,7 +319,7 @@ async function streamOpenAICompatible(
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey}`,
     },
-    body: JSON.stringify({ model, messages, max_tokens: 4096, stream: true }),
+    body: JSON.stringify({ model, messages, max_tokens: 8192, stream: true }),
   });
 
   if (!res.ok || !res.body) {
@@ -378,11 +378,11 @@ async function streamAnthropic(model: string, prompt: string, systemPrompt?: str
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
+      'anthropic-version': '2024-06-01',
     },
     body: JSON.stringify({
       model,
-      max_tokens: 4096,
+      max_tokens: 8192,
       stream: true,
       system: systemPrompt || undefined,
       messages: [{ role: 'user', content }],
@@ -420,10 +420,11 @@ async function streamAnthropic(model: string, prompt: string, systemPrompt?: str
 // ── OpenAI (GPT) — native SSE streaming with vision ─────────────────────
 async function streamOpenAI(model: string, messages: { role: string; content: any }[], images?: string[]) {
   const apiKey = process.env.OPENAI_API_KEY || '';
-  const isReasoning = model.startsWith('o3') || model.startsWith('o4');
+  const isReasoning = model.startsWith('o1') || model.startsWith('o3') || model.startsWith('o4')
+    || model.includes('gpt-5') || model.includes('nano') || model.includes('reasoning');
   const tokenParam = isReasoning
-    ? { max_completion_tokens: 4096 }
-    : { max_tokens: 4096 };
+    ? { max_completion_tokens: 8192 }
+    : { max_tokens: 8192 };
 
   // If images present, convert last user message to multimodal content
   if (images && images.length > 0) {
@@ -488,7 +489,7 @@ async function streamXAI(model: string, messages: { role: string; content: strin
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey}`,
     },
-    body: JSON.stringify({ model, messages, max_tokens: 4096, stream: true }),
+    body: JSON.stringify({ model, messages, max_tokens: 8192, stream: true }),
   });
 
   if (!res.ok || !res.body) {

@@ -27,6 +27,13 @@ interface CloudCallResult {
   error?: string;
 }
 
+/** Models that require max_completion_tokens instead of max_tokens */
+function needsCompletionTokensParam(model: string): boolean {
+  return model.startsWith("o1") || model.startsWith("o3") || model.startsWith("o4")
+    || model.includes("gpt-5") || model.includes("nano")
+    || model.includes("reasoning");
+}
+
 async function callCloudDirect(
   provider: string,
   modelId: string,
@@ -35,24 +42,25 @@ async function callCloudDirect(
   timeoutMs: number,
   signal: AbortSignal
 ): Promise<CloudCallResult> {
+  const TOKEN_LIMIT = 8192;
   switch (provider) {
     case "deepseek":
       return callOpenAICompat(
         "https://api.deepseek.com/chat/completions",
         process.env.DEEPSEEK_API_KEY || "",
-        modelId, systemPrompt, userPrompt, 8192, timeoutMs, signal
+        modelId, systemPrompt, userPrompt, TOKEN_LIMIT, timeoutMs, signal
       );
     case "openai":
       return callOpenAICompat(
         "https://api.openai.com/v1/chat/completions",
         process.env.OPENAI_API_KEY || "",
-        modelId, systemPrompt, userPrompt, 4096, timeoutMs, signal
+        modelId, systemPrompt, userPrompt, TOKEN_LIMIT, timeoutMs, signal
       );
     case "xai":
       return callOpenAICompat(
         "https://api.x.ai/v1/chat/completions",
         process.env.XAI_API_KEY || process.env.GROK_API_KEY || "",
-        modelId, systemPrompt, userPrompt, 4096, timeoutMs, signal
+        modelId, systemPrompt, userPrompt, TOKEN_LIMIT, timeoutMs, signal
       );
     case "anthropic":
       return callAnthropic(modelId, systemPrompt, userPrompt, timeoutMs, signal);
@@ -75,7 +83,7 @@ async function callCloudDirect(
       if (!apiKey || !baseUrl) {
         return { content: "", timeMs: 0, timedOut: false, tokenCount: 0, error: `No API key or base URL for provider: ${provider}` };
       }
-      return callOpenAICompat(baseUrl, apiKey, modelId, systemPrompt, userPrompt, 4096, timeoutMs, signal);
+      return callOpenAICompat(baseUrl, apiKey, modelId, systemPrompt, userPrompt, TOKEN_LIMIT, timeoutMs, signal);
     }
   }
 }
@@ -191,7 +199,12 @@ async function callOpenAICompat(
         "Content-Type": "application/json",
         "Authorization": `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({ model, messages, max_tokens: maxTokens, stream: true }),
+      body: JSON.stringify({
+        model,
+        messages,
+        ...(needsCompletionTokensParam(model) ? { max_completion_tokens: maxTokens } : { max_tokens: maxTokens }),
+        stream: true,
+      }),
       signal: controller.signal,
     });
 
@@ -266,11 +279,11 @@ async function callAnthropic(
       headers: {
         "Content-Type": "application/json",
         "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
+        "anthropic-version": "2024-06-01",
       },
       body: JSON.stringify({
         model,
-        max_tokens: 4096,
+        max_tokens: 8192,
         stream: true,
         system: systemPrompt || undefined,
         messages: [{ role: "user", content: userPrompt }],

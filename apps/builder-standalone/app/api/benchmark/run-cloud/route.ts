@@ -43,6 +43,13 @@ interface CloudCallResult {
 
 // ── Direct cloud API calls (no self-fetch) ──────────────────────────
 
+/** Models that require max_completion_tokens instead of max_tokens */
+function needsCompletionTokensParam(model: string): boolean {
+  return model.startsWith("o1") || model.startsWith("o3") || model.startsWith("o4")
+    || model.includes("gpt-5") || model.includes("nano")
+    || model.includes("reasoning");
+}
+
 async function callCloudDirect(
   provider: string,
   modelId: string,
@@ -51,36 +58,34 @@ async function callCloudDirect(
   timeoutMs: number,
   signal: AbortSignal
 ): Promise<CloudCallResult> {
+  const TOKEN_LIMIT = 8192;
   switch (provider) {
     case "deepseek":
       return callOpenAICompat(
         "https://api.deepseek.com/chat/completions",
         process.env.DEEPSEEK_API_KEY || "",
-        modelId, systemPrompt, userPrompt, 8192, timeoutMs, signal
+        modelId, systemPrompt, userPrompt, TOKEN_LIMIT, timeoutMs, signal
       );
     case "openai":
       return callOpenAICompat(
         "https://api.openai.com/v1/chat/completions",
         process.env.OPENAI_API_KEY || "",
-        modelId, systemPrompt, userPrompt, 4096, timeoutMs, signal
+        modelId, systemPrompt, userPrompt, TOKEN_LIMIT, timeoutMs, signal
       );
     case "xai":
       return callOpenAICompat(
         "https://api.x.ai/v1/chat/completions",
         process.env.XAI_API_KEY || process.env.GROK_API_KEY || "",
-        modelId, systemPrompt, userPrompt, 4096, timeoutMs, signal
+        modelId, systemPrompt, userPrompt, TOKEN_LIMIT, timeoutMs, signal
       );
     case "anthropic":
       return callAnthropic(modelId, systemPrompt, userPrompt, timeoutMs, signal);
     case "google":
       return callGemini(modelId, systemPrompt, userPrompt, timeoutMs, signal);
     default: {
-      // Custom provider — check for OpenAI-compatible config in env
-      // Convention: {PROVIDER}_API_KEY env var, {PROVIDER}_BASE_URL env var or passed config
       const envKey = `${provider.toUpperCase()}_API_KEY`;
       const baseUrlKey = `${provider.toUpperCase()}_BASE_URL`;
       const apiKey = process.env[envKey] || "";
-      // Known custom provider base URLs (fallback)
       const KNOWN_BASE_URLS: Record<string, string> = {
         mistral: "https://api.mistral.ai/v1/chat/completions",
         huggingface: "https://api-inference.huggingface.co/v1/chat/completions",
@@ -92,7 +97,7 @@ async function callCloudDirect(
       if (!apiKey || !baseUrl) {
         return { content: "", timeMs: 0, timedOut: false, tokenCount: 0, error: `No API key (${envKey}) or base URL for provider: ${provider}` };
       }
-      return callOpenAICompat(baseUrl, apiKey, modelId, systemPrompt, userPrompt, 4096, timeoutMs, signal);
+      return callOpenAICompat(baseUrl, apiKey, modelId, systemPrompt, userPrompt, TOKEN_LIMIT, timeoutMs, signal);
     }
   }
 }
@@ -126,13 +131,17 @@ async function callOpenAICompat(
 
     console.log(`[CLOUD TRIAL] Calling ${model} at ${apiUrl} (timeout=${timeoutMs}ms, key=${apiKey ? "set" : "MISSING"})...`);
 
+    const tokenParam = needsCompletionTokensParam(model)
+      ? { max_completion_tokens: maxTokens }
+      : { max_tokens: maxTokens };
+
     const res = await fetch(apiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({ model, messages, max_tokens: maxTokens, stream: true }),
+      body: JSON.stringify({ model, messages, ...tokenParam, stream: true }),
       signal: controller.signal,
     });
 
@@ -227,11 +236,11 @@ async function callAnthropic(
       headers: {
         "Content-Type": "application/json",
         "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
+        "anthropic-version": "2024-06-01",
       },
       body: JSON.stringify({
         model,
-        max_tokens: 4096,
+        max_tokens: 8192,
         stream: true,
         system: systemPrompt || undefined,
         messages: [{ role: "user", content: userPrompt }],

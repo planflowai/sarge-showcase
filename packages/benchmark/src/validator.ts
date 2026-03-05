@@ -161,11 +161,12 @@ function scoreRequiredKeywords(
   code: string,
   required?: string[]
 ): number {
-  // 20 points: proportional
+  // 20 points: proportional, case-insensitive
   if (!required || required.length === 0) return 20;
+  const lower = code.toLowerCase();
   let found = 0;
   for (const kw of required) {
-    if (code.includes(kw)) found++;
+    if (lower.includes(kw.toLowerCase())) found++;
   }
   return Math.round((found / required.length) * 20);
 }
