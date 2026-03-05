@@ -14,6 +14,44 @@ import type {
   HybridEvent,
   HybridChain,
 } from "@sarge/benchmark";
+import { syncTrialResult, syncBillingEntry } from "@sarge/core";
+import type { TrialResultRow, BillingRow } from "@sarge/core";
+
+/** Fire-and-forget Supabase sync for a completed round */
+function supabaseSyncRound(result: RoundResult, runType: "local" | "cloud", provider: string, runSessionId: string) {
+  const row: TrialResultRow = {
+    model_id: result.modelId,
+    model_name: result.modelId,
+    provider,
+    run_type: runType,
+    round_number: parseInt(result.scenarioId.replace(/\D/g, "")) || 0,
+    scenario: result.scenarioId,
+    score: result.score.total,
+    grade: result.score.tier,
+    status: result.timedOut ? "timeout" : result.error ? "failed" : result.score.total >= 70 ? "pass" : "partial",
+    tokens_in: result.tokensIn ?? 0,
+    tokens_out: result.tokensOut ?? 0,
+    cost_usd: result.cost ?? 0,
+    time_seconds: parseFloat((result.timeMs / 1000).toFixed(2)),
+    breakdown: result.score as unknown as Record<string, unknown>,
+    run_session_id: runSessionId,
+  };
+  syncTrialResult(row).catch(() => {}); // non-blocking
+
+  // Also log billing if there's a cost
+  if (result.cost && result.cost > 0) {
+    const billing: BillingRow = {
+      provider,
+      model_id: result.modelId,
+      tokens_in: result.tokensIn ?? 0,
+      tokens_out: result.tokensOut ?? 0,
+      cost_usd: result.cost,
+      run_type: "trial",
+      run_ref_id: runSessionId,
+    };
+    syncBillingEntry(billing).catch(() => {});
+  }
+}
 
 export type TrialsTab = "local" | "cloud" | "hybrid";
 
@@ -155,7 +193,7 @@ const HYBRID_INITIAL = {
 
 export const useBenchmarkStore = create<BenchmarkState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       activeTab: "local" as TrialsTab,
       ...LOCAL_INITIAL,
       ...CLOUD_INITIAL,
@@ -183,11 +221,13 @@ export const useBenchmarkStore = create<BenchmarkState>()(
           return { running: false, abortController: null };
         }),
 
-      addResult: (result) =>
-        set((s) => ({
+      addResult: (result) => {
+        supabaseSyncRound(result, "local", "ollama", get().currentRunId || "unknown");
+        return set((s) => ({
           results: [...s.results, result],
           selectedCell: { modelId: result.modelId, scenarioId: result.scenarioId },
-        })),
+        }));
+      },
 
       addScorecard: (scorecard) =>
         set((s) => ({ scorecards: [...s.scorecards, scorecard] })),
@@ -233,11 +273,16 @@ export const useBenchmarkStore = create<BenchmarkState>()(
           return { cloudRunning: false, cloudAbortController: null };
         }),
 
-      cloudAddResult: (result) =>
-        set((s) => ({
+      cloudAddResult: (result) => {
+        // Determine provider from cloudSelectedModels
+        const cloudModels = get().cloudSelectedModels;
+        const match = cloudModels.find((m) => m.id === result.modelId);
+        supabaseSyncRound(result, "cloud", match?.provider || "unknown", get().cloudCurrentRunId || "unknown");
+        return set((s) => ({
           cloudResults: [...s.cloudResults, result],
           cloudSelectedCell: { modelId: result.modelId, scenarioId: result.scenarioId },
-        })),
+        }));
+      },
 
       cloudAddScorecard: (scorecard) =>
         set((s) => ({ cloudScorecards: [...s.cloudScorecards, scorecard] })),

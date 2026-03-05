@@ -1872,6 +1872,55 @@ This section exists because the platform grows faster than memory. Reference thi
 
 ---
 
+## 17b. Supabase Schema & Integration
+
+### Connection
+- **Project**: `wzooybpimahkrctltvbf.supabase.co`
+- **Client**: `packages/core/src/lib/supabase/client.ts` — `createClient(url, anonKey)`
+- **Env vars**: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+
+### Tables (Migration: `supabase/migration.sql`)
+
+#### Pre-existing (Forensic/Debate)
+| Table | Rows | Sync Module | Description |
+|-------|------|-------------|-------------|
+| llm_sessions | 289 | sync.ts | Forensic debate sessions — mode, rounds, poison config |
+| llm_responses | 5,586 | sync.ts | Per-round model responses — prompt sent, response text, timing |
+| llm_judge_verdicts | 232 | sync.ts | Judge verdicts — hallucination, echo, poison detection |
+| llm_endpoints_snapshot | 874 | sync.ts | Endpoint config snapshots per session |
+| profiles | 1 | — | Test user profile |
+
+#### New (Migration Required)
+| Table | Sync Module | Dual-Write From | Description |
+|-------|-------------|-----------------|-------------|
+| conversations | syncQueue.ts | conversationStore | Chat conversations — title, model, provider, mode, message count |
+| messages | forgeSync.ts | (manual) | Chat messages — role, content, model, tokens, cost |
+| forge_trial_results | forgeSync.ts | benchmarkStore.addResult / cloudAddResult | Per-round trial scores — model, scenario, score, grade, tokens, cost, timing |
+| forge_billing | forgeSync.ts | benchmarkStore (on cost > 0) | Token billing — provider, model, tokens in/out, cost, run type |
+| forge_hybrid_runs | forgeSync.ts | (not yet wired) | Hybrid chain results — chain config, step results, final score |
+| forge_build_history | — | (not yet wired) | Builder session tracking |
+| forge_compiler_results | — | (not yet wired) | Compiler output tracking |
+| forge_model_registry | — | (not yet wired) | Model metadata sync |
+| forge_certificates | — | (not yet wired) | Trial certificates |
+| builder_logs | syncQueue.ts | (existing) | BUILDER_LOG.md sync by project name |
+| user_settings | — | (not yet wired) | Settings backup |
+
+### Sync Modules
+| File | Functions | Pattern |
+|------|-----------|---------|
+| `packages/core/src/lib/supabase/sync.ts` | createSupabaseSession, logSupabaseResponse, etc. | Forensic — sync on each event |
+| `packages/core/src/lib/supabase/syncQueue.ts` | processQueuedItem, fetchSupabaseConversations | Queue-based — dispatches by type |
+| `packages/core/src/lib/supabase/forgeSync.ts` | syncTrialResult, syncBillingEntry, syncHybridRun, syncConversation, syncMessage | Fire-and-forget — non-blocking `.catch(() => {})` |
+
+### RLS Policy
+All new tables: `FOR ALL TO anon USING (true) WITH CHECK (true)` — single-user app, no row-level restrictions.
+
+### Migration Instructions
+1. **Option A (SQL Editor)**: Paste `supabase/migration.sql` into Supabase Dashboard → SQL Editor → Run
+2. **Option B (API)**: Add `SUPABASE_SERVICE_ROLE_KEY=...` to `.env.local`, then `POST /api/supabase/migrate`
+
+---
+
 ## 18. Configuration Reference
 
 ### Environment Variables (.env.local)

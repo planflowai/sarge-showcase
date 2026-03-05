@@ -243,7 +243,8 @@ Tag: working-2026-03-02-deploy-fix (last tagged)
 
 | Date | Commit | Change |
 |------|--------|--------|
-| Mar 4 | (latest) | Hybrid — remove hardcoded fallbacks, recommendations from trial data only. Custom chains start empty with "Select a model" prompt. Recommended mode requires completed local+cloud trials. |
+| Mar 4 | (latest) | Supabase migration — 11 tables DDL (`supabase/migration.sql`), forgeSync module (`packages/core/src/lib/supabase/forgeSync.ts`), dual-write for trials+billing in benchmarkStore, conversation sync re-enabled in syncQueue.ts, migration API route. |
+| Mar 4 | 03eaef7 | Hybrid — remove hardcoded fallbacks, recommendations from trial data only. Custom chains start empty with "Select a model" prompt. Recommended mode requires completed local+cloud trials. |
 | Mar 4 | 5f3f4d5 | HuggingFace provider wired — Llama 3.3 70B, Qwen 3 235B, DeepSeek V3. Base URL updated to router.huggingface.co. All 3 models ping-tested OK. Also fixed @sarge/billing + @sarge/benchmark missing workspace deps. |
 | Mar 4 | 5cc2cc7 | Live event ticker + activity panel — real time stream visibility in Forge Trials |
 | Mar 4 | 3ac6684 | Cloud trials audit — silent catch blocks fixed, finally blocks for state cleanup, emit() error logging |
@@ -295,6 +296,30 @@ Tag: working-2026-03-02-deploy-fix (last tagged)
 | jury-standalone | — | Exists, untested |
 | launchpad-standalone | — | Exists, untested |
 | trading-standalone | — | Exists, untested |
+
+---
+
+### Supabase Integration
+
+| Table | Status | Dual-Write | Notes |
+|-------|--------|------------|-------|
+| conversations | **Migration pending** | syncQueue.ts | Upsert on create/update, fetch with proper schema |
+| messages | **Migration pending** | forgeSync.ts | Per-message insert |
+| forge_trial_results | **Migration pending** | benchmarkStore.ts | Fire-and-forget on each round complete (local + cloud) |
+| forge_billing | **Migration pending** | benchmarkStore.ts | Piggybacks on trial results when cost > 0 |
+| forge_hybrid_runs | **Migration pending** | forgeSync.ts (not yet wired) | Manual sync available |
+| forge_build_history | **Migration pending** | Not wired | Future: builder session tracking |
+| forge_compiler_results | **Migration pending** | Not wired | Future: compiler output tracking |
+| forge_model_registry | **Migration pending** | Not wired | Future: model metadata sync |
+| forge_certificates | **Migration pending** | Not wired | Future: trial certificates |
+| builder_logs | **Migration pending** | syncQueue.ts | Upsert by project_name |
+| user_settings | **Migration pending** | Not wired | Future: settings backup |
+| llm_sessions | Exists (289 rows) | sync.ts | Forensic session tracking |
+| llm_responses | Exists (5,586 rows) | sync.ts | Forensic log entries |
+| llm_judge_verdicts | Exists (232 rows) | sync.ts | Judge verdicts |
+| llm_endpoints_snapshot | Exists (874 rows) | sync.ts | Endpoint snapshots |
+
+**Migration file**: `supabase/migration.sql` — run in Supabase SQL Editor or add `SUPABASE_SERVICE_ROLE_KEY` to `.env.local` and POST `/api/supabase/migrate`.
 
 ---
 

@@ -39,6 +39,9 @@ export * from './stores/draftStore';
 export * from './stores/journalStore';
 export * from './stores/customProviderStore';
 
+// ─── Supabase Sync ──────────────────────────────────────
+export * from './lib/supabase/forgeSync';
+
 // ─── Lib ─────────────────────────────────────────────────
 export * from './lib/constants';
 export * from './lib/utils';

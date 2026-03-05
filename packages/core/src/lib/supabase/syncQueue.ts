@@ -89,13 +89,30 @@ async function processResponseSync(item: QueuedSync): Promise<boolean> {
   return true;
 }
 
-// Conversation sync - disabled due to schema mismatch
-// The conversations table doesn't have the required columns (messages, etc.)
-// Conversations are stored locally in localStorage instead
-async function processConversationSync(_item: QueuedSync): Promise<boolean> {
-  // Skip Supabase sync - table schema doesn't match app requirements
-  // Conversations are persisted locally via localStorage
-  return true;
+// Conversation sync — uses new conversations table schema
+async function processConversationSync(item: QueuedSync): Promise<boolean> {
+  const data = item.data as { conversation: Conversation };
+  const conv = data.conversation;
+
+  if (item.operation === "create" || item.operation === "update") {
+    const { error } = await supabase.from("conversations").upsert({
+      id: conv.id,
+      title: conv.title || "Untitled",
+      model: conv.model,
+      provider: conv.provider,
+      mode: conv.mode || "chat",
+      message_count: conv.messages?.length ?? 0,
+      last_message_at: conv.updatedAt ? new Date(conv.updatedAt).toISOString() : new Date().toISOString(),
+      updated_at: conv.updatedAt ? new Date(conv.updatedAt).toISOString() : new Date().toISOString(),
+    }, { onConflict: "id" });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+    return true;
+  }
+
+  return false;
 }
 
 // Builder log sync
@@ -116,12 +133,36 @@ async function processBuilderLogSync(item: QueuedSync): Promise<boolean> {
   return true;
 }
 
-// Fetch conversations from Supabase - disabled due to schema mismatch
-// Conversations are stored locally in localStorage instead
+// Fetch conversations from Supabase
 export async function fetchSupabaseConversations(): Promise<Conversation[]> {
-  // Skip Supabase fetch - table schema doesn't match app requirements
-  // Conversations are loaded from localStorage instead
-  return [];
+  try {
+    const { data, error } = await supabase
+      .from("conversations")
+      .select("*")
+      .order("updated_at", { ascending: false })
+      .limit(100);
+
+    if (error) {
+      console.warn("[SyncQueue] Fetch conversations failed:", error.message);
+      return [];
+    }
+
+    // Map Supabase rows back to Conversation shape
+    return (data ?? []).map((row: Record<string, unknown>) => ({
+      id: row.id as string,
+      title: (row.title as string) || "Untitled",
+      messages: [],
+      contextFiles: [],
+      provider: (row.provider as string) || "ollama",
+      model: (row.model as string) || "",
+      createdAt: new Date(row.created_at as string),
+      updatedAt: new Date(row.updated_at as string),
+      mode: row.mode as string | undefined,
+    }));
+  } catch (error) {
+    console.warn("[SyncQueue] Fetch conversations error:", error);
+    return [];
+  }
 }
 
 // Fetch builder log from Supabase
