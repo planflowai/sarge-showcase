@@ -208,10 +208,10 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
   // ═══ No project open ═══
   if (!activePath) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-zinc-500 dark:text-zinc-400 gap-3 p-8">
-        <FolderOpen className="h-12 w-12 text-zinc-400 dark:text-zinc-600" />
+      <div className="flex flex-col items-center justify-center h-full text-zinc-300 dark:text-zinc-400 gap-3 p-8">
+        <FolderOpen className="h-12 w-12 text-zinc-400 dark:text-zinc-300" />
         <p className="text-sm font-medium">Open a project first</p>
-        <p className="text-xs text-zinc-400 dark:text-zinc-500 text-center">
+        <p className="text-xs text-zinc-400 dark:text-zinc-300 text-center">
           Create or open a project from the sidebar to enable deployment.
         </p>
       </div>
@@ -226,7 +226,7 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
         <h2 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
           Deploy
         </h2>
-        <span className="text-xs text-zinc-400 dark:text-zinc-500 ml-auto">
+        <span className="text-xs text-zinc-400 dark:text-zinc-300 ml-auto">
           {activeName}
         </span>
       </div>
@@ -235,7 +235,7 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
         {/* ═══ Deploy Targets — status indicators for all 4 ═══ */}
         {isInitialized && (
           <div className="space-y-2">
-            <h3 className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+            <h3 className="text-xs font-bold text-zinc-300 dark:text-zinc-400 uppercase tracking-wider">
               Deploy Targets
             </h3>
             <div className="grid grid-cols-2 gap-2">
@@ -262,7 +262,7 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
                           href={url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-[9px] text-indigo-500 hover:underline truncate block"
+                          className="text-xs text-indigo-500 hover:underline truncate block"
                         >
                           {url.replace(/https?:\/\/(www\.)?/, "").slice(0, 30)}
                         </a>
@@ -271,7 +271,7 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
                     {resultIcon || (
                       isConnected
                         ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" />
-                        : <XCircle className="h-3.5 w-3.5 text-zinc-300 dark:text-zinc-600 flex-shrink-0" />
+                        : <XCircle className="h-3.5 w-3.5 text-zinc-300 dark:text-zinc-300 flex-shrink-0" />
                     )}
                   </div>
                 );
@@ -284,7 +284,7 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
         {isDetecting ? (
           <div className="flex items-center gap-3 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50">
             <Loader2 className="h-5 w-5 animate-spin text-indigo-500" />
-            <span className="text-sm text-zinc-500 dark:text-zinc-400">
+            <span className="text-sm text-zinc-300 dark:text-zinc-400">
               Checking for existing connections...
             </span>
           </div>
@@ -295,7 +295,7 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
               <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
                 Connect to GitHub
               </h3>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              <p className="text-xs text-zinc-300 dark:text-zinc-400">
                 Creates a private GitHub repo and pushes your project.
                 If you have Vercel, Netlify, or Cloudflare CLIs installed,
                 those will be linked automatically too.
@@ -328,7 +328,7 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
           <>
             {/* ═══ Your Links ═══ */}
             <div className="space-y-3">
-              <h3 className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+              <h3 className="text-xs font-bold text-zinc-300 dark:text-zinc-400 uppercase tracking-wider">
                 Your Links
               </h3>
 
@@ -343,7 +343,7 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
                   <Github className="h-5 w-5 text-zinc-900 dark:text-white flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className="font-bold text-zinc-900 dark:text-zinc-100">GitHub Repo</div>
-                    <div className="text-[11px] text-zinc-500 dark:text-zinc-400 truncate">
+                    <div className="text-[11px] text-zinc-300 dark:text-zinc-400 truncate">
                       {githubUrl.replace("https://github.com/", "")}
                     </div>
                   </div>
@@ -379,7 +379,7 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
                   <Globe className="h-5 w-5 text-zinc-900 dark:text-white flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className="font-bold text-zinc-900 dark:text-zinc-100">Vercel</div>
-                    <div className="text-[11px] text-zinc-500 dark:text-zinc-400 truncate">{vercelUrl}</div>
+                    <div className="text-[11px] text-zinc-300 dark:text-zinc-400 truncate">{vercelUrl}</div>
                   </div>
                   <ExternalLink className="h-4 w-4 text-zinc-400 flex-shrink-0" />
                 </a>
@@ -406,7 +406,7 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
               {!cloudflareUrl && !vercelUrl && !netlifyUrl && (
                 <div className="flex items-start gap-2 p-3 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700">
                   <Info className="h-3.5 w-3.5 text-zinc-400 flex-shrink-0 mt-0.5" />
-                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                  <p className="text-[11px] text-zinc-300 dark:text-zinc-400">
                     Install <code className="bg-zinc-200 dark:bg-zinc-700 px-1 rounded">vercel</code>,{" "}
                     <code className="bg-zinc-200 dark:bg-zinc-700 px-1 rounded">netlify-cli</code>, or{" "}
                     <code className="bg-zinc-200 dark:bg-zinc-700 px-1 rounded">wrangler</code> to auto-link hosting on next init.
@@ -437,7 +437,7 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
                 <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
                   Push Changes
                 </h3>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                <p className="text-xs text-zinc-300 dark:text-zinc-400">
                   Commits and pushes to selected targets. Pick where to deploy.
                 </p>
               </div>
@@ -460,7 +460,7 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
                 {showPushPopup && !isDeploying && (
                   <div className="absolute left-0 top-full mt-2 w-80 bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-2xl z-50 p-4 space-y-3 max-h-[70vh] overflow-y-auto">
                     <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider">
+                      <h4 className="text-xs font-bold text-zinc-400 dark:text-zinc-300 uppercase tracking-wider">
                         Run & Deploy
                       </h4>
                       <button
@@ -474,7 +474,7 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
                     {/* ── Build Toggles ── */}
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                        <span className="text-xs font-bold text-zinc-300 dark:text-zinc-400 uppercase tracking-wider">
                           Build Toggles
                         </span>
                         <button
@@ -486,7 +486,7 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
                             }
                             setSelectedToggles(next);
                           }}
-                          className="text-[9px] font-medium text-indigo-500 hover:text-indigo-400"
+                          className="text-xs font-medium text-indigo-500 hover:text-indigo-400"
                         >
                           {Object.values(selectedToggles).every(Boolean) ? "Uncheck all" : "Check all"}
                         </button>
@@ -518,10 +518,10 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
                               style={{ backgroundColor: color }}
                             />
                             <div className="flex-1 min-w-0">
-                              <div className={`text-xs font-semibold ${isChecked ? "text-zinc-800 dark:text-zinc-200" : "text-zinc-500 dark:text-zinc-400"}`}>
+                              <div className={`text-xs font-semibold ${isChecked ? "text-zinc-800 dark:text-zinc-200" : "text-zinc-300 dark:text-zinc-400"}`}>
                                 {label}
                               </div>
-                              <div className="text-[9px] text-zinc-400 truncate">
+                              <div className="text-xs text-zinc-400 truncate">
                                 {description}
                               </div>
                             </div>
@@ -535,7 +535,7 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
 
                     {/* ── Deploy Targets ── */}
                     <div className="space-y-1.5">
-                      <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                      <span className="text-xs font-bold text-zinc-300 dark:text-zinc-400 uppercase tracking-wider">
                         Deploy Targets
                       </span>
                       {DEPLOY_TARGETS.map(({ id, label, icon: Icon }) => {
@@ -563,11 +563,11 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
                               {isSelected && <Check className="h-3 w-3 text-white" />}
                             </div>
 
-                            <Icon className={`h-4 w-4 flex-shrink-0 ${isConnected ? "text-zinc-700 dark:text-zinc-300" : "text-zinc-400"}`} />
+                            <Icon className={`h-4 w-4 flex-shrink-0 ${isConnected ? "text-zinc-400 dark:text-zinc-300" : "text-zinc-400"}`} />
 
                             <div className="flex-1 min-w-0">
                               <div className="text-xs font-bold text-zinc-800 dark:text-zinc-200">{label}</div>
-                              <div className="text-[9px] text-zinc-400 truncate">
+                              <div className="text-xs text-zinc-400 truncate">
                                 {isConnected ? (url?.replace(/https?:\/\/(www\.)?/, "").slice(0, 35)) : "Not connected"}
                               </div>
                             </div>
@@ -575,7 +575,7 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
                             {isConnected ? (
                               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" />
                             ) : (
-                              <XCircle className="h-3.5 w-3.5 text-zinc-300 dark:text-zinc-600 flex-shrink-0" />
+                              <XCircle className="h-3.5 w-3.5 text-zinc-300 dark:text-zinc-300 flex-shrink-0" />
                             )}
                           </button>
                         );
@@ -661,7 +661,7 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
                                   </span>
                                 )}
                                 {skipped > 0 && (
-                                  <span className="text-sm text-zinc-500">
+                                  <span className="text-sm text-zinc-300">
                                     {skipped} Skipped
                                   </span>
                                 )}
@@ -737,13 +737,13 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
                     <p
                       className={`text-xs font-bold ${
                         lastPush.message === "No changes to push"
-                          ? "text-zinc-600 dark:text-zinc-300"
+                          ? "text-zinc-300 dark:text-zinc-300"
                           : "text-emerald-700 dark:text-emerald-400"
                       }`}
                     >
                       {lastPush.message}
                     </p>
-                    <div className="flex items-center gap-3 mt-1 text-[10px] text-zinc-500 dark:text-zinc-400">
+                    <div className="flex items-center gap-3 mt-1 text-xs text-zinc-300 dark:text-zinc-400">
                       {lastPush.commitHash && (
                         <span className="font-mono">
                           Commit: {lastPush.commitHash}
@@ -760,7 +760,7 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
                         {Object.entries(lastPush.deployResults).map(([target, status]) => (
                           <span
                             key={target}
-                            className={`inline-flex items-center gap-1 text-[10px] font-bold ${
+                            className={`inline-flex items-center gap-1 text-xs font-bold ${
                               status === "success"
                                 ? "text-emerald-600 dark:text-emerald-400"
                                 : status === "failed"
@@ -788,7 +788,7 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
                           href={githubUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
+                          className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
                         >
                           <Github className="h-3 w-3" />
                           Verify on GitHub
@@ -799,7 +799,7 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
                             href={cloudflareUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-[10px] font-bold text-orange-600 dark:text-orange-400 hover:underline"
+                            className="inline-flex items-center gap-1 text-xs font-bold text-orange-600 dark:text-orange-400 hover:underline"
                           >
                             Cloudflare
                             <ExternalLink className="h-2.5 w-2.5" />
@@ -810,7 +810,7 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
                             href={vercelUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-[10px] font-bold text-zinc-600 dark:text-zinc-400 hover:underline"
+                            className="inline-flex items-center gap-1 text-xs font-bold text-zinc-300 dark:text-zinc-400 hover:underline"
                           >
                             Vercel
                             <ExternalLink className="h-2.5 w-2.5" />
@@ -821,7 +821,7 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
                             href={netlifyUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-[10px] font-bold text-teal-600 dark:text-teal-400 hover:underline"
+                            className="inline-flex items-center gap-1 text-xs font-bold text-teal-600 dark:text-teal-400 hover:underline"
                           >
                             Netlify
                             <ExternalLink className="h-2.5 w-2.5" />
@@ -840,7 +840,7 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
                 <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
                   Export ZIP
                 </h3>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                <p className="text-xs text-zinc-300 dark:text-zinc-400">
                   Flat structure with index.html at root, includes vercel.json
                   SPA rewrite. Ready for client handoff.
                 </p>

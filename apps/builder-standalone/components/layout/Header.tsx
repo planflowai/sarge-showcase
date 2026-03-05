@@ -201,7 +201,7 @@ export function Header() {
                     "flex items-center gap-2 px-6 py-2.5 rounded-lg text-base font-black tracking-wide transition-all duration-200 border-2",
                     isActive
                       ? `${item.bgActive} ${item.activeColor}`
-                      : "border-transparent text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/80 dark:hover:bg-zinc-800/60 hover:text-zinc-900 dark:hover:text-zinc-100"
+                      : "border-transparent text-zinc-300 dark:text-zinc-400 hover:bg-zinc-200/80 dark:hover:bg-zinc-800/60 hover:text-zinc-900 dark:hover:text-zinc-100"
                   )}
                 >
                   <span className="text-lg leading-none">{item.emoji}</span>

@@ -123,7 +123,7 @@ export function ChatToolbar({ conversationId }: Props) {
       <select
         value={cloudProviders.some((p) => p.id === currentProvider) ? currentProvider : ""}
         onChange={(e) => handleProviderSelect(e.target.value)}
-        className="w-24 rounded border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 px-1.5 py-1 text-[10px] text-zinc-700 dark:text-zinc-300 outline-none focus:border-indigo-500"
+        className="w-24 rounded border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 px-1.5 py-1 text-xs text-zinc-400 dark:text-zinc-300 outline-none focus:border-indigo-500"
         title="Cloud Provider"
       >
         <option value="" disabled>Cloud…</option>
@@ -136,7 +136,7 @@ export function ChatToolbar({ conversationId }: Props) {
       <select
         value={localProviders.some((p) => p.id === currentProvider) ? currentProvider : ""}
         onChange={(e) => handleProviderSelect(e.target.value)}
-        className="w-20 rounded border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 px-1.5 py-1 text-[10px] text-zinc-700 dark:text-zinc-300 outline-none focus:border-indigo-500"
+        className="w-20 rounded border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 px-1.5 py-1 text-xs text-zinc-400 dark:text-zinc-300 outline-none focus:border-indigo-500"
         title="Local Provider"
       >
         <option value="" disabled>Local…</option>
@@ -148,12 +148,12 @@ export function ChatToolbar({ conversationId }: Props) {
       {/* Model dropdown */}
       <div className="w-44 min-w-0">
         {currentProvider === "ollama" && ollamaLoading ? (
-          <span className="text-[10px] text-zinc-500">Loading…</span>
+          <span className="text-xs text-zinc-300">Loading…</span>
         ) : (
           <select
             value={currentModel || ""}
             onChange={(e) => setModel(e.target.value)}
-            className="w-full rounded border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 px-1.5 py-1 text-[10px] text-zinc-700 dark:text-zinc-300 outline-none focus:border-indigo-500"
+            className="w-full rounded border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 px-1.5 py-1 text-xs text-zinc-400 dark:text-zinc-300 outline-none focus:border-indigo-500"
           >
             <option value="" disabled>Model…</option>
             {currentProvider === "ollama"
@@ -182,7 +182,7 @@ export function ChatToolbar({ conversationId }: Props) {
       <button
         onClick={handleSaveChat}
         disabled={!hasMessages}
-        className="flex items-center gap-1.5 px-2.5 py-1 rounded text-[10px] font-medium border transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:border-indigo-500 hover:text-indigo-500 dark:hover:text-indigo-400"
+        className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium border transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-300 dark:text-zinc-300 hover:border-indigo-500 hover:text-indigo-500 dark:hover:text-indigo-400"
         title="Export chat as Markdown"
       >
         <Download className="h-3 w-3" />
@@ -193,10 +193,10 @@ export function ChatToolbar({ conversationId }: Props) {
       <button
         onClick={handleClearChat}
         disabled={!hasMessages}
-        className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-[10px] font-medium border transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+        className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium border transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
           confirmClear
             ? "bg-red-500/15 border-red-500/60 text-red-400 animate-pulse"
-            : "bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:border-red-500 hover:text-red-400"
+            : "bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-300 dark:text-zinc-300 hover:border-red-500 hover:text-red-400"
         }`}
         title={confirmClear ? "Click again to confirm" : "Clear all messages"}
       >

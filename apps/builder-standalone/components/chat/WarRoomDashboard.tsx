@@ -60,7 +60,7 @@ function ProgressBar({ status, color, tokens }: { status: SlotStatus; color: str
         )}
       </div>
       {tokens > 0 && (
-        <span className="text-[9px] font-mono text-zinc-500 flex-shrink-0 w-14 text-right">
+        <span className="text-xs font-mono text-zinc-300 flex-shrink-0 w-14 text-right">
           {tokens.toLocaleString()} tok
         </span>
       )}
@@ -93,10 +93,10 @@ function CloudDropdown({ slot }: { slot: MonitorSlot }) {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className={`flex items-center gap-1.5 h-6 px-2 rounded text-[10px] font-bold border transition-all ${
+        className={`flex items-center gap-1.5 h-6 px-2 rounded text-xs font-bold border transition-all ${
           isCloud
             ? "bg-blue-500/10 border-blue-500/25 text-blue-400"
-            : "bg-zinc-800/60 border-zinc-700/40 text-zinc-500 hover:text-zinc-300"
+            : "bg-zinc-800/60 border-zinc-700/40 text-zinc-300 hover:text-zinc-300"
         }`}
       >
         <span className={`w-1.5 h-1.5 rounded-full ${isCloud ? "bg-blue-400" : "bg-zinc-600"}`} />
@@ -108,7 +108,7 @@ function CloudDropdown({ slot }: { slot: MonitorSlot }) {
         <div className="absolute top-full left-0 mt-1 z-50 w-56 max-h-72 overflow-y-auto rounded-lg border border-zinc-700/50 bg-zinc-900 shadow-2xl scrollbar-thin">
           {CLOUD_PROVIDERS.map((provider) => (
             <div key={provider.id}>
-              <div className="px-3 py-1.5 text-[9px] font-bold uppercase tracking-wider text-zinc-500 flex items-center gap-1.5 sticky top-0 bg-zinc-900">
+              <div className="px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-zinc-300 flex items-center gap-1.5 sticky top-0 bg-zinc-900">
                 <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: provider.color }} />
                 {provider.name}
               </div>
@@ -165,10 +165,10 @@ function OllamaDropdown({ slot, models }: { slot: MonitorSlot; models: LocalMode
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className={`flex items-center gap-1.5 h-6 px-2 rounded text-[10px] font-bold border transition-all ${
+        className={`flex items-center gap-1.5 h-6 px-2 rounded text-xs font-bold border transition-all ${
           isOllama
             ? "bg-orange-500/10 border-orange-500/25 text-orange-400"
-            : "bg-zinc-800/60 border-zinc-700/40 text-zinc-500 hover:text-zinc-300"
+            : "bg-zinc-800/60 border-zinc-700/40 text-zinc-300 hover:text-zinc-300"
         }`}
       >
         <span className={`w-1.5 h-1.5 rounded-full ${isOllama ? "bg-orange-400" : "bg-zinc-600"}`} />
@@ -181,10 +181,10 @@ function OllamaDropdown({ slot, models }: { slot: MonitorSlot; models: LocalMode
       {open && (
         <div className="absolute top-full left-0 mt-1 z-50 w-52 max-h-72 overflow-y-auto rounded-lg border border-zinc-700/50 bg-zinc-900 shadow-2xl scrollbar-thin">
           {models.length === 0 ? (
-            <div className="px-3 py-3 text-[10px] text-zinc-500 italic text-center">
+            <div className="px-3 py-3 text-xs text-zinc-300 italic text-center">
               No Ollama models
               <br />
-              <span className="text-zinc-600">Is Ollama running?</span>
+              <span className="text-zinc-300">Is Ollama running?</span>
             </div>
           ) : (
             models.map((model) => (
@@ -262,13 +262,13 @@ function StatusCard({
           >
             {(meta.name?.[0] ?? "?").toUpperCase()}
           </div>
-          <span className="text-[10px] font-mono font-bold text-zinc-500">
+          <span className="text-xs font-mono font-bold text-zinc-300">
             MON {slot.monitorNumber}
           </span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className={`w-1.5 h-1.5 rounded-full ${statusConfig.dotCls}`} />
-          <span className="text-[9px] font-bold tracking-wider text-zinc-500">
+          <span className="text-xs font-bold tracking-wider text-zinc-300">
             {statusConfig.label}
           </span>
         </div>
@@ -280,7 +280,7 @@ function StatusCard({
         <OllamaDropdown slot={slot} models={ollamaModels} />
         <button
           onClick={onClear}
-          className="ml-auto h-6 w-6 flex items-center justify-center rounded text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+          className="ml-auto h-6 w-6 flex items-center justify-center rounded text-zinc-300 hover:text-red-400 hover:bg-red-500/10 transition-colors"
           title="Clear"
         >
           <Trash2 className="h-3 w-3" />
@@ -300,14 +300,14 @@ function StatusCard({
         {isLive ? (
           <button
             onClick={onRecall}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold bg-red-500/8 hover:bg-red-500/15 text-red-400 border border-red-500/15 transition-all"
+            className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-red-500/8 hover:bg-red-500/15 text-red-400 border border-red-500/15 transition-all"
           >
             <MonitorOff className="h-3 w-3" /> Recall
           </button>
         ) : slot.status === "offline" ? (
           <button
             onClick={onSendOut}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold transition-all"
+            className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold transition-all"
             style={{
               background: `${meta.color}08`,
               color: meta.color,
@@ -317,7 +317,7 @@ function StatusCard({
             <MonitorUp className="h-3 w-3" /> Send Out
           </button>
         ) : (
-          <span className="text-[9px] text-zinc-600 italic">Not launched</span>
+          <span className="text-xs text-zinc-300 italic">Not launched</span>
         )}
       </div>
     </div>
@@ -626,7 +626,7 @@ export function WarRoomDashboard() {
   const hasResponses = visibleSlots.some((s) => slotResponses[s.id]);
 
   const tbtn =
-    "flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[10px] font-bold text-zinc-400 hover:text-zinc-200 bg-zinc-800/40 hover:bg-zinc-800/80 border border-zinc-700/30 transition-all disabled:opacity-30 disabled:pointer-events-none";
+    "flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-bold text-zinc-400 hover:text-zinc-200 bg-zinc-800/40 hover:bg-zinc-800/80 border border-zinc-700/30 transition-all disabled:opacity-30 disabled:pointer-events-none";
 
   return (
     <div className="flex flex-col h-full bg-zinc-950">
@@ -641,7 +641,7 @@ export function WarRoomDashboard() {
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
                 mode === m.id
                   ? "bg-indigo-600 text-white"
-                  : "text-zinc-500 hover:text-zinc-300"
+                  : "text-zinc-300 hover:text-zinc-300"
               }`}
             >
               {m.icon}
@@ -693,7 +693,7 @@ export function WarRoomDashboard() {
           {workspaceActive && (
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/8 border border-emerald-500/15 text-emerald-400">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-[10px] font-bold">{openCount} LIVE</span>
+              <span className="text-xs font-bold">{openCount} LIVE</span>
             </div>
           )}
           {workspaceActive ? (
@@ -726,7 +726,7 @@ export function WarRoomDashboard() {
               recallAllPopouts();
               setEnabled(false);
             }}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[10px] font-bold text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/60 border border-zinc-700/30 transition-all"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-bold text-zinc-300 hover:text-zinc-300 hover:bg-zinc-800/60 border border-zinc-700/30 transition-all"
             title="Exit Workbench and return to chat"
           >
             <LogOut className="h-3 w-3" /> Exit
@@ -772,7 +772,7 @@ export function WarRoomDashboard() {
               }}
               disabled={!workspaceActive}
               title="Generate image"
-              className="p-2 rounded-lg text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors disabled:opacity-30"
+              className="p-2 rounded-lg text-zinc-400 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors disabled:opacity-30"
             >
               <ImageIcon className="h-5 w-5" />
             </button>
@@ -782,7 +782,7 @@ export function WarRoomDashboard() {
               onClick={handleCopyAll}
               disabled={!hasResponses}
               title="Copy all responses"
-              className="p-2 rounded-lg text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-cyan-500 dark:hover:text-cyan-400 transition-colors disabled:opacity-30"
+              className="p-2 rounded-lg text-zinc-400 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-cyan-500 dark:hover:text-cyan-400 transition-colors disabled:opacity-30"
             >
               {copiedAll ? (
                 <Check className="h-5 w-5 text-emerald-400" />
@@ -796,7 +796,7 @@ export function WarRoomDashboard() {
               onClick={handleCompare}
               disabled={!hasResponses}
               title="Compare all responses"
-              className="p-2 rounded-lg text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-amber-500 dark:hover:text-amber-400 transition-colors disabled:opacity-30"
+              className="p-2 rounded-lg text-zinc-400 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-amber-500 dark:hover:text-amber-400 transition-colors disabled:opacity-30"
             >
               <MessageSquare className="h-5 w-5" />
             </button>
@@ -808,7 +808,7 @@ export function WarRoomDashboard() {
             <button
               disabled={!workspaceActive}
               title="Attach files"
-              className="p-2 rounded-lg text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-cyan-500 dark:hover:text-cyan-400 transition-colors disabled:opacity-30"
+              className="p-2 rounded-lg text-zinc-400 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-cyan-500 dark:hover:text-cyan-400 transition-colors disabled:opacity-30"
             >
               <Paperclip className="h-5 w-5" />
             </button>
@@ -817,7 +817,7 @@ export function WarRoomDashboard() {
             <button
               disabled
               title="Voice input"
-              className="p-2 rounded-lg text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-emerald-500 dark:hover:text-emerald-400 transition-colors disabled:opacity-30"
+              className="p-2 rounded-lg text-zinc-400 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-emerald-500 dark:hover:text-emerald-400 transition-colors disabled:opacity-30"
             >
               <Mic className="h-5 w-5" />
             </button>

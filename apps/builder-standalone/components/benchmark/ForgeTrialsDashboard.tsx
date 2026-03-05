@@ -62,7 +62,7 @@ function getEventColor(type: string): string {
   if (type.includes("generating") || type.includes("scoring") || type.includes("loading")) return "bg-amber-900/40 text-amber-400";
   if (type.includes("start")) return "bg-blue-900/40 text-blue-400";
   if (type.includes("warmup")) return "bg-purple-900/40 text-purple-400";
-  return "bg-zinc-800/40 text-zinc-500";
+  return "bg-zinc-800/40 text-zinc-300";
 }
 
 function formatEventLabel(type: string): string {
@@ -525,7 +525,7 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
                     // The component handles its own start logic
                   }}
                   disabled
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 text-zinc-600 font-bold rounded-lg text-xs border border-zinc-700 cursor-default"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 text-zinc-300 font-bold rounded-lg text-xs border border-zinc-700 cursor-default"
                   title="Use controls in the Hybrid panel"
                 >
                   <Layers className="w-3.5 h-3.5" />
@@ -562,7 +562,7 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
               className={`flex items-center gap-1.5 px-3 py-1 rounded-l-lg text-xs font-bold transition-all border ${
                 activeTab === "local"
                   ? "bg-[#FF6700]/15 border-[#FF6700]/50 text-[#FFD700]"
-                  : "bg-zinc-900 border-zinc-700 text-zinc-500 hover:text-zinc-300"
+                  : "bg-zinc-900 border-zinc-700 text-zinc-300 hover:text-zinc-300"
               } disabled:cursor-not-allowed`}
             >
               <Cpu className="w-3 h-3" />
@@ -574,7 +574,7 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
               className={`flex items-center gap-1.5 px-3 py-1 text-xs font-bold transition-all border border-l-0 ${
                 activeTab === "cloud"
                   ? "bg-[#FF6700]/15 border-[#FF6700]/50 text-[#FFD700]"
-                  : "bg-zinc-900 border-zinc-700 text-zinc-500 hover:text-zinc-300"
+                  : "bg-zinc-900 border-zinc-700 text-zinc-300 hover:text-zinc-300"
               } disabled:cursor-not-allowed`}
             >
               <Cloud className="w-3 h-3" />
@@ -586,7 +586,7 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
               className={`flex items-center gap-1.5 px-3 py-1 rounded-r-lg text-xs font-bold transition-all border border-l-0 ${
                 activeTab === "hybrid"
                   ? "bg-[#FF6700]/15 border-[#FF6700]/50 text-[#FFD700]"
-                  : "bg-zinc-900 border-zinc-700 text-zinc-500 hover:text-zinc-300"
+                  : "bg-zinc-900 border-zinc-700 text-zinc-300 hover:text-zinc-300"
               } disabled:cursor-not-allowed`}
             >
               <Layers className="w-3 h-3" />
@@ -620,19 +620,19 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
             </span>
           )}
 
-          <button onClick={toggleSecureMode} title={secureMode ? "Disable Secure Mode" : "Enable Secure Mode"} className={`flex items-center justify-center h-7 w-7 rounded-md text-xs transition-all border ${secureMode ? "bg-red-600/30 border-red-500/60 text-red-300" : "bg-zinc-800/60 border-zinc-700 text-zinc-500 hover:text-zinc-300"}`}>
+          <button onClick={toggleSecureMode} title={secureMode ? "Disable Secure Mode" : "Enable Secure Mode"} className={`flex items-center justify-center h-7 w-7 rounded-md text-xs transition-all border ${secureMode ? "bg-red-600/30 border-red-500/60 text-red-300" : "bg-zinc-800/60 border-zinc-700 text-zinc-300 hover:text-zinc-300"}`}>
             {secureMode ? <Shield className="h-3.5 w-3.5" /> : <ShieldOff className="h-3.5 w-3.5" />}
           </button>
-          <button onClick={toggleAirGap} title={airGapEnabled ? "Disable Air-Gap" : "Enable Air-Gap"} className={`flex items-center justify-center h-7 w-7 rounded-md text-xs transition-all border ${airGapEnabled ? "bg-amber-500/20 border-amber-400/50 text-amber-300" : "bg-zinc-800/60 border-zinc-700 text-zinc-500 hover:text-zinc-300"}`}>
+          <button onClick={toggleAirGap} title={airGapEnabled ? "Disable Air-Gap" : "Enable Air-Gap"} className={`flex items-center justify-center h-7 w-7 rounded-md text-xs transition-all border ${airGapEnabled ? "bg-amber-500/20 border-amber-400/50 text-amber-300" : "bg-zinc-800/60 border-zinc-700 text-zinc-300 hover:text-zinc-300"}`}>
             {airGapEnabled ? <Plane className="h-3.5 w-3.5 rotate-45" /> : <Radio className="h-3.5 w-3.5" />}
           </button>
-          <button onClick={() => launchBillingPopout()} title="Billing" className="flex items-center justify-center h-7 w-7 rounded-md bg-zinc-800/60 border border-zinc-700 text-zinc-500 hover:text-[#FF6700] hover:border-[#FF6700]/50 transition-all">
-            <DollarSign className="h-3.5 w-3.5" />
+          <button onClick={() => launchBillingPopout()} title="Billing" className="flex items-center justify-center h-7 w-7 rounded-md bg-[#FF6700]/15 border border-[#FF6700]/40 text-[#FF6700] hover:bg-[#FF6700]/25 hover:border-[#FF6700]/60 transition-all">
+            <DollarSign className="h-4 w-4" />
           </button>
-          <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")} title="Toggle theme" className="flex items-center justify-center h-7 w-7 rounded-md bg-zinc-800/60 border border-zinc-700 text-zinc-500 hover:text-zinc-300 transition-all">
+          <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")} title="Toggle theme" className="flex items-center justify-center h-7 w-7 rounded-md bg-zinc-800/60 border border-zinc-700 text-zinc-300 hover:text-zinc-300 transition-all">
             {theme === "dark" ? <Sun className="h-3.5 w-3.5 text-amber-400" /> : <Moon className="h-3.5 w-3.5" />}
           </button>
-          <Link href="/settings" className="flex items-center justify-center h-7 w-7 rounded-md bg-zinc-800/60 border border-zinc-700 text-zinc-500 hover:text-zinc-300 transition-all">
+          <Link href="/settings" className="flex items-center justify-center h-7 w-7 rounded-md bg-zinc-800/60 border border-zinc-700 text-zinc-300 hover:text-zinc-300 transition-all">
             <Settings className="h-3.5 w-3.5" />
           </Link>
         </div>
@@ -766,14 +766,14 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
                     <span className="text-zinc-400 truncate max-w-[140px]">{entry.modelId}</span>
                   )}
                   {entry.scenarioId && (
-                    <span className="text-zinc-600 truncate max-w-[100px]">· {entry.scenarioId}</span>
+                    <span className="text-zinc-300 truncate max-w-[100px]">· {entry.scenarioId}</span>
                   )}
                   {entry.score !== undefined && (
                     <span className={`font-bold tabular-nums ${entry.score >= 90 ? "text-emerald-400" : entry.score >= 70 ? "text-amber-400" : "text-red-400"}`}>
                       {entry.score}/100
                     </span>
                   )}
-                  <span className="text-zinc-700 ml-auto tabular-nums flex-shrink-0">
+                  <span className="text-zinc-400 ml-auto tabular-nums flex-shrink-0">
                     {new Date(entry.timestamp).toLocaleTimeString()}
                   </span>
                 </div>

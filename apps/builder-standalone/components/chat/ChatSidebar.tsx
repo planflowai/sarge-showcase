@@ -6,6 +6,7 @@ import { useConversationStore, useMessageStore, ConversationList } from "@sarge/
 import {
   useProviderStore,
   useModelStore,
+  useCustomProviderStore,
   fetchOllamaModels,
   fetchLMStudioModels,
   providers,
@@ -46,9 +47,13 @@ export function ChatSidebar({ conversationId }: ChatSidebarProps) {
     if (!modelsHydrated) hydrateModels();
   }, [providerHydrated, hydrateProvider, modelsHydrated, hydrateModels]);
 
+  // Custom providers
+  const customProviders = useCustomProviderStore((s) => s.providers);
+
   // Load local models when a local provider is selected
   const activeProvider = providers.find((p) => p.id === currentProvider);
   const isLocal = activeProvider?.type === "local";
+  const isCustomProvider = !activeProvider && customProviders.some((cp) => cp.id === currentProvider);
 
   useEffect(() => {
     if (!isLocal) {
@@ -127,9 +132,22 @@ export function ChatSidebar({ conversationId }: ChatSidebarProps) {
     setConfirmClear(false);
   };
 
-  const cloudProviders = providers.filter((p) => p.type === "cloud");
+  const builtInCloudProviders = providers.filter((p) => p.type === "cloud");
   const localProviders = providers.filter((p) => p.type === "local");
   const hasMessages = messages.filter((m) => m.role !== "system").length > 0;
+
+  // Merge custom providers with built-in cloud providers
+  const allCloudProviders = useMemo(() => {
+    const custom = customProviders.map((cp) => ({
+      id: cp.id,
+      name: cp.name,
+      color: cp.color,
+    }));
+    return [
+      ...builtInCloudProviders.map((p) => ({ id: p.id, name: p.name, color: p.color })),
+      ...custom,
+    ];
+  }, [builtInCloudProviders, customProviders]);
 
   const cloudModelList = useMemo(() => {
     if (!modelsHydrated || isLocal) return [];
@@ -143,21 +161,21 @@ export function ChatSidebar({ conversationId }: ChatSidebarProps) {
         <button
           onClick={() => setCollapsed(false)}
           title="Expand sidebar"
-          className="p-2 rounded-lg text-zinc-600 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
+          className="p-2 rounded-lg text-zinc-300 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
         >
           <ChevronRight className="h-4 w-4" />
         </button>
         <button
           onClick={handleNewChat}
           title="New Chat"
-          className="p-2 rounded-lg text-zinc-600 hover:text-orange-400 hover:bg-zinc-800 transition-colors"
+          className="p-2 rounded-lg text-zinc-300 hover:text-orange-400 hover:bg-zinc-800 transition-colors"
         >
           <Plus className="h-4 w-4" />
         </button>
         <div className="h-px w-6 bg-zinc-800 my-1" />
         <button
           title="Conversations"
-          className="p-2 rounded-lg text-zinc-600 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
+          className="p-2 rounded-lg text-zinc-300 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
         >
           <MessageSquare className="h-4 w-4" />
         </button>
@@ -178,7 +196,7 @@ export function ChatSidebar({ conversationId }: ChatSidebarProps) {
         <button
           onClick={() => setCollapsed(true)}
           title="Collapse sidebar"
-          className="absolute right-2 p-1.5 rounded-lg text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+          className="absolute right-2 p-1.5 rounded-lg text-zinc-300 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
@@ -189,9 +207,9 @@ export function ChatSidebar({ conversationId }: ChatSidebarProps) {
 
         {/* Cloud providers — 2-col grid */}
         <div>
-          <p className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-amber-500/80 text-center">Cloud</p>
+          <p className="mb-2 text-xs font-black uppercase tracking-[0.2em] text-amber-500/80 text-center">Cloud</p>
           <div className="flex flex-wrap justify-center gap-1.5">
-            {cloudProviders.map((p) => (
+            {allCloudProviders.map((p) => (
               <button
                 key={p.id}
                 onClick={() => {
@@ -220,7 +238,7 @@ export function ChatSidebar({ conversationId }: ChatSidebarProps) {
 
         {/* Local providers */}
         <div>
-          <p className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-amber-500/80 text-center">Local</p>
+          <p className="mb-2 text-xs font-black uppercase tracking-[0.2em] text-amber-500/80 text-center">Local</p>
           <div className="flex flex-wrap gap-1.5 justify-center">
             {localProviders.map((p) => (
               <button
@@ -247,14 +265,14 @@ export function ChatSidebar({ conversationId }: ChatSidebarProps) {
 
         {/* Model dropdown */}
         <div>
-          <p className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-amber-500/80 text-center">Model</p>
+          <p className="mb-2 text-xs font-black uppercase tracking-[0.2em] text-amber-500/80 text-center">Model</p>
           {isLocal ? (
             localLoading ? (
-              <p className="text-xs text-zinc-500 py-1">Loading…</p>
+              <p className="text-xs text-zinc-300 py-1">Loading…</p>
             ) : localError ? (
               <p className="text-xs text-red-400 py-1">{localError}</p>
             ) : localModels.length === 0 ? (
-              <p className="text-xs text-zinc-500 py-1">No models found</p>
+              <p className="text-xs text-zinc-300 py-1">No models found</p>
             ) : currentProvider === "lmstudio" ? (
               <select
                 value={currentModel}
@@ -318,7 +336,7 @@ export function ChatSidebar({ conversationId }: ChatSidebarProps) {
 
       {/* Cloud Privacy */}
       <div className="flex-shrink-0 px-4 py-3 border-b border-zinc-800/40">
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500/80 text-center mb-2.5">Cloud Privacy</p>
+        <p className="text-xs font-black uppercase tracking-[0.2em] text-amber-500/80 text-center mb-2.5">Cloud Privacy</p>
         <div className="flex flex-col items-center gap-2.5">
           <label className="flex items-center gap-2.5 cursor-pointer">
             <input

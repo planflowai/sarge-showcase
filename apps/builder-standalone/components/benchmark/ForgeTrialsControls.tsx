@@ -94,8 +94,8 @@ export function ForgeTrialsControls({
           </h2>
           <div className="flex items-center gap-2">
             <button onClick={selectAll} disabled={running} className="text-xs font-bold text-[#FF6700] hover:text-[#FFD700] transition-colors disabled:opacity-30">All</button>
-            <span className="text-zinc-700">|</span>
-            <button onClick={selectNone} disabled={running} className="text-xs font-bold text-zinc-500 hover:text-zinc-300 transition-colors disabled:opacity-30">None</button>
+            <span className="text-zinc-400">|</span>
+            <button onClick={selectNone} disabled={running} className="text-xs font-bold text-zinc-300 hover:text-zinc-300 transition-colors disabled:opacity-30">None</button>
           </div>
         </div>
         <div className="flex flex-wrap gap-1.5">
@@ -109,7 +109,7 @@ export function ForgeTrialsControls({
                 className={`flex items-center gap-1 px-2.5 py-1 rounded text-sm font-bold transition-all border ${
                   selected
                     ? "bg-[#FF6700]/15 border-[#FF6700]/40 text-[#FFD700] shadow-[0_0_8px_rgba(255,103,0,0.15)]"
-                    : "bg-zinc-900 border-zinc-800 text-zinc-600 hover:border-zinc-600"
+                    : "bg-zinc-900 border-zinc-800 text-zinc-300 hover:border-zinc-600"
                 } ${running ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
               >
                 {selected && <Check className="w-3 h-3 text-[#FF6700]" />}
@@ -162,13 +162,13 @@ export function ForgeTrialsControls({
       <div className="border border-zinc-700/50 rounded-lg p-3">
         {/* Header: count + All/None */}
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">
+          <span className="text-xs font-bold text-zinc-300 uppercase tracking-wider">
             {cloudModels.length}/{totalCloudModels} selected
           </span>
           <div className="flex items-center gap-2">
             <button onClick={selectAllCloud} disabled={running} className="text-xs font-bold text-[#FF6700] hover:text-[#FFD700] transition-colors disabled:opacity-30">All</button>
-            <span className="text-zinc-700">|</span>
-            <button onClick={selectNoneCloud} disabled={running} className="text-xs font-bold text-zinc-500 hover:text-zinc-300 transition-colors disabled:opacity-30">None</button>
+            <span className="text-zinc-400">|</span>
+            <button onClick={selectNoneCloud} disabled={running} className="text-xs font-bold text-zinc-300 hover:text-zinc-300 transition-colors disabled:opacity-30">None</button>
           </div>
         </div>
 
@@ -192,7 +192,7 @@ export function ForgeTrialsControls({
                       disabled={running}
                       className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold transition-all border ${
                         isOffline
-                          ? "bg-zinc-900 border-zinc-800 text-zinc-700 opacity-50"
+                          ? "bg-zinc-900 border-zinc-800 text-zinc-400 opacity-50"
                           : selected
                           ? "bg-[#FF6700]/15 border-[#FF6700]/40 text-[#FFD700] shadow-[0_0_8px_rgba(255,103,0,0.15)]"
                           : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:border-zinc-600"

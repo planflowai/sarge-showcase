@@ -225,7 +225,7 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
   const chartDataKey = chartView === "trials" ? "trialsCost" : chartView === "builder" ? "builderCost" : "cost";
 
   const SortIcon = ({ k }: { k: SortKey }) => (
-    <ArrowUpDown className={`w-3.5 h-3.5 inline ml-1 ${sortKey === k ? "text-[#FF6700]" : "text-zinc-500"}`} />
+    <ArrowUpDown className={`w-3.5 h-3.5 inline ml-1 ${sortKey === k ? "text-[#FF6700]" : "text-zinc-300"}`} />
   );
 
   /** Fix $0.00 for cloud models — recalculate from tokens if cost is zero */

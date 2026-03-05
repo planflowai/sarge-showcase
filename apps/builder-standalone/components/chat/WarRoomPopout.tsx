@@ -257,13 +257,13 @@ export function WarRoomPopout({
             {(PROVIDER_NAMES[activeProvider]?.[0] ?? "?").toUpperCase()}
           </div>
           <div>
-            <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color }}>
+            <span className="text-xs font-bold uppercase tracking-widest" style={{ color }}>
               {providerName}
             </span>
-            <span className="text-xs text-zinc-500 ml-2">{activeModel}</span>
+            <span className="text-xs text-zinc-300 ml-2">{activeModel}</span>
           </div>
         </div>
-        <span className="text-[10px] font-mono font-bold text-zinc-600">MON {monNumber}</span>
+        <span className="text-xs font-mono font-bold text-zinc-300">MON {monNumber}</span>
       </div>
 
       {/* -- Messages -- */}
@@ -308,7 +308,7 @@ export function WarRoomPopout({
               >
                 {(PROVIDER_NAMES[activeProvider]?.[0] ?? "?").toUpperCase()}
               </div>
-              <div className="text-xs text-zinc-600">Waiting for broadcast...</div>
+              <div className="text-xs text-zinc-300">Waiting for broadcast...</div>
             </div>
           </div>
         )}
@@ -316,10 +316,10 @@ export function WarRoomPopout({
 
       {/* -- Status Bar -- */}
       <div
-        className="flex items-center justify-between px-5 py-1.5 flex-shrink-0 text-[10px] font-mono"
+        className="flex items-center justify-between px-5 py-1.5 flex-shrink-0 text-xs font-mono"
         style={{ borderTop: `1px solid ${color}12`, background: `${color}04` }}
       >
-        <span className="text-zinc-600">
+        <span className="text-zinc-300">
           {streaming ? "Streaming..." : messages.length > 0 ? `${messages.length} messages` : "Ready"}
         </span>
         <span style={{ color: `${color}60` }}>The Foundry — The Pit</span>

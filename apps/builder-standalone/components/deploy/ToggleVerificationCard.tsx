@@ -93,7 +93,7 @@ export default function ToggleVerificationCard({
         }}
       >
         <div className="w-3 h-3 rounded-full bg-zinc-700 flex-shrink-0" />
-        <span className="text-sm text-zinc-500 flex-1">{result.toggle}</span>
+        <span className="text-sm text-zinc-300 flex-1">{result.toggle}</span>
         <span
           className="text-xs font-bold tracking-wider"
           style={{ color: "#6b7280" }}

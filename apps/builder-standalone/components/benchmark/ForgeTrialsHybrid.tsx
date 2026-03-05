@@ -321,7 +321,7 @@ export function ForgeTrialsHybrid() {
       <div className="px-4 py-2 border-b border-zinc-800/80 bg-zinc-900/20 flex-shrink-0">
         <div className="flex items-center gap-2 mb-1">
           <span className="text-xs font-bold text-zinc-300 uppercase tracking-wider">Thread Guardian</span>
-          <span className="text-xs text-zinc-500">Validates output between steps</span>
+          <span className="text-xs text-zinc-300">Validates output between steps</span>
         </div>
         <select
           value={guardianModelId ? `${guardianProvider}:${guardianModelId}` : ""}

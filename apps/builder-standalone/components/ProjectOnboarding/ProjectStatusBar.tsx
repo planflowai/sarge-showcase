@@ -48,7 +48,7 @@ export function ProjectStatusBar({ projectPath }: ProjectStatusBarProps) {
       {meta.clientName && (
         <>
           <div className="w-px h-3 bg-zinc-300 dark:bg-zinc-700" />
-          <span className="flex items-center gap-1 text-zinc-500 whitespace-nowrap">
+          <span className="flex items-center gap-1 text-zinc-300 whitespace-nowrap">
             <User className="w-3 h-3" />
             {meta.clientName}
           </span>
@@ -59,7 +59,7 @@ export function ProjectStatusBar({ projectPath }: ProjectStatusBarProps) {
       {meta.domain && (
         <>
           <div className="w-px h-3 bg-zinc-300 dark:bg-zinc-700" />
-          <span className="flex items-center gap-1 text-zinc-500 whitespace-nowrap">
+          <span className="flex items-center gap-1 text-zinc-300 whitespace-nowrap">
             <Globe className="w-3 h-3" />
             {meta.domain}
           </span>
@@ -74,7 +74,7 @@ export function ProjectStatusBar({ projectPath }: ProjectStatusBarProps) {
             {activeToggles.map((t) => (
               <span
                 key={t.key}
-                className="px-1.5 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap"
+                className="px-1.5 py-0.5 rounded text-xs font-semibold whitespace-nowrap"
                 style={{
                   backgroundColor: `${t.color}20`,
                   color: t.color,
@@ -99,9 +99,9 @@ export function ProjectStatusBar({ projectPath }: ProjectStatusBarProps) {
             {d.url ? (
               <CheckCircle2 className="w-3 h-3 text-green-500" />
             ) : (
-              <Circle className="w-3 h-3 text-zinc-600" />
+              <Circle className="w-3 h-3 text-zinc-300" />
             )}
-            <span className={d.url ? "text-zinc-400" : "text-zinc-600"}>
+            <span className={d.url ? "text-zinc-400" : "text-zinc-300"}>
               {d.label}
             </span>
           </span>
@@ -109,7 +109,7 @@ export function ProjectStatusBar({ projectPath }: ProjectStatusBarProps) {
       </div>
 
       {/* Created date */}
-      <div className="ml-auto text-zinc-600 whitespace-nowrap">
+      <div className="ml-auto text-zinc-300 whitespace-nowrap">
         Created {new Date(meta.createdAt).toLocaleDateString()}
       </div>
     </div>

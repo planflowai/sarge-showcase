@@ -100,7 +100,7 @@ function ModelDropdown({ slot }: { slot: WorkbenchSlot }) {
     <div ref={ref} className="relative flex-1 min-w-0">
       <button
         onClick={handleOpen}
-        className="flex items-center gap-2 w-full h-8 px-3 rounded-lg text-xs font-semibold border bg-zinc-100 dark:bg-zinc-800/60 border-zinc-300 dark:border-zinc-700/40 hover:border-zinc-400 dark:hover:border-zinc-500 text-zinc-700 dark:text-zinc-200 transition-colors"
+        className="flex items-center gap-2 w-full h-8 px-3 rounded-lg text-xs font-semibold border bg-zinc-100 dark:bg-zinc-800/60 border-zinc-300 dark:border-zinc-700/40 hover:border-zinc-400 dark:hover:border-zinc-500 text-zinc-400 dark:text-zinc-200 transition-colors"
       >
         <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: meta.color }} />
         <span className="truncate flex-1 text-left">{displayName}</span>
@@ -111,14 +111,14 @@ function ModelDropdown({ slot }: { slot: WorkbenchSlot }) {
         <div className="absolute top-full left-0 mt-1 z-50 w-64 max-h-80 overflow-y-auto rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-2xl">
 
           {/* ── Local / Ollama ── */}
-          <div className="px-3 py-2 text-[10px] font-black uppercase tracking-widest text-emerald-500 flex items-center gap-2 sticky top-0 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800">
+          <div className="px-3 py-2 text-xs font-black uppercase tracking-widest text-emerald-500 flex items-center gap-2 sticky top-0 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800">
             <span className="w-2 h-2 rounded-full bg-emerald-400" />
             Local — Ollama
           </div>
           {ollamaLoading ? (
-            <div className="px-4 py-3 text-xs text-zinc-500">Checking Ollama…</div>
+            <div className="px-4 py-3 text-xs text-zinc-300">Checking Ollama…</div>
           ) : ollamaModels.length === 0 ? (
-            <div className="px-4 py-3 text-xs text-zinc-600">Ollama not running</div>
+            <div className="px-4 py-3 text-xs text-zinc-300">Ollama not running</div>
           ) : (
             ollamaModels.map((m) => (
               <button
@@ -140,7 +140,7 @@ function ModelDropdown({ slot }: { slot: WorkbenchSlot }) {
           {CLOUD_PROVIDERS.map((provider) => (
             <div key={provider.id}>
               <div
-                className="px-3 py-2 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 sticky top-0 bg-white dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-800"
+                className="px-3 py-2 text-xs font-black uppercase tracking-widest flex items-center gap-2 sticky top-0 bg-white dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-800"
                 style={{ color: provider.color }}
               >
                 <span className="w-2 h-2 rounded-full" style={{ backgroundColor: provider.color }} />
@@ -241,7 +241,7 @@ function LiveThumbnail({ html, status, color, modelName, providerName }: { html:
           {status === "building" && (
             <div className="absolute top-2 right-2 flex items-center gap-1.5 px-2 py-1 rounded-md bg-black/70">
               <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-              <span className="text-[10px] font-bold text-amber-400 tracking-wide">LIVE</span>
+              <span className="text-xs font-bold text-amber-400 tracking-wide">LIVE</span>
             </div>
           )}
         </>
@@ -253,7 +253,7 @@ function LiveThumbnail({ html, status, color, modelName, providerName }: { html:
             </p>
             <p className={cn(
               "text-xs font-medium",
-              status === "error" ? "text-red-400" : "text-zinc-400 dark:text-zinc-600"
+              status === "error" ? "text-red-400" : "text-zinc-400 dark:text-zinc-300"
             )}>
               {status === "building" ? "Generating…" : status === "error" ? "Build failed" : "Waiting for broadcast..."}
             </p>
@@ -343,7 +343,7 @@ export default function WorkbenchCard({
           >
             {slot.monitorNumber}
           </div>
-          <p className="text-sm font-black text-zinc-700 dark:text-zinc-200 tracking-wide">MON {slot.monitorNumber}</p>
+          <p className="text-sm font-black text-zinc-400 dark:text-zinc-200 tracking-wide">MON {slot.monitorNumber}</p>
           {slot.selected && (
             <span className="text-[11px] px-2 py-0.5 rounded-full bg-indigo-500/25 text-indigo-300 font-black">✓</span>
           )}
@@ -353,7 +353,7 @@ export default function WorkbenchCard({
         {/* Right: anchor badge + status */}
         <div className="flex items-center gap-2 ml-auto flex-shrink-0">
           {isAnchor && (
-            <span className="text-[9px] px-2 py-0.5 rounded-full font-black tracking-wider" style={{ backgroundColor: "#FFD70020", color: "#FFD700", border: "1px solid #FFD70040" }}>
+            <span className="text-xs px-2 py-0.5 rounded-full font-black tracking-wider" style={{ backgroundColor: "#FFD70020", color: "#FFD700", border: "1px solid #FFD70040" }}>
               ANCHOR
             </span>
           )}
@@ -435,13 +435,13 @@ export default function WorkbenchCard({
           onClick={(e) => e.stopPropagation()}
         >
           <button
-            className="w-full text-left px-4 py-2.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2 transition-colors"
+            className="w-full text-left px-4 py-2.5 text-xs font-semibold text-zinc-400 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2 transition-colors"
             onClick={() => { onRecall(); setCtxMenu(null); }}
           >
             <RotateCcw className="w-3.5 h-3.5 text-red-400" /> Recall this monitor
           </button>
           <button
-            className="w-full text-left px-4 py-2.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2 transition-colors"
+            className="w-full text-left px-4 py-2.5 text-xs font-semibold text-zinc-400 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2 transition-colors"
             onClick={async () => {
               // Promote: copy this slot's code to anchor (Mon 1)
               const ok = await promoteToAnchor(slot.slot, projectPath, projectName);
@@ -459,7 +459,7 @@ export default function WorkbenchCard({
             <>
               <div className="border-t border-zinc-200 dark:border-zinc-800 my-1" />
               <button
-                className="w-full text-left px-4 py-2.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2 transition-colors"
+                className="w-full text-left px-4 py-2.5 text-xs font-semibold text-zinc-400 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2 transition-colors"
                 onClick={() => {
                   // View code — open in new window
                   const w = window.open("", "_blank", "width=800,height=600");
@@ -470,7 +470,7 @@ export default function WorkbenchCard({
                 <Code2 className="w-3.5 h-3.5 text-blue-400" /> View code
               </button>
               <button
-                className="w-full text-left px-4 py-2.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2 transition-colors"
+                className="w-full text-left px-4 py-2.5 text-xs font-semibold text-zinc-400 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2 transition-colors"
                 onClick={() => {
                   // View preview — open rendered HTML in new window
                   const w = window.open("", "_blank", "width=1024,height=768");
@@ -484,13 +484,13 @@ export default function WorkbenchCard({
           )}
           <div className="border-t border-zinc-200 dark:border-zinc-800 my-1" />
           <button
-            className="w-full text-left px-4 py-2.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2 transition-colors"
+            className="w-full text-left px-4 py-2.5 text-xs font-semibold text-zinc-400 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2 transition-colors"
             onClick={() => {
               setSlotStatus(slot.slot, "idle");
               setCtxMenu(null);
             }}
           >
-            <RotateCcw className="w-3.5 h-3.5 text-zinc-500" /> Reset
+            <RotateCcw className="w-3.5 h-3.5 text-zinc-300" /> Reset
           </button>
         </div>
       )}

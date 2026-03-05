@@ -58,9 +58,9 @@ function Section({
         </span>
         <span className="ml-auto">
           {open ? (
-            <ChevronDown className="w-3.5 h-3.5 text-zinc-500" />
+            <ChevronDown className="w-3.5 h-3.5 text-zinc-300" />
           ) : (
-            <ChevronRight className="w-3.5 h-3.5 text-zinc-500" />
+            <ChevronRight className="w-3.5 h-3.5 text-zinc-300" />
           )}
         </span>
       </button>
@@ -81,7 +81,7 @@ function DiffRow({ item }: { item: VerificationItem }) {
         <div className="flex-1 min-w-0">
           <span className="text-zinc-200 font-medium">{item.label}</span>
           {item.section && (
-            <span className="text-zinc-600 ml-1.5">[{item.section}]</span>
+            <span className="text-zinc-300 ml-1.5">[{item.section}]</span>
           )}
           {(hasDiff || item.before === "(none)") && (
             <button
@@ -173,7 +173,7 @@ export default function VerificationCard({ result, onRerun, onRevert, color }: P
           {result.status === "failed" && <CircleAlert className="w-4 h-4 text-red-400" />}
           {result.status === "warning" && <AlertTriangle className="w-4 h-4 text-amber-400" />}
           <span className="text-sm font-bold text-white">{result.toggle}</span>
-          <span className="text-xs text-zinc-500 ml-auto">{result.duration}ms</span>
+          <span className="text-xs text-zinc-300 ml-auto">{result.duration}ms</span>
         </div>
         <p className="text-xs text-zinc-400">{result.summary}</p>
       </div>
@@ -202,24 +202,24 @@ export default function VerificationCard({ result, onRerun, onRevert, color }: P
           <div className="flex items-center gap-2">
             <span className="text-[15px] font-bold text-white">{result.toggle}</span>
             {result.status === "success" && (
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+              <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                 APPLIED
               </span>
             )}
             {result.status === "warning" && (
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
+              <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
                 WARNINGS
               </span>
             )}
             {result.status === "failed" && (
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/30">
+              <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/30">
                 FAILED
               </span>
             )}
           </div>
           <p className="text-xs text-zinc-400 mt-0.5">{result.summary}</p>
         </div>
-        <span className="text-xs text-zinc-600 flex-shrink-0">{result.duration}ms</span>
+        <span className="text-xs text-zinc-300 flex-shrink-0">{result.duration}ms</span>
       </div>
 
       {/* Verification sections */}
@@ -292,7 +292,7 @@ export default function VerificationCard({ result, onRerun, onRevert, color }: P
             Revert All
           </button>
         )}
-        <div className="ml-auto flex items-center gap-1.5 text-[10px] text-zinc-600">
+        <div className="ml-auto flex items-center gap-1.5 text-xs text-zinc-300">
           {fixCount > 0 && <span className="text-emerald-500">{fixCount} fixed</span>}
           {warnCount > 0 && <span className="text-amber-500">{warnCount} warn</span>}
           {manualCount > 0 && <span className="text-red-500">{manualCount} manual</span>}

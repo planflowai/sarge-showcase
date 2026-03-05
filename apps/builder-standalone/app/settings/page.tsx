@@ -118,8 +118,8 @@ function ThreadGuardianSettings() {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="mb-1 text-sm font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-500">Thread Guardian</h2>
-        <p className="mb-4 text-xs font-medium text-zinc-600 dark:text-zinc-500">
+        <h2 className="mb-1 text-sm font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">Thread Guardian</h2>
+        <p className="mb-4 text-xs font-medium text-zinc-300 dark:text-zinc-300">
           Background conversation maintenance system. Monitors threads for facts, contradictions, hallucinations, and topic drift.
         </p>
       </div>
@@ -133,7 +133,7 @@ function ThreadGuardianSettings() {
           <div className="flex items-center justify-between">
             <div>
               <div className="text-sm font-medium text-zinc-900 dark:text-white">Enable Thread Guardian</div>
-              <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+              <div className="text-xs text-zinc-300 dark:text-zinc-400 mt-0.5">
                 Runs background analysis on Chat, Builder, and Architect conversations
               </div>
             </div>
@@ -156,24 +156,24 @@ function ThreadGuardianSettings() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div className={cardCls}>
             <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{stats.totalFacts}</div>
-            <div className="text-xs text-zinc-500 dark:text-zinc-400">Facts Indexed</div>
+            <div className="text-xs text-zinc-300 dark:text-zinc-400">Facts Indexed</div>
           </div>
           <div className={cardCls}>
             <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">{stats.totalContradictions}</div>
-            <div className="text-xs text-zinc-500 dark:text-zinc-400">Contradictions</div>
+            <div className="text-xs text-zinc-300 dark:text-zinc-400">Contradictions</div>
           </div>
           <div className={cardCls}>
             <div className="text-2xl font-bold text-red-600 dark:text-red-400">{stats.totalHallucinations}</div>
-            <div className="text-xs text-zinc-500 dark:text-zinc-400">Hallucinations</div>
+            <div className="text-xs text-zinc-300 dark:text-zinc-400">Hallucinations</div>
           </div>
           <div className={cardCls}>
             <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{stats.totalSavePoints}</div>
-            <div className="text-xs text-zinc-500 dark:text-zinc-400">Save Points</div>
+            <div className="text-xs text-zinc-300 dark:text-zinc-400">Save Points</div>
           </div>
         </div>
-        <div className="mt-3 flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+        <div className="mt-3 flex items-center gap-2 text-xs text-zinc-300 dark:text-zinc-400">
           <span>Active on {stats.activeConversations} conversation{stats.activeConversations !== 1 ? "s" : ""}</span>
-          <span className="text-zinc-300 dark:text-zinc-700">&bull;</span>
+          <span className="text-zinc-300 dark:text-zinc-400">&bull;</span>
           <span>{stats.totalTier1Runs + stats.totalTier2Runs + stats.totalTier3Runs} total runs across all tiers</span>
         </div>
       </section>
@@ -185,18 +185,18 @@ function ThreadGuardianSettings() {
             <Zap className="h-4 w-4 text-emerald-500" />
             Tier 1 — Fast Indexing
           </h3>
-          <Button variant="ghost" size="sm" onClick={() => resetTierToDefaults(1)} className="text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300">
+          <Button variant="ghost" size="sm" onClick={() => resetTierToDefaults(1)} className="text-xs text-zinc-300 hover:text-zinc-700 dark:hover:text-zinc-300">
             Reset to Defaults
           </Button>
         </div>
         <div className={cardCls}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">Model</label>
+              <label className="block text-xs font-medium text-zinc-300 dark:text-zinc-400 mb-1">Model</label>
               <Input value={tier1Config.model} onChange={(e) => handleTierConfigChange(1, "model", e.target.value)} placeholder="phi3:mini" className={`text-sm ${inputCls}`} />
             </div>
             <div>
-              <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">Provider</label>
+              <label className="block text-xs font-medium text-zinc-300 dark:text-zinc-400 mb-1">Provider</label>
               <select value={tier1Config.provider} onChange={(e) => handleTierConfigChange(1, "provider", e.target.value)} className={`w-full rounded border px-2 py-1.5 text-sm ${inputCls}`}>
                 <option value="ollama">Ollama (Local)</option>
                 <option value="anthropic">Anthropic</option>
@@ -206,15 +206,15 @@ function ThreadGuardianSettings() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">Interval (minutes)</label>
+              <label className="block text-xs font-medium text-zinc-300 dark:text-zinc-400 mb-1">Interval (minutes)</label>
               <Input type="number" value={Math.round(tier1Config.intervalMs / 60000)} onChange={(e) => handleTierConfigChange(1, "intervalMs", (parseInt(e.target.value) || 2) * 60000)} min={1} max={30} className={`text-sm ${inputCls}`} />
             </div>
             <div>
-              <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">Token Capacity</label>
+              <label className="block text-xs font-medium text-zinc-300 dark:text-zinc-400 mb-1">Token Capacity</label>
               <Input type="number" value={tier1Config.maxTokenCapacity} onChange={(e) => handleTierConfigChange(1, "maxTokenCapacity", parseInt(e.target.value) || 4000)} min={1000} max={32000} step={1000} className={`text-sm ${inputCls}`} />
             </div>
           </div>
-          <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
+          <p className="mt-3 text-xs text-zinc-300 dark:text-zinc-400">
             Fast, cheap model for basic fact extraction. Runs every {Math.round(tier1Config.intervalMs / 60000)} minutes.
           </p>
         </div>
@@ -227,18 +227,18 @@ function ThreadGuardianSettings() {
             <Cpu className="h-4 w-4 text-amber-500" />
             Tier 2 — Deep Analysis
           </h3>
-          <Button variant="ghost" size="sm" onClick={() => resetTierToDefaults(2)} className="text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300">
+          <Button variant="ghost" size="sm" onClick={() => resetTierToDefaults(2)} className="text-xs text-zinc-300 hover:text-zinc-700 dark:hover:text-zinc-300">
             Reset to Defaults
           </Button>
         </div>
         <div className={cardCls}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">Model</label>
+              <label className="block text-xs font-medium text-zinc-300 dark:text-zinc-400 mb-1">Model</label>
               <Input value={tier2Config.model} onChange={(e) => handleTierConfigChange(2, "model", e.target.value)} placeholder="phi4:latest" className={`text-sm ${inputCls}`} />
             </div>
             <div>
-              <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">Provider</label>
+              <label className="block text-xs font-medium text-zinc-300 dark:text-zinc-400 mb-1">Provider</label>
               <select value={tier2Config.provider} onChange={(e) => handleTierConfigChange(2, "provider", e.target.value)} className={`w-full rounded border px-2 py-1.5 text-sm ${inputCls}`}>
                 <option value="ollama">Ollama (Local)</option>
                 <option value="anthropic">Anthropic</option>
@@ -248,15 +248,15 @@ function ThreadGuardianSettings() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">Interval (minutes)</label>
+              <label className="block text-xs font-medium text-zinc-300 dark:text-zinc-400 mb-1">Interval (minutes)</label>
               <Input type="number" value={Math.round(tier2Config.intervalMs / 60000)} onChange={(e) => handleTierConfigChange(2, "intervalMs", (parseInt(e.target.value) || 10) * 60000)} min={5} max={60} className={`text-sm ${inputCls}`} />
             </div>
             <div>
-              <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">Token Capacity</label>
+              <label className="block text-xs font-medium text-zinc-300 dark:text-zinc-400 mb-1">Token Capacity</label>
               <Input type="number" value={tier2Config.maxTokenCapacity} onChange={(e) => handleTierConfigChange(2, "maxTokenCapacity", parseInt(e.target.value) || 8000)} min={2000} max={64000} step={1000} className={`text-sm ${inputCls}`} />
             </div>
           </div>
-          <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
+          <p className="mt-3 text-xs text-zinc-300 dark:text-zinc-400">
             Smarter model for contradiction detection and hallucination flagging. Runs every {Math.round(tier2Config.intervalMs / 60000)} minutes.
           </p>
         </div>
@@ -269,18 +269,18 @@ function ThreadGuardianSettings() {
             <ShieldCheck className="h-4 w-4 text-violet-500" />
             Tier 3 — Save Points
           </h3>
-          <Button variant="ghost" size="sm" onClick={() => resetTierToDefaults(3)} className="text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300">
+          <Button variant="ghost" size="sm" onClick={() => resetTierToDefaults(3)} className="text-xs text-zinc-300 hover:text-zinc-700 dark:hover:text-zinc-300">
             Reset to Defaults
           </Button>
         </div>
         <div className={cardCls}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">Model</label>
+              <label className="block text-xs font-medium text-zinc-300 dark:text-zinc-400 mb-1">Model</label>
               <Input value={tier3Config.model} onChange={(e) => handleTierConfigChange(3, "model", e.target.value)} placeholder="claude-sonnet-4-20250514" className={`text-sm ${inputCls}`} />
             </div>
             <div>
-              <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">Provider</label>
+              <label className="block text-xs font-medium text-zinc-300 dark:text-zinc-400 mb-1">Provider</label>
               <select value={tier3Config.provider} onChange={(e) => handleTierConfigChange(3, "provider", e.target.value)} className={`w-full rounded border px-2 py-1.5 text-sm ${inputCls}`}>
                 <option value="anthropic">Anthropic</option>
                 <option value="openai">OpenAI</option>
@@ -290,15 +290,15 @@ function ThreadGuardianSettings() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">Interval (hours)</label>
+              <label className="block text-xs font-medium text-zinc-300 dark:text-zinc-400 mb-1">Interval (hours)</label>
               <Input type="number" value={Math.round(tier3Config.intervalMs / 3600000)} onChange={(e) => handleTierConfigChange(3, "intervalMs", (parseFloat(e.target.value) || 4) * 3600000)} min={1} max={24} step={0.5} className={`text-sm ${inputCls}`} />
             </div>
             <div>
-              <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">Token Capacity</label>
+              <label className="block text-xs font-medium text-zinc-300 dark:text-zinc-400 mb-1">Token Capacity</label>
               <Input type="number" value={tier3Config.maxTokenCapacity} onChange={(e) => handleTierConfigChange(3, "maxTokenCapacity", parseInt(e.target.value) || 32000)} min={8000} max={200000} step={1000} className={`text-sm ${inputCls}`} />
             </div>
           </div>
-          <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
+          <p className="mt-3 text-xs text-zinc-300 dark:text-zinc-400">
             Frontier model for comprehensive save points. Creates restoration checkpoints every {Math.round(tier3Config.intervalMs / 3600000)} hours.
           </p>
         </div>
@@ -311,7 +311,7 @@ function ThreadGuardianSettings() {
           Scope
         </h3>
         <div className={cardCls}>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-3">
+          <p className="text-xs text-zinc-300 dark:text-zinc-400 mb-3">
             Thread Guardian runs ONLY on conversational modes. It never runs on controlled environments like Debate, Test, Batch, Forensic, or Diagnostics.
           </p>
           <div className="flex flex-wrap gap-2">
@@ -324,7 +324,7 @@ function ThreadGuardianSettings() {
           <div className="mt-3 pt-3 border-t border-zinc-200 dark:border-zinc-700">
             <div className="flex flex-wrap gap-2">
               {scope.excludedModes.map((mode) => (
-                <span key={mode} className="px-2.5 py-1 rounded-full text-xs font-medium bg-zinc-200 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400">
+                <span key={mode} className="px-2.5 py-1 rounded-full text-xs font-medium bg-zinc-200 dark:bg-zinc-700 text-zinc-300 dark:text-zinc-400">
                   {mode} (excluded)
                 </span>
               ))}
@@ -345,7 +345,7 @@ function ThreadGuardianSettings() {
               <p className="text-sm text-red-600 dark:text-red-400">
                 Are you sure? This will delete ALL guardian data across all conversations:
               </p>
-              <ul className="text-xs text-zinc-500 dark:text-zinc-400 list-disc ml-4 space-y-1">
+              <ul className="text-xs text-zinc-300 dark:text-zinc-400 list-disc ml-4 space-y-1">
                 <li>All indexed facts</li>
                 <li>All detected contradictions</li>
                 <li>All flagged hallucinations</li>
@@ -363,7 +363,7 @@ function ThreadGuardianSettings() {
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-sm font-medium text-zinc-900 dark:text-white">Clear All Guardian Data</div>
-                <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                <div className="text-xs text-zinc-300 dark:text-zinc-400 mt-0.5">
                   Permanently delete all facts, contradictions, hallucinations, and save points
                 </div>
               </div>
@@ -639,7 +639,7 @@ export default function SettingsPage() {
               className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors ${
                 section === id
                   ? "bg-indigo-600/20 text-indigo-600 dark:text-indigo-400 font-medium"
-                  : "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-700 dark:hover:text-zinc-200"
+                  : "text-zinc-300 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-700 dark:hover:text-zinc-200"
               }`}
             >
               <Icon className="h-4 w-4" />
@@ -654,7 +654,7 @@ export default function SettingsPage() {
         {section === "general" && (
           <div className="space-y-8">
             <section>
-              <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-500">Theme</h2>
+              <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">Theme</h2>
               <div className="flex gap-2">
                 {(["dark", "light"] as const).map((t) => (
                   <Button key={t} variant={theme === t ? "secondary" : "ghost"} onClick={() => setTheme(t)} className="capitalize">{t}</Button>
@@ -663,7 +663,7 @@ export default function SettingsPage() {
             </section>
 
             <section>
-              <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-500">Default Provider</h2>
+              <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">Default Provider</h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {providers.map((p) => (
                   <Button key={p.id} variant={defaultProvider === p.id ? "secondary" : "ghost"} onClick={() => { setDefaultProvider(p.id); setDefaultModel(p.models[0]?.id ?? ""); }} className="justify-start gap-2">
@@ -675,7 +675,7 @@ export default function SettingsPage() {
             </section>
 
             <section>
-              <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-500">Default Model</h2>
+              <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">Default Model</h2>
               <div className="flex flex-wrap gap-2">
                 {getEffectiveModels(defaultProvider).map((m) => (
                   <Button key={m.id} variant={defaultModel === m.id ? "secondary" : "ghost"} onClick={() => setDefaultModel(m.id)} size="sm">
@@ -686,8 +686,8 @@ export default function SettingsPage() {
             </section>
 
             <section>
-              <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-500">Voice Persona</h2>
-              <p className="mb-3 text-xs font-medium text-zinc-600 dark:text-zinc-500">Choose a voice persona for Ollama voice chat. Requires XTTS-v2 server running.</p>
+              <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">Voice Persona</h2>
+              <p className="mb-3 text-xs font-medium text-zinc-300 dark:text-zinc-300">Choose a voice persona for Ollama voice chat. Requires XTTS-v2 server running.</p>
               <div className="flex gap-2">
                 {(["none", "jarvis", "friday"] as const).map((p) => (
                   <Button key={p} variant={voicePersona === p ? "secondary" : "ghost"} onClick={() => setVoicePersona(p)} className="capitalize">
@@ -698,21 +698,21 @@ export default function SettingsPage() {
             </section>
 
             <section>
-              <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-500">API Keys (server-side .env)</h2>
-              <p className="mb-3 text-xs font-medium text-zinc-600 dark:text-zinc-500">API keys are configured in .env on the server and never exposed to the browser.</p>
+              <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">API Keys (server-side .env)</h2>
+              <p className="mb-3 text-xs font-medium text-zinc-300 dark:text-zinc-300">API keys are configured in .env on the server and never exposed to the browser.</p>
               <div className="space-y-2">
                 {Object.entries(apiKeyLabels).map(([id, envVar]) => (
                   <div key={id} className="flex items-center gap-3">
                     <span className="h-2.5 w-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: providers.find((p) => p.id === id)?.color }} />
-                    <span className="w-40 text-xs font-medium text-zinc-600 dark:text-zinc-400">{envVar}</span>
-                    <span className="text-xs text-zinc-400 dark:text-zinc-600">{"•".repeat(16)}</span>
+                    <span className="w-40 text-xs font-medium text-zinc-300 dark:text-zinc-400">{envVar}</span>
+                    <span className="text-xs text-zinc-400 dark:text-zinc-300">{"•".repeat(16)}</span>
                   </div>
                 ))}
               </div>
             </section>
 
             <section>
-              <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-500">Local AI Endpoint</h2>
+              <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">Local AI Endpoint</h2>
               <Input value={localEndpoint} onChange={(e) => setLocalEndpoint(e.target.value)} placeholder="http://localhost:11434" className={`max-w-sm ${inputCls}`} />
             </section>
           </div>
@@ -721,9 +721,9 @@ export default function SettingsPage() {
         {section === "models" && (
           <div className="space-y-4">
             <div>
-              <h2 className="mb-1 text-sm font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-500">Models</h2>
-              <p className="mb-4 text-xs font-medium text-zinc-600 dark:text-zinc-500">
-                Add or remove models per provider. Click <Hammer className="inline h-3 w-3 text-indigo-500" /> to tag a model for the Builder. Click <Pencil className="inline h-3 w-3" /> to set a nickname. Role tags: <span className="text-[9px] font-bold text-indigo-400">B</span>uilder <span className="text-[9px] font-bold text-amber-400">T</span>rials <span className="text-[9px] font-bold text-sky-400">C</span>hat <span className="text-[9px] font-bold text-pink-400">I</span>mage <span className="text-[9px] font-bold text-emerald-400">G</span>uardian <span className="text-[9px] font-bold text-violet-400">X</span>=Code
+              <h2 className="mb-1 text-sm font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">Models</h2>
+              <p className="mb-4 text-xs font-medium text-zinc-300 dark:text-zinc-300">
+                Add or remove models per provider. Click <Hammer className="inline h-3 w-3 text-indigo-500" /> to tag a model for the Builder. Click <Pencil className="inline h-3 w-3" /> to set a nickname. Role tags: <span className="text-xs font-bold text-indigo-400">B</span>uilder <span className="text-xs font-bold text-amber-400">T</span>rials <span className="text-xs font-bold text-sky-400">C</span>hat <span className="text-xs font-bold text-pink-400">I</span>mage <span className="text-xs font-bold text-emerald-400">G</span>uardian <span className="text-xs font-bold text-violet-400">X</span>=Code
               </p>
             </div>
 
@@ -731,7 +731,7 @@ export default function SettingsPage() {
             {!showAddProvider ? (
               <button
                 onClick={() => setShowAddProvider(true)}
-                className="flex items-center gap-2 w-full rounded-lg border-2 border-dashed border-zinc-600 dark:border-zinc-700 px-4 py-3 text-sm font-medium text-zinc-500 hover:text-[#FF6700] hover:border-[#FF6700]/50 transition-colors"
+                className="flex items-center gap-2 w-full rounded-lg border-2 border-dashed border-zinc-600 dark:border-zinc-700 px-4 py-3 text-sm font-medium text-zinc-300 hover:text-[#FF6700] hover:border-[#FF6700]/50 transition-colors"
               >
                 <Plus className="h-4 w-4" /> Add Provider
               </button>
@@ -739,7 +739,7 @@ export default function SettingsPage() {
               <div className="rounded-lg border border-[#FF6700]/30 bg-zinc-800/50 p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-bold text-white">Add Custom Provider</h3>
-                  <button onClick={() => { setShowAddProvider(false); setSelectedKnownProvider(""); setNewProviderName(""); setNewProviderBaseUrl(""); setNewProviderEnvKey(""); }} className="text-zinc-500 hover:text-zinc-300">
+                  <button onClick={() => { setShowAddProvider(false); setSelectedKnownProvider(""); setNewProviderName(""); setNewProviderBaseUrl(""); setNewProviderEnvKey(""); }} className="text-zinc-300 hover:text-zinc-300">
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </div>
@@ -816,14 +816,14 @@ export default function SettingsPage() {
                   >
                     <span className="h-2.5 w-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: cp.color }} />
                     <span className="flex-1 text-sm font-medium text-zinc-900 dark:text-white">{cp.name}</span>
-                    <span className="text-[10px] text-emerald-500 uppercase px-1.5 py-0.5 rounded bg-emerald-500/10 mr-2">custom</span>
-                    <span className="text-xs font-medium text-zinc-600 dark:text-zinc-500">{cpModels.length} model{cpModels.length !== 1 ? "s" : ""}</span>
-                    {isExpanded ? <ChevronDown className="h-4 w-4 text-zinc-500" /> : <ChevronRight className="h-4 w-4 text-zinc-500" />}
+                    <span className="text-xs text-emerald-500 uppercase px-1.5 py-0.5 rounded bg-emerald-500/10 mr-2">custom</span>
+                    <span className="text-xs font-medium text-zinc-300 dark:text-zinc-300">{cpModels.length} model{cpModels.length !== 1 ? "s" : ""}</span>
+                    {isExpanded ? <ChevronDown className="h-4 w-4 text-zinc-300" /> : <ChevronRight className="h-4 w-4 text-zinc-300" />}
                   </button>
                   {isExpanded && (
                     <div className="border-t border-zinc-300 dark:border-zinc-700 px-4 py-3 space-y-3">
                       <div className="flex items-center justify-between">
-                        <div className="text-[10px] text-zinc-500 space-y-0.5">
+                        <div className="text-xs text-zinc-300 space-y-0.5">
                           <div>Base URL: <span className="text-zinc-400 font-mono">{cp.baseUrl}</span></div>
                           <div>API Key: <span className="text-zinc-400 font-mono">{cp.envKeyName}</span></div>
                         </div>
@@ -875,7 +875,7 @@ export default function SettingsPage() {
                               {nicknames[m.id] ? (
                                 <div className="flex flex-col">
                                   <span className="font-medium text-zinc-900 dark:text-white truncate text-xs">{nicknames[m.id]}</span>
-                                  <span className="text-[10px] text-zinc-400 dark:text-zinc-500 truncate">{m.name}</span>
+                                  <span className="text-xs text-zinc-400 dark:text-zinc-300 truncate">{m.name}</span>
                                 </div>
                               ) : (
                                 <span className="text-zinc-800 dark:text-zinc-200 truncate block">{m.name}</span>
@@ -886,7 +886,7 @@ export default function SettingsPage() {
                               <button onClick={() => setBuilderFlag(m.id, !isBuilderModel(m.id, cp.id))} className={`transition-colors ${isBuilderModel(m.id, cp.id) ? 'text-indigo-500' : 'text-zinc-400 hover:text-indigo-400'}`} title={isBuilderModel(m.id, cp.id) ? "Remove from Builder" : "Add to Builder"}>
                                 <Hammer className="h-3 w-3" />
                               </button>
-                              <button onClick={() => { removeModel(cp.id, m.id); removeModelFromProvider(cp.id, m.id); }} className="text-zinc-500 hover:text-red-400">
+                              <button onClick={() => { removeModel(cp.id, m.id); removeModelFromProvider(cp.id, m.id); }} className="text-zinc-300 hover:text-red-400">
                                 <Trash2 className="h-3 w-3" />
                               </button>
                             </div>
@@ -997,20 +997,20 @@ export default function SettingsPage() {
                   >
                     <span className="h-2.5 w-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: p.color }} />
                     <span className="flex-1 text-sm font-medium text-zinc-900 dark:text-white">{p.name}</span>
-                    <span className="text-xs font-medium text-zinc-600 dark:text-zinc-500">{modelCount}</span>
-                    {isExpanded ? <ChevronDown className="h-4 w-4 text-zinc-500" /> : <ChevronRight className="h-4 w-4 text-zinc-500" />}
+                    <span className="text-xs font-medium text-zinc-300 dark:text-zinc-300">{modelCount}</span>
+                    {isExpanded ? <ChevronDown className="h-4 w-4 text-zinc-300" /> : <ChevronRight className="h-4 w-4 text-zinc-300" />}
                   </button>
 
                   {isExpanded && (
                     <div className="border-t border-zinc-300 dark:border-zinc-700 px-4 py-3 space-y-3">
                       {isOllama && ollamaLoading && (
-                        <div className="flex items-center gap-2 text-xs font-medium text-zinc-600 dark:text-zinc-500 py-2">
+                        <div className="flex items-center gap-2 text-xs font-medium text-zinc-300 dark:text-zinc-300 py-2">
                           <Loader2 className="h-3.5 w-3.5 animate-spin" /> Fetching models from Ollama...
                         </div>
                       )}
                       {isOllama && ollamaError && <p className="text-xs text-red-400 py-1">{ollamaError}</p>}
                       {isLMStudio && lmstudioLoading && (
-                        <div className="flex items-center gap-2 text-xs font-medium text-zinc-600 dark:text-zinc-500 py-2">
+                        <div className="flex items-center gap-2 text-xs font-medium text-zinc-300 dark:text-zinc-300 py-2">
                           <Loader2 className="h-3.5 w-3.5 animate-spin" /> Fetching models from LM Studio...
                         </div>
                       )}
@@ -1040,7 +1040,7 @@ export default function SettingsPage() {
                                   {nicknames[m.id] ? (
                                     <div className="flex flex-col">
                                       <span className="font-medium text-zinc-900 dark:text-white truncate text-xs">{nicknames[m.id]}</span>
-                                      <span className="text-[10px] text-zinc-400 dark:text-zinc-500 truncate">{m.name}</span>
+                                      <span className="text-xs text-zinc-400 dark:text-zinc-300 truncate">{m.name}</span>
                                     </div>
                                   ) : (
                                     <span className="text-zinc-800 dark:text-zinc-200 truncate block">{m.name}</span>
@@ -1056,7 +1056,7 @@ export default function SettingsPage() {
                                       <button
                                         onClick={() => handleTestModel(m.id, p.id)}
                                         disabled={isTesting}
-                                        className={`transition-colors text-[9px] font-bold px-1.5 py-0.5 rounded border ${
+                                        className={`transition-colors text-xs font-bold px-1.5 py-0.5 rounded border ${
                                           result?.status === "ok"
                                             ? "text-emerald-400 border-emerald-500/40 bg-emerald-500/10"
                                             : result?.status === "fail"
@@ -1076,11 +1076,11 @@ export default function SettingsPage() {
                                     <Pencil className="h-3 w-3" />
                                   </button>
                                   {m.isBuiltIn ? (
-                                    <span className="text-[9px] text-zinc-400 dark:text-zinc-600 uppercase px-1 py-0.5 rounded bg-zinc-200 dark:bg-zinc-700/50">built-in</span>
+                                    <span className="text-xs text-zinc-400 dark:text-zinc-300 uppercase px-1 py-0.5 rounded bg-zinc-200 dark:bg-zinc-700/50">built-in</span>
                                   ) : isLocalProvider ? (
-                                    <span className="text-[9px] text-emerald-500 uppercase px-1 py-0.5 rounded bg-emerald-500/10">local</span>
+                                    <span className="text-xs text-emerald-500 uppercase px-1 py-0.5 rounded bg-emerald-500/10">local</span>
                                   ) : (
-                                    <button onClick={() => removeModel(p.id, m.id)} className="text-zinc-500 hover:text-red-400">
+                                    <button onClick={() => removeModel(p.id, m.id)} className="text-zinc-300 hover:text-red-400">
                                       <Trash2 className="h-3 w-3" />
                                     </button>
                                   )}
@@ -1115,8 +1115,8 @@ export default function SettingsPage() {
         {section === "roles" && (
           <div className="space-y-6">
             <div>
-              <h2 className="mb-1 text-sm font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-500">Custom Roles</h2>
-              <p className="mb-4 text-xs font-medium text-zinc-600 dark:text-zinc-500">Create roles with custom system prompts. Assign them to any LLM slot in debates.</p>
+              <h2 className="mb-1 text-sm font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">Custom Roles</h2>
+              <p className="mb-4 text-xs font-medium text-zinc-300 dark:text-zinc-300">Create roles with custom system prompts. Assign them to any LLM slot in debates.</p>
             </div>
             <div className="space-y-2">
               {roles.map((role) => (
@@ -1138,21 +1138,21 @@ export default function SettingsPage() {
                           <span className="text-sm font-semibold text-zinc-900 dark:text-white">{role.name}</span>
                         </div>
                         <div className="flex gap-1">
-                          <Button variant="ghost" size="sm" onClick={() => { setEditingRoleId(role.id); setEditRoleName(role.name); setEditRolePrompt(role.systemPrompt); }} className="h-6 w-6 p-0 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"><Pencil className="h-3 w-3" /></Button>
+                          <Button variant="ghost" size="sm" onClick={() => { setEditingRoleId(role.id); setEditRoleName(role.name); setEditRolePrompt(role.systemPrompt); }} className="h-6 w-6 p-0 text-zinc-300 hover:text-zinc-700 dark:hover:text-zinc-300"><Pencil className="h-3 w-3" /></Button>
                           {!role.isDefault && (
-                            <Button variant="ghost" size="sm" onClick={() => deleteRole(role.id)} className="h-6 w-6 p-0 text-zinc-500 hover:text-red-400"><Trash2 className="h-3 w-3" /></Button>
+                            <Button variant="ghost" size="sm" onClick={() => deleteRole(role.id)} className="h-6 w-6 p-0 text-zinc-300 hover:text-red-400"><Trash2 className="h-3 w-3" /></Button>
                           )}
                         </div>
                       </div>
-                      <p className="text-xs font-medium text-zinc-600 dark:text-zinc-400 whitespace-pre-wrap line-clamp-3">{role.systemPrompt}</p>
-                      {role.isDefault && <span className="mt-1 inline-block text-[10px] text-zinc-400 dark:text-zinc-600 uppercase">Default — cannot delete</span>}
+                      <p className="text-xs font-medium text-zinc-300 dark:text-zinc-400 whitespace-pre-wrap line-clamp-3">{role.systemPrompt}</p>
+                      {role.isDefault && <span className="mt-1 inline-block text-xs text-zinc-400 dark:text-zinc-300 uppercase">Default — cannot delete</span>}
                     </>
                   )}
                 </div>
               ))}
             </div>
             <div className={dashedCardCls}>
-              <h3 className="mb-3 text-sm font-medium text-zinc-700 dark:text-zinc-300">New Role</h3>
+              <h3 className="mb-3 text-sm font-medium text-zinc-400 dark:text-zinc-300">New Role</h3>
               <Input placeholder="Role name" value={newRoleName} onChange={(e) => setNewRoleName(e.target.value)} className={`mb-2 ${inputCls}`} />
               <textarea placeholder="System prompt" value={newRolePrompt} onChange={(e) => setNewRolePrompt(e.target.value)} rows={6} className={textareaCls} />
               <Button onClick={() => { if (newRoleName.trim() && newRolePrompt.trim()) { addRole(newRoleName.trim(), newRolePrompt.trim()); setNewRoleName(""); setNewRolePrompt(""); } }} disabled={!newRoleName.trim() || !newRolePrompt.trim()} size="sm" className="mt-2 w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40"><Plus className="h-3 w-3 mr-1" /> Add Role</Button>
@@ -1163,10 +1163,10 @@ export default function SettingsPage() {
         {section === "prompts" && (
           <div className="space-y-6">
             <div>
-              <h2 className="mb-1 text-sm font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-500">Saved Prompts</h2>
-              <p className="mb-4 text-xs font-medium text-zinc-600 dark:text-zinc-500">Create reusable prompt templates.</p>
+              <h2 className="mb-1 text-sm font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">Saved Prompts</h2>
+              <p className="mb-4 text-xs font-medium text-zinc-300 dark:text-zinc-300">Create reusable prompt templates.</p>
             </div>
-            {prompts.length === 0 && <p className="text-sm text-zinc-400 dark:text-zinc-600">No saved prompts yet.</p>}
+            {prompts.length === 0 && <p className="text-sm text-zinc-400 dark:text-zinc-300">No saved prompts yet.</p>}
             <div className="space-y-2">
               {prompts.map((prompt) => (
                 <div key={prompt.id} className={cardCls}>
@@ -1184,18 +1184,18 @@ export default function SettingsPage() {
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-sm font-semibold text-zinc-900 dark:text-white">{prompt.name}</span>
                         <div className="flex gap-1">
-                          <Button variant="ghost" size="sm" onClick={() => { setEditingPromptId(prompt.id); setEditPromptName(prompt.name); setEditPromptContent(prompt.content); }} className="h-6 w-6 p-0 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"><Pencil className="h-3 w-3" /></Button>
-                          <Button variant="ghost" size="sm" onClick={() => deletePrompt(prompt.id)} className="h-6 w-6 p-0 text-zinc-500 hover:text-red-400"><Trash2 className="h-3 w-3" /></Button>
+                          <Button variant="ghost" size="sm" onClick={() => { setEditingPromptId(prompt.id); setEditPromptName(prompt.name); setEditPromptContent(prompt.content); }} className="h-6 w-6 p-0 text-zinc-300 hover:text-zinc-700 dark:hover:text-zinc-300"><Pencil className="h-3 w-3" /></Button>
+                          <Button variant="ghost" size="sm" onClick={() => deletePrompt(prompt.id)} className="h-6 w-6 p-0 text-zinc-300 hover:text-red-400"><Trash2 className="h-3 w-3" /></Button>
                         </div>
                       </div>
-                      <p className="text-xs font-medium text-zinc-600 dark:text-zinc-400 whitespace-pre-wrap line-clamp-3">{prompt.content}</p>
+                      <p className="text-xs font-medium text-zinc-300 dark:text-zinc-400 whitespace-pre-wrap line-clamp-3">{prompt.content}</p>
                     </>
                   )}
                 </div>
               ))}
             </div>
             <div className={dashedCardCls}>
-              <h3 className="mb-3 text-sm font-medium text-zinc-700 dark:text-zinc-300">New Prompt</h3>
+              <h3 className="mb-3 text-sm font-medium text-zinc-400 dark:text-zinc-300">New Prompt</h3>
               <Input placeholder="Prompt name" value={newPromptName} onChange={(e) => setNewPromptName(e.target.value)} className={`mb-2 ${inputCls}`} />
               <textarea placeholder="Prompt template content..." value={newPromptContent} onChange={(e) => setNewPromptContent(e.target.value)} rows={6} className={textareaCls} />
               <Button onClick={() => { if (newPromptName.trim() && newPromptContent.trim()) { addPrompt(newPromptName.trim(), newPromptContent.trim()); setNewPromptName(""); setNewPromptContent(""); } }} disabled={!newPromptName.trim() || !newPromptContent.trim()} size="sm" className="mt-2 w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40"><Plus className="h-3 w-3 mr-1" /> Add Prompt</Button>
@@ -1210,15 +1210,15 @@ export default function SettingsPage() {
         {section === "questions" && (
           <div className="space-y-8">
             <section>
-              <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-500">Test Questions</h2>
-              <p className="text-xs text-zinc-600 dark:text-zinc-400 mb-4">Questions used in poison pill tests.</p>
+              <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">Test Questions</h2>
+              <p className="text-xs text-zinc-300 dark:text-zinc-400 mb-4">Questions used in poison pill tests.</p>
               <div className="space-y-3">
                 {questions.map((q) => (
                   <div key={q.id} className={cardCls}>
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1">
                         <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100 mb-1">{q.question}</div>
-                        <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+                        <div className="flex items-center gap-2 text-xs text-zinc-300 dark:text-zinc-400">
                           {q.poisonId && (
                             <span className="px-2 py-0.5 rounded bg-red-500/20 text-red-600 dark:text-red-400">
                               Poison: {poisons.find(p => p.id === q.poisonId)?.name || q.poisonId}
@@ -1234,7 +1234,7 @@ export default function SettingsPage() {
                   </div>
                 ))}
                 {questions.length === 0 && (
-                  <div className="text-center py-8 text-sm text-zinc-500 dark:text-zinc-400">No questions yet.</div>
+                  <div className="text-center py-8 text-sm text-zinc-300 dark:text-zinc-400">No questions yet.</div>
                 )}
               </div>
             </section>
@@ -1244,18 +1244,18 @@ export default function SettingsPage() {
         {section === "poisons" && (
           <div className="space-y-8">
             <section>
-              <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-500">Poison Pills</h2>
-              <p className="text-xs text-zinc-600 dark:text-zinc-400 mb-4">False claims injected into debates to test if AI agents can detect them.</p>
+              <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">Poison Pills</h2>
+              <p className="text-xs text-zinc-300 dark:text-zinc-400 mb-4">False claims injected into debates to test if AI agents can detect them.</p>
               <div className="space-y-3">
                 {poisons.map((p) => (
                   <div key={p.id} className={cardCls}>
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1">
-                        <div className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 mb-1">{p.name}</div>
+                        <div className="text-xs font-semibold text-zinc-300 dark:text-zinc-400 mb-1">{p.name}</div>
                         <div className="text-sm text-zinc-900 dark:text-zinc-100 mb-2">&quot;{p.content}&quot;</div>
                         {p.markers && p.markers.length > 0 && (
                           <div className="flex items-center gap-1 flex-wrap">
-                            <span className="text-xs text-zinc-500 dark:text-zinc-400">Markers:</span>
+                            <span className="text-xs text-zinc-300 dark:text-zinc-400">Markers:</span>
                             {p.markers.map((marker, idx) => (
                               <span key={idx} className="text-xs px-2 py-0.5 rounded bg-amber-500/20 text-amber-600 dark:text-amber-400">{marker}</span>
                             ))}
@@ -1269,7 +1269,7 @@ export default function SettingsPage() {
                   </div>
                 ))}
                 {poisons.length === 0 && (
-                  <div className="text-center py-8 text-sm text-zinc-500 dark:text-zinc-400">No poison pills yet.</div>
+                  <div className="text-center py-8 text-sm text-zinc-300 dark:text-zinc-400">No poison pills yet.</div>
                 )}
               </div>
             </section>
@@ -1279,8 +1279,8 @@ export default function SettingsPage() {
         {section === "build-docs" && (
           <div className="space-y-8">
             <section>
-              <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-500">Build Documentation</h2>
-              <p className="mb-4 text-xs font-medium text-zinc-600 dark:text-zinc-500">
+              <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">Build Documentation</h2>
+              <p className="mb-4 text-xs font-medium text-zinc-300 dark:text-zinc-300">
                 Automatically inject SARGE build documentation into AI context.
               </p>
               <div className="flex items-center gap-3 p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/30">
@@ -1292,7 +1292,7 @@ export default function SettingsPage() {
                 </button>
                 <div className="flex-1">
                   <div className="text-sm font-medium text-zinc-900 dark:text-white">Auto-Inject Build Docs</div>
-                  <div className="text-xs text-zinc-600 dark:text-zinc-400 mt-1">
+                  <div className="text-xs text-zinc-300 dark:text-zinc-400 mt-1">
                     {buildDocsAutoInject ? 'Enabled — Docs injected invisibly into AI context per mode' : 'Disabled — No documentation injected'}
                   </div>
                 </div>
@@ -1304,21 +1304,21 @@ export default function SettingsPage() {
         {section === "security" && (
           <div className="space-y-8">
             <section>
-              <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-500">PIN Lock</h2>
+              <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">PIN Lock</h2>
               {pinEnabled ? (
                 <div className="space-y-3">
                   <div className="flex items-center gap-3 rounded-lg border border-emerald-300 dark:border-emerald-700/30 bg-emerald-50 dark:bg-emerald-950/20 p-3">
                     <Lock className="h-4 w-4 text-emerald-500 dark:text-emerald-400" />
                     <span className="text-sm text-emerald-700 dark:text-emerald-300">PIN protection is enabled</span>
                   </div>
-                  <p className="text-xs font-medium text-zinc-600 dark:text-zinc-500">App locks after 30 minutes of inactivity.</p>
+                  <p className="text-xs font-medium text-zinc-300 dark:text-zinc-300">App locks after 30 minutes of inactivity.</p>
                   <Button variant="ghost" onClick={removePin} className="text-red-400 hover:text-red-300 hover:bg-red-950/20">
                     <LockOpen className="h-3.5 w-3.5 mr-1.5" /> Remove PIN
                   </Button>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <p className="text-xs font-medium text-zinc-600 dark:text-zinc-500">Set a 4-6 digit PIN to lock The Foundry.</p>
+                  <p className="text-xs font-medium text-zinc-300 dark:text-zinc-300">Set a 4-6 digit PIN to lock The Foundry.</p>
                   <div className="flex gap-2">
                     <Input type="password" inputMode="numeric" maxLength={6} value={newPin} onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ""))} placeholder="PIN" className={`w-24 text-center ${inputCls}`} />
                     <Input type="password" inputMode="numeric" maxLength={6} value={confirmNewPin} onChange={(e) => setConfirmNewPin(e.target.value.replace(/\D/g, ""))} placeholder="Confirm" className={`w-24 text-center ${inputCls}`} />
@@ -1337,13 +1337,13 @@ export default function SettingsPage() {
         {section === "sync" && (
           <div className="space-y-8">
             <section>
-              <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-500">Sync Settings</h2>
+              <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">Sync Settings</h2>
               <div className="space-y-3">
                 <div className={cardCls}>
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-sm font-medium text-zinc-900 dark:text-white">Reverse Sync</div>
-                      <div className="text-xs text-zinc-600 dark:text-zinc-500 mt-0.5">Copy recent changes from main app to sandbox</div>
+                      <div className="text-xs text-zinc-300 dark:text-zinc-300 mt-0.5">Copy recent changes from main app to sandbox</div>
                     </div>
                     <Button onClick={handleReverseSync} disabled={reverseSyncing} className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40" size="sm">
                       {reverseSyncing ? (<><Loader2 className="h-3 w-3 mr-1 animate-spin" />Syncing...</>) : (<><RefreshCw className="h-3 w-3 mr-1" />Reverse Sync</>)}

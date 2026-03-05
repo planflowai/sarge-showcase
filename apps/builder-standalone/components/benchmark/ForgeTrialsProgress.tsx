@@ -103,13 +103,13 @@ export function ForgeTrialsProgress({
               {isGenerating && <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-400 flex-shrink-0" />}
               <span className="text-[#FF6700] truncate">{currentModel}</span>
               {currentRound && (
-                <span className="text-zinc-500 flex-shrink-0">· {currentRound}</span>
+                <span className="text-zinc-300 flex-shrink-0">· {currentRound}</span>
               )}
             </>
           ) : !running && completedMedianTests > 0 ? (
             <span className="text-emerald-400">Complete</span>
           ) : (
-            <span className="text-zinc-500">Ready</span>
+            <span className="text-zinc-300">Ready</span>
           )}
         </div>
 
@@ -119,7 +119,7 @@ export function ForgeTrialsProgress({
             <span className="text-xs font-mono text-amber-400">{elapsed}s</span>
           )}
           {running && remainingMin > 0 && (
-            <span className="text-xs text-zinc-500">~{remainingMin}m left</span>
+            <span className="text-xs text-zinc-300">~{remainingMin}m left</span>
           )}
           {isCloud && totalCost != null && totalCost > 0 && (
             <span className={`text-xs font-mono font-bold ${running ? "text-amber-400" : "text-emerald-400"}`}>
@@ -128,7 +128,7 @@ export function ForgeTrialsProgress({
           )}
           <button
             onClick={() => setShowLog(!showLog)}
-            className="text-zinc-600 hover:text-zinc-400 transition-colors"
+            className="text-zinc-300 hover:text-zinc-400 transition-colors"
             title={showLog ? "Hide log" : "Show log"}
           >
             {showLog ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
@@ -143,7 +143,7 @@ export function ForgeTrialsProgress({
           className="mt-1.5 max-h-[120px] overflow-y-auto text-xs font-mono text-zinc-400 border-t border-zinc-800/50 pt-1.5 space-y-0.5"
         >
           {recentEvents.length === 0 ? (
-            <span className="text-zinc-600">No events yet</span>
+            <span className="text-zinc-300">No events yet</span>
           ) : (
             recentEvents.map((e, i) => (
               <div

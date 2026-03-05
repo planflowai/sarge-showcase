@@ -140,7 +140,7 @@ export default function ChatPage() {
             />
           ) : (
             <div className="flex h-full items-center justify-center">
-              <p className="text-zinc-500 text-lg">Select or create a conversation</p>
+              <p className="text-zinc-300 text-lg">Select or create a conversation</p>
             </div>
           )}
         </main>

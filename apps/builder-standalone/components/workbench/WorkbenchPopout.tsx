@@ -267,7 +267,7 @@ export function WorkbenchPopout({ slotNum, monitorNumber, provider: initProvider
           {streaming && (
             <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-              <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">Generating</span>
+              <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">Generating</span>
             </div>
           )}
         </div>
@@ -296,7 +296,7 @@ export function WorkbenchPopout({ slotNum, monitorNumber, provider: initProvider
               <p className="text-[36px] font-[800] mb-3" style={{ color }}>
                 {displayName}
               </p>
-              <p className="text-base text-zinc-600">Waiting for prompt from command center...</p>
+              <p className="text-base text-zinc-300">Waiting for prompt from command center...</p>
             </div>
           </div>
         )}
@@ -307,7 +307,7 @@ export function WorkbenchPopout({ slotNum, monitorNumber, provider: initProvider
         className="flex items-center justify-between px-5 py-2 flex-shrink-0 text-sm font-mono"
         style={{ borderTop: `1px solid ${color}12`, background: `${color}04` }}
       >
-        <span className="text-zinc-500">
+        <span className="text-zinc-300">
           {streaming ? "⚡ Generating..." : messages.length > 0 ? `✓ ${messages.length} exchanges` : "Ready"}
         </span>
         <span style={{ color: `${color}50` }}>The Foundry — The Pit</span>

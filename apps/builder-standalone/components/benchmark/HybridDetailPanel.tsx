@@ -284,7 +284,7 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
   // ── No result yet: show placeholder ──
   if (!chainResult && !running) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-zinc-600">
+      <div className="flex flex-col items-center justify-center h-full text-zinc-300">
         <Layers className="w-12 h-12 mb-3 opacity-30" />
         <p className="text-sm font-bold">No chain results yet</p>
         <p className="text-xs mt-1">Configure and run a hybrid chain to see results here</p>
@@ -447,7 +447,7 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
             className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all border ${
               tab === id
                 ? "bg-[#FF6700]/15 text-[#FFD700] border-[#FF6700]/40"
-                : "text-zinc-500 hover:text-zinc-300 border-transparent"
+                : "text-zinc-300 hover:text-zinc-300 border-transparent"
             }`}
           >
             <Icon className="w-3 h-3" />
@@ -469,7 +469,7 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
                 title="Hybrid Preview"
               />
             ) : (
-              <div className="flex items-center justify-center h-full text-zinc-600 text-sm">
+              <div className="flex items-center justify-center h-full text-zinc-300 text-sm">
                 No HTML to preview
               </div>
             )}
@@ -559,7 +559,7 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
                         </div>
                       )}
                       {cl.sectionsAdded.length === 0 && cl.cssRulesAdded === 0 && cl.jsFunctionsAdded === 0 && (
-                        <div className="text-zinc-500">~ Modified: content updated (no structural changes detected)</div>
+                        <div className="text-zinc-300">~ Modified: content updated (no structural changes detected)</div>
                       )}
                       <div className={`flex items-center gap-1 mt-1 ${
                         cl.regressionCheck === "PASSED" ? "text-emerald-400" : "text-red-400"
@@ -592,7 +592,7 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
                 {events.filter(e =>
                   e.type === "hybrid:build-log" || e.type === "hybrid:guardian"
                 ).length === 0 ? (
-                  <div className="text-zinc-600 py-4 text-center">
+                  <div className="text-zinc-300 py-4 text-center">
                     {running ? "Waiting for events..." : "No build log entries. Run a chain to generate."}
                   </div>
                 ) : (
@@ -629,7 +629,7 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
             onClick={() => setAssessmentOpen(!assessmentOpen)}
             className="flex items-center gap-2 w-full px-4 py-2 text-left hover:bg-zinc-800/40 transition-colors"
           >
-            {assessmentOpen ? <ChevronDown className="w-3.5 h-3.5 text-zinc-500" /> : <ChevronRight className="w-3.5 h-3.5 text-zinc-500" />}
+            {assessmentOpen ? <ChevronDown className="w-3.5 h-3.5 text-zinc-300" /> : <ChevronRight className="w-3.5 h-3.5 text-zinc-300" />}
             <Flame className="w-3.5 h-3.5 text-[#FF6700]" />
             <span className="text-xs font-bold text-zinc-300">AI Assessment</span>
             {assessmentLoading && <Loader2 className="w-3 h-3 animate-spin text-amber-400" />}
@@ -637,7 +637,7 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
           {assessmentOpen && (
             <div className="px-4 pb-3 max-h-64 overflow-y-auto">
               {assessmentLoading ? (
-                <div className="flex items-center gap-2 py-4 justify-center text-zinc-500">
+                <div className="flex items-center gap-2 py-4 justify-center text-zinc-300">
                   <Loader2 className="w-4 h-4 animate-spin" />
                   <span className="text-xs">Generating assessment...</span>
                 </div>
@@ -646,7 +646,7 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
                   {assessment}
                 </div>
               ) : (
-                <div className="text-xs text-zinc-600 py-2">Waiting for assessment...</div>
+                <div className="text-xs text-zinc-300 py-2">Waiting for assessment...</div>
               )}
             </div>
           )}
@@ -677,7 +677,7 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
           {compilerOpen && (
             <div className="px-4 pb-3">
               {compiler.loading ? (
-                <div className="flex items-center gap-2 py-4 justify-center text-zinc-500">
+                <div className="flex items-center gap-2 py-4 justify-center text-zinc-300">
                   <Loader2 className="w-4 h-4 animate-spin" />
                   <span className="text-xs">Running audit...</span>
                 </div>
@@ -704,7 +704,7 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
                               <div className="text-xs font-bold text-zinc-300 uppercase mb-1">{label}</div>
                               <div className="flex items-center justify-center gap-1">
                                 <span className={`text-sm font-bold ${beforeColor} line-through opacity-50`}>{before}</span>
-                                <span className="text-zinc-600">→</span>
+                                <span className="text-zinc-300">→</span>
                                 <span className={`text-lg font-[900] ${afterColor}`}>{after}</span>
                               </div>
                             </div>

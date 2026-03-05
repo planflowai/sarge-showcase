@@ -21,7 +21,7 @@ const TogglePanel = lazy(() => import("@/components/Builder/TogglePanel"));
 const ForgeBillingDashboard = lazy(() => import("@/components/billing/ForgeBillingDashboard"));
 const BillingBar = lazy(() => import("@/components/billing/BillingBar"));
 
-const LoadingFallback = <div className="flex h-full w-full items-center justify-center"><span className="text-zinc-500">Loading...</span></div>;
+const LoadingFallback = <div className="flex h-full w-full items-center justify-center"><span className="text-zinc-300">Loading...</span></div>;
 
 export default function Home() {
   return (
@@ -230,7 +230,7 @@ function HomeInner() {
         <Suspense fallback={LoadingFallback}>
           <BuilderPage
             deployContent={
-              <Suspense fallback={<div className="p-4 text-zinc-500 text-sm">Loading deploy...</div>}>
+              <Suspense fallback={<div className="p-4 text-zinc-300 text-sm">Loading deploy...</div>}>
                 <DeployPanel />
               </Suspense>
             }

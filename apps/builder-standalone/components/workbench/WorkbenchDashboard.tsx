@@ -72,15 +72,15 @@ function TargetDropdown({
             onClick={() => { if (!isGithub) onToggle(t.id); }}
             className={cn(
               "w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold transition-colors",
-              isGithub ? "text-zinc-500 cursor-default" : "text-zinc-300 hover:bg-zinc-800 dark:hover:bg-zinc-800 cursor-pointer"
+              isGithub ? "text-zinc-300 cursor-default" : "text-zinc-300 hover:bg-zinc-800 dark:hover:bg-zinc-800 cursor-pointer"
             )}
           >
             {checked
               ? <CheckSquare className="w-3.5 h-3.5 text-[#FF6700]" />
-              : <Square className="w-3.5 h-3.5 text-zinc-600" />
+              : <Square className="w-3.5 h-3.5 text-zinc-300" />
             }
             {t.label}
-            {isGithub && <span className="text-zinc-600 text-[10px] ml-auto">required</span>}
+            {isGithub && <span className="text-zinc-300 text-xs ml-auto">required</span>}
           </button>
         );
       })}
@@ -399,7 +399,7 @@ export default function WorkbenchDashboard() {
           {workspaceOn && (
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/8 border border-emerald-500/15">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-[10px] font-bold text-emerald-400">{openCount} LIVE</span>
+              <span className="text-xs font-bold text-emerald-400">{openCount} LIVE</span>
             </div>
           )}
         </div>
@@ -415,14 +415,14 @@ export default function WorkbenchDashboard() {
           </button>
           <button
             onClick={handleRecallAll}
-            className="flex items-center gap-2 h-12 px-6 rounded-lg text-base font-bold text-zinc-700 dark:text-white border-2 border-zinc-400 dark:border-white/60 hover:border-zinc-600 dark:hover:border-white hover:bg-zinc-200 dark:hover:bg-white/10 transition-all"
+            className="flex items-center gap-2 h-12 px-6 rounded-lg text-base font-bold text-zinc-400 dark:text-white border-2 border-zinc-400 dark:border-white/60 hover:border-zinc-600 dark:hover:border-white hover:bg-zinc-200 dark:hover:bg-white/10 transition-all"
             title="Close all monitor popouts"
           >
             <MonitorOff className="h-5 w-5" /> Recall All
           </button>
           <button
             onClick={handleExit}
-            className="flex items-center gap-1.5 h-12 px-5 rounded-lg text-sm font-bold text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-300 dark:border-zinc-700/40 transition-all"
+            className="flex items-center gap-1.5 h-12 px-5 rounded-lg text-sm font-bold text-zinc-300 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-300 dark:border-zinc-700/40 transition-all"
           >
             <X className="h-4 w-4" /> Exit
           </button>
@@ -541,11 +541,11 @@ export default function WorkbenchDashboard() {
             <div className="flex items-center justify-between px-3 py-1.5 flex-shrink-0 border-b border-[#FF6700]/15">
               <div className="flex items-center gap-2">
                 <div className="w-6 h-6 rounded-md border border-[#FF6700]/40 flex items-center justify-center text-xs font-black text-[#FF6700]/60 bg-[#FF6700]/5">4</div>
-                <span className="text-xs font-black text-zinc-600 dark:text-zinc-400 tracking-wider">
+                <span className="text-xs font-black text-zinc-300 dark:text-zinc-400 tracking-wider">
                   {projectName ? `${projectName} · Command Center` : "COMMAND CENTER"}
                 </span>
               </div>
-              <span className="text-[9px] font-mono font-bold text-zinc-400 dark:text-zinc-600">MON 4 · This Screen</span>
+              <span className="text-xs font-mono font-bold text-zinc-400 dark:text-zinc-300">MON 4 · This Screen</span>
             </div>
             {/* Live preview — current builder project */}
             <div className="flex-1 min-h-0 relative bg-white">
@@ -558,7 +558,7 @@ export default function WorkbenchDashboard() {
                 />
               ) : (
                 <div className="flex items-center justify-center h-full bg-zinc-900">
-                  <p className="text-sm font-bold text-zinc-600">No build loaded</p>
+                  <p className="text-sm font-bold text-zinc-300">No build loaded</p>
                 </div>
               )}
             </div>
@@ -577,26 +577,26 @@ export default function WorkbenchDashboard() {
       </div>
 
       {/* ── Status Bar — between grid and broadcast ── */}
-      <div className="flex items-center justify-between h-8 px-5 bg-zinc-50 dark:bg-[#111] border-y border-zinc-200 dark:border-zinc-800/30 flex-shrink-0 text-xs text-zinc-500">
+      <div className="flex items-center justify-between h-8 px-5 bg-zinc-50 dark:bg-[#111] border-y border-zinc-200 dark:border-zinc-800/30 flex-shrink-0 text-xs text-zinc-300">
         {/* Left: project info */}
         <div className="flex items-center gap-2">
           <FolderOpen className="h-3 w-3 text-[#FF6700]/60" />
-          <span className="font-medium text-zinc-600 dark:text-zinc-400">{projectName || "No project"}</span>
+          <span className="font-medium text-zinc-300 dark:text-zinc-400">{projectName || "No project"}</span>
           {fileTree.length > 0 && (
-            <span className="text-zinc-400 dark:text-zinc-600">· {fileTree.length} files</span>
+            <span className="text-zinc-400 dark:text-zinc-300">· {fileTree.length} files</span>
           )}
         </div>
         {/* Center: last action */}
-        <span className="text-zinc-500 dark:text-zinc-600 font-medium">{lastAction}</span>
+        <span className="text-zinc-300 dark:text-zinc-300 font-medium">{lastAction}</span>
         {/* Right: quick actions */}
         <div className="flex items-center gap-1.5">
-          <button className="flex items-center gap-1 px-2 py-1 rounded text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors">
+          <button className="flex items-center gap-1 px-2 py-1 rounded text-zinc-300 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors">
             <Package className="h-3 w-3" /> Assets
           </button>
-          <button className="flex items-center gap-1 px-2 py-1 rounded text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors">
+          <button className="flex items-center gap-1 px-2 py-1 rounded text-zinc-300 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors">
             <Copy className="h-3 w-3" /> Copy
           </button>
-          <button className="flex items-center gap-1 px-2 py-1 rounded text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors">
+          <button className="flex items-center gap-1 px-2 py-1 rounded text-zinc-300 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors">
             <BookOpen className="h-3 w-3" /> Vault
           </button>
         </div>
@@ -615,12 +615,12 @@ export default function WorkbenchDashboard() {
                 className="h-20 rounded-lg border border-zinc-400 dark:border-zinc-600 object-cover"
               />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-zinc-700 dark:text-zinc-300">Comparison reference</p>
-                <p className="text-xs text-zinc-500 mt-0.5">Paste or drag images to compare — describe what to change</p>
+                <p className="text-sm font-bold text-zinc-400 dark:text-zinc-300">Comparison reference</p>
+                <p className="text-xs text-zinc-300 mt-0.5">Paste or drag images to compare — describe what to change</p>
               </div>
               <button
                 onClick={() => setCompareImage(null)}
-                className="flex-shrink-0 w-7 h-7 rounded-full bg-zinc-300 dark:bg-zinc-700 hover:bg-red-500 text-zinc-600 dark:text-zinc-300 text-sm font-bold flex items-center justify-center transition-colors"
+                className="flex-shrink-0 w-7 h-7 rounded-full bg-zinc-300 dark:bg-zinc-700 hover:bg-red-500 text-zinc-300 dark:text-zinc-300 text-sm font-bold flex items-center justify-center transition-colors"
               >
                 ×
               </button>
@@ -664,7 +664,7 @@ export default function WorkbenchDashboard() {
 
           {/* ── Broadcast Target Row — below input ── */}
           <div className="flex flex-col items-center gap-2">
-            <span className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-500">
+            <span className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-300">
               Broadcast To
             </span>
             <div className="flex items-center gap-2 flex-wrap justify-center">
@@ -695,11 +695,11 @@ export default function WorkbenchDashboard() {
                     slots.forEach((s) => { if (!s.selected) useWorkbenchStore.getState().toggleSlotSelected(s.slot); });
                   }
                 }}
-                className="px-4 py-2.5 rounded-xl text-sm font-bold border-2 border-dashed border-zinc-300 dark:border-zinc-700 text-zinc-500 hover:border-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-all"
+                className="px-4 py-2.5 rounded-xl text-sm font-bold border-2 border-dashed border-zinc-300 dark:border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-all"
               >
                 {slots.every((s) => s.selected) ? "Deselect All" : "All"}
               </button>
-              <span className="text-xs font-bold text-zinc-400 dark:text-zinc-600 self-center pl-2">
+              <span className="text-xs font-bold text-zinc-400 dark:text-zinc-300 self-center pl-2">
                 {selectedCount} / 5
               </span>
             </div>

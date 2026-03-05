@@ -161,11 +161,11 @@ export function ForgeTrialsRoundDetail({
   // ── No result, not running: idle state ──
   if (!result || !scenario) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-zinc-600 gap-4">
+      <div className="flex flex-col items-center justify-center h-full text-zinc-300 gap-4">
         <Flame className="w-16 h-16 text-zinc-800" />
         <div className="text-center">
-          <p className="text-xl font-bold text-zinc-500">Select a cell</p>
-          <p className="text-base font-bold text-zinc-600 mt-1">
+          <p className="text-xl font-bold text-zinc-300">Select a cell</p>
+          <p className="text-base font-bold text-zinc-300 mt-1">
             Click any scored cell in the matrix to see details
           </p>
         </div>
@@ -227,7 +227,7 @@ export function ForgeTrialsRoundDetail({
 
         {/* Round Explainer */}
         {roundExplainer && (
-          <p className="text-xs text-zinc-500 italic mb-3">{roundExplainer}</p>
+          <p className="text-xs text-zinc-300 italic mb-3">{roundExplainer}</p>
         )}
 
         {/* Metrics row */}
@@ -235,7 +235,7 @@ export function ForgeTrialsRoundDetail({
           {/* Large score */}
           <span className={`text-4xl font-[900] leading-none ${tierTextColor}`}>
             {score.total}
-            <span className="text-lg font-bold text-zinc-500">/100</span>
+            <span className="text-lg font-bold text-zinc-300">/100</span>
           </span>
 
           {/* Large tier badge */}
@@ -255,20 +255,20 @@ export function ForgeTrialsRoundDetail({
           {/* Tokens In/Out */}
           {result.tokensIn != null && (
             <div className="text-sm font-bold text-zinc-400">
-              <span className="text-zinc-500">In </span>
+              <span className="text-zinc-300">In </span>
               <span className="font-mono text-zinc-300">{result.tokensIn.toLocaleString()}</span>
-              <span className="text-zinc-600 mx-1">·</span>
-              <span className="text-zinc-500">Out </span>
+              <span className="text-zinc-300 mx-1">·</span>
+              <span className="text-zinc-300">Out </span>
               <span className="font-mono text-zinc-300">{(result.tokensOut ?? 0).toLocaleString()}</span>
             </div>
           )}
 
           {/* Cost */}
           <div className="text-sm font-bold">
-            <span className="text-zinc-500">Cost </span>
+            <span className="text-zinc-300">Cost </span>
             <span className="font-mono text-emerald-400">{formatCost(displayCost.value)}</span>
             {displayCost.calc && (
-              <span className="ml-1 text-[10px] px-1 py-0.5 rounded bg-zinc-800 text-zinc-500 font-bold">calc</span>
+              <span className="ml-1 text-xs px-1 py-0.5 rounded bg-zinc-800 text-zinc-300 font-bold">calc</span>
             )}
           </div>
 
@@ -312,7 +312,7 @@ export function ForgeTrialsRoundDetail({
                 }`}
               >
                 Run {i + 1}: {run.score}
-                <span className="text-zinc-500 ml-1">
+                <span className="text-zinc-300 ml-1">
                   ({(run.timeMs / 1000).toFixed(1)}s{run.timedOut ? " timeout" : ""})
                 </span>
               </span>
@@ -332,7 +332,7 @@ export function ForgeTrialsRoundDetail({
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-sm font-bold transition-all ${
                 tab === t.id
                   ? "bg-[#FF6700]/15 text-[#FFD700] border border-[#FF6700]/40"
-                  : "text-zinc-500 hover:text-zinc-300 border border-transparent"
+                  : "text-zinc-300 hover:text-zinc-300 border border-transparent"
               }`}
             >
               {t.icon}
@@ -354,7 +354,7 @@ export function ForgeTrialsRoundDetail({
                 title="Preview"
               />
             ) : (
-              <div className="flex items-center justify-center h-full text-zinc-600 text-base font-bold">
+              <div className="flex items-center justify-center h-full text-zinc-300 text-base font-bold">
                 No code to preview
               </div>
             )}
@@ -398,7 +398,7 @@ export function ForgeTrialsRoundDetail({
                   </div>
                   {/* Breakdown Explainer — what this criterion measures */}
                   {explainer && (
-                    <p className="text-[11px] text-zinc-500 mb-1">{explainer}</p>
+                    <p className="text-[11px] text-zinc-300 mb-1">{explainer}</p>
                   )}
                   <div className="h-3.5 bg-zinc-800 rounded-full overflow-hidden">
                     <div
@@ -437,7 +437,7 @@ export function ForgeTrialsRoundDetail({
                     </span>
                     <div>
                       <p className="text-sm font-bold text-zinc-200">{result.modelId}</p>
-                      <p className="text-xs text-zinc-500">
+                      <p className="text-xs text-zinc-300">
                         Overall {modelSummary.overallScore}/100 across {modelResults.length} round{modelResults.length !== 1 ? "s" : ""}
                       </p>
                     </div>
@@ -445,7 +445,7 @@ export function ForgeTrialsRoundDetail({
 
                   {/* Top 3 Rounds */}
                   <div>
-                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1">Strongest Rounds</p>
+                    <p className="text-xs font-bold text-zinc-300 uppercase tracking-wider mb-1">Strongest Rounds</p>
                     <div className="flex flex-wrap gap-1.5">
                       {modelSummary.topRounds.map((r) => (
                         <span key={r.name} className="text-xs font-bold px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-400/30 text-emerald-300">
@@ -457,7 +457,7 @@ export function ForgeTrialsRoundDetail({
 
                   {/* Bottom 2 Rounds */}
                   <div>
-                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1">Weakest Rounds</p>
+                    <p className="text-xs font-bold text-zinc-300 uppercase tracking-wider mb-1">Weakest Rounds</p>
                     <div className="flex flex-wrap gap-1.5">
                       {modelSummary.bottomRounds.map((r) => (
                         <span key={r.name} className="text-xs font-bold px-2 py-0.5 rounded bg-red-500/10 border border-red-400/30 text-red-300">
@@ -472,7 +472,7 @@ export function ForgeTrialsRoundDetail({
                     <div className="grid grid-cols-2 gap-3">
                       {modelSummary.strengths.length > 0 && (
                         <div>
-                          <p className="text-[10px] font-bold text-emerald-500/80 uppercase tracking-wider mb-1">Strengths</p>
+                          <p className="text-xs font-bold text-emerald-500/80 uppercase tracking-wider mb-1">Strengths</p>
                           {modelSummary.strengths.map((s) => (
                             <p key={s} className="text-[11px] text-zinc-400">+ {s}</p>
                           ))}
@@ -480,7 +480,7 @@ export function ForgeTrialsRoundDetail({
                       )}
                       {modelSummary.weaknesses.length > 0 && (
                         <div>
-                          <p className="text-[10px] font-bold text-red-400/80 uppercase tracking-wider mb-1">Weaknesses</p>
+                          <p className="text-xs font-bold text-red-400/80 uppercase tracking-wider mb-1">Weaknesses</p>
                           {modelSummary.weaknesses.map((w) => (
                             <p key={w} className="text-[11px] text-zinc-400">− {w}</p>
                           ))}

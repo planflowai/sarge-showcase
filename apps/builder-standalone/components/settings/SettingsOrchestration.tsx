@@ -41,12 +41,12 @@ export default function SettingsOrchestration() {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="mb-1 text-sm font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-500">AI Orchestration</h2>
-        <p className="mb-4 text-xs font-medium text-zinc-600 dark:text-zinc-500">
+        <h2 className="mb-1 text-sm font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">AI Orchestration</h2>
+        <p className="mb-4 text-xs font-medium text-zinc-300 dark:text-zinc-300">
           Configure how AI agents work together. Single agent, multi-agent debates, judge mode, or custom pipelines.
         </p>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-zinc-500">Current:</span>
+          <span className="text-xs text-zinc-300">Current:</span>
           <span className="px-2 py-1 rounded bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-xs font-medium">
             {getDisplayName_ai()}
           </span>
@@ -80,20 +80,20 @@ export default function SettingsOrchestration() {
                   </button>
                 )}
               </div>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">{preset.description}</p>
+              <p className="text-xs text-zinc-300 dark:text-zinc-400">{preset.description}</p>
               <div className="flex items-center gap-2 mt-2">
-                <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                <span className={`text-xs px-1.5 py-0.5 rounded ${
                   preset.executionMode === "local" ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400" :
                   preset.executionMode === "cloud" ? "bg-violet-500/20 text-violet-600 dark:text-violet-400" :
                   "bg-amber-500/20 text-amber-600 dark:text-amber-400"
                 }`}>
                   {preset.executionMode}
                 </span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-400">
+                <span className="text-xs px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-700 text-zinc-300 dark:text-zinc-400">
                   {preset.agentCount} agent{preset.agentCount > 1 ? "s" : ""}
                 </span>
                 {preset.hasJudge && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-600 dark:text-cyan-400">
+                  <span className="text-xs px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-600 dark:text-cyan-400">
                     +judge
                   </span>
                 )}
@@ -123,7 +123,7 @@ export default function SettingsOrchestration() {
             </Button>
           ))}
         </div>
-        <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+        <p className="mt-2 text-xs text-zinc-300 dark:text-zinc-400">
           {executionMode === "local" && "Use local models only (Ollama). Fast and free."}
           {executionMode === "cloud" && "Use cloud models (Claude, GPT, etc.). More capable."}
           {executionMode === "hybrid" && "Try local first, fall back to cloud on failure."}
@@ -147,7 +147,7 @@ export default function SettingsOrchestration() {
             </Button>
           ))}
         </div>
-        <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+        <p className="mt-2 text-xs text-zinc-300 dark:text-zinc-400">
           {agentCount === 1 && "Single agent mode. Simple and fast."}
           {agentCount === 2 && "Two agents can debate or review each other."}
           {agentCount === 3 && "Three agents for triangulation or pipeline."}
@@ -218,16 +218,16 @@ export default function SettingsOrchestration() {
                       <div>
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-medium text-zinc-900 dark:text-white">{agent.name}</span>
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                          <span className={`text-xs px-1.5 py-0.5 rounded ${
                             agent.role === "primary" ? "bg-indigo-500/20 text-indigo-600 dark:text-indigo-400" :
                             agent.role === "critic" ? "bg-red-500/20 text-red-600 dark:text-red-400" :
                             agent.role === "synthesizer" ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400" :
-                            "bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-400"
+                            "bg-zinc-200 dark:bg-zinc-700 text-zinc-300 dark:text-zinc-400"
                           }`}>
                             {agent.role}
                           </span>
                         </div>
-                        <span className="text-xs text-zinc-500">{agent.provider}:{agent.model}</span>
+                        <span className="text-xs text-zinc-300">{agent.provider}:{agent.model}</span>
                       </div>
                     </div>
                     <Button variant="ghost" size="sm" onClick={() => setEditingAgent(agent.id)}>
@@ -261,7 +261,7 @@ export default function SettingsOrchestration() {
               </Button>
             ))}
           </div>
-          <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+          <p className="mt-2 text-xs text-zinc-300 dark:text-zinc-400">
             {flowType === "sequential" && "Agents run one after another. Output of one feeds the next."}
             {flowType === "parallel" && "Agents run simultaneously. Compare or vote on results."}
           </p>
@@ -281,12 +281,12 @@ export default function SettingsOrchestration() {
             {hasJudge ? "Enabled" : "Disabled"}
           </Button>
           {hasJudge && (
-            <span className="text-xs text-zinc-500">
+            <span className="text-xs text-zinc-300">
               Judge: {judgeConfig.provider}:{judgeConfig.model}
             </span>
           )}
         </div>
-        <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+        <p className="mt-2 text-xs text-zinc-300 dark:text-zinc-400">
           {hasJudge
             ? "A judge agent evaluates all responses and picks the best one."
             : "No judge. User picks or all responses are shown."}
@@ -308,14 +308,14 @@ export default function SettingsOrchestration() {
         </div>
         {fallbackEnabled && (
           <div className="space-y-2">
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            <p className="text-xs text-zinc-300 dark:text-zinc-400">
               If primary model fails, try these in order:
             </p>
             <div className="flex flex-wrap gap-2">
               {fallbackChain.map((model, idx) => (
                 <span
                   key={idx}
-                  className="px-2 py-1 rounded bg-zinc-200 dark:bg-zinc-700 text-xs text-zinc-700 dark:text-zinc-300 flex items-center gap-1"
+                  className="px-2 py-1 rounded bg-zinc-200 dark:bg-zinc-700 text-xs text-zinc-400 dark:text-zinc-300 flex items-center gap-1"
                 >
                   {idx + 1}. {model}
                   <button

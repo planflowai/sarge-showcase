@@ -164,11 +164,11 @@ export function RollCall() {
         <table className="w-full text-sm">
           <thead className="bg-zinc-100 dark:bg-zinc-800">
             <tr>
-              <th className="px-3 py-2 text-left text-zinc-600 dark:text-zinc-400 font-medium">Status</th>
-              <th className="px-3 py-2 text-left text-zinc-600 dark:text-zinc-400 font-medium">Requested</th>
-              <th className="px-3 py-2 text-left text-zinc-600 dark:text-zinc-400 font-medium">Response</th>
-              <th className="px-3 py-2 text-left text-zinc-600 dark:text-zinc-400 font-medium">Latency</th>
-              <th className="px-3 py-2 text-left text-zinc-600 dark:text-zinc-400 font-medium">Action</th>
+              <th className="px-3 py-2 text-left text-zinc-300 dark:text-zinc-400 font-medium">Status</th>
+              <th className="px-3 py-2 text-left text-zinc-300 dark:text-zinc-400 font-medium">Requested</th>
+              <th className="px-3 py-2 text-left text-zinc-300 dark:text-zinc-400 font-medium">Response</th>
+              <th className="px-3 py-2 text-left text-zinc-300 dark:text-zinc-400 font-medium">Latency</th>
+              <th className="px-3 py-2 text-left text-zinc-300 dark:text-zinc-400 font-medium">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-200 dark:divide-zinc-700">
@@ -203,7 +203,7 @@ export function RollCall() {
                       <XCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
                     )}
                   </td>
-                  <td className="px-3 py-2 font-mono text-xs text-zinc-700 dark:text-zinc-300">
+                  <td className="px-3 py-2 font-mono text-xs text-zinc-400 dark:text-zinc-300">
                     {r.requested}
                   </td>
                   <td className="px-3 py-2 text-xs max-w-xs truncate">
@@ -219,7 +219,7 @@ export function RollCall() {
                       <span className="text-red-700 dark:text-red-400">{r.error}</span>
                     )}
                   </td>
-                  <td className="px-3 py-2 text-xs text-zinc-600 dark:text-zinc-400">
+                  <td className="px-3 py-2 text-xs text-zinc-300 dark:text-zinc-400">
                     {r.latencyMs}ms
                   </td>
                   <td className="px-3 py-2 flex gap-2">
@@ -285,7 +285,7 @@ export function RollCall() {
         </Button>
       </div>
 
-      <p className="text-sm text-zinc-600 dark:text-zinc-400">
+      <p className="text-sm text-zinc-300 dark:text-zinc-400">
         Tests each model directly (NO fallback) and reports what model actually responds.
         This helps verify that your selected model is actually being used.
       </p>
@@ -342,7 +342,7 @@ export function RollCall() {
             )}
           </div>
           {localResults.length === 0 && !testing && (
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 italic">
+            <p className="text-xs text-zinc-300 dark:text-zinc-400 italic">
               No Ollama models found. Make sure Ollama is running.
             </p>
           )}
@@ -351,7 +351,7 @@ export function RollCall() {
       )}
 
       {(cloudResults.length > 0 || localResults.length > 0) && (
-        <div className="flex flex-wrap gap-4 text-xs text-zinc-600 dark:text-zinc-500 pt-2 border-t border-zinc-200 dark:border-zinc-700">
+        <div className="flex flex-wrap gap-4 text-xs text-zinc-300 dark:text-zinc-300 pt-2 border-t border-zinc-200 dark:border-zinc-700">
           <span className="flex items-center gap-1">
             <CheckCircle className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
             Model responded correctly

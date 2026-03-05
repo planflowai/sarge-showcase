@@ -18,7 +18,7 @@ export function ToggleSelector({ toggles, onChange }: ToggleSelectorProps) {
         <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">
           Project Features
         </h3>
-        <span className="text-xs text-zinc-500">
+        <span className="text-xs text-zinc-300">
           {Object.values(toggles).filter(Boolean).length} selected
         </span>
       </div>
@@ -63,12 +63,12 @@ export function ToggleSelector({ toggles, onChange }: ToggleSelectorProps) {
                   {toggle.label}
                 </span>
                 {isProfessional && (
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-[#FF6700]/20 text-[#FF6700] uppercase tracking-wider">
+                  <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-[#FF6700]/20 text-[#FF6700] uppercase tracking-wider">
                     Pro
                   </span>
                 )}
               </div>
-              <p className="text-xs text-zinc-500 mt-0.5">{toggle.description}</p>
+              <p className="text-xs text-zinc-300 mt-0.5">{toggle.description}</p>
             </div>
           </button>
         );

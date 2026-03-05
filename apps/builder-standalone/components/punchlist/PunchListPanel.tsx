@@ -115,7 +115,7 @@ export default function PunchListPanel({
 
   if (loading) {
     return (
-      <div className="p-4 text-zinc-500 text-sm">Loading punch list...</div>
+      <div className="p-4 text-zinc-300 text-sm">Loading punch list...</div>
     );
   }
 
@@ -136,9 +136,9 @@ export default function PunchListPanel({
         </div>
         <div className="flex items-center gap-2 text-xs">
           <span className="text-sky-400">{openCount} open</span>
-          <span className="text-zinc-600">·</span>
+          <span className="text-zinc-300">·</span>
           <span className="text-yellow-400">{inProgressCount} in progress</span>
-          <span className="text-zinc-600">·</span>
+          <span className="text-zinc-300">·</span>
           <span className="text-green-400">{doneCount} done</span>
         </div>
       </div>
@@ -187,7 +187,7 @@ export default function PunchListPanel({
 
       {/* Items */}
       {filtered.length === 0 ? (
-        <div className="p-6 text-center text-zinc-600 text-sm">
+        <div className="p-6 text-center text-zinc-300 text-sm">
           {items.length === 0
             ? "No revisions submitted yet."
             : "No items match the current filters."}
@@ -202,7 +202,7 @@ export default function PunchListPanel({
                 className="px-4 py-3 hover:bg-zinc-800/40 transition-colors"
               >
                 <div className="flex items-start gap-3">
-                  <span className="text-xs font-mono text-zinc-500 pt-0.5 min-w-[28px]">
+                  <span className="text-xs font-mono text-zinc-300 pt-0.5 min-w-[28px]">
                     #{item.id}
                   </span>
                   <div className="flex-1 min-w-0">
@@ -211,11 +211,11 @@ export default function PunchListPanel({
                         {item.page}
                       </span>
                       <span
-                        className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${pri.bg} ${pri.text}`}
+                        className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${pri.bg} ${pri.text}`}
                       >
                         {pri.label}
                       </span>
-                      <span className="text-[10px] text-zinc-600">
+                      <span className="text-xs text-zinc-300">
                         R{item.round}
                       </span>
                     </div>
@@ -229,7 +229,7 @@ export default function PunchListPanel({
                             expandedScreenshot === item.id ? null : item.id
                           )
                         }
-                        className="mt-1 text-[10px] text-sky-400 hover:text-sky-300"
+                        className="mt-1 text-xs text-sky-400 hover:text-sky-300"
                       >
                         {expandedScreenshot === item.id
                           ? "Hide screenshot"
@@ -243,7 +243,7 @@ export default function PunchListPanel({
                         className="mt-2 rounded-lg border border-zinc-700 max-w-full max-h-48 object-contain"
                       />
                     )}
-                    <div className="text-[10px] text-zinc-600 mt-1">
+                    <div className="text-xs text-zinc-300 mt-1">
                       {new Date(item.timestamp).toLocaleString()}
                     </div>
                   </div>

@@ -173,7 +173,7 @@ export function OnboardingModal({
                     ? "bg-[#FF6700] text-white"
                     : i < step
                     ? "bg-zinc-700 text-zinc-300 hover:bg-zinc-600 cursor-pointer"
-                    : "bg-zinc-800 text-zinc-600"
+                    : "bg-zinc-800 text-zinc-300"
                 }`}
               >
                 {i < step ? (
@@ -205,7 +205,7 @@ export function OnboardingModal({
                   Project Name <span className="text-red-400">*</span>
                 </label>
                 <div className="relative">
-                  <Folder className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                  <Folder className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-300" />
                   <input
                     type="text"
                     value={projectName}
@@ -216,7 +216,7 @@ export function OnboardingModal({
                   />
                 </div>
                 {projectName && (
-                  <p className="mt-1 text-xs text-zinc-500 font-mono">
+                  <p className="mt-1 text-xs text-zinc-300 font-mono">
                     Folder: {slug}/
                   </p>
                 )}
@@ -226,10 +226,10 @@ export function OnboardingModal({
               <div>
                 <label className="block text-sm font-medium text-zinc-300 mb-1.5">
                   Client Name{" "}
-                  <span className="text-zinc-600 text-xs">(optional)</span>
+                  <span className="text-zinc-300 text-xs">(optional)</span>
                 </label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-300" />
                   <input
                     type="text"
                     value={clientName}
@@ -244,10 +244,10 @@ export function OnboardingModal({
               <div>
                 <label className="block text-sm font-medium text-zinc-300 mb-1.5">
                   Client Email{" "}
-                  <span className="text-zinc-600 text-xs">(optional)</span>
+                  <span className="text-zinc-300 text-xs">(optional)</span>
                 </label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-300" />
                   <input
                     type="email"
                     value={clientEmail}
@@ -280,7 +280,7 @@ export function OnboardingModal({
                 </div>
                 {hasDomain && (
                   <div className="relative">
-                    <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                    <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-300" />
                     <input
                       type="text"
                       value={domain}
@@ -335,14 +335,14 @@ export function OnboardingModal({
               <div className="rounded-lg border border-zinc-700 bg-zinc-800/50 p-4 space-y-3">
                 {/* Name */}
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-zinc-500">Project</span>
+                  <span className="text-xs text-zinc-300">Project</span>
                   <span className="text-sm font-bold text-white">{slug}</span>
                 </div>
 
                 {/* Client */}
                 {clientName && (
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-zinc-500">Client</span>
+                    <span className="text-xs text-zinc-300">Client</span>
                     <span className="text-sm text-zinc-300">{clientName}</span>
                   </div>
                 )}
@@ -350,7 +350,7 @@ export function OnboardingModal({
                 {/* Email */}
                 {clientEmail && (
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-zinc-500">Email</span>
+                    <span className="text-xs text-zinc-300">Email</span>
                     <span className="text-sm text-zinc-300 font-mono">
                       {clientEmail}
                     </span>
@@ -360,7 +360,7 @@ export function OnboardingModal({
                 {/* Domain */}
                 {hasDomain && domain && (
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-zinc-500">Domain</span>
+                    <span className="text-xs text-zinc-300">Domain</span>
                     <span className="text-sm text-zinc-300 font-mono">
                       {domain}
                     </span>
@@ -369,7 +369,7 @@ export function OnboardingModal({
 
                 {/* Template */}
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-zinc-500">Template</span>
+                  <span className="text-xs text-zinc-300">Template</span>
                   <span className="text-sm text-zinc-300">
                     {TEMPLATES.find((t) => t.id === template)?.name || "Blank"}
                   </span>
@@ -377,14 +377,14 @@ export function OnboardingModal({
 
                 {/* Toggles */}
                 <div className="border-t border-zinc-700 pt-3">
-                  <span className="text-xs text-zinc-500 block mb-2">
+                  <span className="text-xs text-zinc-300 block mb-2">
                     Features ({activeToggleCount})
                   </span>
                   <div className="flex flex-wrap gap-1.5">
                     {TOGGLE_INFO.filter((t) => toggles[t.key]).map((t) => (
                       <span
                         key={t.key}
-                        className="px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                        className="px-2 py-0.5 rounded-full text-xs font-semibold"
                         style={{
                           backgroundColor: `${t.color}20`,
                           color: t.color,
@@ -394,7 +394,7 @@ export function OnboardingModal({
                       </span>
                     ))}
                     {activeToggleCount === 0 && (
-                      <span className="text-xs text-zinc-600">
+                      <span className="text-xs text-zinc-300">
                         No features selected
                       </span>
                     )}
@@ -404,7 +404,7 @@ export function OnboardingModal({
 
               {/* What will happen */}
               <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-3">
-                <p className="text-xs text-zinc-500 font-medium mb-2">
+                <p className="text-xs text-zinc-300 font-medium mb-2">
                   On create:
                 </p>
                 <ul className="space-y-1 text-xs text-zinc-400">
@@ -462,7 +462,7 @@ export function OnboardingModal({
           ) : (
             <button
               onClick={handleClose}
-              className="px-4 py-2 rounded-lg text-sm font-medium text-zinc-500 hover:text-zinc-300 transition-colors"
+              className="px-4 py-2 rounded-lg text-sm font-medium text-zinc-300 hover:text-zinc-300 transition-colors"
             >
               Cancel
             </button>

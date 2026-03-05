@@ -95,8 +95,8 @@ export function ModelRegistry() {
       : m.strength === 'weak' ? 'text-orange-600 dark:text-orange-400' : 'text-zinc-400';
 
     return (
-      <div className={`flex items-center gap-1 px-1 py-px text-[10px] ${m.excluded ? 'opacity-40' : ''}`}>
-        <span className="flex-1 truncate text-zinc-700 dark:text-zinc-300" title={m.name}>
+      <div className={`flex items-center gap-1 px-1 py-px text-xs ${m.excluded ? 'opacity-40' : ''}`}>
+        <span className="flex-1 truncate text-zinc-400 dark:text-zinc-300" title={m.name}>
           {m.name.replace(':latest', '')}
         </span>
         <span className="text-zinc-400 w-7 text-right">{size}</span>
@@ -110,7 +110,7 @@ export function ModelRegistry() {
                   ? p === 'judge'
                     ? 'bg-amber-200 dark:bg-amber-500/40 text-amber-700 dark:text-amber-200'
                     : 'bg-blue-200 dark:bg-blue-500/40 text-blue-700 dark:text-blue-200'
-                  : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-400 dark:text-zinc-500'
+                  : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-400 dark:text-zinc-300'
               }`}>
               {p === 'd1' ? '1' : p === 'd2' ? '2' : p === 'd3' ? '3' : 'J'}
             </button>
@@ -126,21 +126,21 @@ export function ModelRegistry() {
   return (
     <div className="text-[11px] space-y-2">
       {/* Header */}
-      <div className="flex items-center gap-2 flex-wrap text-[10px]">
-        <span className="font-semibold text-zinc-700 dark:text-zinc-300">Registry</span>
+      <div className="flex items-center gap-2 flex-wrap text-xs">
+        <span className="font-semibold text-zinc-400 dark:text-zinc-300">Registry</span>
         <span className="text-zinc-400">|</span>
-        <span className="text-zinc-500">{total}</span>
+        <span className="text-zinc-300">{total}</span>
         <span className="text-green-600 dark:text-green-400">{ready} ready</span>
         {unclassified > 0 && <span className="text-yellow-600 dark:text-yellow-400">{unclassified}?</span>}
         <div className="flex-1" />
         <button onClick={handleScan} disabled={scanning}
-          className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 text-zinc-700 dark:text-zinc-300 disabled:opacity-50">
+          className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 text-zinc-400 dark:text-zinc-300 disabled:opacity-50">
           <RefreshCw className={`inline h-2.5 w-2.5 mr-0.5 ${scanning ? 'animate-spin' : ''}`} />Scan
         </button>
         {unclassified > 0 && (
           <>
             <select value={classifierModel} onChange={e => setClassifierModel(e.target.value)}
-              className="h-4 px-1 text-[9px] rounded bg-zinc-200 dark:bg-zinc-700 border-none text-zinc-700 dark:text-zinc-300">
+              className="h-4 px-1 text-xs rounded bg-zinc-200 dark:bg-zinc-700 border-none text-zinc-400 dark:text-zinc-300">
               {classifiers.map(m => <option key={m} value={m}>{m.split(':')[0]}</option>)}
             </select>
             <button onClick={handleClassify} disabled={classifying}
@@ -153,10 +153,10 @@ export function ModelRegistry() {
           className="text-red-500 hover:text-red-600">Clear</button>
       </div>
 
-      {error && <div className="p-1 rounded bg-red-100 dark:bg-red-500/10 text-red-600 dark:text-red-400 text-[10px]">{error}</div>}
+      {error && <div className="p-1 rounded bg-red-100 dark:bg-red-500/10 text-red-600 dark:text-red-400 text-xs">{error}</div>}
 
       {total === 0 ? (
-        <div className="p-3 text-center text-zinc-400 text-[10px]">No models. Click Scan.</div>
+        <div className="p-3 text-center text-zinc-400 text-xs">No models. Click Scan.</div>
       ) : (
         <div className="grid grid-cols-3 gap-2">
           {CATEGORIES.map(cat => {
@@ -175,12 +175,12 @@ export function ModelRegistry() {
                   onClick={() => toggleCat(cat.key)}
                   className="flex items-center gap-1 px-1.5 py-0.5 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5"
                 >
-                  <span className={`font-semibold ${isSarge ? 'text-green-700 dark:text-green-400' : 'text-zinc-600 dark:text-zinc-400'}`}>
+                  <span className={`font-semibold ${isSarge ? 'text-green-700 dark:text-green-400' : 'text-zinc-300 dark:text-zinc-400'}`}>
                     {cat.label}
                   </span>
-                  <span className="text-[9px] text-zinc-400">({models.length})</span>
+                  <span className="text-xs text-zinc-400">({models.length})</span>
                   <span className="flex-1" />
-                  <span className="text-[9px] text-zinc-400">{isCollapsed ? '▸' : '▾'}</span>
+                  <span className="text-xs text-zinc-400">{isCollapsed ? '▸' : '▾'}</span>
                 </div>
                 {/* Models */}
                 {!isCollapsed && (

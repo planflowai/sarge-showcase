@@ -119,8 +119,8 @@ export function SettingsKnowledge() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="mb-1 text-sm font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-500">Knowledge Vault</h2>
-        <p className="mb-4 text-xs font-medium text-zinc-600 dark:text-zinc-500">
+        <h2 className="mb-1 text-sm font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">Knowledge Vault</h2>
+        <p className="mb-4 text-xs font-medium text-zinc-300 dark:text-zinc-300">
           Upload documents, paste text, or drag files here. These are injected into your conversations as context for the AI.
         </p>
       </div>
@@ -144,7 +144,7 @@ export function SettingsKnowledge() {
         <Button size="sm" onClick={() => fileInputRef.current?.click()} className="bg-indigo-600 hover:bg-indigo-700">
           <Upload className="h-3.5 w-3.5 mr-1.5" /> Upload Files
         </Button>
-        <Button size="sm" variant="ghost" onClick={() => setShowAddDoc(true)} className="text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200">
+        <Button size="sm" variant="ghost" onClick={() => setShowAddDoc(true)} className="text-zinc-300 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200">
           <Plus className="h-3.5 w-3.5 mr-1" /> Paste Text
         </Button>
         {documents.length > 0 && (
@@ -166,9 +166,9 @@ export function SettingsKnowledge() {
       >
         {documents.length === 0 ? (
           <div className="text-center">
-            <Database className="mx-auto h-8 w-8 text-zinc-400 dark:text-zinc-600 mb-2" />
-            <p className="text-sm text-zinc-500">Drop files here — text, images, zips, or entire folders</p>
-            <p className="text-xs text-zinc-400 dark:text-zinc-600 mt-1">Supported: text files, images (&lt; 2MB), zip archives</p>
+            <Database className="mx-auto h-8 w-8 text-zinc-400 dark:text-zinc-300 mb-2" />
+            <p className="text-sm text-zinc-300">Drop files here — text, images, zips, or entire folders</p>
+            <p className="text-xs text-zinc-400 dark:text-zinc-300 mt-1">Supported: text files, images (&lt; 2MB), zip archives</p>
           </div>
         ) : (
           <div className="space-y-1">
@@ -185,11 +185,11 @@ export function SettingsKnowledge() {
               return (
                 <div
                   key={doc.id}
-                  className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                  className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-zinc-300 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
                 >
                   <DocIcon className={`h-4 w-4 flex-shrink-0 ${iconColor}`} />
                   <span className="flex-1 truncate" title={doc.name}>{doc.name}</span>
-                  <span className="text-xs text-zinc-400 dark:text-zinc-600">{sizeStr}</span>
+                  <span className="text-xs text-zinc-400 dark:text-zinc-300">{sizeStr}</span>
                   <button onClick={() => removeDocument(doc.id)} className="text-zinc-400 hover:text-red-400">
                     <X className="h-3.5 w-3.5" />
                   </button>
@@ -203,12 +203,12 @@ export function SettingsKnowledge() {
         )}
       </div>
 
-      <p className="text-xs text-zinc-400 dark:text-zinc-600">{documents.length} document{documents.length !== 1 ? "s" : ""} in vault</p>
+      <p className="text-xs text-zinc-400 dark:text-zinc-300">{documents.length} document{documents.length !== 1 ? "s" : ""} in vault</p>
 
       {showAddDoc && (
         <div className={dashedCardCls}>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Add Text Document</h3>
+            <h3 className="text-sm font-medium text-zinc-400 dark:text-zinc-300">Add Text Document</h3>
             <button onClick={() => setShowAddDoc(false)} className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"><X className="h-4 w-4" /></button>
           </div>
           <Input

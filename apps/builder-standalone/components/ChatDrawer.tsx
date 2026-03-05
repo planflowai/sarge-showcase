@@ -78,7 +78,7 @@ export default function ChatDrawer() {
             <ChatView conversationId={currentConversationId} />
           )}
           {tab === "chat" && !currentConversationId && (
-            <div className="flex items-center justify-center h-full text-zinc-500 text-sm">
+            <div className="flex items-center justify-center h-full text-zinc-300 text-sm">
               Loading conversation...
             </div>
           )}

@@ -285,7 +285,7 @@ export default function NewProjectWizard({
             </div>
             <div>
               <h2 className="text-lg font-bold text-white">New Project</h2>
-              <p className="text-xs text-zinc-500">
+              <p className="text-xs text-zinc-300">
                 {step === 0 && "Client info"}
                 {step === 1 && "Package & features"}
                 {step === 2 && "Review & confirm"}
@@ -296,7 +296,7 @@ export default function NewProjectWizard({
           {!isCreating && (
             <button
               onClick={handleClose}
-              className="p-2 rounded-lg text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors"
+              className="p-2 rounded-lg text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors"
             >
               <X className="h-5 w-5" />
             </button>
@@ -356,7 +356,7 @@ export default function NewProjectWizard({
                   className="w-full px-4 py-3 text-sm rounded-xl bg-zinc-900 border border-zinc-700 text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30"
                 />
                 {slug && (
-                  <p className="text-xs text-zinc-600 mt-1.5">
+                  <p className="text-xs text-zinc-300 mt-1.5">
                     Folder: <span className="text-zinc-400 font-mono">{slug}/</span>
                   </p>
                 )}
@@ -437,7 +437,7 @@ export default function NewProjectWizard({
                           {pkg.price}
                         </span>
                         <span className="text-sm font-bold text-zinc-200">{pkg.name}</span>
-                        <span className="text-xs text-zinc-500 mt-1 leading-relaxed">
+                        <span className="text-xs text-zinc-300 mt-1 leading-relaxed">
                           {pkg.description}
                         </span>
                         <div className="flex flex-wrap gap-1 mt-3">
@@ -446,7 +446,7 @@ export default function NewProjectWizard({
                             return (
                               <span
                                 key={key}
-                                className="px-2 py-0.5 text-[10px] font-bold rounded-full"
+                                className="px-2 py-0.5 text-xs font-bold rounded-full"
                                 style={{
                                   color: info?.color || "#888",
                                   background: `${info?.color || "#888"}20`,
@@ -467,7 +467,7 @@ export default function NewProjectWizard({
               <div>
                 <p className="text-sm font-semibold text-zinc-300 mb-3">
                   Fine-tune Features
-                  <span className="text-xs font-normal text-zinc-500 ml-2">
+                  <span className="text-xs font-normal text-zinc-300 ml-2">
                     {activeToggles} of 7 active
                   </span>
                 </p>
@@ -500,7 +500,7 @@ export default function NewProjectWizard({
                         />
                         <div className="flex-1 min-w-0">
                           <span className="text-sm font-semibold text-zinc-200">{info.label}</span>
-                          <p className="text-xs text-zinc-500">{info.description}</p>
+                          <p className="text-xs text-zinc-300">{info.description}</p>
                         </div>
                       </button>
                     );
@@ -518,33 +518,33 @@ export default function NewProjectWizard({
 
                 <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
                   <div>
-                    <span className="text-zinc-500">Project</span>
+                    <span className="text-zinc-300">Project</span>
                     <p className="text-zinc-100 font-semibold">{projectName}</p>
                   </div>
                   <div>
-                    <span className="text-zinc-500">Folder</span>
+                    <span className="text-zinc-300">Folder</span>
                     <p className="text-zinc-100 font-mono text-xs">{slug}/</p>
                   </div>
                   {clientName && (
                     <div>
-                      <span className="text-zinc-500">Client</span>
+                      <span className="text-zinc-300">Client</span>
                       <p className="text-zinc-100">{clientName}</p>
                     </div>
                   )}
                   {clientEmail && (
                     <div>
-                      <span className="text-zinc-500">Email</span>
+                      <span className="text-zinc-300">Email</span>
                       <p className="text-zinc-100">{clientEmail}</p>
                     </div>
                   )}
                   {domain && (
                     <div>
-                      <span className="text-zinc-500">Domain</span>
+                      <span className="text-zinc-300">Domain</span>
                       <p className="text-zinc-100">{domain}</p>
                     </div>
                   )}
                   <div>
-                    <span className="text-zinc-500">Package</span>
+                    <span className="text-zinc-300">Package</span>
                     <p className="text-zinc-100 font-semibold">
                       {PACKAGES.find((p) => p.id === selectedPackage)?.name || "Custom"}
                     </p>
@@ -648,7 +648,7 @@ export default function NewProjectWizard({
                         {STEP_LABELS[p.step] || p.step}
                       </p>
                       {p.detail && (
-                        <p className="text-xs text-zinc-500 mt-0.5 truncate">{p.detail}</p>
+                        <p className="text-xs text-zinc-300 mt-0.5 truncate">{p.detail}</p>
                       )}
                     </div>
                   </div>
@@ -656,7 +656,7 @@ export default function NewProjectWizard({
 
                 {/* Waiting indicator */}
                 {isCreating && progress.length === 0 && (
-                  <div className="flex items-center justify-center gap-2 py-8 text-zinc-500">
+                  <div className="flex items-center justify-center gap-2 py-8 text-zinc-300">
                     <Loader2 className="h-5 w-5 animate-spin" />
                     <span className="text-sm">Starting...</span>
                   </div>
@@ -680,7 +680,7 @@ export default function NewProjectWizard({
                     </div>
                     <div>
                       <p className="text-base font-bold text-emerald-300">Project Created!</p>
-                      <p className="text-xs text-zinc-500">{finalResult.projectPath}</p>
+                      <p className="text-xs text-zinc-300">{finalResult.projectPath}</p>
                     </div>
                   </div>
 
@@ -705,7 +705,7 @@ export default function NewProjectWizard({
                           />
                           <div className="flex-1 min-w-0">
                             <p className="text-xs font-bold text-zinc-300">{label}</p>
-                            <p className="text-[10px] text-zinc-600 truncate group-hover:text-zinc-400 transition-colors">
+                            <p className="text-xs text-zinc-300 truncate group-hover:text-zinc-400 transition-colors">
                               {url}
                             </p>
                           </div>
@@ -717,8 +717,8 @@ export default function NewProjectWizard({
                         >
                           <span className="block w-3.5 h-3.5 rounded-full bg-zinc-700" />
                           <div>
-                            <p className="text-xs font-bold text-zinc-500">{label}</p>
-                            <p className="text-[10px] text-zinc-700">Skipped</p>
+                            <p className="text-xs font-bold text-zinc-300">{label}</p>
+                            <p className="text-xs text-zinc-400">Skipped</p>
                           </div>
                         </div>
                       ),

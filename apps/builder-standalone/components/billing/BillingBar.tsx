@@ -52,22 +52,22 @@ export default function BillingBar() {
       <div className="flex items-center gap-5">
         {lastModel && (
           <span className="flex items-center gap-1.5">
-            <span className="text-zinc-500 font-bold">Last:</span>
+            <span className="text-zinc-300 font-bold">Last:</span>
             <span className="text-[#FF6700] font-bold">{lastModel}</span>
             <span className="font-mono text-[#F5F5F5] font-bold">{formatCost(lastCost)}</span>
           </span>
         )}
-        <span className="text-zinc-700 dark:text-zinc-700">|</span>
+        <span className="text-zinc-400 dark:text-zinc-400">|</span>
         <span className="flex items-center gap-1.5">
-          <span className="text-zinc-500 font-bold">Session:</span>
+          <span className="text-zinc-300 font-bold">Session:</span>
           <span className="font-mono text-[#F5F5F5] font-bold">{formatCost(sessionCost)}</span>
           {sessionCalls > 0 && (
-            <span className="text-zinc-600 text-xs">({sessionCalls})</span>
+            <span className="text-zinc-300 text-xs">({sessionCalls})</span>
           )}
         </span>
-        <span className="text-zinc-700 dark:text-zinc-700">|</span>
+        <span className="text-zinc-400 dark:text-zinc-400">|</span>
         <span className="flex items-center gap-1.5">
-          <span className="text-zinc-500 font-bold">Today:</span>
+          <span className="text-zinc-300 font-bold">Today:</span>
           <span className="font-mono text-[#F5F5F5] font-bold">{formatCost(todayCost)}</span>
         </span>
       </div>

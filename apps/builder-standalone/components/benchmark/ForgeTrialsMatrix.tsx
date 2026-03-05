@@ -143,7 +143,7 @@ export function ForgeTrialsMatrix({
                       R{i + 1}
                       {s.chainGate && <Flame className="w-3 h-3 text-[#FF6700]" />}
                     </span>
-                    <span className="text-xs text-zinc-500 font-bold normal-case">
+                    <span className="text-xs text-zinc-300 font-bold normal-case">
                       {s.name}
                     </span>
                   </div>
@@ -212,7 +212,7 @@ export function ForgeTrialsMatrix({
                       return (
                         <td key={scenario.id} className="px-2 py-3">
                           <div className="flex items-center justify-center w-full h-[52px] rounded-lg border border-zinc-800/50 bg-zinc-900/30">
-                            <span className="text-zinc-700 text-xs">—</span>
+                            <span className="text-zinc-400 text-xs">—</span>
                           </div>
                         </td>
                       );
@@ -241,14 +241,14 @@ export function ForgeTrialsMatrix({
                           </span>
                           {/* Timed out indicator */}
                           {isTimedOut && (
-                            <span className="absolute bottom-0.5 left-1 flex items-center gap-0.5 text-[9px] font-bold text-amber-400">
+                            <span className="absolute bottom-0.5 left-1 flex items-center gap-0.5 text-xs font-bold text-amber-400">
                               <Timer className="w-2.5 h-2.5" />
                               T/O
                             </span>
                           )}
                           {/* 3-run median badge */}
                           {result.runs && result.runs.length > 1 && (
-                            <span className="absolute top-0.5 right-1 text-[9px] font-bold text-zinc-500">
+                            <span className="absolute top-0.5 right-1 text-xs font-bold text-zinc-300">
                               {result.runs.length}x
                             </span>
                           )}
@@ -270,7 +270,7 @@ export function ForgeTrialsMatrix({
                           {formatTime(card.avgTimeMs)}
                         </span>
                       ) : (
-                        <span className="text-zinc-700">—</span>
+                        <span className="text-zinc-400">—</span>
                       );
                     })()}
                   </td>
@@ -306,7 +306,7 @@ export function ForgeTrialsMatrix({
                         );
                       })()
                     ) : (
-                      <span className="text-zinc-700">—</span>
+                      <span className="text-zinc-400">—</span>
                     )}
                   </td>
                 </tr>
@@ -377,7 +377,7 @@ export function ForgeTrialsMatrix({
             </>
           )}
         </div>
-        <span className="text-xs text-zinc-500 italic">* Grade excludes timed-out rounds</span>
+        <span className="text-xs text-zinc-300 italic">* Grade excludes timed-out rounds</span>
       </div>
     </div>
   );
