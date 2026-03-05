@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Zap, Globe, ChevronDown, X, RefreshCw } from "lucide-react";
-import { useModelStore, useAIModeStore, fetchOllamaModels, fetchLMStudioModels, providers, groupOllamaModels, cn } from "@sarge/core";
+import { useModelStore, useAIModeStore, useCustomProviderStore, fetchOllamaModels, fetchLMStudioModels, providers, groupOllamaModels, cn } from "@sarge/core";
 import type { LocalModel } from "@sarge/core";
 import Link from "next/link";
 
@@ -112,12 +112,22 @@ export default function BuilderModelBar({
     return () => document.removeEventListener("mousedown", handler);
   }, [showModelPanel]);
 
-  // Provider lists
-  const cloudProviderIds = new Set(["anthropic", "openai", "google", "xai", "deepseek"]);
-  const localProviderIds = new Set(["ollama", "lmstudio"]);
-  const allProviders = providers.filter((p) => cloudProviderIds.has(p.id) || localProviderIds.has(p.id));
-  const cloudProviders = allProviders.filter((p) => p.type === "cloud");
-  const localProviders = allProviders.filter((p) => p.type === "local");
+  // Provider lists — merge custom providers with built-in
+  const customProviders = useCustomProviderStore((s) => s.providers);
+  const builtInCloud = providers.filter((p) => p.type === "cloud");
+  const localProviders = providers.filter((p) => p.type === "local");
+  const cloudProviders = useMemo(() => {
+    const custom = customProviders.map((cp) => ({
+      id: cp.id,
+      name: cp.name,
+      type: "cloud" as const,
+      color: cp.color,
+      isEnabled: true,
+      supportsVoice: false,
+      models: [],
+    }));
+    return [...builtInCloud, ...custom];
+  }, [builtInCloud, customProviders]);
 
   // Models for current provider
   const currentProviderModels = useMemo(() => {
@@ -142,7 +152,7 @@ export default function BuilderModelBar({
     setShowModelPanel(true);
   };
 
-  const currentProviderConfig = providers.find((p) => p.id === selectedProvider);
+  const currentProviderConfig = cloudProviders.find((p) => p.id === selectedProvider) || localProviders.find((p) => p.id === selectedProvider);
   const providerColor = currentProviderConfig?.color || "#8b5cf6";
 
   // Display model name
@@ -155,12 +165,12 @@ export default function BuilderModelBar({
       {/* Provider pills row */}
       <div className="flex items-center gap-1 px-2 py-1.5 overflow-x-auto">
         {/* Cloud providers */}
-        {cloudProviders.map((p) => {
+        {cloudProviders.map((p, index) => {
           const isActive = selectedProvider === p.id;
           const pColor = p.color || "#8b5cf6";
           return (
             <button
-              key={p.id}
+              key={p.id + '-' + index}
               onClick={() => handleProviderSelect(p.id)}
               className={cn(
                 "px-2.5 py-1 rounded-md text-[10px] font-semibold transition-all whitespace-nowrap border",

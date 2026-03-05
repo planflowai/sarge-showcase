@@ -559,7 +559,6 @@ export function ForgeTrialsHybrid() {
             <span className="text-sm text-zinc-200 tabular-nums">{hybridPastRuns.length}</span>
             <div className="flex-1" />
             <span
-              role="button"
               onClick={(e) => { e.stopPropagation(); hybridClearPastRuns(); setShowPastRuns(false); }}
               className="text-sm text-zinc-200 hover:text-red-400 transition-colors px-1 cursor-pointer"
             >

@@ -251,7 +251,8 @@ Tag: working-2026-03-02-deploy-fix (last tagged)
 
 | Date | Commit | Change |
 |------|--------|--------|
-| Mar 5 | pending | Extract Thread Guardian + Jury Duty into `packages/guardian/`, wire 3-tier guardian check + jury verdict into hybrid chain, `hybrid:jury` event type, Build Log + Breakdown integration |
+| Mar 5 | pending | Fix nested button hydration crash (role="button" inside button → plain span), fix duplicate Mistral key in BuilderModelBar |
+| Mar 5 | 5d724f2 | Extract Thread Guardian + Jury Duty into `packages/guardian/`, wire 3-tier guardian check + jury verdict into hybrid chain, `hybrid:jury` event type, Build Log + Breakdown integration |
 | Mar 5 | ea24453 | Salvage audit — read only inventory (STATUS.md) |
 | Mar 5 | 640c699 | Fix HybridDetailPanel hooks-after-early-return (useMemo/useRef/useEffect above conditional returns) |
 | Mar 5 | 78048c6 | Full app readability sweep — zero dim grey across 37 files, all text zinc-300+, $ billing button orange, text-[9px]/[10px] → text-xs |
