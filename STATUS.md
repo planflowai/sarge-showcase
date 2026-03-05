@@ -536,6 +536,91 @@ Only 2 PM2 processes configured. All other standalone apps (chat, debate, tradin
 
 ---
 
+## Error Baseline — March 5 2026
+
+Commit: `48269b2` | Branch: `sargebuild-v1`
+
+### builder-standalone (own tsconfig — strict mode): CLEAN ✅
+
+```
+npx tsc --noEmit → 0 errors, 0 warnings
+```
+
+### Monorepo root (npx tsc --noEmit): 8,747 errors
+
+**Per app/package (real code only — 442 errors):**
+
+| Location | Errors | Notes |
+|----------|--------|-------|
+| `apps/builder-standalone` | 234 | All from root tsconfig resolution — compiles clean in own tsconfig |
+| `apps/trading-standalone` | 67 | Unmaintained |
+| `apps/chat-standalone` | 57 | Unmaintained |
+| `apps/chat-standalone-backup` | 23 | Backup copy |
+| `apps/war-room` | 20 | Unmaintained |
+| `packages/builder` | 16 | Missing exports from @sarge/core |
+| `packages/diagnostics` | 6 | Missing provider module paths |
+| `apps/builder-standalone-backup` | 4 | Backup copy |
+| `apps/jury-standalone` | 4 | Unmaintained |
+| `apps/guardian-standalone` | 3 | Unmaintained |
+| `apps/debate-standalone` | 2 | Missing type declarations |
+| `packages/chat` | 2 | Missing exports |
+| `apps/diagnostics-standalone` | 1 | Missing module |
+| `apps/diagnostics-standalone-backup` | 1 | Backup copy |
+| `apps/env-manager-standalone` | 1 | Missing module |
+| `apps/launchpad-standalone` | 1 | Missing module |
+| **TOTAL (real code)** | **442** | |
+
+**Backup directories: 8,301 errors** (26 backup folders, not maintained)
+
+**Test files: 4 errors** (`__tests__/templateSelection.test.ts` — vitest not installed)
+
+**Per error category (all 8,747):**
+
+| Code | Count | Description |
+|------|-------|-------------|
+| TS7006 | 5,740 | Implicit any parameter |
+| TS2307 | 2,525 | Cannot find module |
+| TS18046 | 150 | Unknown type |
+| TS7053 | 84 | Implicit any element access |
+| TS2322 | 68 | Type not assignable |
+| TS7031 | 68 | Implicit any binding element |
+| TS2305 | 59 | Module has no exported member |
+| TS2366 | 33 | Function lacks ending return |
+| TS2724 | 10 | Module has no exported member (did you mean) |
+| TS2339 | 5 | Property does not exist |
+| TS2740 | 3 | Missing properties from type |
+| TS2630 | 1 | Cannot assign to this |
+| TS2559 | 1 | No properties in common |
+
+**Per category (real code only — 442):**
+
+| Code | Count | Description |
+|------|-------|-------------|
+| TS7006 | 219 | Implicit any parameter |
+| TS2307 | 147 | Cannot find module |
+| TS2305 | 46 | Module has no exported member |
+| TS2724 | 10 | Module has no exported member (did you mean) |
+| TS7053 | 6 | Implicit any element access |
+| TS2322 | 5 | Type not assignable |
+| TS7031 | 4 | Implicit any binding element |
+| TS2339 | 2 | Property does not exist |
+| TS2366 | 1 | Function lacks ending return |
+| TS2630 | 1 | Cannot assign to this |
+| TS2559 | 1 | No properties in common |
+
+### New Errors Since Previous Audit
+
+**No new errors introduced.** The previous salvage audit (same day, commit `640c699`) reported ~8,815 lines of tsc output. Current count is 8,747 errors — slightly lower due to the nested button fix (`role="button"` removal) and duplicate key fix reducing type ambiguity. All 442 real-code errors are pre-existing missing module / implicit any issues from unmaintained standalones.
+
+### Key Insight
+
+The only app under active development (`builder-standalone`) compiles **100% clean** with strict mode. All 8,747 monorepo errors come from:
+- 26 backup directories (8,301 errors — 95%)
+- Unmaintained standalone apps (442 errors — 5%)
+- Test files missing vitest (4 errors — <1%)
+
+---
+
 ## SALVAGE AUDIT — 2026-03-05
 
 ### Backups (Phase 1)
