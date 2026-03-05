@@ -247,7 +247,8 @@ Tag: working-2026-03-02-deploy-fix (last tagged)
 
 | Date | Commit | Change |
 |------|--------|--------|
-| Mar 4 | (latest) | Hybrid page — full rebuild with compiler loop, AI assessment, 18 scenarios, Supabase logging. New files: hybridScenarios.ts, HybridDetailPanel.tsx, compile/route.ts, assess/route.ts, analytics/collect/route.ts. Rewrote ForgeTrialsHybrid.tsx (left panel). Dashboard wired for 30/70 split layout. |
+| Mar 4 | (latest) | Hybrid fixes — local models in dropdowns (all Ollama/LM Studio models shown without builder flag), scenario prompt preview (shows what AI receives, updates when custom prompt filled). |
+| Mar 4 | 65951d8 | Hybrid page — full rebuild with compiler loop, AI assessment, 18 scenarios, Supabase logging. New files: hybridScenarios.ts, HybridDetailPanel.tsx, compile/route.ts, assess/route.ts, analytics/collect/route.ts. Rewrote ForgeTrialsHybrid.tsx (left panel). Dashboard wired for 30/70 split layout. |
 | Mar 4 | 4564c37 | Supabase migration — 11 tables DDL (`supabase/migration.sql`), forgeSync module (`packages/core/src/lib/supabase/forgeSync.ts`), dual-write for trials+billing in benchmarkStore, conversation sync re-enabled in syncQueue.ts, migration API route. |
 | Mar 4 | 03eaef7 | Hybrid — remove hardcoded fallbacks, recommendations from trial data only. Custom chains start empty with "Select a model" prompt. Recommended mode requires completed local+cloud trials. |
 | Mar 4 | 5f3f4d5 | HuggingFace provider wired — Llama 3.3 70B, Qwen 3 235B, DeepSeek V3. Base URL updated to router.huggingface.co. All 3 models ping-tested OK. Also fixed @sarge/billing + @sarge/benchmark missing workspace deps. |

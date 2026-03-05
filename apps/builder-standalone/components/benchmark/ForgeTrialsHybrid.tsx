@@ -75,12 +75,23 @@ export function ForgeTrialsHybrid() {
   ]);
   const [showPastRuns, setShowPastRuns] = useState(false);
 
-  // Available models from completed trials only
+  // Available models: ALL local models + trial-completed cloud + builder-flagged cloud
   const availableModels: AvailableModel[] = useMemo(() => {
     const seen = new Set<string>();
     const result: AvailableModel[] = [];
 
-    // Local scorecard models (completed local trials)
+    // 1. ALL local models from model store (no builder flag required)
+    storeModels
+      .filter((m) => m.provider === "ollama" || m.provider === "lmstudio")
+      .forEach((m) => {
+        const key = `${m.provider}:${m.id}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          result.push({ id: m.id, provider: m.provider, name: m.name, isLocal: true });
+        }
+      });
+
+    // 2. Local scorecard models (completed local trials — may include models no longer in store)
     localScorecards.forEach((sc) => {
       const key = `ollama:${sc.modelId}`;
       if (!seen.has(key)) {
@@ -89,7 +100,7 @@ export function ForgeTrialsHybrid() {
       }
     });
 
-    // Cloud scorecard models (completed cloud trials)
+    // 3. Cloud scorecard models (completed cloud trials)
     cloudScorecards.forEach((sc) => {
       const provider = sc.modelSize || "unknown";
       const key = `${provider}:${sc.modelId}`;
@@ -100,17 +111,14 @@ export function ForgeTrialsHybrid() {
       }
     });
 
-    // Also include builder-flagged models from store
+    // 4. Builder-flagged cloud models from store
     storeModels
-      .filter((m) => builderFlags[m.id])
+      .filter((m) => builderFlags[m.id] && m.provider !== "ollama" && m.provider !== "lmstudio")
       .forEach((m) => {
         const key = `${m.provider}:${m.id}`;
         if (!seen.has(key)) {
           seen.add(key);
-          result.push({
-            id: m.id, provider: m.provider, name: m.name,
-            isLocal: m.provider === "ollama" || m.provider === "lmstudio",
-          });
+          result.push({ id: m.id, provider: m.provider, name: m.name, isLocal: false });
         }
       });
 
@@ -290,6 +298,20 @@ export function ForgeTrialsHybrid() {
             className="w-full bg-zinc-800 border border-zinc-700 text-zinc-300 text-xs rounded px-2 py-1.5 placeholder-zinc-600 resize-none"
           />
         </div>
+
+        {/* Prompt preview — what the AI will actually receive */}
+        {selectedScenarioObj && (
+          <div className="mb-1">
+            <label className="text-[10px] font-bold text-zinc-600 uppercase block mb-1">
+              {hybridCustomPrompt ? "Sending (custom)" : "Sending (scenario)"}
+            </label>
+            <div className="bg-zinc-900/60 border border-zinc-800/60 rounded px-2 py-1.5 max-h-24 overflow-y-auto">
+              <p className="text-[11px] text-zinc-500 italic leading-relaxed whitespace-pre-wrap">
+                {hybridCustomPrompt || selectedScenarioObj.prompt}
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── CHAIN STEPS ── */}
