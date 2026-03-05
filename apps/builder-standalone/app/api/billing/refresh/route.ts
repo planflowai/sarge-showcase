@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { clearBalanceCache } from "../balances/route";
+import { clearBalanceCache } from "../balanceCache";
 
 /** Force-clear cached balances and return fresh data */
 export async function POST() {

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { PROVIDER_CONSOLE_URLS } from "@sarge/billing";
+import { getBalanceCache, setBalanceCache, isCacheValid } from "../balanceCache";
 
 interface ProviderBalanceResult {
   provider: string;
@@ -10,13 +11,6 @@ interface ProviderBalanceResult {
   consoleUrl?: string;
   lastUpdated: string;
 }
-
-// 5-minute cache
-let cache: { data: ProviderBalanceResult[]; timestamp: number } | null = null;
-const CACHE_TTL = 5 * 60 * 1000;
-
-/** Clear cached balances (called by /api/billing/refresh) */
-export function clearBalanceCache() { cache = null; }
 
 function getApiKey(provider: string): string {
   switch (provider) {
@@ -174,12 +168,12 @@ async function queryAllProviders(): Promise<ProviderBalanceResult[]> {
 }
 
 export async function GET() {
-  // Check cache
-  if (cache && Date.now() - cache.timestamp < CACHE_TTL) {
-    return NextResponse.json({ balances: cache.data, cached: true });
+  const cached = getBalanceCache();
+  if (isCacheValid() && cached) {
+    return NextResponse.json({ balances: cached.data, cached: true });
   }
 
   const results = await queryAllProviders();
-  cache = { data: results, timestamp: Date.now() };
+  setBalanceCache(results);
   return NextResponse.json({ balances: results, cached: false });
 }
