@@ -471,6 +471,36 @@ async function logBilling(
 
 const STEP_SYSTEM = "You are a code builder assistant. Output a single complete HTML file with all CSS in a <style> tag and all JS in a <script> tag. No external dependencies except CDN libraries.";
 
+const LOCAL_MODEL_PREFIX = `CRITICAL INSTRUCTION: You must output ONLY complete, valid HTML.
+No explanations. No apologies. No commentary. No markdown. No code blocks.
+Your entire response must start with <!DOCTYPE html> and end with </html>.
+If you cannot complete the full site, output as much valid HTML as possible starting from <!DOCTYPE html>.
+Never output anything outside of HTML tags.
+
+`;
+
+// ── Output validation gate ──
+const CHAT_RESPONSE_PATTERNS = [
+  "i'm sorry", "as an ai", "as a text-based", "could you provide",
+  "i don't see any", "please provide",
+];
+
+function validateStepOutput(code: string): { valid: boolean; reason: string } {
+  const lower = code.toLowerCase();
+  if (!lower.includes("<!doctype") && !lower.includes("<html")) {
+    return { valid: false, reason: "No valid HTML (missing <!DOCTYPE or <html>)" };
+  }
+  if (code.length < 2000) {
+    return { valid: false, reason: `Output too short (${code.length} chars, min 2000)` };
+  }
+  for (const pattern of CHAT_RESPONSE_PATTERNS) {
+    if (lower.includes(pattern)) {
+      return { valid: false, reason: `Chat response detected ("${pattern}")` };
+    }
+  }
+  return { valid: true, reason: "" };
+}
+
 function getStepPrompt(role: string, previousCode: string): string {
   switch (role.toLowerCase()) {
     case "scaffold":
@@ -554,6 +584,7 @@ export async function POST(request: NextRequest) {
         let chainCost = 0;
         let chainTimeMs = 0;
         let previousCode = "";
+        let lastGoodCode = "";
 
         emit({
           type: "hybrid:chain-start",
@@ -620,10 +651,14 @@ export async function POST(request: NextRequest) {
             });
           };
 
+          // FIX 2: Local models get strict HTML-only system prompt
+          const isLocal = step.provider === "ollama" || step.provider === "lmstudio";
+          const systemPrompt = isLocal ? LOCAL_MODEL_PREFIX + STEP_SYSTEM : STEP_SYSTEM;
+
           const result = await callCloudDirect(
             step.provider,
             step.modelId,
-            STEP_SYSTEM,
+            systemPrompt,
             userPrompt,
             timeout,
             abortController.signal,
@@ -639,11 +674,35 @@ export async function POST(request: NextRequest) {
 
           // Extract code for the next step
           const code = extractCode(result.content) || result.content;
-          previousCode = code;
 
-          // Score this step's output
+          // FIX 1: Output validation gate — validate before passing to next step
+          const validation = validateStepOutput(code);
+          let stepFailed = false;
+          if (!validation.valid && !result.error) {
+            stepFailed = true;
+            console.warn(`[HYBRID] Step ${si + 1} output INVALID: ${validation.reason} (${code.length} chars from ${step.modelName})`);
+            emit({
+              type: "hybrid:error",
+              chainId: chain.id,
+              stepIndex: si,
+              message: `Step ${si + 1} output invalid — ${validation.reason}. Using last good output.`,
+              timestamp: Date.now(),
+            });
+            // Use last known good HTML instead of garbage
+            if (lastGoodCode) {
+              previousCode = lastGoodCode;
+            }
+            // Don't update previousCode with bad output
+          } else if (code && validation.valid) {
+            previousCode = code;
+            lastGoodCode = code;
+          } else {
+            previousCode = code;
+          }
+
+          // Score this step's output (score the actual output, even if invalid)
           const scored = scoreResponse(result.content, scenario.validation);
-          scored.score.tier = getCloudTier(scored.score.total);
+          scored.score.tier = stepFailed ? "fail" : getCloudTier(scored.score.total);
 
           const stepResult: HybridStepResult = {
             stepIndex: si,
@@ -651,7 +710,7 @@ export async function POST(request: NextRequest) {
             provider: step.provider,
             role: step.role,
             content: result.content,
-            extractedCode: code,
+            extractedCode: stepFailed && lastGoodCode ? lastGoodCode : code,
             score: scored.score,
             timeMs: result.timeMs,
             tokenCount: result.tokenCount,
@@ -665,7 +724,9 @@ export async function POST(request: NextRequest) {
             chainId: chain.id,
             stepIndex: si,
             stepResult,
-            message: `${step.role} (${step.modelName}): ${scored.score.total}/100 — ${formatTime(result.timeMs)}`,
+            message: stepFailed
+              ? `${step.role} (${step.modelName}): FAILED — ${validation.reason}`
+              : `${step.role} (${step.modelName}): ${scored.score.total}/100 — ${formatTime(result.timeMs)}`,
             timestamp: Date.now(),
           });
 
