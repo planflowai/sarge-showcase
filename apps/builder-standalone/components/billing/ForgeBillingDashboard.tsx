@@ -5,7 +5,7 @@ import {
   Flame, ArrowLeft, Settings, ArrowUpDown,
   Sun, Moon, DollarSign, Calendar, TrendingUp, Wallet, RefreshCw,
   Shield, ShieldOff, Plane, Radio, ExternalLink, Download, AlertTriangle,
-  CheckCircle, Clock, ChevronDown, ChevronRight,
+  CheckCircle, Clock, ChevronDown, ChevronRight, Pencil, Check,
 } from "lucide-react";
 import { formatCost, calculateCost, getRate, PROVIDER_CONSOLE_URLS } from "@sarge/billing";
 import type { ModelBreakdown, AppBreakdown, DailyTotal, UsageEntry } from "@sarge/billing";
@@ -44,6 +44,17 @@ interface ProviderBalance {
   lastUpdated: string;
 }
 
+/** User-entered balances stored in localStorage */
+function loadManualBalances(): Record<string, number> {
+  try {
+    const raw = localStorage.getItem("forge-manual-balances");
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+function saveManualBalances(balances: Record<string, number>) {
+  localStorage.setItem("forge-manual-balances", JSON.stringify(balances));
+}
+
 export default function ForgeBillingDashboard({ onClose }: { onClose: () => void }) {
   const theme = useSettingsStore((s) => s.theme);
   const setTheme = useSettingsStore((s) => s.setTheme);
@@ -70,6 +81,24 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
   // Provider balances (from API)
   const [providerBalances, setProviderBalances] = useState<ProviderBalance[]>([]);
   const [balancesLoading, setBalancesLoading] = useState(false);
+
+  // User-entered manual balances (localStorage)
+  const [manualBalances, setManualBalances] = useState<Record<string, number>>({});
+  const [editingBalance, setEditingBalance] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
+
+  useEffect(() => { setManualBalances(loadManualBalances()); }, []);
+
+  const saveBalance = (provider: string) => {
+    const val = parseFloat(editValue);
+    if (!isNaN(val) && val >= 0) {
+      const updated = { ...manualBalances, [provider]: val };
+      setManualBalances(updated);
+      saveManualBalances(updated);
+    }
+    setEditingBalance(null);
+    setEditValue("");
+  };
 
   // History
   const [history, setHistory] = useState<UsageEntry[]>([]);
@@ -249,25 +278,50 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
 
       {/* ── Provider Balance Cards Row — CENTERED ── */}
       <div className="flex-shrink-0 px-4 pt-3">
-        <div className="flex justify-center gap-2 flex-wrap">
+        <div className="grid grid-cols-4 xl:grid-cols-7 gap-2">
           {providerBalances.map(pb => {
             const color = PROVIDER_COLORS[pb.provider] || "#888";
             const spent = providerSpend[pb.provider] || 0;
+            const manualBal = manualBalances[pb.provider];
+            const displayBalance = pb.status === "ok" && pb.balance !== undefined ? pb.balance : manualBal;
+            const remaining = displayBalance !== undefined ? Math.max(displayBalance - spent, 0) : undefined;
+            const isEditing = editingBalance === pb.provider;
             const ago = pb.lastUpdated ? Math.round((Date.now() - new Date(pb.lastUpdated).getTime()) / 60000) : null;
             return (
-              <div key={pb.provider} className="rounded-lg border border-zinc-700 bg-zinc-900/60 p-3 flex flex-col items-center gap-1.5 min-w-[150px] max-w-[180px]">
+              <div key={pb.provider} className="rounded-lg border border-zinc-700 bg-zinc-900/60 p-3 flex flex-col items-center gap-1.5">
                 <div className="flex items-center gap-2">
                   <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
                   <span className="text-sm font-bold text-white capitalize">{pb.provider}</span>
                   <StatusIcon status={pb.status} />
                 </div>
-                {pb.status === "ok" && pb.balance !== undefined ? (
-                  <div className="text-2xl font-bold font-mono text-emerald-400">${pb.balance.toFixed(2)}</div>
-                ) : (
+                {/* Balance display — live API or manual */}
+                {displayBalance !== undefined ? (
+                  <div className="text-2xl font-bold font-mono text-emerald-400">${displayBalance.toFixed(2)}</div>
+                ) : isEditing ? null : (
                   <div className="text-sm font-bold text-zinc-300 text-center">{pb.message || "—"}</div>
+                )}
+                {/* Remaining after spend */}
+                {remaining !== undefined && spent > 0 && (
+                  <div className="text-xs text-zinc-300 font-bold">Remaining: <span className="text-white">${remaining.toFixed(2)}</span></div>
                 )}
                 {spent > 0 && (
                   <div className="text-xs text-zinc-300 font-bold">Spent: <span className="text-white">{formatCost(spent)}</span></div>
+                )}
+                {/* Editable balance input */}
+                {isEditing ? (
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <span className="text-sm text-zinc-300 font-bold">$</span>
+                    <input type="number" autoFocus value={editValue}
+                      onChange={e => setEditValue(e.target.value)}
+                      onKeyDown={e => { if (e.key === "Enter") saveBalance(pb.provider); if (e.key === "Escape") setEditingBalance(null); }}
+                      className="w-20 px-2 py-1 rounded text-sm font-mono font-bold bg-zinc-800 border border-zinc-600 text-white text-center" />
+                    <button onClick={() => saveBalance(pb.provider)} className="text-emerald-400 hover:text-emerald-300"><Check className="w-4 h-4" /></button>
+                  </div>
+                ) : (
+                  <button onClick={() => { setEditingBalance(pb.provider); setEditValue(manualBal?.toString() || ""); }}
+                    className="text-xs text-zinc-400 hover:text-[#FF6700] flex items-center gap-1 font-bold transition-colors" title="Set your balance">
+                    <Pencil className="w-3 h-3" /> {manualBal !== undefined ? "Edit" : "Set"} Balance
+                  </button>
                 )}
                 <div className="flex items-center gap-2">
                   {ago !== null && <span className="text-xs text-zinc-400">{ago < 1 ? "Just now" : `${ago}m ago`}</span>}
@@ -281,7 +335,7 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
             );
           })}
           {providerBalances.length === 0 && !balancesLoading && (
-            <div className="text-center text-zinc-300 text-sm font-bold py-3">Loading provider balances...</div>
+            <div className="col-span-full text-center text-zinc-300 text-sm font-bold py-3">Loading provider balances...</div>
           )}
         </div>
       </div>
