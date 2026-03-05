@@ -40,12 +40,15 @@ async function callOllama(
   timeoutMs: number,
   numCtx: number,
   numPredict: number,
-  keepAlive: string
+  keepAlive: string,
+  parentSignal?: AbortSignal
 ): Promise<{ content: string; timeMs: number; timedOut: boolean; error?: string }> {
   const start = Date.now();
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const onParentAbort = () => controller.abort();
+  if (parentSignal) parentSignal.addEventListener("abort", onParentAbort);
 
   try {
     const res = await fetch(`${OLLAMA_URL}/api/chat`, {
@@ -67,8 +70,6 @@ async function callOllama(
       signal: controller.signal,
     });
 
-    clearTimeout(timer);
-
     if (!res.ok) {
       const text = await res.text().catch(() => "");
       return {
@@ -86,15 +87,20 @@ async function callOllama(
       timedOut: false,
     };
   } catch (err: unknown) {
-    clearTimeout(timer);
     const isAbort =
       err instanceof Error && err.name === "AbortError";
+    if (parentSignal?.aborted) {
+      return { content: "", timeMs: Date.now() - start, timedOut: false, error: "Stopped by user" };
+    }
     return {
       content: "",
       timeMs: Date.now() - start,
       timedOut: isAbort,
       error: isAbort ? "Timed out" : String(err),
     };
+  } finally {
+    clearTimeout(timer);
+    if (parentSignal) parentSignal.removeEventListener("abort", onParentAbort);
   }
 }
 
@@ -181,6 +187,13 @@ export async function POST(req: NextRequest) {
   const encoder = new TextEncoder();
   let stopped = false;
 
+  // Propagate client disconnect to abort ongoing Ollama calls
+  const runAbortController = new AbortController();
+  req.signal.addEventListener("abort", () => {
+    stopped = true;
+    runAbortController.abort();
+  });
+
   const stream = new ReadableStream({
     async start(controller) {
       function emit(event: BenchmarkEvent) {
@@ -189,7 +202,8 @@ export async function POST(req: NextRequest) {
             encoder.encode(JSON.stringify(event) + "\n")
           );
         } catch {
-          // Stream closed
+          // Stream closed — mark as stopped to exit loops
+          stopped = true;
         }
       }
 
@@ -291,6 +305,21 @@ export async function POST(req: NextRequest) {
               timestamp: Date.now(),
             });
 
+            // Heartbeat keeps the NDJSON stream alive during long Ollama calls.
+            // Without this, the browser closes the connection after ~60s of silence,
+            // which aborts the Ollama request and wastes the entire generation.
+            let hbCount = 0;
+            const heartbeat = setInterval(() => {
+              hbCount++;
+              emit({
+                type: "round:generating",
+                modelId,
+                scenarioId: scenario.id,
+                message: `${modelId} generating... (${hbCount * 10}s)`,
+                timestamp: Date.now(),
+              });
+            }, 10_000);
+
             const { content, timeMs, timedOut, error } = await callOllama(
               modelId,
               scenario.systemPrompt,
@@ -298,8 +327,11 @@ export async function POST(req: NextRequest) {
               scenario.timeout,
               numCtx,
               numPredict,
-              keepAlive
+              keepAlive,
+              runAbortController.signal
             );
+
+            clearInterval(heartbeat);
 
             emit({
               type: "round:scoring",
