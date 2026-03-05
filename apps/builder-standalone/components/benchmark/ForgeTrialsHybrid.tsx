@@ -9,6 +9,10 @@ import { useBenchmarkStore } from "@/lib/stores/benchmarkStore";
 import { useModelStore } from "@sarge/core";
 import {
   ALL_HYBRID_SCENARIOS,
+  BASIC_SCENARIOS,
+  MEDIUM_SCENARIOS,
+  CLOUD_SCENARIOS,
+  HYBRID_SCENARIOS,
   type HybridChain,
   type HybridStep,
   type HybridEvent,
@@ -343,11 +347,26 @@ export function ForgeTrialsHybrid() {
             disabled={hybridRunning}
             className="w-full bg-zinc-800 border border-zinc-700 text-zinc-200 text-sm rounded px-2 py-1.5"
           >
-            {ALL_HYBRID_SCENARIOS.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name} ({s.difficulty})
-              </option>
-            ))}
+            <optgroup label="── Basic Sites (Easy)">
+              {BASIC_SCENARIOS.map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </optgroup>
+            <optgroup label="── Medium Sites">
+              {MEDIUM_SCENARIOS.map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </optgroup>
+            <optgroup label="── Production Sites (Hard)">
+              {[...CLOUD_SCENARIOS, ...HYBRID_SCENARIOS].filter((s) => s.difficulty === "hard").map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </optgroup>
+            <optgroup label="── Expert Builds">
+              {[...CLOUD_SCENARIOS, ...HYBRID_SCENARIOS].filter((s) => s.difficulty === "expert").map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </optgroup>
           </select>
           {selectedScenarioObj && (
             <div className="mt-1 flex items-center gap-2">
@@ -565,14 +584,14 @@ export function ForgeTrialsHybrid() {
                     </button>
                   </div>
 
-                  {/* Model dropdown */}
+                  {/* Model dropdown — grouped by provider */}
                   <select
                     value={step.modelId ? `${step.provider}:${step.modelId}` : ""}
                     onChange={(e) => {
                       const [provider, ...rest] = e.target.value.split(":");
                       const modelId = rest.join(":");
                       const list = (stepTabs[si] || "local") === "local" ? localModels : cloudModels;
-                      const m = list.find((am) => am.id === modelId && am.provider === provider);
+                      const m = list.find((am: { id: string; provider: string }) => am.id === modelId && am.provider === provider);
                       if (m) {
                         updateStep(si, { modelId: m.id, provider: m.provider, modelName: m.name });
                       }
@@ -585,14 +604,27 @@ export function ForgeTrialsHybrid() {
                     {!step.modelId && (
                       <option value="" disabled>Select a model</option>
                     )}
-                    {((stepTabs[si] || "local") === "local" ? localModels : cloudModels).map((m) => {
-                      const score = getTrialScore(m.id, m.provider);
-                      return (
-                        <option key={`${m.provider}:${m.id}`} value={`${m.provider}:${m.id}`}>
-                          {m.name}{m.provider !== "ollama" && m.provider !== "lmstudio" ? ` (${m.provider})` : ""}{score !== null ? ` \u2014 ${score}/100` : ""}
-                        </option>
-                      );
-                    })}
+                    {(() => {
+                      const list = (stepTabs[si] || "local") === "local" ? localModels : cloudModels;
+                      const groups = new Map<string, typeof list>();
+                      for (const m of list) {
+                        const key = m.provider;
+                        if (!groups.has(key)) groups.set(key, []);
+                        groups.get(key)!.push(m);
+                      }
+                      return Array.from(groups.entries()).map(([provider, models]) => (
+                        <optgroup key={provider} label={provider.charAt(0).toUpperCase() + provider.slice(1)}>
+                          {models.map((m: { id: string; provider: string; name: string }) => {
+                            const score = getTrialScore(m.id, m.provider);
+                            return (
+                              <option key={`${m.provider}:${m.id}`} value={`${m.provider}:${m.id}`}>
+                                {m.name}{score !== null ? ` — ${score}/100` : ""}
+                              </option>
+                            );
+                          })}
+                        </optgroup>
+                      ));
+                    })()}
                   </select>
                 </>
               )}

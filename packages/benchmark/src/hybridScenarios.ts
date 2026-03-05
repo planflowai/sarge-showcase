@@ -1,6 +1,6 @@
 /**
- * Hybrid Forge Trials — 10 Additional Scenarios
- * Industry-specific site builds for hybrid chain testing.
+ * Hybrid Forge Trials — Basic, Medium & Industry Scenarios
+ * Organized by difficulty tier for easy selection.
  */
 
 import type { BenchmarkScenario } from "./runner";
@@ -15,6 +15,152 @@ RULES:
 - Start with a brief explanation (1-3 sentences) of what you built or changed.
 - Then provide the code in a single code block.
 - Be concise. No lengthy explanations unless asked.`;
+
+// ══════════════════════════════════════════════════════════════════
+// BASIC SITES (Easy) — Simple pages, minimal JS, fast builds
+// ══════════════════════════════════════════════════════════════════
+
+export const BASIC_SCENARIOS: BenchmarkScenario[] = [
+  {
+    id: "basic-coming-soon",
+    name: "Coming Soon Page",
+    difficulty: "easy",
+    timeout: 60_000,
+    systemPrompt: CLOUD_SYSTEM_PROMPT,
+    prompt:
+      "Build a coming soon / launch page for a new coffee shop called 'Morning Ritual Coffee' opening in March 2026 in Seattle. Include: centered logo area with shop name in a nice font, tagline 'Craft Coffee, Good Vibes', countdown timer to March 15 2026, email signup form (just email + submit), social media icon links (Instagram, TikTok, Facebook — use # hrefs), soft gradient background. Clean, minimal design. Output a single complete HTML file with all CSS in a style tag and all JS in a script tag.",
+    validation: {
+      requiredElements: ["form", "input", "button", "a"],
+      requiredKeywords: ["Morning Ritual", "coffee", "countdown"],
+      cssPatterns: ["gradient", "flex", "font"],
+      jsPatterns: ["addEventListener", "setInterval"],
+      minLength: 1500,
+    },
+  },
+  {
+    id: "basic-personal-bio",
+    name: "Personal Bio Page",
+    difficulty: "easy",
+    timeout: 60_000,
+    systemPrompt: CLOUD_SYSTEM_PROMPT,
+    prompt:
+      "Build a simple personal bio / link-in-bio page for a freelance photographer named 'Alex Chen'. Include: profile photo placeholder (circle), name and title, short bio paragraph (2-3 sentences about street photography and travel), 5 link buttons stacked vertically (Portfolio, Instagram, YouTube, Book a Session, Email Me — use # hrefs), subtle dark theme with one accent color. Responsive. Output a single complete HTML file with all CSS in a style tag and all JS in a script tag.",
+    validation: {
+      requiredElements: ["a", "img", "h1"],
+      requiredKeywords: ["Alex Chen", "photographer", "portfolio"],
+      cssPatterns: ["flex", "border-radius"],
+      jsPatterns: [],
+      minLength: 1000,
+    },
+  },
+  {
+    id: "basic-event-invite",
+    name: "Event Invitation",
+    difficulty: "easy",
+    timeout: 60_000,
+    systemPrompt: CLOUD_SYSTEM_PROMPT,
+    prompt:
+      "Build a single-page event invitation for a company holiday party. Company: 'Apex Digital'. Event: Annual Winter Gala, December 20 2026, 7:00 PM at The Grand Ballroom, 500 Park Avenue, New York. Include: elegant header with event name, date/time/location details, dress code (Black Tie Optional), RSVP form (name, email, attending yes/no radio, plus-one checkbox, dietary restrictions dropdown), Google Maps placeholder. Elegant dark theme with gold accents. Output a single complete HTML file with all CSS in a style tag and all JS in a script tag.",
+    validation: {
+      requiredElements: ["form", "input", "button", "h1"],
+      requiredKeywords: ["Apex Digital", "Winter Gala", "RSVP", "December"],
+      cssPatterns: ["flex", "color", "font"],
+      jsPatterns: ["addEventListener"],
+      minLength: 1500,
+    },
+  },
+  {
+    id: "basic-menu-page",
+    name: "Restaurant Menu",
+    difficulty: "easy",
+    timeout: 60_000,
+    systemPrompt: CLOUD_SYSTEM_PROMPT,
+    prompt:
+      "Build a simple restaurant menu page for 'Sakura Japanese Kitchen'. Include: restaurant name and tagline at top, menu sections (Appetizers, Sushi Rolls, Entrees, Noodles, Desserts, Drinks) each with 4-5 items showing name, description, and price. Add a vegetarian (V) and spicy (S) indicator next to applicable items. Clean layout, elegant typography, subtle Japanese-inspired color scheme (cream background, dark text, red accents). No JavaScript needed — just clean HTML/CSS. Responsive. Output a single complete HTML file with all CSS in a style tag.",
+    validation: {
+      requiredElements: ["h1", "h2", "section"],
+      requiredKeywords: ["Sakura", "sushi", "appetizer", "dessert"],
+      cssPatterns: ["flex", "@media", "font"],
+      jsPatterns: [],
+      minLength: 2000,
+    },
+  },
+];
+
+// ══════════════════════════════════════════════════════════════════
+// MEDIUM SITES — More sections, some JS, responsive required
+// ══════════════════════════════════════════════════════════════════
+
+export const MEDIUM_SCENARIOS: BenchmarkScenario[] = [
+  {
+    id: "medium-freelancer",
+    name: "Freelancer Portfolio",
+    difficulty: "medium",
+    timeout: 90_000,
+    systemPrompt: CLOUD_SYSTEM_PROMPT,
+    prompt:
+      "Build a portfolio website for a freelance web designer named 'Jordan Rivera'. Include: hero section with name, title, and 'Hire Me' CTA, about section with bio and skills list, portfolio grid (6 project cards with image placeholders, titles, and category tags — hover to show overlay with description), services section (3 cards: Web Design, Branding, UI/UX), testimonials section (3 client quotes), contact form (name, email, project type dropdown, budget range, message). Smooth scroll navigation. Mobile hamburger menu. Modern dark theme. Responsive. Output a single complete HTML file with all CSS in a style tag and all JS in a script tag.",
+    validation: {
+      requiredElements: ["header", "nav", "section", "form", "input", "select", "button", "footer"],
+      requiredKeywords: ["Jordan Rivera", "portfolio", "design", "contact", "testimonial"],
+      cssPatterns: ["@media", "flex", "grid", "transition", "hover"],
+      jsPatterns: ["addEventListener", "querySelector", "classList"],
+      minLength: 4000,
+    },
+  },
+  {
+    id: "medium-cafe",
+    name: "Coffee Shop",
+    difficulty: "medium",
+    timeout: 90_000,
+    systemPrompt: CLOUD_SYSTEM_PROMPT,
+    prompt:
+      "Build a website for 'Grounded Coffee Co.' — a trendy coffee shop in Brooklyn, NY. Include: hero with background image overlay and shop tagline, about section with the shop's story, full menu section organized by category (Espresso Drinks, Cold Brew, Pastries, Breakfast, Lunch) with prices, hours of operation displayed nicely (M-F 6am-7pm, Sat 7am-8pm, Sun 8am-5pm), location section with address (242 Bedford Ave, Brooklyn NY 11249), Instagram photo grid placeholder (6 squares), newsletter signup form, footer with social links. Warm, cozy color scheme (browns, creams, warm accents). Responsive with mobile menu. Output a single complete HTML file with all CSS in a style tag and all JS in a script tag.",
+    validation: {
+      requiredElements: ["header", "nav", "section", "form", "input", "button", "footer"],
+      requiredKeywords: ["Grounded Coffee", "Brooklyn", "espresso", "menu", "hours"],
+      cssPatterns: ["@media", "flex", "grid", "transition"],
+      jsPatterns: ["addEventListener", "querySelector"],
+      minLength: 3500,
+    },
+  },
+  {
+    id: "medium-startup",
+    name: "Startup Landing",
+    difficulty: "medium",
+    timeout: 90_000,
+    systemPrompt: CLOUD_SYSTEM_PROMPT,
+    prompt:
+      "Build a landing page for a tech startup called 'Nimbus AI' — an AI writing assistant for small businesses. Include: hero with headline, subheadline, and email signup form, trusted-by logo bar (placeholder logos), 3 feature cards with icons (Smart Drafts, Tone Matching, Multi-Platform), how-it-works section (3 numbered steps), pricing section (2 tiers: Free and Pro $19/mo with feature comparison), FAQ accordion (4 questions), CTA section at bottom, footer with links. Clean, modern SaaS aesthetic — white/blue. Responsive. Output a single complete HTML file with all CSS in a style tag and all JS in a script tag.",
+    validation: {
+      requiredElements: ["header", "nav", "section", "form", "input", "button", "footer"],
+      requiredKeywords: ["Nimbus AI", "pricing", "feature", "FAQ", "Free", "Pro"],
+      cssPatterns: ["@media", "flex", "grid", "transition"],
+      jsPatterns: ["addEventListener", "querySelector", "classList"],
+      minLength: 3500,
+    },
+  },
+  {
+    id: "medium-bakery",
+    name: "Bakery & Catering",
+    difficulty: "medium",
+    timeout: 90_000,
+    systemPrompt: CLOUD_SYSTEM_PROMPT,
+    prompt:
+      "Build a website for 'Sweet Layers Bakery & Catering' in Austin, Texas. Phone: (512) 555-0234. Include: hero with bakery name and 'Order Now' button, about section with bakery story, product gallery section with categories (Cakes, Cupcakes, Pastries, Bread, Catering Packages) showing 3-4 items each with names and prices, catering inquiry form (name, email, phone, event date, event type dropdown, guest count, message), customer reviews section (4 reviews with star ratings), location and hours, Instagram feed placeholder. Sweet, playful design — pink/cream/gold. Responsive with mobile menu. Output a single complete HTML file with all CSS in a style tag and all JS in a script tag.",
+    validation: {
+      requiredElements: ["header", "nav", "section", "form", "input", "select", "button", "footer"],
+      requiredKeywords: ["Sweet Layers", "Austin", "cake", "catering", "order"],
+      cssPatterns: ["@media", "flex", "grid", "transition"],
+      jsPatterns: ["addEventListener", "querySelector"],
+      minLength: 3500,
+    },
+  },
+];
+
+// ══════════════════════════════════════════════════════════════════
+// INDUSTRY SITES (Hard/Expert) — Full production builds
+// ══════════════════════════════════════════════════════════════════
 
 export const HYBRID_SCENARIOS: BenchmarkScenario[] = [
   // ── R9: Local Service Business (Plumber/Electrician/HVAC) ──────

@@ -184,6 +184,11 @@ export function getCloudScenario(id: string): BenchmarkScenario | undefined {
 }
 
 // ── Combined set for Hybrid tab ──
-import { HYBRID_SCENARIOS } from "./hybridScenarios";
-export { HYBRID_SCENARIOS };
-export const ALL_HYBRID_SCENARIOS: BenchmarkScenario[] = [...CLOUD_SCENARIOS, ...HYBRID_SCENARIOS];
+import { BASIC_SCENARIOS, MEDIUM_SCENARIOS, HYBRID_SCENARIOS } from "./hybridScenarios";
+export { BASIC_SCENARIOS, MEDIUM_SCENARIOS, HYBRID_SCENARIOS };
+export const ALL_HYBRID_SCENARIOS: BenchmarkScenario[] = [
+  ...BASIC_SCENARIOS,
+  ...MEDIUM_SCENARIOS,
+  ...CLOUD_SCENARIOS,
+  ...HYBRID_SCENARIOS,
+];

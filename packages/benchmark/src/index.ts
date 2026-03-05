@@ -36,7 +36,7 @@ export { getTier, getModelTier, getCloudTier, getCloudModelTier } from "./runner
 export { BUILDER_SCENARIOS, getScenario, getChainGateScenario } from "./scenarios";
 
 // Scenarios (Cloud + Hybrid)
-export { CLOUD_SCENARIOS, getCloudScenario, ALL_HYBRID_SCENARIOS, HYBRID_SCENARIOS } from "./cloudScenarios";
+export { CLOUD_SCENARIOS, getCloudScenario, ALL_HYBRID_SCENARIOS, BASIC_SCENARIOS, MEDIUM_SCENARIOS, HYBRID_SCENARIOS } from "./cloudScenarios";
 
 // Validator
 export { scoreResponse, extractCode } from "./validator";
