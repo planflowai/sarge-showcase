@@ -1,7 +1,7 @@
 # S.A.R.G.E. — System Status Report
 
-Generated: 2026-03-04
-Commit: 0a96600
+Generated: 2026-03-05
+Commit: 640c699
 Branch: sargebuild-v1
 Tag: working-2026-03-02-deploy-fix (last tagged)
 
@@ -251,7 +251,12 @@ Tag: working-2026-03-02-deploy-fix (last tagged)
 
 | Date | Commit | Change |
 |------|--------|--------|
-| Mar 5 | (latest) | Billing — live provider balances (DeepSeek live $, HuggingFace account, console links for rest), real 2026 model pricing (rates.ts), dashboard overhaul (provider cards, pie chart, history table, CSV export), 3 new API routes (/balances /history /refresh). |
+| Mar 5 | 640c699 | Fix HybridDetailPanel hooks-after-early-return (useMemo/useRef/useEffect above conditional returns) |
+| Mar 5 | 78048c6 | Full app readability sweep — zero dim grey across 37 files, all text zinc-300+, $ billing button orange, text-[9px]/[10px] → text-xs |
+| Mar 5 | aeab3fd | Billing — provider balance in provider color, bigger model/history text, runs grouped by day |
+| Mar 5 | 7bfc2e3 | Billing cards — restore full width grid, add editable balance per provider (localStorage) |
+| Mar 5 | e4f4b77 | Billing — readable fonts, centered cards, collapsible history with day/week/month filter |
+| Mar 5 | 317e26a | Billing — live provider balances (DeepSeek live $, HuggingFace account, console links for rest), real 2026 model pricing (rates.ts), dashboard overhaul (provider cards, pie chart, history table, CSV export), 3 new API routes (/balances /history /refresh). |
 | Mar 5 | e50167b | Guardian wiring, build log, changelog, model roles, Mistral scanner — full transparency pass. |
 | Mar 5 | 29f0f5d | Fix hydration error (nested button → span in ForgeTrialsHybrid Past Runs), fix iframe nav links permanently (hash links scroll normally, non-hash → window.open new tab, allow-popups sandbox). |
 | Mar 5 | 2e1481f | Hybrid — preserve local Step 1 base during Step 2 stream (2000+body gate), fix iframe nav links (anchor scroll within iframe, external → new tab, never navigate parent app). |
@@ -417,3 +422,94 @@ Tag: working-2026-03-02-deploy-fix (last tagged)
 | working-2026-03-02-post-hydration-fix | 2026-03-02 | 4ef3a4d | Hydration fixed, 6 stores stubbed, lazy-loading |
 | stable-builder-v1 | Earlier | — | Pre-hydration-fix baseline |
 | monolith-baseline | Earlier | — | Original monolith before standalone extraction |
+
+---
+
+## Full Codebase Audit — 2026-03-05 (Commit 640c699)
+
+### STEP 1: TypeScript Compile Check
+
+**builder-standalone (tsconfig.json — strict mode): CLEAN ✅**
+- Zero errors, zero warnings.
+
+**Monorepo root (tsconfig.json — includes ALL apps): ~8815 errors**
+- These are ALL pre-existing. No errors introduced by recent commits.
+- Breakdown by category:
+
+| Category | Count | Examples |
+|----------|-------|---------|
+| Missing module declarations (`@sarge/chat/index.client`, `@sarge/builder/index.client`) | ~80 | Root tsconfig doesn't resolve workspace package client exports |
+| Implicit `any` types (missing TS7006 annotations) | ~200 | ForgeTrialsDashboard, ForgeTrialsHybrid, TogglePanel, chat/page.tsx |
+| Missing lib modules (`@/lib/types/project`, `@/lib/toggles/pipeline`, etc.) | ~40 | Toggle system, SEO, accessibility, mailchimp/calendly injectors |
+| Backup app errors (`builder-standalone-backup`, `chat-standalone-backup`) | ~100 | Stale backup copies not maintained |
+| Other standalone apps (chat, trading, guardian, jury, etc.) | ~8000+ | Not actively maintained, many missing imports |
+| Test file (`vitest` module) | 3 | `__tests__/templateSelection.test.ts` |
+
+**Key insight**: builder-standalone compiles clean in its own tsconfig (strict mode). The root tsconfig includes everything including backup apps, unmaintained standalones, and test files that pull in different dependencies.
+
+### STEP 2: Hardcoded Model/Provider/API Audit
+
+**API URLs (56+ occurrences) — ACCEPTABLE**
+- All provider API endpoints are static URLs. These should be hardcoded.
+- Examples: `https://api.anthropic.com/v1/messages`, `https://api.openai.com/v1/chat/completions`
+
+**Provider Routing Strings (85+ occurrences) — ACCEPTABLE**
+- Provider names ("anthropic", "openai", etc.) used as routing keys in switch statements.
+- These are system-level identifiers. Correct as-is.
+
+**Hardcoded Default Models — SHOULD BE CONFIGURABLE**
+
+| File | Line | Hardcoded Value | Impact |
+|------|------|----------------|--------|
+| `packages/core/src/stores/aiModeStore.ts` | 88 | `claude-sonnet-4-20250514` | Default bootstrap model |
+| `packages/core/src/stores/aiModeStore.ts` | 116 | `["anthropic:claude-sonnet-4-20250514", "openai:gpt-4o"]` | Fallback chain |
+| `apps/builder-standalone/lib/stores/workbenchStore.ts` | 28-32 | 5 models (claude, gpt-4o, gemini, grok, deepseek) | Workbench slots |
+| `apps/builder-standalone/lib/stores/warRoomStore.ts` | 32-36 | 5 models (same set) | War Room monitors |
+| `apps/builder-standalone/app/api/thread-guardian/route.ts` | 341 | `deepseek-chat` | Guardian fallback |
+| `apps/builder-standalone/components/settings/ModelRegistry.tsx` | 31 | `deepseek-r1:8b` | Classifier model |
+| `apps/builder-standalone/app/api/benchmark/assess/route.ts` | 68 | `gemini-2.5-flash` | Assessment model |
+| `apps/builder-standalone/app/api/benchmark/compile/route.ts` | 55 | `gemini-2.5-flash` | Compiler fix model |
+| `apps/builder-standalone/app/api/image/route.ts` | 48 | `grok-2-image` | xAI image model |
+
+**API Key Format Validation (2 occurrences) — SAFE**
+- `sk-ant-` prefix check (Anthropic) and `sk-` check (OpenAI) — validation only, no credentials stored.
+
+### STEP 3: Hybrid System Model Audit
+
+**Models are ALWAYS user-selected** — no auto-selection from scorecard data.
+
+| Finding | Status |
+|---------|--------|
+| Scenario defaults to R1 Restaurant if no ID provided | FORCED DEFAULT (should require selection) |
+| System prompt (`STEP_SYSTEM`) hardcoded globally | BY DESIGN (local/cloud variants) |
+| Guardian is validation logic, not an AI model call | ACCEPTABLE |
+| Scorecard data is informational only — never used for auto-selection | NOT IMPLEMENTED |
+| `FALLBACK_LOCAL_MODELS` array for Ollama scan failure | ACCEPTABLE fallback |
+
+**Key finding**: Trial scorecard results (scores, grades) are displayed as badges in the UI but NEVER used to recommend or auto-fill models in hybrid chains. Every step model is manually picked.
+
+### STEP 4: Local Trial Runner Cloud Dependencies
+
+**LOCAL RUNNER (`run/route.ts`): ZERO CLOUD DEPENDENCIES ✅**
+- Talks only to Ollama at `127.0.0.1:11434`
+- Scoring is pure local code (`scoreResponse()` from `@sarge/benchmark`)
+- Can run 100% offline with just Ollama
+
+**CLOUD RUNNER (`run-cloud/route.ts`): All cloud (expected)**
+
+**HYBRID RUNNER (`run-hybrid/route.ts`): Mixed (expected)**
+- Supports both Ollama and cloud providers per step
+- Can run fully offline if all steps use local models
+
+**Optional cloud dependencies (NOT in runners):**
+- `/api/benchmark/assess` — requires Gemini API key (post-processing only)
+- `/api/benchmark/compile` — requires Gemini API key (on-demand fix only)
+
+### STEP 5: PM2 Process State
+
+| PM2 ID | Name | Port | Status | Restarts | Notes |
+|--------|------|------|--------|----------|-------|
+| 0 | beast | 5000 | **STOPPED** | 0 | Monolith — not needed for builder-standalone |
+| 4 | builder-standalone | 3101 | **ONLINE** | 18 | Running 56m, responds 200 on `/`, `/settings`, `/chat` |
+
+Only 2 PM2 processes configured. All other standalone apps (chat, debate, trading, etc.) are NOT running and have no PM2 entries.
