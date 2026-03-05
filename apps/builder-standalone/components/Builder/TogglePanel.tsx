@@ -209,7 +209,7 @@ export default function TogglePanel({ onClose }: Props) {
     saveToggles({ ...DEFAULT_TOGGLES }, toggleConfig);
   };
 
-  const anyEnabled = TOGGLE_INFO.some((t: any) => toggles[t.key]);
+  const anyEnabled = TOGGLE_INFO.some((t: any) => toggles[t.key as keyof typeof toggles]);
 
   // Run independent audit
   const handleAudit = useCallback(async () => {
@@ -285,12 +285,12 @@ export default function TogglePanel({ onClose }: Props) {
     // Set all enabled toggles to "running", disabled to "idle"
     const initStatuses: Record<string, ToggleStatus> = {};
     TOGGLE_INFO.forEach((t: any) => {
-      initStatuses[t.key] = toggles[t.key] ? "running" : "idle";
+      initStatuses[t.key] = toggles[t.key as keyof typeof toggles] ? "running" : "idle";
     });
     setStatuses(initStatuses);
 
     // Add initial log
-    const enabledNames = TOGGLE_INFO.filter((t: any) => toggles[t.key]).map((t: any) => t.label);
+    const enabledNames = TOGGLE_INFO.filter((t: any) => toggles[t.key as keyof typeof toggles]).map((t: any) => t.label);
     setLogLines([`Starting optimization — ${enabledNames.length} toggles enabled...`]);
 
     try {
@@ -459,7 +459,7 @@ export default function TogglePanel({ onClose }: Props) {
           <div className="grid grid-cols-2 gap-4">
             {TOGGLE_INFO.map((info: any) => {
               const Icon = TOGGLE_ICONS[info.key] || Zap;
-              const isOn = toggles[info.key];
+              const isOn = toggles[info.key as keyof typeof toggles];
               const status = statuses[info.key] || "idle";
               const isRunningCard = status === "running";
               const needsConfig =

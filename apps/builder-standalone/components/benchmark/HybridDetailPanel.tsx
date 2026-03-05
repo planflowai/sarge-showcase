@@ -43,8 +43,10 @@ interface CompilerState {
   error: string | null;
 }
 
-// Injected into preview iframes: hash links smooth-scroll in place, all others open in new tab
-const NAV_FIX_SCRIPT = `<script>document.addEventListener('click',function(e){var a=e.target.closest('a');if(!a)return;var h=a.getAttribute('href');if(!h)return;e.preventDefault();e.stopPropagation();if(h.startsWith('#')){var el=document.querySelector(h);if(el)el.scrollIntoView({behavior:'smooth'})}else{window.open(h,'_blank')}},true);<\/script>`;
+// Injected into preview iframes: intercepts ALL link clicks.
+// Hash links smooth-scroll in place. All others send postMessage to parent which opens new tab.
+// This works with sandbox="allow-scripts allow-same-origin allow-forms" (no allow-popups needed).
+const NAV_FIX_SCRIPT = `<script>document.addEventListener('DOMContentLoaded',function(){document.body.addEventListener('click',function(e){var a=e.target.closest('a');if(!a)return;e.preventDefault();e.stopPropagation();var h=a.getAttribute('href')||'';if(h.startsWith('#')){var t=document.querySelector(h);if(t)t.scrollIntoView({behavior:'smooth'})}else if(h){window.parent.postMessage({type:'open-url',url:h},'*')}},true)},false);<\/script>`;
 
 export function HybridDetailPanel({ running, chainResult, events, scenarioId }: Props) {
   const [tab, setTab] = useState<Tab>("preview");
@@ -245,42 +247,45 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
     prevLiveHtmlRef.current = liveHtml;
   }, [iframeOpacity, liveHtml]);
 
+  // ── postMessage bridge — iframe links open in new tab ──
+  useEffect(() => {
+    const handler = (e: MessageEvent) => {
+      if (e.data?.type === "open-url" && typeof e.data.url === "string") {
+        window.open(e.data.url, "_blank", "noopener");
+      }
+    };
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
+  }, []);
+
   // ── Score extraction helper ──
+  // runAudit returns: { scores: { performance, accessibility, seo, bestPractices }, results: AuditResult[] }
+  // Each AuditResult has: { tool, violations: AuditViolation[] }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function extractScores(report: any): AuditScores {
-    const results = report.results || report;
-    const lh = (results.lighthouse || {}) as Record<string, unknown>;
     const violations: AuditScores["violations"] = [];
 
-    // Extract violations from htmlValidate and axeCore
-    const htmlV = (results.htmlValidate || {}) as Record<string, unknown>;
-    const axe = (results.axeCore || {}) as Record<string, unknown>;
+    // Scores are at report.scores (top-level, from runAudit)
+    const scores = report.scores || {};
+    const perf = typeof scores.performance === "number" ? scores.performance : 0;
+    const acc = typeof scores.accessibility === "number" ? scores.accessibility : 0;
+    const seo = typeof scores.seo === "number" ? scores.seo : 0;
+    const bp = typeof scores.bestPractices === "number" ? scores.bestPractices
+      : typeof scores["best-practices"] === "number" ? (scores["best-practices"] as number) : 0;
 
-    if (Array.isArray(htmlV.violations)) {
-      htmlV.violations.forEach((v: Record<string, unknown>) => {
+    // Violations are in report.results[] array — each result has a violations array
+    const results = Array.isArray(report.results) ? report.results : [];
+    for (const result of results) {
+      if (!Array.isArray(result.violations)) continue;
+      for (const v of result.violations) {
         violations.push({
-          rule: String(v.ruleId || v.rule || "unknown"),
-          severity: String(v.severity || "warning"),
-          message: String(v.message || ""),
-          element: v.element ? String(v.element) : undefined,
-        });
-      });
-    }
-    if (Array.isArray(axe.violations)) {
-      axe.violations.forEach((v: Record<string, unknown>) => {
-        violations.push({
-          rule: String(v.id || v.rule || "unknown"),
+          rule: String(v.ruleId || v.id || v.rule || "unknown"),
           severity: String(v.impact || v.severity || "warning"),
           message: String(v.description || v.message || ""),
+          element: v.element ? String(v.element) : undefined,
         });
-      });
+      }
     }
-
-    const perf = typeof lh.performance === "number" ? lh.performance : 0;
-    const acc = typeof lh.accessibility === "number" ? lh.accessibility : 0;
-    const seo = typeof lh.seo === "number" ? lh.seo : 0;
-    const bp = typeof lh.bestPractices === "number" ? lh.bestPractices
-      : typeof lh["best-practices"] === "number" ? (lh["best-practices"] as number) : 0;
 
     return {
       performance: perf,

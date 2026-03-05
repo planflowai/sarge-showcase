@@ -493,7 +493,7 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
                         </button>
                       </div>
                       {TOGGLE_INFO.map(({ key, label, description, color }: any) => {
-                        const isChecked = selectedToggles[key];
+                        const isChecked = selectedToggles[key as keyof typeof selectedToggles];
                         return (
                           <button
                             key={key}

@@ -251,7 +251,8 @@ Tag: working-2026-03-02-deploy-fix (last tagged)
 
 | Date | Commit | Change |
 |------|--------|--------|
-| Mar 5 | pending | Delete 3 unmaintained apps + fix remaining 21 — 0 errors achieved (141 → 0) |
+| Mar 5 | pending | iframe nav postMessage bridge, compiler extractScores fix, TS7053 keyof casts — all Forge Trials fixes |
+| Mar 5 | 61c7f22 | Delete 3 unmaintained apps + fix remaining 21 — 0 errors achieved (141 → 0) |
 | Mar 5 | a899f8f | TS7006 implicit any fixes — 137 errors eliminated (278 → 141). 136 params annotated across 21 files |
 | Mar 5 | b190a91 | TS2305 exported member fixes — 19 errors eliminated (297 → 278). Import path fixes + stub updates |
 | Mar 5 | 8400840 | TS2307 module stubs — 121 errors eliminated (418 → 297). 46 modules stubbed in `types/missing-modules.d.ts` |
@@ -766,6 +767,30 @@ Created `types/missing-modules.d.ts` with 46 module stubs:
 | TS2630 | 1 | 0 | **-1** |
 | TS2559 | 1 | 0 | **-1** |
 | **TOTAL** | **141** | **0** | **-141** |
+
+### Forge Trials Fixes (post-Round 5)
+
+**3 verifications + fixes applied to `HybridDetailPanel.tsx`:**
+
+| Test | Before | After | Fix |
+|------|--------|-------|-----|
+| iframe external links | Silently fail (sandbox blocks `window.open`) | Open in new tab via parent | postMessage bridge — iframe sends `{type:'open-url'}`, parent calls `window.open()` |
+| Compiler scores | Always 0 (`extractScores` read wrong paths) | Real Lighthouse/axe-core scores | Rewritten to read `report.scores` + iterate `report.results[]` for violations |
+| Assessment timeout | Already working | Already working | `AbortSignal.timeout(30000)` correctly wired — no fix needed |
+
+**TS7053 regression from Round 4a `: any` annotations (9 errors):**
+- Root cause: `: any` on Zustand selector params downgraded correctly-inferred types to `any`, causing index access errors on concrete types
+- Fix: Added `as keyof typeof` casts at 9 index sites across 5 files:
+  - `TogglePanel.tsx` (4 casts)
+  - `WarRoomDashboard.tsx` (1 cast)
+  - `DeployPanel.tsx` (1 cast)
+  - `OnboardingModal.tsx` (1 cast)
+  - `ProjectStatusBar.tsx` (1 cast)
+  - `ToggleSelector.tsx` (2 casts — index + `handleToggle` arg)
+
+**Both tsconfigs verified clean:**
+- Root: `npx tsc --noEmit` → 0 errors
+- builder-standalone: `npx tsc --noEmit` → 0 errors
 
 ### Final Result: 0 ERRORS ✅
 

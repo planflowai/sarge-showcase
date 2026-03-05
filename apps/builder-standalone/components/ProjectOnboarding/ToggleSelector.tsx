@@ -24,14 +24,14 @@ export function ToggleSelector({ toggles, onChange }: ToggleSelectorProps) {
       </div>
 
       {TOGGLE_INFO.map((toggle: any, i: any) => {
-        const isOn = toggles[toggle.key];
+        const isOn = toggles[toggle.key as keyof typeof toggles];
         const isProfessional = i < 4;
 
         return (
           <button
             key={toggle.key}
             type="button"
-            onClick={() => handleToggle(toggle.key)}
+            onClick={() => handleToggle(toggle.key as keyof ProjectToggles)}
             className={`w-full flex items-center gap-4 p-3 rounded-lg border transition-all text-left ${
               isOn
                 ? "bg-zinc-800/80 border-zinc-600"

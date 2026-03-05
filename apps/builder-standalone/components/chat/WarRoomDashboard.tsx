@@ -358,7 +358,7 @@ export function WarRoomDashboard() {
   const setSlotStatus = useWarRoomStore((s: any) => s.setSlotStatus);
   const setEnabled = useWarRoomStore((s: any) => s.setEnabled);
 
-  const modeSlotIds = MODE_SLOT_IDS[mode];
+  const modeSlotIds = MODE_SLOT_IDS[mode as keyof typeof MODE_SLOT_IDS];
   const visibleSlots = slots.filter((s: any) => modeSlotIds.includes(s.id));
   const activeSlots = visibleSlots.filter((s: any) => s.enabled);
 

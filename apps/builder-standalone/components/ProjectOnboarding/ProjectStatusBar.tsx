@@ -29,7 +29,7 @@ export function ProjectStatusBar({ projectPath }: ProjectStatusBarProps) {
 
   if (!meta) return null;
 
-  const activeToggles = TOGGLE_INFO.filter((t: any) => meta.toggles[t.key]);
+  const activeToggles = TOGGLE_INFO.filter((t: any) => meta.toggles[t.key as keyof typeof meta.toggles]);
   const deployTargets = [
     { key: "github", label: "GitHub", url: meta.deployUrls.github },
     { key: "vercel", label: "Vercel", url: meta.deployUrls.vercel },
