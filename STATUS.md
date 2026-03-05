@@ -230,6 +230,7 @@ Tag: working-2026-03-02-deploy-fix (last tagged)
 | Model ping tester | Works | "Test" button on every model in Settings — shows OK/FAIL with error message |
 | Hybrid pastRuns persistence | Works | hybridPastRuns[] in store, persisted via partialize, auto-saved on run complete |
 | Hybrid Saved Trial Data viewer | Works | Collapsible panel in Hybrid tab — grade, scores, date, step progression, JSON export |
+| Stream error handling | **Fixed** | Silent `catch {}` replaced with `console.warn` on client + server emit(); `finally` blocks ensure `running` state cleanup |
 | Remaining cloud models | **Not started** | Gemini, Grok, GPT, Claude — next step |
 | Local trials (Ollama) | **Not tested this session** | 15 scenarios, Ollama backend |
 | Routing summary layer | **Not started** | Depends on complete score matrix |
@@ -238,7 +239,8 @@ Tag: working-2026-03-02-deploy-fix (last tagged)
 
 | Date | Commit | Change |
 |------|--------|--------|
-| Mar 4 | (latest) | Hybrid pastRuns persistence + Saved Trial Data viewer + hooks fix + fetch models API |
+| Mar 4 | (latest) | Cloud trials audit — silent catch blocks fixed, finally blocks for state cleanup, emit() error logging |
+| Mar 4 | bb62a8a | Hybrid pastRuns persistence + Saved Trial Data viewer + hooks fix + fetch models API |
 | Mar 4 | db898ca | Token limits equalized, case-insensitive keywords, Anthropic API revert, model ping tester |
 | Mar 4 | 0a96600 | Forge Trials — round explainers, criterion explainers, score context, model summary card |
 | Mar 4 | c848430 | Fix cloud trials DeepSeek — timeout content preservation, 180s timeout, diagnostics |

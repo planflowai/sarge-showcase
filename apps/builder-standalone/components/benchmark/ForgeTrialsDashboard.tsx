@@ -213,12 +213,33 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
                 status: event.type === "run:complete" ? "completed" : "stopped",
               });
             }
-          } catch {}
+          } catch (parseErr) {
+            console.warn("[FORGE LOCAL] Failed to parse stream event:", parseErr, "line:", line.slice(0, 200));
+          }
         }
       }
     } catch (err: unknown) {
       if (err instanceof Error && err.name === "AbortError") {
         addEvent({ type: "run:stopped", message: "Forge Trials stopped by user.", timestamp: Date.now() });
+      } else {
+        console.error("[FORGE LOCAL] Stream error:", err);
+        addEvent({ type: "run:error", message: `Stream error: ${err instanceof Error ? err.message : String(err)}`, timestamp: Date.now() });
+      }
+    } finally {
+      // Ensure running state is cleaned up if stream ends without run:complete/run:stopped
+      const state = useBenchmarkStore.getState();
+      if (state.running) {
+        console.warn("[FORGE LOCAL] Stream ended without run:complete — cleaning up");
+        completeRun({
+          id: state.currentRunId || "unknown",
+          startedAt: Date.now(),
+          completedAt: Date.now(),
+          models: localModels,
+          scenarios: BUILDER_SCENARIOS.map((s) => s.id),
+          results: state.results,
+          scorecards: state.scorecards,
+          status: "completed",
+        });
       }
     }
   }, [localModels, startRun, stopRun, addResult, addScorecard, addEvent, setCurrentModel, setCurrentRound, setAbortController, completeRun]);
@@ -290,12 +311,33 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
                 status: event.type === "run:complete" ? "completed" : "stopped",
               });
             }
-          } catch {}
+          } catch (parseErr) {
+            console.warn("[FORGE CLOUD] Failed to parse stream event:", parseErr, "line:", line.slice(0, 200));
+          }
         }
       }
     } catch (err: unknown) {
       if (err instanceof Error && err.name === "AbortError") {
         cloudAddEvent({ type: "run:stopped", message: "Cloud Trials stopped by user.", timestamp: Date.now() });
+      } else {
+        console.error("[FORGE CLOUD] Stream error:", err);
+        cloudAddEvent({ type: "run:error", message: `Stream error: ${err instanceof Error ? err.message : String(err)}`, timestamp: Date.now() });
+      }
+    } finally {
+      // Ensure running state is cleaned up if stream ends without run:complete/run:stopped
+      const state = useBenchmarkStore.getState();
+      if (state.cloudRunning) {
+        console.warn("[FORGE CLOUD] Stream ended without run:complete — cleaning up");
+        cloudCompleteRun({
+          id: state.cloudCurrentRunId || "unknown",
+          startedAt: Date.now(),
+          completedAt: Date.now(),
+          models: cloudSelectedModels.map((m) => m.id),
+          scenarios: CLOUD_SCENARIOS.map((s) => s.id),
+          results: state.cloudResults,
+          scorecards: state.cloudScorecards,
+          status: "completed",
+        });
       }
     }
   }, [cloudSelectedModels, cloudParallel, cloudStartRun, cloudStopRun, cloudAddResult, cloudAddScorecard, cloudAddEvent, cloudSetCurrentModel, cloudSetCurrentRound, cloudSetAbortController, cloudCompleteRun, cloudSetTotalCost, cloudSetWarmupHtml]);

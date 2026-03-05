@@ -494,7 +494,9 @@ export async function POST(request: NextRequest) {
       function emit(event: HybridEvent) {
         try {
           controller.enqueue(encoder.encode(JSON.stringify(event) + "\n"));
-        } catch {}
+        } catch (err) {
+          console.warn("[HYBRID TRIAL] emit() failed — stream may be closed:", err instanceof Error ? err.message : String(err));
+        }
       }
 
       emit({
