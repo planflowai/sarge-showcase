@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import {
   Play, Square, Plus, Layers, ChevronDown, ChevronRight,
-  Loader2, X, Archive, Download,
+  Loader2, X, Archive, Download, Zap, DollarSign, Trophy, Hand,
 } from "lucide-react";
 import { useBenchmarkStore } from "@/lib/stores/benchmarkStore";
 import { useModelStore } from "@sarge/core";
@@ -16,6 +16,14 @@ import {
   getLetterGrade,
   getGradeColor,
 } from "@sarge/benchmark";
+import {
+  autoSelectModels,
+  getRoutingLabel,
+  getDifficultyDescription,
+  getDifficultyCostTarget,
+  type RoutingMode,
+  type ModelCandidate,
+} from "@/lib/autoRouter";
 
 const DEFAULT_ROLES = ["Build", "Improve", "Refine", "Polish", "Check"];
 
@@ -31,6 +39,13 @@ const DIFFICULTY_COLORS: Record<string, string> = {
   easy: "text-emerald-400", medium: "text-amber-400",
   hard: "text-orange-400", expert: "text-red-400",
 };
+
+const ROUTING_MODES: { id: RoutingMode; icon: typeof Zap; label: string; desc: string }[] = [
+  { id: "score", icon: Zap, label: "Score Routed", desc: "Best trial scores per step" },
+  { id: "cost", icon: DollarSign, label: "Cost Optimized", desc: "Cheapest 80+ models" },
+  { id: "quality", icon: Trophy, label: "Quality First", desc: "Highest quality, any cost" },
+  { id: "manual", icon: Hand, label: "Manual", desc: "Pick models yourself" },
+];
 
 export function ForgeTrialsHybrid() {
   const store = useBenchmarkStore();
@@ -54,7 +69,9 @@ export function ForgeTrialsHybrid() {
     hybridCustomPrompt,
     setHybridCustomPrompt,
     cloudScorecards,
+    cloudResults: cloudTrialResults,
     scorecards: localScorecards,
+    results: localTrialResults,
   } = store;
 
   const storeModels = useModelStore((s) => s.models);
@@ -72,13 +89,26 @@ export function ForgeTrialsHybrid() {
   const [showPastRuns, setShowPastRuns] = useState(false);
   const [stepTabs, setStepTabs] = useState<Record<number, "local" | "cloud">>({});
 
-  // Local models — filtered by "Trials" role (fallback: show all if no roles assigned)
+  // Routing mode — persisted in localStorage
+  const [routingMode, setRoutingModeState] = useState<RoutingMode>(() => {
+    if (typeof window !== "undefined") {
+      return (localStorage.getItem("forge-routing-mode") as RoutingMode) || "score";
+    }
+    return "score";
+  });
+  const setRoutingMode = useCallback((mode: RoutingMode) => {
+    setRoutingModeState(mode);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("forge-routing-mode", mode);
+    }
+  }, []);
+
+  // Local models — filtered by "Trials" role
   const localModels = useMemo(() =>
     storeModels
       .filter((m) => {
         if (m.provider !== "ollama" && m.provider !== "lmstudio") return false;
         const roles = modelRoles[m.id];
-        // Fallback: if no roles assigned, show all (backward compat)
         if (!roles || roles.length === 0) return true;
         return roles.includes("Trials");
       })
@@ -86,7 +116,7 @@ export function ForgeTrialsHybrid() {
     [storeModels, modelRoles]
   );
 
-  // Cloud models — filtered by "Trials" role (fallback: show all if no roles assigned)
+  // Cloud models — filtered by "Trials" role
   const cloudModels = useMemo(() =>
     storeModels
       .filter((m) => {
@@ -99,20 +129,23 @@ export function ForgeTrialsHybrid() {
     [storeModels, modelRoles]
   );
 
-  // Cloud models for Guardian selection — filtered by "Guardian" role
+  const allModels: ModelCandidate[] = useMemo(
+    () => [...localModels, ...cloudModels],
+    [localModels, cloudModels],
+  );
+
+  // Cloud models for Guardian selection
   const guardianModels = useMemo(() =>
     storeModels
       .filter((m) => {
         if (m.provider === "ollama" || m.provider === "lmstudio") return false;
-        const roles = modelRoles[m.id];
-        // Any cloud model can be guardian, but prefer tagged ones
         return true;
       })
       .map((m) => ({ id: m.id, provider: m.provider, name: m.name })),
-    [storeModels, modelRoles]
+    [storeModels]
   );
 
-  // Trial score lookup — informational badge only, never a gate
+  // Trial score lookup
   const getTrialScore = useCallback((modelId: string, provider: string): number | null => {
     if (provider === "ollama" || provider === "lmstudio") {
       const sc = localScorecards.find((s: any) => s.modelId === modelId);
@@ -121,6 +154,42 @@ export function ForgeTrialsHybrid() {
     const sc = cloudScorecards.find((s: any) => s.modelId === modelId);
     return sc ? sc.overallScore : null;
   }, [localScorecards, cloudScorecards]);
+
+  const selectedScenarioObj = ALL_HYBRID_SCENARIOS.find((s) => s.id === hybridSelectedScenario);
+  const difficulty = selectedScenarioObj?.difficulty || "hard";
+
+  // ── Auto-select models when routing mode or scenario changes ──
+  const autoRouted = useMemo(() => {
+    if (routingMode === "manual") return null;
+    return autoSelectModels(
+      difficulty,
+      steps.map((s) => ({ role: s.role })),
+      routingMode,
+      allModels,
+      localScorecards,
+      cloudScorecards,
+      localTrialResults,
+      cloudTrialResults,
+    );
+  }, [routingMode, difficulty, steps.length, allModels, localScorecards, cloudScorecards, localTrialResults, cloudTrialResults,
+    // Re-run when step roles change
+    steps.map((s) => s.role).join(","),
+  ]);
+
+  // Apply auto-selection to steps when autoRouted changes
+  useEffect(() => {
+    if (!autoRouted || routingMode === "manual" || hybridRunning) return;
+    setSteps((prev) => {
+      const next = [...prev];
+      for (let i = 0; i < next.length && i < autoRouted.length; i++) {
+        const ar = autoRouted[i];
+        if (ar.modelId) {
+          next[i] = { ...next[i], modelId: ar.modelId, provider: ar.provider, modelName: ar.modelName };
+        }
+      }
+      return next;
+    });
+  }, [autoRouted, routingMode, hybridRunning]);
 
   // ── Step management ──
   const addStep = () => {
@@ -146,17 +215,21 @@ export function ForgeTrialsHybrid() {
 
   // ── Cost estimate ──
   const totalEstimate = useMemo(() => {
+    if (autoRouted && routingMode !== "manual") {
+      return autoRouted.reduce((sum: number, r: { costEstimate: number }) => sum + r.costEstimate, 0);
+    }
     let total = 0;
     for (const step of steps) {
       if (step.provider === "ollama" || step.provider === "lmstudio" || !step.provider) {
         // local = free
       } else {
-        // rough estimate: ~2000 tokens in, ~4000 tokens out
-        total += 0.015; // rough average per cloud call
+        total += 0.015;
       }
     }
     return total;
-  }, [steps]);
+  }, [steps, autoRouted, routingMode]);
+
+  const costTarget = getDifficultyCostTarget(difficulty);
 
   // ── Validation ──
   const hasEmptySteps = steps.some((s) => !s.modelId);
@@ -169,7 +242,7 @@ export function ForgeTrialsHybrid() {
     const chainId = `hybrid-${Date.now()}`;
     const chain: HybridChain = {
       id: chainId,
-      name: steps.map((s) => s.role).join(" → "),
+      name: steps.map((s) => s.role).join(" \u2192 "),
       steps,
       prompt: hybridCustomPrompt || "",
     };
@@ -179,10 +252,11 @@ export function ForgeTrialsHybrid() {
     hybridStartRun();
 
     try {
-      const config: HybridBenchmarkConfig & { guardianModelId?: string; guardianProvider?: string } = {
+      const config: HybridBenchmarkConfig & { guardianModelId?: string; guardianProvider?: string; routingMode?: string } = {
         chains: [chain],
         scenarioId: hybridSelectedScenario,
         ...(guardianModelId ? { guardianModelId, guardianProvider } : {}),
+        routingMode,
       };
 
       const res = await fetch("/api/benchmark/run-hybrid", {
@@ -234,13 +308,12 @@ export function ForgeTrialsHybrid() {
         hybridAddEvent({ type: "hybrid:error", message: `Run failed: ${err instanceof Error ? err.message : String(err)}`, timestamp: Date.now() });
       }
     } finally {
-      // Always ensure running state is cleaned up
       const { hybridRunning: stillRunning } = useBenchmarkStore.getState();
       if (stillRunning) {
         useBenchmarkStore.setState({ hybridRunning: false, hybridAbortController: null });
       }
     }
-  }, [canRun, steps, hybridSelectedScenario, hybridCustomPrompt, hybridStartRun, hybridAddResult, hybridAddEvent, hybridSetAbortController, hybridSetTotalCost, hybridSaveRun]);
+  }, [canRun, steps, hybridSelectedScenario, hybridCustomPrompt, hybridStartRun, hybridAddResult, hybridAddEvent, hybridSetAbortController, hybridSetTotalCost, hybridSaveRun, guardianModelId, guardianProvider, routingMode]);
 
   const handleClear = () => {
     setSteps([
@@ -251,7 +324,6 @@ export function ForgeTrialsHybrid() {
   };
 
   const currentEvent = hybridEvents.length > 0 ? hybridEvents[hybridEvents.length - 1] : null;
-  const selectedScenarioObj = ALL_HYBRID_SCENARIOS.find((s) => s.id === hybridSelectedScenario);
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -264,7 +336,7 @@ export function ForgeTrialsHybrid() {
 
         {/* Scenario dropdown */}
         <div className="mb-2">
-          <label className="text-xs font-bold text-zinc-300 uppercase block mb-1">Scenario</label>
+          <label className="text-sm font-bold text-zinc-300 uppercase block mb-1">Scenario</label>
           <select
             value={hybridSelectedScenario}
             onChange={(e) => setHybridSelectedScenario(e.target.value)}
@@ -282,8 +354,11 @@ export function ForgeTrialsHybrid() {
               <span className={`text-sm font-bold uppercase ${DIFFICULTY_COLORS[selectedScenarioObj.difficulty] || "text-zinc-200"}`}>
                 {selectedScenarioObj.difficulty}
               </span>
-              <span className="text-sm text-zinc-200">
-                {selectedScenarioObj.timeout ? `${selectedScenarioObj.timeout / 1000}s timeout` : ""}
+              <span className="text-sm text-zinc-400">
+                {getDifficultyDescription(selectedScenarioObj.difficulty)}
+              </span>
+              <span className="text-sm text-zinc-500">
+                {selectedScenarioObj.timeout ? `${selectedScenarioObj.timeout / 1000}s` : ""}
               </span>
             </div>
           )}
@@ -291,7 +366,7 @@ export function ForgeTrialsHybrid() {
 
         {/* Custom prompt */}
         <div className="mb-2">
-          <label className="text-xs font-bold text-zinc-300 uppercase block mb-1">Custom Prompt (optional)</label>
+          <label className="text-sm font-bold text-zinc-300 uppercase block mb-1">Custom Prompt (optional)</label>
           <textarea
             value={hybridCustomPrompt}
             onChange={(e) => setHybridCustomPrompt(e.target.value)}
@@ -302,10 +377,10 @@ export function ForgeTrialsHybrid() {
           />
         </div>
 
-        {/* Prompt preview — what the AI will actually receive */}
+        {/* Prompt preview */}
         {selectedScenarioObj && (
           <div className="mb-1">
-            <label className="text-xs font-bold text-zinc-300 uppercase block mb-1">
+            <label className="text-sm font-bold text-zinc-300 uppercase block mb-1">
               {hybridCustomPrompt ? "Sending (custom)" : "Sending (scenario)"}
             </label>
             <div className="bg-zinc-900/80 border border-zinc-700 rounded px-3 py-2 max-h-32 overflow-y-auto">
@@ -317,11 +392,46 @@ export function ForgeTrialsHybrid() {
         )}
       </div>
 
+      {/* ── AUTO ROUTER ── */}
+      <div className="px-4 py-2 border-b border-zinc-800/80 bg-zinc-900/30 flex-shrink-0">
+        <div className="flex items-center gap-2 mb-2">
+          <Zap className="w-4 h-4 text-amber-400" />
+          <span className="text-sm font-bold text-zinc-300 uppercase tracking-wider">Auto Router</span>
+        </div>
+        <div className="flex gap-1">
+          {ROUTING_MODES.map(({ id, icon: Icon, label }) => (
+            <button
+              key={id}
+              onClick={() => setRoutingMode(id)}
+              disabled={hybridRunning}
+              className={`flex items-center gap-1 px-2 py-1 rounded text-sm font-bold transition-all border ${
+                routingMode === id
+                  ? id === "score" ? "bg-amber-900/30 text-amber-400 border-amber-600/40"
+                  : id === "cost" ? "bg-emerald-900/30 text-emerald-400 border-emerald-600/40"
+                  : id === "quality" ? "bg-sky-900/30 text-sky-400 border-sky-600/40"
+                  : "bg-zinc-700/50 text-zinc-200 border-zinc-600/40"
+                : "text-zinc-400 hover:text-zinc-200 border-transparent"
+              } disabled:opacity-50`}
+            >
+              <Icon className="w-3 h-3" />
+              {label}
+            </button>
+          ))}
+        </div>
+        {routingMode !== "manual" && (
+          <div className="mt-1.5 text-sm text-zinc-400">
+            {ROUTING_MODES.find((m) => m.id === routingMode)?.desc}
+            {" \u00b7 Target: "}
+            <span className="text-emerald-400 font-mono">${costTarget.toFixed(2)}</span>
+          </div>
+        )}
+      </div>
+
       {/* ── GUARDIAN SELECTOR ── */}
       <div className="px-4 py-2 border-b border-zinc-800/80 bg-zinc-900/20 flex-shrink-0">
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-xs font-bold text-zinc-300 uppercase tracking-wider">Thread Guardian</span>
-          <span className="text-xs text-zinc-300">Validates output between steps</span>
+          <span className="text-sm font-bold text-zinc-300 uppercase tracking-wider">Thread Guardian</span>
+          <span className="text-sm text-zinc-400">Validates output between steps</span>
         </div>
         <select
           value={guardianModelId ? `${guardianProvider}:${guardianModelId}` : ""}
@@ -350,13 +460,17 @@ export function ForgeTrialsHybrid() {
       {/* ── CHAIN STEPS ── */}
       <div className="flex-1 overflow-auto px-4 py-3 space-y-2">
         <div className="flex items-center justify-between mb-1">
-          <span className="text-xs font-bold text-zinc-300 uppercase tracking-wider">
+          <span className="text-sm font-bold text-zinc-300 uppercase tracking-wider">
             Chain Steps ({steps.length}/5)
           </span>
+          {routingMode !== "manual" && (
+            <span className="text-sm text-zinc-500">Auto-assigned &middot; click [change] to override</span>
+          )}
         </div>
 
         {steps.map((step, si) => {
           const isRunningStep = hybridRunning && currentEvent?.stepIndex === si;
+          const routerInfo = autoRouted && routingMode !== "manual" ? autoRouted[si] : null;
 
           return (
             <div
@@ -379,6 +493,13 @@ export function ForgeTrialsHybrid() {
                   disabled={hybridRunning}
                   className="bg-transparent border-none text-sm font-bold text-white outline-none flex-1 min-w-0"
                 />
+                {routerInfo && routerInfo.score !== null && (
+                  <span className={`text-sm font-bold tabular-nums ${
+                    routerInfo.score >= 80 ? "text-emerald-400" : routerInfo.score >= 60 ? "text-amber-400" : "text-red-400"
+                  }`}>
+                    {routerInfo.score}
+                  </span>
+                )}
                 {isRunningStep && (
                   <Loader2 className="w-3 h-3 animate-spin text-amber-400 flex-shrink-0" />
                 )}
@@ -392,61 +513,89 @@ export function ForgeTrialsHybrid() {
                 )}
               </div>
 
-              {/* LOCAL / CLOUD tabs */}
-              <div className="flex gap-0.5 mb-1.5">
-                <button
-                  onClick={() => setStepTabs((t) => ({ ...t, [si]: "local" }))}
-                  disabled={hybridRunning}
-                  className={`flex-1 text-xs font-bold uppercase py-1 rounded-l transition-colors ${
-                    (stepTabs[si] || "local") === "local"
-                      ? "bg-zinc-700 text-white"
-                      : "bg-zinc-800/60 text-zinc-400 hover:text-zinc-200"
-                  }`}
-                >
-                  LOCAL ({localModels.length})
-                </button>
-                <button
-                  onClick={() => setStepTabs((t) => ({ ...t, [si]: "cloud" }))}
-                  disabled={hybridRunning}
-                  className={`flex-1 text-xs font-bold uppercase py-1 rounded-r transition-colors ${
-                    (stepTabs[si] || "local") === "cloud"
-                      ? "bg-zinc-700 text-white"
-                      : "bg-zinc-800/60 text-zinc-400 hover:text-zinc-200"
-                  }`}
-                >
-                  CLOUD ({cloudModels.length})
-                </button>
-              </div>
+              {/* Auto-routed model display */}
+              {routingMode !== "manual" && step.modelId ? (
+                <div className="flex items-center gap-2 mb-1">
+                  <span
+                    className="text-sm font-bold px-1.5 py-0.5 rounded border truncate"
+                    style={{
+                      borderColor: (PROVIDER_COLORS[step.provider] || "#6B7280") + "60",
+                      color: PROVIDER_COLORS[step.provider] || "#D4D4D8",
+                    }}
+                  >
+                    {step.modelName || step.modelId}
+                  </span>
+                  <span className="text-sm font-mono text-emerald-400">
+                    ${routerInfo?.costEstimate.toFixed(3) || "0.000"}
+                  </span>
+                  <div className="flex-1" />
+                  <button
+                    onClick={() => setRoutingMode("manual")}
+                    disabled={hybridRunning}
+                    className="text-sm text-zinc-400 hover:text-zinc-200 font-bold transition-colors"
+                  >
+                    [change]
+                  </button>
+                </div>
+              ) : (
+                <>
+                  {/* LOCAL / CLOUD tabs */}
+                  <div className="flex gap-0.5 mb-1.5">
+                    <button
+                      onClick={() => setStepTabs((t) => ({ ...t, [si]: "local" }))}
+                      disabled={hybridRunning}
+                      className={`flex-1 text-sm font-bold uppercase py-1 rounded-l transition-colors ${
+                        (stepTabs[si] || "local") === "local"
+                          ? "bg-zinc-700 text-white"
+                          : "bg-zinc-800/60 text-zinc-400 hover:text-zinc-200"
+                      }`}
+                    >
+                      LOCAL ({localModels.length})
+                    </button>
+                    <button
+                      onClick={() => setStepTabs((t) => ({ ...t, [si]: "cloud" }))}
+                      disabled={hybridRunning}
+                      className={`flex-1 text-sm font-bold uppercase py-1 rounded-r transition-colors ${
+                        (stepTabs[si] || "local") === "cloud"
+                          ? "bg-zinc-700 text-white"
+                          : "bg-zinc-800/60 text-zinc-400 hover:text-zinc-200"
+                      }`}
+                    >
+                      CLOUD ({cloudModels.length})
+                    </button>
+                  </div>
 
-              {/* Model dropdown for selected tab */}
-              <select
-                value={step.modelId ? `${step.provider}:${step.modelId}` : ""}
-                onChange={(e) => {
-                  const [provider, ...rest] = e.target.value.split(":");
-                  const modelId = rest.join(":");
-                  const list = (stepTabs[si] || "local") === "local" ? localModels : cloudModels;
-                  const m = list.find((am) => am.id === modelId && am.provider === provider);
-                  if (m) {
-                    updateStep(si, { modelId: m.id, provider: m.provider, modelName: m.name });
-                  }
-                }}
-                disabled={hybridRunning}
-                className={`w-full bg-zinc-800 border text-sm rounded px-2 py-1.5 mb-1 ${
-                  step.modelId ? "border-zinc-700 text-zinc-300" : "border-amber-600/50 text-amber-400"
-                }`}
-              >
-                {!step.modelId && (
-                  <option value="" disabled>Select a model</option>
-                )}
-                {((stepTabs[si] || "local") === "local" ? localModels : cloudModels).map((m) => {
-                  const score = getTrialScore(m.id, m.provider);
-                  return (
-                    <option key={`${m.provider}:${m.id}`} value={`${m.provider}:${m.id}`}>
-                      {m.name}{m.provider !== "ollama" && m.provider !== "lmstudio" ? ` (${m.provider})` : ""}{score !== null ? ` — ${score}/100` : ""}
-                    </option>
-                  );
-                })}
-              </select>
+                  {/* Model dropdown */}
+                  <select
+                    value={step.modelId ? `${step.provider}:${step.modelId}` : ""}
+                    onChange={(e) => {
+                      const [provider, ...rest] = e.target.value.split(":");
+                      const modelId = rest.join(":");
+                      const list = (stepTabs[si] || "local") === "local" ? localModels : cloudModels;
+                      const m = list.find((am) => am.id === modelId && am.provider === provider);
+                      if (m) {
+                        updateStep(si, { modelId: m.id, provider: m.provider, modelName: m.name });
+                      }
+                    }}
+                    disabled={hybridRunning}
+                    className={`w-full bg-zinc-800 border text-sm rounded px-2 py-1.5 mb-1 ${
+                      step.modelId ? "border-zinc-700 text-zinc-300" : "border-amber-600/50 text-amber-400"
+                    }`}
+                  >
+                    {!step.modelId && (
+                      <option value="" disabled>Select a model</option>
+                    )}
+                    {((stepTabs[si] || "local") === "local" ? localModels : cloudModels).map((m) => {
+                      const score = getTrialScore(m.id, m.provider);
+                      return (
+                        <option key={`${m.provider}:${m.id}`} value={`${m.provider}:${m.id}`}>
+                          {m.name}{m.provider !== "ollama" && m.provider !== "lmstudio" ? ` (${m.provider})` : ""}{score !== null ? ` \u2014 ${score}/100` : ""}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </>
+              )}
 
               {/* Cost estimate */}
               <div className="flex items-center justify-between">
@@ -455,7 +604,7 @@ export function ForgeTrialsHybrid() {
                     ? "text-zinc-200" : step.provider ? "text-emerald-400" : "text-zinc-300"
                 }`}>
                   {!step.provider ? "" :
-                    step.provider === "ollama" || step.provider === "lmstudio" ? "Est: $0.00" : "Est: ~$0.015"}
+                    step.provider === "ollama" || step.provider === "lmstudio" ? "Est: $0.00" : `Est: ~$${(routerInfo?.costEstimate || 0.015).toFixed(3)}`}
                 </span>
                 {step.modelId && (
                   <span
@@ -488,8 +637,13 @@ export function ForgeTrialsHybrid() {
         {steps.some((s) => s.modelId) && (
           <div className="flex items-center justify-between pt-2 mt-1 border-t border-zinc-800">
             <span className="text-sm font-bold text-zinc-200">Total Est:</span>
-            <span className="text-sm font-mono font-bold text-emerald-400">
+            <span className={`text-sm font-mono font-bold ${
+              totalEstimate <= costTarget ? "text-emerald-400" : "text-amber-400"
+            }`}>
               ${totalEstimate.toFixed(4)}
+              {totalEstimate > costTarget && (
+                <span className="text-amber-400 ml-1">(target: ${costTarget.toFixed(2)})</span>
+              )}
             </span>
           </div>
         )}
@@ -614,7 +768,7 @@ export function ForgeTrialsHybrid() {
                     <div className="flex items-center gap-1 mt-1">
                       {run.steps.map((s: any, si: any) => (
                         <React.Fragment key={si}>
-                          {si > 0 && <span className="text-zinc-300 text-sm">→</span>}
+                          {si > 0 && <span className="text-zinc-300 text-sm">&rarr;</span>}
                           <span
                             className="text-sm font-bold px-1.5 py-0.5 rounded border"
                             style={{

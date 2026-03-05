@@ -787,7 +787,7 @@ Previous HTML:
 ${previousHtml}`;
 }
 
-// ── Escalation Model Finder ──
+// ── Escalation Model Finder (Difficulty-Aware) ──
 
 interface EscalationCandidate {
   modelId: string;
@@ -795,8 +795,13 @@ interface EscalationCandidate {
   modelName: string;
 }
 
+function isLocalProvider(provider: string): boolean {
+  return provider === "ollama" || provider === "lmstudio";
+}
+
 /**
  * Find an escalation model from the chain's step roster that hasn't been used yet.
+ * Difficulty-aware: hard/expert scenarios never escalate to local models.
  * Prefers models from later steps (assumed stronger) over earlier ones.
  * Returns null if all models in the chain have already been tried.
  */
@@ -804,15 +809,23 @@ function findEscalationModel(
   steps: { modelId: string; provider: string; modelName: string }[],
   currentStepIndex: number,
   usedModels: Set<string>,
+  difficulty?: string,
 ): EscalationCandidate | null {
-  // Collect unique models from steps after the current one (stronger models tend to be later)
   const candidates: EscalationCandidate[] = [];
   const seen = new Set<string>();
+
+  const isAllowed = (provider: string): boolean => {
+    // Hard/expert: never escalate to local models
+    if ((difficulty === "hard" || difficulty === "expert") && isLocalProvider(provider)) {
+      return false;
+    }
+    return true;
+  };
 
   // First pass: steps after current (preferred — typically stronger)
   for (let i = currentStepIndex + 1; i < steps.length; i++) {
     const key = `${steps[i].provider}:${steps[i].modelId}`;
-    if (!usedModels.has(key) && !seen.has(key)) {
+    if (!usedModels.has(key) && !seen.has(key) && isAllowed(steps[i].provider)) {
       seen.add(key);
       candidates.push({ modelId: steps[i].modelId, provider: steps[i].provider, modelName: steps[i].modelName });
     }
@@ -821,7 +834,7 @@ function findEscalationModel(
   // Second pass: steps before current (fallback)
   for (let i = 0; i < currentStepIndex; i++) {
     const key = `${steps[i].provider}:${steps[i].modelId}`;
-    if (!usedModels.has(key) && !seen.has(key)) {
+    if (!usedModels.has(key) && !seen.has(key) && isAllowed(steps[i].provider)) {
       seen.add(key);
       candidates.push({ modelId: steps[i].modelId, provider: steps[i].provider, modelName: steps[i].modelName });
     }
@@ -1257,8 +1270,8 @@ async function runJuryVerdict(
 // ── POST handler ──
 
 export async function POST(request: NextRequest) {
-  const config: HybridBenchmarkConfig & { guardianModelId?: string; guardianProvider?: string } = await request.json();
-  const { chains, scenarioId, guardianModelId, guardianProvider } = config;
+  const config: HybridBenchmarkConfig & { guardianModelId?: string; guardianProvider?: string; routingMode?: string } = await request.json();
+  const { chains, scenarioId, guardianModelId, guardianProvider, routingMode } = config;
 
   const scenario = scenarioId
     ? ALL_HYBRID_SCENARIOS.find((s) => s.id === scenarioId) || CLOUD_SCENARIOS[0]
@@ -1299,6 +1312,17 @@ export async function POST(request: NextRequest) {
       emit({
         type: "hybrid:build-log",
         message: `🔒 Spec locked · ${truthAnchor.siteType} · ${truthAnchor.requiredSections.length} sections · ${truthAnchor.requiredFeatures.length} features · Hash: ${truthAnchor.hash.slice(0, 8)}...`,
+        timestamp: Date.now(),
+      });
+
+      // Routing mode build log line
+      const diffLabel = scenario.difficulty.charAt(0).toUpperCase() + scenario.difficulty.slice(1);
+      const modeEmoji = routingMode === "cost" ? "💰" : routingMode === "quality" ? "🏆" : routingMode === "manual" ? "✋" : "⚡";
+      const modeLabel = routingMode === "cost" ? "Cost Optimized" : routingMode === "quality" ? "Quality First" : routingMode === "manual" ? "Manual" : "Score Routed";
+      const poolLabel = scenario.difficulty === "expert" ? "Premium cloud only" : scenario.difficulty === "hard" ? "Cloud models required" : scenario.difficulty === "medium" ? "Mixed models assigned" : "Local models acceptable";
+      emit({
+        type: "hybrid:build-log",
+        message: `${modeEmoji} ${modeLabel} · ${truthAnchor.siteType} ${diffLabel} · ${poolLabel}`,
         timestamp: Date.now(),
       });
 
@@ -1467,7 +1491,7 @@ export async function POST(request: NextRequest) {
 
                 // Strike 2: swap to next model in the chain (if available)
                 if (strike === 1) {
-                  const nextModel = findEscalationModel(chain.steps, si, usedModels);
+                  const nextModel = findEscalationModel(chain.steps, si, usedModels, scenario.difficulty);
                   if (nextModel) {
                     currentModelId = nextModel.modelId;
                     currentProvider = nextModel.provider;
@@ -1496,7 +1520,7 @@ export async function POST(request: NextRequest) {
                   emit({ type: "hybrid:build-log", chainId: chain.id, stepIndex: si, message: msg, timestamp: Date.now() });
                   strikeMissing = regressionChangelog.sectionsRemoved;
                   if (strike === 1) {
-                    const nextModel = findEscalationModel(chain.steps, si, usedModels);
+                    const nextModel = findEscalationModel(chain.steps, si, usedModels, scenario.difficulty);
                     if (nextModel) {
                       currentModelId = nextModel.modelId;
                       currentProvider = nextModel.provider;
@@ -1526,7 +1550,7 @@ export async function POST(request: NextRequest) {
               emit({ type: "hybrid:build-log", chainId: chain.id, stepIndex: si, message: msg, timestamp: Date.now() });
               strikeMissing = taMissing;
               if (strike === 1) {
-                const nextModel = findEscalationModel(chain.steps, si, usedModels);
+                const nextModel = findEscalationModel(chain.steps, si, usedModels, scenario.difficulty);
                 if (nextModel) {
                   currentModelId = nextModel.modelId;
                   currentProvider = nextModel.provider;
@@ -1555,7 +1579,7 @@ export async function POST(request: NextRequest) {
             if (guardianRejected && lastGoodCode && strike < 2) {
               strikeMissing = ["guardian quality check"];
               if (strike === 1) {
-                const nextModel = findEscalationModel(chain.steps, si, usedModels);
+                const nextModel = findEscalationModel(chain.steps, si, usedModels, scenario.difficulty);
                 if (nextModel) {
                   currentModelId = nextModel.modelId;
                   currentProvider = nextModel.provider;

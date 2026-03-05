@@ -1606,6 +1606,40 @@ Tier 4 — Escalation ($0.50-2.00)
 **Revenue per site:** $500–$2,500.
 **Margin:** 99.9%+.
 
+### Auto Model Router
+
+The Auto Model Router connects Forge Trials scorecard data to automatic model selection in hybrid chains. Three routing modes plus manual:
+
+| Mode | Strategy | Sort Logic |
+|------|----------|------------|
+| Score Routed | Best Forge Trials score per step role | Highest score, cheapest tiebreaker |
+| Cost Optimized | Cheapest model scoring 80+ on relevant rounds | Cheapest first, then highest score. Falls back to best score if no 80+ models |
+| Quality First | Highest score regardless of cost | Score only |
+| Manual | User picks each model | No auto-selection |
+
+**Step Role → Trial Round Mapping:**
+- Build → R1 (Restaurant) + R8 (Autonomy)
+- Improve → R3 (SaaS) + R2 (Portfolio)
+- Refine → R5 (Dashboard) + R7 (Refactor)
+- Polish → R6 (Multipage) + R4 (E-commerce)
+- Check → R7 (Refactor) + R8 (Autonomy)
+
+**Difficulty Tiers:**
+| Tier | Pool | Cost Target |
+|------|------|-------------|
+| Easy | All models (local OK) | $0.02 |
+| Medium | Cloud required for Polish + Check steps | $0.08 |
+| Hard | Cloud required (local only for Build step 1) | $0.20 |
+| Expert | Premium cloud only (no local anywhere) | $0.50 |
+
+**Difficulty-Aware Escalation:** When a model fails during the 3-strike loop, `findEscalationModel()` filters by difficulty tier — Hard/Expert scenarios never escalate to local models. If the current tier is exhausted, the system escalates to the next tier up (Easy → Medium → Hard → Expert). Last resort: any unused cloud model.
+
+**Files:**
+- `apps/builder-standalone/lib/autoRouter.ts` — routing logic, difficulty pools, score lookup, cost estimates
+- UI: routing mode selector in ForgeTrialsHybrid.tsx left panel
+- Routing mode persists in localStorage (`forge-routing-mode`)
+- Routing mode line emitted in build log at chain start
+
 ### Parallel Cloud Execution
 
 Toggle "Run Parallel" in the cloud trials toolbar to run all providers simultaneously instead of sequentially. Within each provider, models and rounds still execute one at a time. Errors in one provider do not stop others. Cost tracking continues per-provider.
@@ -1619,8 +1653,11 @@ Toggle "Run Parallel" in the cloud trials toolbar to run all providers simultane
 Two-panel layout (30/70 split) for building and testing multi-model chains.
 
 **Left Panel (Controls):**
-- Scenario dropdown: 18 scenarios (R1–R8 existing + R9–R18 industry-specific)
+- Scenario dropdown: 19 scenarios (R1–R8 existing + R9–R18 industry-specific + R19 Level 11 Events)
 - Custom prompt textarea (overrides scenario when filled)
+- Routing mode selector: Score Routed / Cost Optimized / Quality First / Manual (persists in localStorage)
+- Auto-selected models display with [change] button per step (switches to manual mode)
+- Cost target display per difficulty tier with comparison to estimate
 - Chain steps editor: 1–5 steps with editable role labels (Build, Improve, Refine, Polish, Check)
 - Per-step model dropdown showing models from completed trials (LOCAL optgroup + CLOUD optgroup)
 - Cost estimates per step ($0.00 for local, ~$0.015 for cloud)
