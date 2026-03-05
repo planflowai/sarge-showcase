@@ -199,6 +199,7 @@ export interface HybridChainResult {
   totalTimeMs: number;
   totalCost: number;
   timestamp: number;
+  juryVerdict?: JuryVerdict;
 }
 
 export interface HybridBenchmarkConfig {
@@ -220,7 +221,18 @@ export type HybridEventType =
   | "hybrid:stopped"
   | "hybrid:heartbeat"
   | "hybrid:guardian"
+  | "hybrid:jury"
   | "hybrid:build-log";
+
+export interface JuryVerdict {
+  modelsUsed: string[];
+  completeness: { pass: boolean; detail: string };
+  quality: { pass: boolean; detail: string };
+  accuracy: { pass: boolean; detail: string };
+  overall: "APPROVED" | "APPROVED WITH WARNINGS" | "REJECTED";
+  agreementCount: number;
+  totalJurors: number;
+}
 
 export interface HybridEvent {
   type: HybridEventType;
@@ -229,6 +241,7 @@ export interface HybridEvent {
   stepResult?: HybridStepResult;
   chainResult?: HybridChainResult;
   partialHtml?: string;
+  juryVerdict?: JuryVerdict;
   message: string;
   timestamp: number;
 }

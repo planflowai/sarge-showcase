@@ -4,7 +4,7 @@ import React, { useState, useMemo, useEffect, useRef, useCallback } from "react"
 import {
   Eye, Code, BarChart3, Loader2, ChevronDown, ChevronRight,
   CheckCircle, AlertTriangle, Flame, Clock, DollarSign, Layers,
-  ScrollText, Shield,
+  ScrollText, Shield, Scale,
 } from "lucide-react";
 import type { HybridChainResult, HybridEvent, StepChangelog } from "@sarge/benchmark";
 import { ALL_HYBRID_SCENARIOS, getLetterGrade, getGradeColor } from "@sarge/benchmark";
@@ -283,7 +283,7 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
 
   // Build log entries from events (filtered) — must be above early returns (React hooks rule)
   const buildLogEntries = useMemo(() =>
-    events.filter(e => e.type === "hybrid:build-log" || e.type === "hybrid:guardian"),
+    events.filter(e => e.type === "hybrid:build-log" || e.type === "hybrid:guardian" || e.type === "hybrid:jury"),
     [events]
   );
 
@@ -338,10 +338,13 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
                   className={`font-mono text-xs py-0.5 ${
                     ev.type === "hybrid:guardian"
                       ? ev.message?.includes("PASSED") ? "text-emerald-400" : "text-red-400"
+                      : ev.type === "hybrid:jury"
+                      ? ev.message?.includes("APPROVED") ? "text-sky-400" : "text-amber-400"
                       : "text-zinc-400"
                   }`}
                 >
                   {ev.type === "hybrid:guardian" && "⛨ "}
+                  {ev.type === "hybrid:jury" && "⚖ "}
                   {ev.message}
                 </div>
               ))}
@@ -381,10 +384,13 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
                 className={`font-mono text-xs py-0.5 ${
                   ev.type === "hybrid:guardian"
                     ? ev.message?.includes("PASSED") ? "text-emerald-400" : "text-red-400"
+                    : ev.type === "hybrid:jury"
+                    ? ev.message?.includes("APPROVED") ? "text-sky-400" : "text-amber-400"
                     : "text-zinc-400"
                 }`}
               >
                 {ev.type === "hybrid:guardian" && "⛨ "}
+                {ev.type === "hybrid:jury" && "⚖ "}
                 {ev.message}
               </div>
             ))}
@@ -590,14 +596,14 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
               {/* Log entries */}
               <div className="p-3 max-h-[calc(100vh-320px)] overflow-y-auto font-mono text-xs space-y-0.5">
                 {events.filter(e =>
-                  e.type === "hybrid:build-log" || e.type === "hybrid:guardian"
+                  e.type === "hybrid:build-log" || e.type === "hybrid:guardian" || e.type === "hybrid:jury"
                 ).length === 0 ? (
                   <div className="text-zinc-300 py-4 text-center">
                     {running ? "Waiting for events..." : "No build log entries. Run a chain to generate."}
                   </div>
                 ) : (
                   events
-                    .filter(e => e.type === "hybrid:build-log" || e.type === "hybrid:guardian")
+                    .filter(e => e.type === "hybrid:build-log" || e.type === "hybrid:guardian" || e.type === "hybrid:jury")
                     .map((ev, i) => (
                       <div
                         key={i}
@@ -606,11 +612,18 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
                             ? ev.message?.includes("PASSED")
                               ? "text-emerald-400"
                               : "text-red-400"
+                            : ev.type === "hybrid:jury"
+                            ? ev.message?.includes("APPROVED")
+                              ? "text-sky-400"
+                              : "text-amber-400"
                             : "text-zinc-300"
                         }`}
                       >
                         {ev.type === "hybrid:guardian" && (
                           <Shield className="w-3 h-3 inline mr-1 flex-shrink-0" />
+                        )}
+                        {ev.type === "hybrid:jury" && (
+                          <Scale className="w-3 h-3 inline mr-1 flex-shrink-0" />
                         )}
                         {ev.message}
                       </div>

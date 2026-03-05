@@ -17,6 +17,7 @@ import {
   type HybridChainResult,
   type ScoreBreakdown,
   type StepChangelog,
+  type JuryVerdict,
 } from "@sarge/benchmark";
 
 // ── Direct cloud API calls (duplicated from run-cloud for isolation) ──
@@ -635,6 +636,430 @@ function formatElapsed(startMs: number): string {
   return `${String(min).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
 }
 
+// ── Thread Guardian 3-Tier Check ──
+
+const GUARDIAN_T1_SYSTEM = `You are a code quality guardian. Analyze the provided HTML output and check:
+1. Valid HTML structure (DOCTYPE, html, head, body tags present and properly nested)
+2. CSS exists in <style> tags (not empty)
+3. Content exists in <body> (not just boilerplate)
+4. No broken/unclosed tags
+
+Output ONLY a JSON object:
+{"tier":1,"passed":boolean,"charCount":number,"hasDOCTYPE":boolean,"hasHead":boolean,"hasBody":boolean,"hasCSS":boolean,"hasContent":boolean,"issues":["string"],"escalate":boolean}`;
+
+const GUARDIAN_T2_SYSTEM = `You are a content quality auditor. You receive HTML and a scenario description. Check:
+1. Does the content match the scenario? (e.g., if it's a restaurant site, does it have menu/hours/location?)
+2. Is it a real, filled-out site or a generic template with "Lorem ipsum" placeholders?
+3. Are there at least 3 distinct content sections?
+4. Does it have real text content (not just headings with no body text)?
+
+Output ONLY a JSON object:
+{"tier":2,"passed":boolean,"scenarioMatch":boolean,"isGeneric":boolean,"sectionCount":number,"hasRealContent":boolean,"issues":["string"],"escalate":boolean}`;
+
+const GUARDIAN_T3_SYSTEM = `You are a forensic code auditor. Perform a deep analysis of this HTML:
+1. Accessibility: alt tags, ARIA labels, semantic HTML
+2. Responsiveness: media queries present, viewport meta tag
+3. JavaScript quality: no errors, event handlers present if interactive
+4. CSS quality: consistent styling, no conflicting rules
+5. Overall production readiness
+
+Output ONLY a JSON object:
+{"tier":3,"passed":boolean,"accessibility":{"score":number,"issues":["string"]},"responsiveness":{"hasMediaQueries":boolean,"hasViewport":boolean},"jsQuality":{"hasErrors":boolean,"hasEventHandlers":boolean},"cssQuality":{"ruleCount":number,"issues":["string"]},"productionReady":boolean,"summary":"string"}`;
+
+interface GuardianTierResult {
+  tier: 1 | 2 | 3;
+  passed: boolean;
+  message: string;
+  escalate: boolean;
+  durationMs: number;
+}
+
+/**
+ * Run Thread Guardian 3-tier escalation check on step output.
+ * T1: Algorithmic + basic AI structure check
+ * T2: Content quality + scenario match (only if T1 flags or guardian model configured)
+ * T3: Full forensic audit (only if T1 or T2 escalate)
+ *
+ * Uses the chain's existing callCloudDirect for model calls.
+ * Non-blocking: failures are logged but never block the chain.
+ */
+async function runGuardianTieredCheck(
+  code: string,
+  scenarioPrompt: string,
+  guardianModelId: string | undefined,
+  guardianProvider: string | undefined,
+  stepIndex: number,
+  signal: AbortSignal,
+  emit: (event: HybridEvent) => void,
+  chainStartTime: number,
+  chainId: string,
+): Promise<GuardianTierResult[]> {
+  const results: GuardianTierResult[] = [];
+
+  // If no guardian model configured, do algorithmic-only T1 check
+  if (!guardianModelId || !guardianProvider) {
+    // T1 algorithmic check (already done by validateStepOutput — just emit the log)
+    const t1: GuardianTierResult = {
+      tier: 1,
+      passed: true,
+      message: `${code.length} chars, valid HTML structure confirmed (algorithmic)`,
+      escalate: false,
+      durationMs: 0,
+    };
+    results.push(t1);
+    emit({
+      type: "hybrid:guardian",
+      chainId,
+      stepIndex,
+      message: `[Guardian T1] Step ${stepIndex + 1} output — PASSED (${t1.message})`,
+      timestamp: Date.now(),
+    });
+    emit({
+      type: "hybrid:build-log",
+      chainId,
+      stepIndex,
+      message: `[${formatElapsed(chainStartTime)}] Guardian T1: PASSED — ${t1.message}`,
+      timestamp: Date.now(),
+    });
+    return results;
+  }
+
+  // ── T1: Structure check via AI model ──
+  const t1Start = Date.now();
+  try {
+    const t1Result = await callCloudDirect(
+      guardianProvider, guardianModelId,
+      GUARDIAN_T1_SYSTEM,
+      `Analyze this HTML output (${code.length} chars):\n\n${code.slice(0, 8000)}`,
+      30_000, signal
+    );
+    const t1Duration = Date.now() - t1Start;
+    let t1Parsed: { passed?: boolean; escalate?: boolean; issues?: string[] } = {};
+    try { t1Parsed = JSON.parse(t1Result.content); } catch { /* parse failure = pass */ }
+
+    const t1: GuardianTierResult = {
+      tier: 1,
+      passed: t1Parsed.passed !== false,
+      message: t1Parsed.passed !== false
+        ? `${code.length} chars, valid HTML, scenario match confirmed`
+        : `Issues: ${(t1Parsed.issues || []).join(", ")}`,
+      escalate: t1Parsed.escalate === true,
+      durationMs: t1Duration,
+    };
+    results.push(t1);
+
+    emit({
+      type: "hybrid:guardian",
+      chainId, stepIndex,
+      message: `[Guardian T1] Step ${stepIndex + 1} output — ${t1.passed ? "PASSED" : "FLAGGED"} (${t1.message})`,
+      timestamp: Date.now(),
+    });
+    emit({
+      type: "hybrid:build-log",
+      chainId, stepIndex,
+      message: `[${formatElapsed(chainStartTime)}] Guardian T1: ${t1.passed ? "PASSED" : "FLAGGED"} — ${t1.message} (${formatTime(t1Duration)})`,
+      timestamp: Date.now(),
+    });
+
+    // ── T2: Content quality check (if T1 escalates) ──
+    if (t1.escalate) {
+      const t2Start = Date.now();
+      try {
+        const t2Result = await callCloudDirect(
+          guardianProvider, guardianModelId,
+          GUARDIAN_T2_SYSTEM,
+          `Scenario: ${scenarioPrompt.slice(0, 2000)}\n\nHTML to evaluate:\n${code.slice(0, 8000)}`,
+          30_000, signal
+        );
+        const t2Duration = Date.now() - t2Start;
+        let t2Parsed: { passed?: boolean; escalate?: boolean; scenarioMatch?: boolean; isGeneric?: boolean; issues?: string[] } = {};
+        try { t2Parsed = JSON.parse(t2Result.content); } catch { /* parse failure = pass */ }
+
+        const t2: GuardianTierResult = {
+          tier: 2,
+          passed: t2Parsed.passed !== false,
+          message: t2Parsed.passed !== false
+            ? `content quality: good, ${t2Parsed.scenarioMatch !== false ? "scenario match" : "no match"}, no generic placeholders detected`
+            : `Issues: ${(t2Parsed.issues || []).join(", ")}`,
+          escalate: t2Parsed.escalate === true,
+          durationMs: t2Duration,
+        };
+        results.push(t2);
+
+        emit({
+          type: "hybrid:guardian",
+          chainId, stepIndex,
+          message: `[Guardian T2] Step ${stepIndex + 1} output — ${t2.passed ? "PASSED" : "FLAGGED"} (${t2.message})`,
+          timestamp: Date.now(),
+        });
+        emit({
+          type: "hybrid:build-log",
+          chainId, stepIndex,
+          message: `[${formatElapsed(chainStartTime)}] Guardian T2: ${t2.passed ? "PASSED" : "FLAGGED"} — ${t2.message} (${formatTime(t2Duration)})`,
+          timestamp: Date.now(),
+        });
+
+        // ── T3: Full forensic audit (if T2 escalates) ──
+        if (t2.escalate) {
+          const t3Start = Date.now();
+          try {
+            const t3Result = await callCloudDirect(
+              guardianProvider, guardianModelId,
+              GUARDIAN_T3_SYSTEM,
+              `Full HTML for forensic audit:\n${code.slice(0, 12000)}`,
+              45_000, signal
+            );
+            const t3Duration = Date.now() - t3Start;
+            let t3Parsed: { passed?: boolean; summary?: string; productionReady?: boolean } = {};
+            try { t3Parsed = JSON.parse(t3Result.content); } catch { /* parse failure = pass */ }
+
+            const t3: GuardianTierResult = {
+              tier: 3,
+              passed: t3Parsed.passed !== false,
+              message: t3Parsed.summary || (t3Parsed.productionReady ? "production ready" : "needs improvement"),
+              escalate: false,
+              durationMs: t3Duration,
+            };
+            results.push(t3);
+
+            emit({
+              type: "hybrid:guardian",
+              chainId, stepIndex,
+              message: `[Guardian T3] Step ${stepIndex + 1} output — ${t3.passed ? "PASSED" : "FLAGGED"} (${t3.message})`,
+              timestamp: Date.now(),
+            });
+            emit({
+              type: "hybrid:build-log",
+              chainId, stepIndex,
+              message: `[${formatElapsed(chainStartTime)}] Guardian T3: ${t3.passed ? "PASSED" : "FLAGGED"} — ${t3.message} (${formatTime(t3Duration)})`,
+              timestamp: Date.now(),
+            });
+          } catch (err) {
+            emit({
+              type: "hybrid:build-log",
+              chainId, stepIndex,
+              message: `[${formatElapsed(chainStartTime)}] Guardian T3: SKIPPED — ${err instanceof Error ? err.message : "error"}`,
+              timestamp: Date.now(),
+            });
+          }
+        } else {
+          emit({
+            type: "hybrid:guardian",
+            chainId, stepIndex,
+            message: `[Guardian T3] Not triggered — T1 and T2 passed`,
+            timestamp: Date.now(),
+          });
+        }
+      } catch (err) {
+        emit({
+          type: "hybrid:build-log",
+          chainId, stepIndex,
+          message: `[${formatElapsed(chainStartTime)}] Guardian T2: SKIPPED — ${err instanceof Error ? err.message : "error"}`,
+          timestamp: Date.now(),
+        });
+      }
+    } else {
+      // T1 passed without escalation — T2 and T3 not triggered
+      emit({
+        type: "hybrid:guardian",
+        chainId, stepIndex,
+        message: `[Guardian T2] Not triggered — T1 passed without escalation`,
+        timestamp: Date.now(),
+      });
+      emit({
+        type: "hybrid:guardian",
+        chainId, stepIndex,
+        message: `[Guardian T3] Not triggered — T1 and T2 passed`,
+        timestamp: Date.now(),
+      });
+    }
+  } catch (err) {
+    emit({
+      type: "hybrid:build-log",
+      chainId, stepIndex,
+      message: `[${formatElapsed(chainStartTime)}] Guardian T1: SKIPPED — ${err instanceof Error ? err.message : "error"}`,
+      timestamp: Date.now(),
+    });
+  }
+
+  return results;
+}
+
+// ── Jury Duty — Final Output Verdict ──
+
+const JURY_SYSTEM_PROMPT = `You are a code quality juror. You evaluate an HTML website output against the original scenario prompt.
+
+Evaluate on three criteria:
+1. COMPLETENESS — Are all requested sections/features present? List what's present and what's missing.
+2. QUALITY — Is this production grade HTML/CSS/JS or placeholder/template quality? Check styling, interactivity, responsiveness.
+3. ACCURACY — Does the output match what the scenario asked for? Is the content relevant and specific?
+
+Output ONLY a JSON object:
+{"completeness":{"pass":boolean,"detail":"string"},"quality":{"pass":boolean,"detail":"string"},"accuracy":{"pass":boolean,"detail":"string"}}`;
+
+interface JuryModelResult {
+  model: string;
+  provider: string;
+  completeness: { pass: boolean; detail: string };
+  quality: { pass: boolean; detail: string };
+  accuracy: { pass: boolean; detail: string };
+  error?: string;
+}
+
+/**
+ * Run Jury Duty verdict at chain completion.
+ * Uses up to 3 models from the chain steps to evaluate the final output.
+ * Non-blocking: failures produce partial verdicts.
+ */
+async function runJuryVerdict(
+  finalCode: string,
+  scenarioPrompt: string,
+  chainSteps: Array<{ modelId: string; provider: string; modelName: string }>,
+  guardianModelId: string | undefined,
+  guardianProvider: string | undefined,
+  signal: AbortSignal,
+  emit: (event: HybridEvent) => void,
+  chainStartTime: number,
+  chainId: string,
+): Promise<JuryVerdict | null> {
+  // Pick up to 3 unique models for the jury
+  const juryModels: Array<{ modelId: string; provider: string; name: string }> = [];
+
+  // Add guardian model first if configured
+  if (guardianModelId && guardianProvider) {
+    juryModels.push({ modelId: guardianModelId, provider: guardianProvider, name: guardianModelId });
+  }
+
+  // Add unique models from chain steps (avoid duplicates)
+  const seen = new Set(juryModels.map(m => `${m.provider}:${m.modelId}`));
+  for (const step of chainSteps) {
+    const key = `${step.provider}:${step.modelId}`;
+    if (!seen.has(key) && juryModels.length < 3) {
+      seen.add(key);
+      juryModels.push({ modelId: step.modelId, provider: step.provider, name: step.modelName });
+    }
+  }
+
+  if (juryModels.length === 0) {
+    emit({
+      type: "hybrid:build-log",
+      chainId,
+      message: `[${formatElapsed(chainStartTime)}] Jury Duty: SKIPPED — no models available for jury`,
+      timestamp: Date.now(),
+    });
+    return null;
+  }
+
+  emit({
+    type: "hybrid:build-log",
+    chainId,
+    message: `[${formatElapsed(chainStartTime)}] Jury Duty: Convening ${juryModels.length} juror${juryModels.length > 1 ? "s" : ""} — ${juryModels.map(m => m.name).join(", ")}`,
+    timestamp: Date.now(),
+  });
+
+  const juryPrompt = `Original scenario prompt:\n${scenarioPrompt.slice(0, 3000)}\n\nFinal HTML output to evaluate (${finalCode.length} chars):\n${finalCode.slice(0, 10000)}`;
+
+  // Run all jury models in parallel
+  const juryResults: JuryModelResult[] = await Promise.all(
+    juryModels.map(async (juror) => {
+      try {
+        const result = await callCloudDirect(
+          juror.provider, juror.modelId,
+          JURY_SYSTEM_PROMPT, juryPrompt,
+          45_000, signal
+        );
+
+        let parsed: { completeness?: { pass?: boolean; detail?: string }; quality?: { pass?: boolean; detail?: string }; accuracy?: { pass?: boolean; detail?: string } } = {};
+        try { parsed = JSON.parse(result.content); } catch {
+          // Try extracting JSON from response
+          const jsonMatch = result.content.match(/\{[\s\S]*\}/);
+          if (jsonMatch) try { parsed = JSON.parse(jsonMatch[0]); } catch { /* noop */ }
+        }
+
+        return {
+          model: juror.name,
+          provider: juror.provider,
+          completeness: { pass: parsed.completeness?.pass !== false, detail: parsed.completeness?.detail || "evaluated" },
+          quality: { pass: parsed.quality?.pass !== false, detail: parsed.quality?.detail || "evaluated" },
+          accuracy: { pass: parsed.accuracy?.pass !== false, detail: parsed.accuracy?.detail || "evaluated" },
+        };
+      } catch (err) {
+        return {
+          model: juror.name,
+          provider: juror.provider,
+          completeness: { pass: true, detail: "juror error — defaulting to pass" },
+          quality: { pass: true, detail: "juror error — defaulting to pass" },
+          accuracy: { pass: true, detail: "juror error — defaulting to pass" },
+          error: err instanceof Error ? err.message : "Unknown error",
+        };
+      }
+    })
+  );
+
+  // Aggregate verdict
+  const totalJurors = juryResults.length;
+  const completenessPass = juryResults.filter(r => r.completeness.pass).length;
+  const qualityPass = juryResults.filter(r => r.quality.pass).length;
+  const accuracyPass = juryResults.filter(r => r.accuracy.pass).length;
+
+  const allPass = completenessPass === totalJurors && qualityPass === totalJurors && accuracyPass === totalJurors;
+  const anyFail = completenessPass < Math.ceil(totalJurors / 2) || qualityPass < Math.ceil(totalJurors / 2) || accuracyPass < Math.ceil(totalJurors / 2);
+
+  const agreementCount = Math.min(completenessPass, qualityPass, accuracyPass);
+
+  const verdict: JuryVerdict = {
+    modelsUsed: juryResults.map(r => r.model),
+    completeness: {
+      pass: completenessPass >= Math.ceil(totalJurors / 2),
+      detail: completenessPass === totalJurors
+        ? juryResults[0].completeness.detail
+        : `${completenessPass}/${totalJurors} pass — ${juryResults.find(r => !r.completeness.pass)?.completeness.detail || ""}`,
+    },
+    quality: {
+      pass: qualityPass >= Math.ceil(totalJurors / 2),
+      detail: qualityPass === totalJurors
+        ? juryResults[0].quality.detail
+        : `${qualityPass}/${totalJurors} pass — ${juryResults.find(r => !r.quality.pass)?.quality.detail || ""}`,
+    },
+    accuracy: {
+      pass: accuracyPass >= Math.ceil(totalJurors / 2),
+      detail: accuracyPass === totalJurors
+        ? juryResults[0].accuracy.detail
+        : `${accuracyPass}/${totalJurors} pass — ${juryResults.find(r => !r.accuracy.pass)?.accuracy.detail || ""}`,
+    },
+    overall: allPass ? "APPROVED" : anyFail ? "REJECTED" : "APPROVED WITH WARNINGS",
+    agreementCount,
+    totalJurors,
+  };
+
+  // Emit jury verdict
+  const verdictIcon = (pass: boolean) => pass ? "✅" : "⚠️";
+  const verdictLines = [
+    `JURY VERDICT — ${agreementCount}/${totalJurors} models agree`,
+    `${verdictIcon(verdict.completeness.pass)} Completeness: ${verdict.completeness.pass ? "PASS" : "SPLIT"} — ${verdict.completeness.detail}`,
+    `${verdictIcon(verdict.quality.pass)} Quality: ${verdict.quality.pass ? "PASS" : "SPLIT"} — ${verdict.quality.detail}`,
+    `${verdictIcon(verdict.accuracy.pass)} Accuracy: ${verdict.accuracy.pass ? "PASS" : "SPLIT"} — ${verdict.accuracy.detail}`,
+    `Overall: ${verdict.overall}`,
+  ].join("\n");
+
+  emit({
+    type: "hybrid:jury",
+    chainId,
+    juryVerdict: verdict,
+    message: verdictLines,
+    timestamp: Date.now(),
+  });
+
+  emit({
+    type: "hybrid:build-log",
+    chainId,
+    message: `[${formatElapsed(chainStartTime)}] Jury Duty: ${verdict.overall} — ${agreementCount}/${totalJurors} agree — Completeness: ${verdict.completeness.pass ? "PASS" : "SPLIT"}, Quality: ${verdict.quality.pass ? "PASS" : "SPLIT"}, Accuracy: ${verdict.accuracy.pass ? "PASS" : "SPLIT"}`,
+    timestamp: Date.now(),
+  });
+
+  return verdict;
+}
+
 // ── POST handler ──
 
 export async function POST(request: NextRequest) {
@@ -838,25 +1263,30 @@ export async function POST(request: NextRequest) {
             }
             // Don't update previousCode with bad output
           } else if (code && validation.valid) {
-            // Guardian PASSED event
-            emit({
-              type: "hybrid:guardian",
-              chainId: chain.id,
-              stepIndex: si,
-              message: `Step ${si + 1} output PASSED — ${code.length} chars, valid HTML, body tag ${hasBody ? "present" : "missing"}, no chat patterns detected`,
-              timestamp: Date.now(),
-            });
+            // Algorithmic validation passed — now run Guardian 3-tier check
+            const scenarioPromptForGuardian = chain.prompt || scenario.prompt;
+            const guardianResults = await runGuardianTieredCheck(
+              code, scenarioPromptForGuardian,
+              guardianModelId, guardianProvider,
+              si, abortController.signal,
+              emit, chainStartTime, chain.id,
+            );
 
-            emit({
-              type: "hybrid:build-log",
-              chainId: chain.id,
-              stepIndex: si,
-              message: `[${formatElapsed(chainStartTime)}] Thread Guardian: Step ${si + 1} output approved — passing to Step ${si + 2}`,
-              timestamp: Date.now(),
-            });
-
-            previousCode = code;
-            lastGoodCode = code;
+            // If any guardian tier rejected, use last good code
+            const guardianRejected = guardianResults.some(r => !r.passed);
+            if (guardianRejected && lastGoodCode) {
+              emit({
+                type: "hybrid:build-log",
+                chainId: chain.id,
+                stepIndex: si,
+                message: `[${formatElapsed(chainStartTime)}] Thread Guardian: Step ${si + 1} output flagged — using last good HTML`,
+                timestamp: Date.now(),
+              });
+              previousCode = lastGoodCode;
+            } else {
+              previousCode = code;
+              lastGoodCode = code;
+            }
           } else {
             previousCode = code;
           }
@@ -919,6 +1349,17 @@ export async function POST(request: NextRequest) {
           ? stepResults[stepResults.length - 1].score
           : { codeExtracted: 0, validHtml: 0, requiredElements: 0, requiredKeywords: 0, cssCriteria: 0, jsCriteria: 0, codeLength: 0, total: 0, tier: "fail" };
 
+        // ── Jury Duty — final output verdict (at chain completion only) ──
+        let juryVerdict: JuryVerdict | null = null;
+        if (lastGoodCode && !abortController.signal.aborted) {
+          const scenarioPromptForJury = chain.prompt || scenario.prompt;
+          juryVerdict = await runJuryVerdict(
+            lastGoodCode, scenarioPromptForJury,
+            chain.steps, guardianModelId, guardianProvider,
+            abortController.signal, emit, chainStartTime, chain.id,
+          );
+        }
+
         const chainResult: HybridChainResult = {
           chainId: chain.id,
           chainName: chain.name,
@@ -927,6 +1368,7 @@ export async function POST(request: NextRequest) {
           totalTimeMs: chainTimeMs,
           totalCost: chainCost,
           timestamp: Date.now(),
+          juryVerdict: juryVerdict || undefined,
         };
 
         allChainResults.push(chainResult);

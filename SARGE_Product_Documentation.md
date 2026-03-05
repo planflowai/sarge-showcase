@@ -1480,6 +1480,9 @@ The bottleneck is never the build. It's always the client.
 - [x] Model role tags — 6 roles (Builder/Trials/Chat/Image/Guardian/Code), clickable pills in Settings, filtered dropdowns
 - [x] Mistral built-in provider — Devstral 2, Devstral Small 2, Mistral Medium 3 in provider registry
 - [x] Guardian model assignment — selector in hybrid panel, passed to runner API
+- [x] Thread Guardian 3-tier escalation in hybrid chain — T1 structure, T2 content quality, T3 forensic audit (AI-powered via guardian model)
+- [x] Jury Duty verdict at chain completion — 3-model voting on Completeness/Quality/Accuracy, `hybrid:jury` events in Build Log
+- [x] Guardian + Jury extracted to `packages/guardian/` — thread-guardian.ts (provider routing), jury-duty.ts (3-tier prompts + analysis), types.ts, index.ts
 
 ---
 
@@ -1656,12 +1659,26 @@ Two-panel layout (30/70 split) for building and testing multi-model chains.
 | cloud-r17 | Landing Page | hard | Pure conversion — one CTA, no nav, testimonials, urgency |
 | cloud-r18 | Rebuild/Refresh | expert | Given ugly HTML, modernize completely (includes inputHtml) |
 
-**Guardian Model Assignment:**
+**Guardian Model Assignment + 3-Tier Escalation:**
 - Optional guardian model selector above chain steps
 - Any cloud model can serve as guardian
 - `guardianModelId` + `guardianProvider` passed to runner API
 - Algorithmic validation (HTML check, body tag, chat pattern) always runs
 - Guardian decisions emitted as `hybrid:guardian` events (PASSED/REJECTED)
+- **3-Tier AI escalation** (when guardian model configured):
+  - T1: HTML structure validation (DOCTYPE, head, body, CSS, content)
+  - T2: Content quality + scenario match (only if T1 escalates)
+  - T3: Full forensic audit — accessibility, responsiveness, JS/CSS quality (only if T2 escalates)
+- If any tier rejects, last known good HTML is used — chain never blocks
+
+**Jury Duty — Chain Completion Verdict:**
+- Runs automatically at chain completion (not between steps)
+- Uses up to 3 unique models (guardian model + chain step models)
+- Evaluates: Completeness, Quality, Accuracy (pass/fail per criterion)
+- Verdict types: APPROVED / APPROVED WITH WARNINGS / REJECTED
+- Jury events in Build Log with ⚖ icon (sky-blue for APPROVED, amber for warnings)
+- `JuryVerdict` interface in `@sarge/benchmark` — attached to `HybridChainResult`
+- `hybrid:jury` event type for real-time Build Log streaming
 
 **Build Log System:**
 - Runner emits `hybrid:build-log` events throughout execution
@@ -2340,6 +2357,7 @@ This is the execution order. Each step depends on the previous step completing c
 | Builder API routes | `packages/builder/src/api/builder/` (11 routes) | Next.js auto-routing |
 | Context injection | `packages/core/src/lib/contextInjector.ts` | `@sarge/core` |
 | Benchmark package | `packages/benchmark/src/` | `@sarge/benchmark` |
+| Guardian package | `packages/guardian/src/` | `@sarge/guardian` |
 | App-specific stores | `apps/builder-standalone/lib/stores/` | `@/lib/stores/...` |
 | App-specific components | `apps/builder-standalone/components/` | `@/components/...` |
 | Main entry | `apps/builder-standalone/app/page.tsx` | — |

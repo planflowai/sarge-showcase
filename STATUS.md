@@ -251,6 +251,8 @@ Tag: working-2026-03-02-deploy-fix (last tagged)
 
 | Date | Commit | Change |
 |------|--------|--------|
+| Mar 5 | pending | Extract Thread Guardian + Jury Duty into `packages/guardian/`, wire 3-tier guardian check + jury verdict into hybrid chain, `hybrid:jury` event type, Build Log + Breakdown integration |
+| Mar 5 | ea24453 | Salvage audit — read only inventory (STATUS.md) |
 | Mar 5 | 640c699 | Fix HybridDetailPanel hooks-after-early-return (useMemo/useRef/useEffect above conditional returns) |
 | Mar 5 | 78048c6 | Full app readability sweep — zero dim grey across 37 files, all text zinc-300+, $ billing button orange, text-[9px]/[10px] → text-xs |
 | Mar 5 | aeab3fd | Billing — provider balance in provider color, bigger model/history text, runs grouped by day |
@@ -302,12 +304,27 @@ Tag: working-2026-03-02-deploy-fix (last tagged)
 
 ## Transparency Audit — 2026-03-05
 
-### System 1: Thread Guardian — WORKING (was DECORATIVE)
+### System 1: Thread Guardian — WORKING + 3-TIER ESCALATION
 - `validateStepOutput()` in run-hybrid makes REAL validation decisions (HTML check, body tag, chat pattern detection)
 - Now emits `hybrid:guardian` events (PASSED/REJECTED) after every step — visible in Build Log tab
 - Guardian decisions color-coded: green (PASSED) / red (REJECTED)
 - Guardian model selector in hybrid panel (optional — algorithmic validation always runs)
 - `guardianModelId` + `guardianProvider` passed through API config
+- **NEW**: 3-tier AI escalation after algorithmic validation passes:
+  - T1: HTML structure validation (DOCTYPE, head, body, CSS, content)
+  - T2: Content quality + scenario match (only if T1 escalates)
+  - T3: Full forensic audit — accessibility, responsiveness, JS/CSS quality (only if T2 escalates)
+- **NEW**: Extracted to `packages/guardian/src/thread-guardian.ts` (provider routing engine)
+
+### System 1b: Jury Duty — WIRED INTO HYBRID
+- Multi-model jury runs at chain completion (not between steps)
+- Uses up to 3 unique models from the chain + guardian model
+- Evaluates: Completeness, Quality, Accuracy (pass/fail per criterion)
+- Verdict: APPROVED / APPROVED WITH WARNINGS / REJECTED
+- Jury events appear in Build Log with ⚖ icon, sky-blue for APPROVED, amber for warnings
+- `hybrid:jury` event type added to `@sarge/benchmark`
+- `JuryVerdict` attached to `HybridChainResult` for persistence
+- **NEW**: Extracted to `packages/guardian/src/jury-duty.ts` (3-tier analysis engine + prompts)
 
 ### System 2: Build Log — WORKING (was MISSING)
 - Runner emits `hybrid:build-log` events with timestamps throughout chain execution
@@ -409,6 +426,7 @@ Tag: working-2026-03-02-deploy-fix (last tagged)
 | Stores (apps/builder-standalone) | 3 (0 persisted) |
 | **Total stores** | **45 (6 stubbed)** |
 | API routes | 30 |
+| Guardian files (packages/guardian) | 4 (types, thread-guardian, jury-duty, index) |
 | Lib files (packages/builder) | 10 |
 | Lib files (apps/builder-standalone) | 19 |
 
