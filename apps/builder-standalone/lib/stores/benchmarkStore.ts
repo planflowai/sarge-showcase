@@ -10,9 +10,12 @@ import type {
   ModelScorecard,
   BenchmarkEvent,
   BenchmarkRun,
+  HybridChainResult,
+  HybridEvent,
+  HybridChain,
 } from "@sarge/benchmark";
 
-export type TrialsTab = "local" | "cloud";
+export type TrialsTab = "local" | "cloud" | "hybrid";
 
 interface BenchmarkState {
   // Tab toggle
@@ -77,6 +80,31 @@ interface BenchmarkState {
   cloudSetTotalCost: (cost: number) => void;
   cloudSetWarmupHtml: (html: string) => void;
   cloudReset: () => void;
+
+  // ── Parallel toggle ──
+  cloudParallel: boolean;
+  setCloudParallel: (parallel: boolean) => void;
+
+  // ── Hybrid state ──
+  hybridRunning: boolean;
+  hybridMode: "recommended" | "custom";
+  hybridChains: HybridChain[];
+  hybridResults: HybridChainResult[];
+  hybridEvents: HybridEvent[];
+  hybridAbortController: AbortController | null;
+  hybridTotalCost: number;
+
+  // ── Hybrid Actions ──
+  setHybridMode: (mode: "recommended" | "custom") => void;
+  setHybridChains: (chains: HybridChain[]) => void;
+  hybridStartRun: () => void;
+  hybridStopRun: () => void;
+  hybridAddResult: (result: HybridChainResult) => void;
+  hybridAddEvent: (event: HybridEvent) => void;
+  hybridSetAbortController: (ctrl: AbortController | null) => void;
+  hybridSetTotalCost: (cost: number) => void;
+  hybridReset: () => void;
+
   clearAll: () => void;
 }
 
@@ -108,6 +136,17 @@ const CLOUD_INITIAL = {
   cloudSelectedModels: [] as { id: string; provider: string; name: string }[],
   cloudTotalCost: 0,
   cloudWarmupHtml: '',
+  cloudParallel: false,
+};
+
+const HYBRID_INITIAL = {
+  hybridRunning: false,
+  hybridMode: "recommended" as "recommended" | "custom",
+  hybridChains: [] as HybridChain[],
+  hybridResults: [] as HybridChainResult[],
+  hybridEvents: [] as HybridEvent[],
+  hybridAbortController: null as AbortController | null,
+  hybridTotalCost: 0,
 };
 
 export const useBenchmarkStore = create<BenchmarkState>()(
@@ -116,6 +155,7 @@ export const useBenchmarkStore = create<BenchmarkState>()(
       activeTab: "local" as TrialsTab,
       ...LOCAL_INITIAL,
       ...CLOUD_INITIAL,
+      ...HYBRID_INITIAL,
 
       setActiveTab: (tab) => set({ activeTab: tab }),
 
@@ -218,7 +258,33 @@ export const useBenchmarkStore = create<BenchmarkState>()(
 
       cloudReset: () => set(CLOUD_INITIAL),
 
-      clearAll: () => set({ ...LOCAL_INITIAL, ...CLOUD_INITIAL, activeTab: "local" as TrialsTab }),
+      // ── Parallel toggle ──
+      setCloudParallel: (parallel) => set({ cloudParallel: parallel }),
+
+      // ── Hybrid Actions ──
+      setHybridMode: (mode) => set({ hybridMode: mode }),
+      setHybridChains: (chains) => set({ hybridChains: chains }),
+      hybridStartRun: () =>
+        set({
+          hybridRunning: true,
+          hybridResults: [],
+          hybridEvents: [],
+          hybridTotalCost: 0,
+        }),
+      hybridStopRun: () =>
+        set((s) => {
+          s.hybridAbortController?.abort();
+          return { hybridRunning: false, hybridAbortController: null };
+        }),
+      hybridAddResult: (result) =>
+        set((s) => ({ hybridResults: [...s.hybridResults, result] })),
+      hybridAddEvent: (event) =>
+        set((s) => ({ hybridEvents: [...s.hybridEvents.slice(-200), event] })),
+      hybridSetAbortController: (ctrl) => set({ hybridAbortController: ctrl }),
+      hybridSetTotalCost: (cost) => set({ hybridTotalCost: cost }),
+      hybridReset: () => set(HYBRID_INITIAL),
+
+      clearAll: () => set({ ...LOCAL_INITIAL, ...CLOUD_INITIAL, ...HYBRID_INITIAL, activeTab: "local" as TrialsTab }),
     }),
     {
       name: "forge-trials-store",
@@ -244,6 +310,10 @@ export const useBenchmarkStore = create<BenchmarkState>()(
           cloudResults: s.cloudResults.map(stripHeavy),
           cloudScorecards: s.cloudScorecards,
           cloudSelectedCell: s.cloudSelectedCell,
+          cloudParallel: s.cloudParallel,
+          hybridMode: s.hybridMode,
+          hybridChains: s.hybridChains,
+          hybridResults: s.hybridResults,
         };
       },
     }

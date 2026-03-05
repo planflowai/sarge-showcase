@@ -146,6 +146,72 @@ export interface BenchmarkConfig {
 export interface CloudBenchmarkConfig {
   models: { id: string; provider: string; name: string }[];
   scenarioIds?: string[];
+  /** When true, providers run their rounds simultaneously */
+  parallel?: boolean;
+}
+
+// ── Hybrid Chain Types ──────────────────────────────────────────────
+
+export interface HybridStep {
+  modelId: string;
+  provider: string;
+  modelName: string;
+  role: string; // "Scaffold" | "Enhance" | "Refactor" | "Finish" | custom
+}
+
+export interface HybridChain {
+  id: string;
+  name: string;
+  steps: HybridStep[];
+  prompt: string;
+}
+
+export interface HybridStepResult {
+  stepIndex: number;
+  modelId: string;
+  provider: string;
+  role: string;
+  content: string;
+  extractedCode: string;
+  score: ScoreBreakdown;
+  timeMs: number;
+  tokenCount: number;
+  cost: number;
+}
+
+export interface HybridChainResult {
+  chainId: string;
+  chainName: string;
+  steps: HybridStepResult[];
+  finalScore: ScoreBreakdown;
+  totalTimeMs: number;
+  totalCost: number;
+  timestamp: number;
+}
+
+export interface HybridBenchmarkConfig {
+  chains: HybridChain[];
+  scenarioId?: string; // default: cloud-r1-restaurant
+}
+
+export type HybridEventType =
+  | "hybrid:start"
+  | "hybrid:chain-start"
+  | "hybrid:step-start"
+  | "hybrid:step-complete"
+  | "hybrid:chain-complete"
+  | "hybrid:complete"
+  | "hybrid:error"
+  | "hybrid:stopped";
+
+export interface HybridEvent {
+  type: HybridEventType;
+  chainId?: string;
+  stepIndex?: number;
+  stepResult?: HybridStepResult;
+  chainResult?: HybridChainResult;
+  message: string;
+  timestamp: number;
 }
 
 // ── Tier Helpers ─────────────────────────────────────────────────────

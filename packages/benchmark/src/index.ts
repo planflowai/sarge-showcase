@@ -17,6 +17,13 @@ export type {
   BenchmarkEvent,
   BenchmarkConfig,
   CloudBenchmarkConfig,
+  HybridStep,
+  HybridChain,
+  HybridStepResult,
+  HybridChainResult,
+  HybridBenchmarkConfig,
+  HybridEventType,
+  HybridEvent,
 } from "./runner";
 
 // Helpers

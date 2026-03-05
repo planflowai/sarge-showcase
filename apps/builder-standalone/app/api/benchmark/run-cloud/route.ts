@@ -425,7 +425,7 @@ async function logBilling(
 
 export async function POST(request: NextRequest) {
   const config: CloudBenchmarkConfig = await request.json();
-  const { models, scenarioIds } = config;
+  const { models, scenarioIds, parallel } = config;
 
   const scenarios = scenarioIds
     ? CLOUD_SCENARIOS.filter((s) => scenarioIds.includes(s.id))
@@ -449,7 +449,7 @@ export async function POST(request: NextRequest) {
 
       emit({
         type: "run:start",
-        message: `Cloud Forge Trials — ${models.length} models × ${scenarios.length} rounds`,
+        message: `Cloud Forge Trials${parallel ? " (Parallel)" : ""} — ${models.length} models × ${scenarios.length} rounds`,
         timestamp: Date.now(),
       });
 
@@ -483,10 +483,13 @@ export async function POST(request: NextRequest) {
       const allResults: RoundResult[] = [];
       const allScorecards: ModelScorecard[] = [];
 
-      for (let mi = 0; mi < models.length; mi++) {
-        if (abortController.signal.aborted) break;
+      // ── Helper: run a single model through all scenarios ──
+      async function runModelBenchmark(
+        model: typeof models[0],
+        modelIndex: number
+      ) {
+        if (abortController.signal.aborted) return;
 
-        const model = models[mi];
         const modelResults: RoundResult[] = [];
 
         emit({
@@ -495,7 +498,7 @@ export async function POST(request: NextRequest) {
           message: `Testing ${model.name} (${model.provider})`,
           timestamp: Date.now(),
           progress: {
-            currentModel: mi + 1,
+            currentModel: modelIndex + 1,
             totalModels: models.length,
             currentRound: 0,
             totalRounds: scenarios.length,
@@ -515,7 +518,7 @@ export async function POST(request: NextRequest) {
             message: `${model.name} — ${scenario.name}`,
             timestamp: Date.now(),
             progress: {
-              currentModel: mi + 1,
+              currentModel: modelIndex + 1,
               totalModels: models.length,
               currentRound: si + 1,
               totalRounds: scenarios.length,
@@ -542,7 +545,7 @@ export async function POST(request: NextRequest) {
               message: `${model.name} — ${scenario.name} — Run ${run + 1}/${RUNS_PER_SCENARIO}`,
               timestamp: Date.now(),
               progress: {
-                currentModel: mi + 1,
+                currentModel: modelIndex + 1,
                 totalModels: models.length,
                 currentRound: si + 1,
                 totalRounds: scenarios.length,
@@ -552,7 +555,6 @@ export async function POST(request: NextRequest) {
               },
             });
 
-            // Direct API call — no self-fetch
             console.log(`[CLOUD TRIAL] >>> ${model.name} — ${scenario.name} — Run ${run + 1}/${RUNS_PER_SCENARIO}`);
             const result = await callCloudDirect(
               model.provider,
@@ -564,7 +566,6 @@ export async function POST(request: NextRequest) {
             );
             console.log(`[CLOUD TRIAL] <<< ${model.name} — ${scenario.name}: ${result.content.length} chars, timedOut=${result.timedOut}, error=${result.error || "none"}`);
 
-            // Log billing
             const cost = await logBilling(
               baseUrl,
               model.id,
@@ -586,12 +587,10 @@ export async function POST(request: NextRequest) {
               continue;
             }
 
-            // Log what extractCode receives and returns
             const codeForLog = extractCode(result.content);
             console.log(`[CLOUD TRIAL] extractCode input (first 200): ${result.content.slice(0, 200)}`);
             console.log(`[CLOUD TRIAL] extractCode output (first 200): ${codeForLog ? codeForLog.slice(0, 200) : "EMPTY"}`);
 
-            // Score the response
             emit({
               type: "round:scoring",
               modelId: model.id,
@@ -618,7 +617,6 @@ export async function POST(request: NextRequest) {
             }
           }
 
-          // Compute median
           const validRuns = runs.filter((r) => !r.error);
           const sortedScores = validRuns.map((r) => r.score).sort((a, b) => a - b);
           const medianScore =
@@ -644,8 +642,6 @@ export async function POST(request: NextRequest) {
             tier: "fail",
           };
           const anyTimedOut = validRuns.some((r) => r.timedOut);
-          // If any run timed out, force tier to "partial" — score reflects incomplete output,
-          // not the model's true capability. PARTIAL scores must not count toward routing decisions.
           medianBreakdown = {
             ...medianBreakdown,
             total: medianScore,
@@ -678,7 +674,7 @@ export async function POST(request: NextRequest) {
             message: `${model.name} — ${scenario.name}: ${medianScore}/100 (${formatTime(medianTime)}) — $${totalCost.toFixed(4)} spent`,
             timestamp: Date.now(),
             progress: {
-              currentModel: mi + 1,
+              currentModel: modelIndex + 1,
               totalModels: models.length,
               currentRound: si + 1,
               totalRounds: scenarios.length,
@@ -687,7 +683,7 @@ export async function POST(request: NextRequest) {
           });
         }
 
-        // Build scorecard for this model — exclude timedOut from grade
+        // Build scorecard
         const validResults = modelResults.filter((r) => r.score.total > 0 && !r.timedOut);
         const overallScore =
           validResults.length > 0
@@ -723,6 +719,32 @@ export async function POST(request: NextRequest) {
           message: `${model.name}: ${overallScore}/100 (${scorecard.tier}) — Total: $${totalCost.toFixed(4)}`,
           timestamp: Date.now(),
         });
+      }
+
+      // ── Execute: parallel or sequential ──
+      if (parallel) {
+        // Group models by provider
+        const providerGroups: Record<string, { model: typeof models[0]; index: number }[]> = {};
+        models.forEach((model, idx) => {
+          if (!providerGroups[model.provider]) providerGroups[model.provider] = [];
+          providerGroups[model.provider].push({ model, index: idx });
+        });
+
+        // Run all providers in parallel, models within each provider sequential
+        await Promise.all(
+          Object.values(providerGroups).map(async (group) => {
+            for (const { model, index } of group) {
+              if (abortController.signal.aborted) break;
+              await runModelBenchmark(model, index);
+            }
+          })
+        );
+      } else {
+        // Sequential: one model at a time
+        for (let mi = 0; mi < models.length; mi++) {
+          if (abortController.signal.aborted) break;
+          await runModelBenchmark(models[mi], mi);
+        }
       }
 
       emit({

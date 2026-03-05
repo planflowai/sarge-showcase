@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Flame, ArrowLeft, Play, Square, Download, Cloud, Cpu, Trash2,
   Shield, ShieldOff, Plane, Radio, DollarSign, Moon, Sun, Settings, Loader2,
+  Layers, ToggleLeft, ToggleRight,
 } from "lucide-react";
 import { useBenchmarkStore } from "@/lib/stores/benchmarkStore";
 import {
@@ -19,6 +20,7 @@ import { launchBillingPopout } from "@/lib/billingPopoutManager";
 import { ForgeTrialsMatrix } from "./ForgeTrialsMatrix";
 import { ForgeTrialsControls } from "./ForgeTrialsControls";
 import { ForgeTrialsRoundDetail } from "./ForgeTrialsRoundDetail";
+import { ForgeTrialsHybrid } from "./ForgeTrialsHybrid";
 import Link from "next/link";
 
 // All 15 default local builder models
@@ -93,6 +95,10 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
     cloudSetTotalCost,
     cloudSetWarmupHtml,
     cloudWarmupHtml,
+    cloudParallel,
+    setCloudParallel,
+    hybridRunning,
+    hybridTotalCost,
     clearAll,
   } = store;
 
@@ -110,7 +116,8 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
 
   // Determine which data to show based on active tab
   const isCloud = activeTab === "cloud";
-  const activeRunning = isCloud ? cloudRunning : running;
+  const isHybrid = activeTab === "hybrid";
+  const activeRunning = isHybrid ? hybridRunning : isCloud ? cloudRunning : running;
   const activeResults = isCloud ? cloudResults : results;
   const activeScorecards = isCloud ? cloudScorecards : scorecards;
   const activeEvents = isCloud ? cloudEvents : events;
@@ -121,6 +128,7 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
   const activeModels = isCloud
     ? cloudSelectedModels.map((m) => m.id)
     : localModels;
+  const anyRunning = running || cloudRunning || hybridRunning;
 
   // Progress calculations
   const runsPerScenario = isCloud ? 1 : 3;
@@ -220,6 +228,7 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
     try {
       const config: CloudBenchmarkConfig = {
         models: cloudSelectedModels,
+        parallel: cloudParallel,
       };
 
       const res = await fetch("/api/benchmark/run-cloud", {
@@ -282,10 +291,12 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
         cloudAddEvent({ type: "run:stopped", message: "Cloud Trials stopped by user.", timestamp: Date.now() });
       }
     }
-  }, [cloudSelectedModels, cloudStartRun, cloudStopRun, cloudAddResult, cloudAddScorecard, cloudAddEvent, cloudSetCurrentModel, cloudSetCurrentRound, cloudSetAbortController, cloudCompleteRun, cloudSetTotalCost, cloudSetWarmupHtml]);
+  }, [cloudSelectedModels, cloudParallel, cloudStartRun, cloudStopRun, cloudAddResult, cloudAddScorecard, cloudAddEvent, cloudSetCurrentModel, cloudSetCurrentRound, cloudSetAbortController, cloudCompleteRun, cloudSetTotalCost, cloudSetWarmupHtml]);
 
   const handleStart = isCloud ? handleCloudStart : handleLocalStart;
-  const handleStop = isCloud ? () => cloudStopRun() : () => stopRun();
+  const handleStop = isHybrid
+    ? () => store.hybridStopRun()
+    : isCloud ? () => cloudStopRun() : () => stopRun();
 
   const handleExport = useCallback(() => {
     const data = {
@@ -329,25 +340,52 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
 
           <div className="h-5 w-px bg-zinc-700 mx-1" />
 
-          {!activeRunning ? (
-            <button
-              onClick={handleStart}
-              disabled={activeModels.length === 0}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FF6700] hover:bg-[#FF6700]/80 text-white font-bold rounded-lg text-xs transition-all shadow-[0_0_10px_rgba(255,103,0,0.2)] disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              <Play className="w-3.5 h-3.5" />
-              Start
-            </button>
-          ) : (
-            <button onClick={handleStop} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg text-xs transition-all">
-              <Square className="w-3.5 h-3.5" />
-              Stop
-            </button>
+          {!isHybrid && (
+            <>
+              {!activeRunning ? (
+                <button
+                  onClick={handleStart}
+                  disabled={activeModels.length === 0}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FF6700] hover:bg-[#FF6700]/80 text-white font-bold rounded-lg text-xs transition-all shadow-[0_0_10px_rgba(255,103,0,0.2)] disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <Play className="w-3.5 h-3.5" />
+                  Start
+                </button>
+              ) : (
+                <button onClick={handleStop} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg text-xs transition-all">
+                  <Square className="w-3.5 h-3.5" />
+                  Stop
+                </button>
+              )}
+              <button onClick={handleExport} disabled={activeResults.length === 0} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded-lg text-xs transition-all border border-zinc-700 disabled:opacity-30 disabled:cursor-not-allowed">
+                <Download className="w-3.5 h-3.5" />
+                Export
+              </button>
+            </>
           )}
-          <button onClick={handleExport} disabled={activeResults.length === 0} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded-lg text-xs transition-all border border-zinc-700 disabled:opacity-30 disabled:cursor-not-allowed">
-            <Download className="w-3.5 h-3.5" />
-            Export
-          </button>
+          {isHybrid && (
+            <>
+              {!hybridRunning ? (
+                <button
+                  onClick={() => {
+                    // Trigger hybrid start from ForgeTrialsHybrid
+                    // The component handles its own start logic
+                  }}
+                  disabled
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 text-zinc-600 font-bold rounded-lg text-xs border border-zinc-700 cursor-default"
+                  title="Use controls in the Hybrid panel"
+                >
+                  <Layers className="w-3.5 h-3.5" />
+                  Hybrid
+                </button>
+              ) : (
+                <button onClick={handleStop} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg text-xs transition-all">
+                  <Square className="w-3.5 h-3.5" />
+                  Stop
+                </button>
+              )}
+            </>
+          )}
           <button
             onClick={() => { if (confirm("Clear all Forge Trials data? This cannot be undone.")) clearAll(); }}
             disabled={activeRunning || (results.length === 0 && cloudResults.length === 0)}
@@ -366,8 +404,8 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
           </span>
           <div className="flex items-center gap-0.5 ml-2">
             <button
-              onClick={() => { if (!running && !cloudRunning) setActiveTab("local"); }}
-              disabled={running || cloudRunning}
+              onClick={() => { if (!anyRunning) setActiveTab("local"); }}
+              disabled={anyRunning}
               className={`flex items-center gap-1.5 px-3 py-1 rounded-l-lg text-xs font-bold transition-all border ${
                 activeTab === "local"
                   ? "bg-[#FF6700]/15 border-[#FF6700]/50 text-[#FFD700]"
@@ -378,9 +416,9 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
               Local
             </button>
             <button
-              onClick={() => { if (!running && !cloudRunning) setActiveTab("cloud"); }}
-              disabled={running || cloudRunning}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-r-lg text-xs font-bold transition-all border border-l-0 ${
+              onClick={() => { if (!anyRunning) setActiveTab("cloud"); }}
+              disabled={anyRunning}
+              className={`flex items-center gap-1.5 px-3 py-1 text-xs font-bold transition-all border border-l-0 ${
                 activeTab === "cloud"
                   ? "bg-[#FF6700]/15 border-[#FF6700]/50 text-[#FFD700]"
                   : "bg-zinc-900 border-zinc-700 text-zinc-500 hover:text-zinc-300"
@@ -389,7 +427,35 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
               <Cloud className="w-3 h-3" />
               Cloud
             </button>
+            <button
+              onClick={() => { if (!anyRunning) setActiveTab("hybrid"); }}
+              disabled={anyRunning}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-r-lg text-xs font-bold transition-all border border-l-0 ${
+                activeTab === "hybrid"
+                  ? "bg-[#FF6700]/15 border-[#FF6700]/50 text-[#FFD700]"
+                  : "bg-zinc-900 border-zinc-700 text-zinc-500 hover:text-zinc-300"
+              } disabled:cursor-not-allowed`}
+            >
+              <Layers className="w-3 h-3" />
+              Hybrid
+            </button>
           </div>
+          {/* Parallel toggle (cloud only) */}
+          {isCloud && (
+            <button
+              onClick={() => setCloudParallel(!cloudParallel)}
+              disabled={cloudRunning}
+              className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold transition-all ml-2 border ${
+                cloudParallel
+                  ? "bg-emerald-900/20 border-emerald-600/40 text-emerald-400"
+                  : "bg-zinc-900 border-zinc-700 text-zinc-600 hover:text-zinc-400"
+              } disabled:opacity-30`}
+              title="Run providers in parallel"
+            >
+              {cloudParallel ? <ToggleRight className="w-3.5 h-3.5" /> : <ToggleLeft className="w-3.5 h-3.5" />}
+              Parallel
+            </button>
+          )}
         </div>
 
         {/* Right: Header icons */}
@@ -458,64 +524,73 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
 
         {/* Timing + Cost */}
         <div className="flex items-center gap-2 ml-auto flex-shrink-0">
-          {activeRunning && remainingMin > 0 && (
+          {!isHybrid && activeRunning && remainingMin > 0 && (
             <span className="text-[10px] text-zinc-500">~{remainingMin}m</span>
           )}
           {isCloud && cloudTotalCost > 0 && (
             <span className="text-[10px] font-mono font-bold text-emerald-400">${cloudTotalCost.toFixed(4)}</span>
           )}
-          <span className="text-[10px] tabular-nums text-zinc-500">
-            R{completedMedianTests}/{activeModels.length * activeScenarios.length}
-          </span>
+          {isHybrid && hybridTotalCost > 0 && (
+            <span className="text-[10px] font-mono font-bold text-emerald-400">${hybridTotalCost.toFixed(4)}</span>
+          )}
+          {!isHybrid && (
+            <span className="text-[10px] tabular-nums text-zinc-500">
+              R{completedMedianTests}/{activeModels.length * activeScenarios.length}
+            </span>
+          )}
         </div>
       </div>
 
       {/* ── Main Content ── */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left: Controls + Matrix (60%) */}
-        <div className="flex flex-col flex-[6] border-r border-zinc-800 overflow-hidden">
-          <ForgeTrialsControls
-            models={isCloud ? cloudSelectedModels.map((m) => m.id) : localModels}
-            setModels={(ids) => {
-              if (!isCloud) setLocalModels(ids);
-            }}
-            defaultModels={isCloud ? [] : DEFAULT_LOCAL_MODELS}
-            running={activeRunning}
-            isCloud={isCloud}
-            cloudModels={cloudSelectedModels}
-            onCloudModelsChange={cloudSetSelectedModels}
-          />
-          <div className="flex-1 overflow-auto p-3">
-            <ForgeTrialsMatrix
-              results={activeResults}
-              scorecards={activeScorecards}
-              models={activeModels}
-              scenarios={activeScenarios}
-              selectedCell={activeSelectedCell}
-              onSelectCell={handleSetSelectedCell}
-              currentModel={activeCurrentModel}
-              currentRound={activeCurrentRound}
+      {isHybrid ? (
+        <ForgeTrialsHybrid />
+      ) : (
+        <div className="flex flex-1 overflow-hidden">
+          {/* Left: Controls + Matrix (60%) */}
+          <div className="flex flex-col flex-[6] border-r border-zinc-800 overflow-hidden">
+            <ForgeTrialsControls
+              models={isCloud ? cloudSelectedModels.map((m) => m.id) : localModels}
+              setModels={(ids) => {
+                if (!isCloud) setLocalModels(ids);
+              }}
+              defaultModels={isCloud ? [] : DEFAULT_LOCAL_MODELS}
               running={activeRunning}
               isCloud={isCloud}
+              cloudModels={cloudSelectedModels}
+              onCloudModelsChange={cloudSetSelectedModels}
+            />
+            <div className="flex-1 overflow-auto p-3">
+              <ForgeTrialsMatrix
+                results={activeResults}
+                scorecards={activeScorecards}
+                models={activeModels}
+                scenarios={activeScenarios}
+                selectedCell={activeSelectedCell}
+                onSelectCell={handleSetSelectedCell}
+                currentModel={activeCurrentModel}
+                currentRound={activeCurrentRound}
+                running={activeRunning}
+                isCloud={isCloud}
+              />
+            </div>
+          </div>
+
+          {/* Right: Detail Panel (40%) */}
+          <div className="flex flex-col flex-[4] overflow-hidden">
+            <ForgeTrialsRoundDetail
+              result={selectedResult}
+              scenario={activeSelectedCell ? activeScenarios.find((s) => s.id === activeSelectedCell.scenarioId) : undefined}
+              running={activeRunning}
+              currentModel={activeCurrentModel}
+              currentRound={activeCurrentRound}
+              isCloud={isCloud}
+              totalCost={isCloud ? cloudTotalCost : undefined}
+              warmupHtml={isCloud ? cloudWarmupHtml : undefined}
+              provider={isCloud && activeSelectedCell ? cloudSelectedModels.find((m) => m.id === activeSelectedCell.modelId)?.provider : undefined}
             />
           </div>
         </div>
-
-        {/* Right: Detail Panel (40%) */}
-        <div className="flex flex-col flex-[4] overflow-hidden">
-          <ForgeTrialsRoundDetail
-            result={selectedResult}
-            scenario={activeSelectedCell ? activeScenarios.find((s) => s.id === activeSelectedCell.scenarioId) : undefined}
-            running={activeRunning}
-            currentModel={activeCurrentModel}
-            currentRound={activeCurrentRound}
-            isCloud={isCloud}
-            totalCost={isCloud ? cloudTotalCost : undefined}
-            warmupHtml={isCloud ? cloudWarmupHtml : undefined}
-            provider={isCloud && activeSelectedCell ? cloudSelectedModels.find((m) => m.id === activeSelectedCell.modelId)?.provider : undefined}
-          />
-        </div>
-      </div>
+      )}
     </div>
   );
 }

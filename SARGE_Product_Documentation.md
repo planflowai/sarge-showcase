@@ -1597,17 +1597,42 @@ Tier 4 — Escalation ($0.50-2.00)
 **Revenue per site:** $500–$2,500.
 **Margin:** 99.9%+.
 
-### The Hybrid Test (Planned)
+### Parallel Cloud Execution
 
-After all individual benchmarks complete, run a chained hybrid test to validate the pipeline:
+Toggle "Run Parallel" in the cloud trials toolbar to run all providers simultaneously instead of sequentially. Within each provider, models and rounds still execute one at a time. Errors in one provider do not stop others. Cost tracking continues per-provider.
 
-1. Local 7B model generates scaffold (R1: Restaurant)
-2. Feed scaffold to DeepSeek V3: "Overhaul and enhance this site — improve styling, add real content, make it professional"
-3. Feed DeepSeek output to Grok 4: "Refine this further — optimize for conversion, fix any issues, polish the details"
-4. Score final output using same R1 rubric
-5. Compare hybrid score vs individual scores
+- **Route:** `POST /api/benchmark/run-cloud` with `parallel: true` in config
+- **Mechanism:** Models grouped by provider → `Promise.all()` across provider groups
+- **Events:** Same NDJSON events, interleaved by provider
 
-**Success criteria:** Hybrid score ≥ best individual score, at lower total cost.
+### The Hybrid Test System
+
+Hybrid chains test multi-model pipelines where each step feeds output to the next. Two modes:
+
+**Recommended Mode:**
+- Auto-generates up to 5 chains from completed trial scorecards
+- Local model always scaffolds first (cheapest)
+- Top cloud models used for Enhance/Refactor/Finish steps
+- Chains: Quick Pair (2-step), Triple Chain (3-step), Reverse Triple, Full Pipeline (4-step), Cloud Elite
+
+**Custom Mode:**
+- User picks models manually per step (2–5 steps per chain)
+- Renameable role labels (Scaffold, Enhance, Refactor, Finish, or custom)
+- Up to 10 chains
+
+**Chain Execution:**
+1. Step 1 (Scaffold) receives the scenario prompt
+2. Each subsequent step receives "Improve this code: [previous step's output]"
+3. Every step is scored against the scenario rubric
+4. Final score = last step's score
+5. Score progression shown per chain (e.g., 45 → 72 → 88)
+
+**Route:** `POST /api/benchmark/run-hybrid` — accepts `HybridBenchmarkConfig` with chains array
+**Default scenario:** R1 Restaurant (selectable from dropdown)
+**Custom prompt:** Optional override for the first step
+**Results:** Persisted to benchmarkStore, exportable
+
+**Success criteria:** Hybrid chain score ≥ best individual model score, at lower total cost.
 
 ### Trial Results Reference
 
@@ -1982,7 +2007,8 @@ L:\ai_builder\projects\
 
 **Benchmark/Trials:**
 - `POST /api/benchmark/run` — Local Forge Trials runner (NDJSON streaming)
-- `POST /api/benchmark/run-cloud` — Cloud Forge Trials runner (direct API calls, NDJSON streaming)
+- `POST /api/benchmark/run-cloud` — Cloud Forge Trials runner (direct API calls, NDJSON streaming, parallel optional)
+- `POST /api/benchmark/run-hybrid` — Hybrid chain runner (multi-model chains, NDJSON streaming)
 - `GET /api/benchmark/results` — Retrieve saved trial results
 
 **Billing:**
@@ -2143,7 +2169,8 @@ This is the execution order. Each step depends on the previous step completing c
 | Deploy Pipeline (GitHub/Vercel/Netlify/Cloudflare) | **DONE** | DeployPanel + deployStore |
 | The Pit (5-monitor command center) | **DONE** | Dashboard, Cards, Popouts, BroadcastChannel, promoteToAnchor |
 | Forge Trials — Local | **DONE** | 15 scenarios, Ollama backend |
-| Forge Trials — Cloud | **DONE** | 8 scenarios, direct API calls, warmup splash, 180s timeout |
+| Forge Trials — Cloud | **DONE** | 8 scenarios, direct API calls, warmup splash, 180s timeout, parallel toggle |
+| Forge Trials — Hybrid | **DONE** | Multi-model chain testing, Recommended + Custom modes, score progression |
 | Billing Dashboard | **DONE** | ForgeBillingDashboard, daily/model/app cost tracking |
 | Context Injection | **DONE** | Invisible — prepended to system prompt, never shown in chat UI |
 | Builder System Prompt | **DONE** | Defined in builderModeStore.ts |
@@ -2164,7 +2191,7 @@ This is the execution order. Each step depends on the previous step completing c
 
 | System | Status | Prerequisite |
 |--------|--------|-------------|
-| Sequential Model Chain (DeepSeek → Grok → Gemini) | **0%** | Forge Trials data (in progress) |
+| Sequential Model Chain (DeepSeek → Grok → Gemini) | **DONE** | Hybrid Test system — Recommended + Custom chain modes |
 | Client Intake Form | **0%** | Phase 3 |
 | Prompt Template Engine (form JSON → builder prompt) | **0%** | Needs intake form first |
 | Dropbox Asset Pipeline | **0%** | Phase 3 |
