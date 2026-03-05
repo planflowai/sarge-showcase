@@ -42,8 +42,8 @@ interface CompilerState {
   error: string | null;
 }
 
-// Injected into preview iframes: anchor links scroll within iframe, external links open new tab
-const NAV_FIX_SCRIPT = `<script>document.addEventListener('click',function(e){var a=e.target.closest('a');if(!a)return;e.preventDefault();e.stopPropagation();var h=a.getAttribute('href');if(!h)return;if(h.startsWith('#')&&h.length>1){var el=document.querySelector(h);if(el)el.scrollIntoView({behavior:'smooth'})}else if(h==='#'){window.scrollTo({top:0,behavior:'smooth'})}else if(h.startsWith('http')){window.open(h,'_blank','noopener')}},true);<\/script>`;
+// Injected into preview iframes: hash links scroll normally, all others open in new tab
+const NAV_FIX_SCRIPT = `<script>document.addEventListener('click',function(e){var a=e.target.closest('a');if(!a)return;var h=a.getAttribute('href');if(!h)return;if(h.startsWith('#'))return;e.preventDefault();e.stopPropagation();window.open(h,'_blank')},true);<\/script>`;
 
 export function HybridDetailPanel({ running, chainResult, events, scenarioId }: Props) {
   const [tab, setTab] = useState<Tab>("preview");
@@ -308,7 +308,7 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
           <div className="flex-1">
             <iframe
               srcDoc={previewHtml}
-              sandbox="allow-scripts"
+              sandbox="allow-scripts allow-popups"
               className="w-full h-full border-0 bg-white"
               style={{ opacity: iframeOpacity, transition: "opacity 0.3s ease" }}
               title="Hybrid Live Preview"
@@ -410,7 +410,7 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
             {previewHtml ? (
               <iframe
                 srcDoc={previewHtml}
-                sandbox="allow-scripts"
+                sandbox="allow-scripts allow-popups"
                 className="w-full h-full border-0 bg-white"
                 title="Hybrid Preview"
               />

@@ -498,12 +498,13 @@ export function ForgeTrialsHybrid() {
             <span className="text-sm font-bold text-zinc-200">Past Runs</span>
             <span className="text-sm text-zinc-200 tabular-nums">{hybridPastRuns.length}</span>
             <div className="flex-1" />
-            <button
+            <span
+              role="button"
               onClick={(e) => { e.stopPropagation(); hybridClearPastRuns(); setShowPastRuns(false); }}
-              className="text-sm text-zinc-200 hover:text-red-400 transition-colors px-1"
+              className="text-sm text-zinc-200 hover:text-red-400 transition-colors px-1 cursor-pointer"
             >
               Clear All
-            </button>
+            </span>
           </button>
           {showPastRuns && (
             <div className="px-3 pb-3 space-y-1.5 max-h-48 overflow-y-auto">

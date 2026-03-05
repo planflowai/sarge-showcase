@@ -251,7 +251,8 @@ Tag: working-2026-03-02-deploy-fix (last tagged)
 
 | Date | Commit | Change |
 |------|--------|--------|
-| Mar 5 | (latest) | Hybrid — preserve local Step 1 base during Step 2 stream (2000+body gate), fix iframe nav links (anchor scroll within iframe, external → new tab, never navigate parent app). |
+| Mar 5 | (latest) | Fix hydration error (nested button → span in ForgeTrialsHybrid Past Runs), fix iframe nav links permanently (hash links scroll normally, non-hash → window.open new tab, allow-popups sandbox). |
+| Mar 5 | 2e1481f | Hybrid — preserve local Step 1 base during Step 2 stream (2000+body gate), fix iframe nav links (anchor scroll within iframe, external → new tab, never navigate parent app). |
 | Mar 5 | 11069ae | Hybrid — per-step targeted prompts (step 2+ gets role-specific instruction instead of full scenario prompt), body tag validation gate, iframe fade transition on step handoff (0.3s opacity). Models no longer rebuild from scratch each step. |
 | Mar 5 | b646001 | Hybrid — output validation gate (HTML check, 2000 char min, chat response detection) + local model prompt enforcement (strict HTML-only prefix for Ollama/LM Studio). Invalid step output falls back to last known good HTML. |
 | Mar 5 | be79b1f | Hybrid — streaming live preview. Model tokens pipe into iframe in real time via `hybrid:step-streaming` events (throttled 500ms/200chars). User sees HTML build visually as model generates. All 5 providers emit onChunk callbacks. |
