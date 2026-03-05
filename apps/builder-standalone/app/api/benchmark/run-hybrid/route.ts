@@ -490,6 +490,10 @@ function validateStepOutput(code: string): { valid: boolean; reason: string } {
   if (!lower.includes("<!doctype") && !lower.includes("<html")) {
     return { valid: false, reason: "No valid HTML (missing <!DOCTYPE or <html>)" };
   }
+  // Body tag check — <html> without <body> is CSS-only output
+  if (!lower.includes("<body")) {
+    return { valid: false, reason: "No <body> tag — likely CSS-only output" };
+  }
   if (code.length < 2000) {
     return { valid: false, reason: `Output too short (${code.length} chars, min 2000)` };
   }
@@ -501,20 +505,35 @@ function validateStepOutput(code: string): { valid: boolean; reason: string } {
   return { valid: true, reason: "" };
 }
 
-function getStepPrompt(role: string, previousCode: string): string {
+function getStepRoleInstruction(role: string): string | null {
   switch (role.toLowerCase()) {
-    case "scaffold":
-      return ""; // Uses original scenario prompt
-    case "enhance":
-      return `You are enhancing an existing website. Here is the current code:\n\n\`\`\`html\n${previousCode}\n\`\`\`\n\nImprove the visual design, add animations, enhance responsive behavior, and polish the user experience. Keep all existing functionality. Output the complete improved HTML file.`;
-    case "refactor":
-      return `You are refactoring an existing website. Here is the current code:\n\n\`\`\`html\n${previousCode}\n\`\`\`\n\nRefactor for clean, maintainable code. Improve CSS organization, add proper semantic HTML, optimize JavaScript. Fix any bugs. Keep all existing features and styling. Output the complete improved HTML file.`;
-    case "finish":
-      return `You are doing a final polish pass on a website. Here is the current code:\n\n\`\`\`html\n${previousCode}\n\`\`\`\n\nAdd final polish: micro-interactions, accessibility attributes, performance optimizations, cross-browser fixes. Make it production-ready. Output the complete improved HTML file.`;
+    case "build":
+      return null; // Build = full scenario prompt
+    case "improve":
+      return "Add missing sections, flesh out placeholder content, improve structure and completeness.";
+    case "refine":
+      return "Fix all CSS errors, ensure full responsiveness, fix any broken layouts or missing styles.";
+    case "polish":
+      return "Add animations, transitions, micro-interactions, visual polish. Make it production grade.";
+    case "check":
+      return "Audit every section. Fix broken elements, validate all required sections exist, ensure JavaScript works. Output the final clean complete HTML.";
     default:
-      // Custom role — generic "improve" prompt
-      return `You are performing the "${role}" step on an existing website. Here is the current code:\n\n\`\`\`html\n${previousCode}\n\`\`\`\n\nApply your "${role}" improvements while keeping all existing functionality. Output the complete improved HTML file.`;
+      return `Improve the site based on your role: ${role}. Keep everything working, only add or fix.`;
   }
+}
+
+function getStepPrompt(role: string, previousCode: string, scenarioPrompt: string): string {
+  const instruction = getStepRoleInstruction(role);
+  // "Build" role gets the full scenario prompt
+  if (instruction === null) return scenarioPrompt;
+
+  return `You are improving an existing website. Here is the current HTML:
+
+${previousCode}
+
+Your specific task for this step: ${instruction}
+
+CRITICAL: Keep everything that is already working. Do not remove sections. Do not rebuild from scratch. Only add, fix, or improve. Output the complete improved HTML starting with <!DOCTYPE html>.`;
 }
 
 // ── Partial HTML extraction for streaming preview ──
@@ -607,10 +626,11 @@ export async function POST(request: NextRequest) {
             timestamp: Date.now(),
           });
 
-          // First step uses the scenario prompt; subsequent steps use the chain output
+          // First step uses the full scenario prompt; subsequent steps get targeted instructions
+          const scenarioPrompt = chain.prompt || scenario.prompt;
           const userPrompt = isFirst
-            ? (chain.prompt || scenario.prompt)
-            : getStepPrompt(step.role, previousCode);
+            ? scenarioPrompt
+            : getStepPrompt(step.role, previousCode, scenarioPrompt);
 
           const timeout = isFirst ? scenario.timeout : 180_000; // 3 min for non-scaffold steps
 

@@ -51,8 +51,10 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
   const [compiler, setCompiler] = useState<CompilerState>({
     loading: false, before: null, after: null, fixedHtml: null, error: null,
   });
+  const [iframeOpacity, setIframeOpacity] = useState(1);
   const assessFetchedRef = useRef<string | null>(null);
   const compileFetchedRef = useRef<string | null>(null);
+  const prevStepRef = useRef<number | null>(null);
 
   const scenario = ALL_HYBRID_SCENARIOS.find((s) => s.id === scenarioId);
   const finalHtml = chainResult?.steps?.[chainResult.steps.length - 1]?.extractedCode || "";
@@ -182,6 +184,29 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
     runCompiler(finalHtml);
   }, [chainResult, finalHtml, runCompiler]);
 
+  // ── Fade transition on step handoff — never flash white/black ──
+  useEffect(() => {
+    if (!running) {
+      prevStepRef.current = null;
+      setIframeOpacity(1);
+      return;
+    }
+    const step = events.length > 0 ? events[events.length - 1].stepIndex : undefined;
+    const stepNum = step ?? 0;
+    if (prevStepRef.current !== null && prevStepRef.current !== stepNum) {
+      // New step started — fade to 50%
+      setIframeOpacity(0.5);
+    }
+    prevStepRef.current = stepNum;
+  }, [running, events]);
+
+  // Fade back to full once streaming content is established
+  useEffect(() => {
+    if (iframeOpacity < 1 && liveHtml.length >= 200) {
+      setIframeOpacity(1);
+    }
+  }, [iframeOpacity, liveHtml]);
+
   // ── Score extraction helper ──
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function extractScores(report: any): AuditScores {
@@ -263,6 +288,7 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
               srcDoc={previewHtml}
               sandbox="allow-scripts"
               className="w-full h-full border-0 bg-white"
+              style={{ opacity: iframeOpacity, transition: "opacity 0.3s ease" }}
               title="Hybrid Live Preview"
             />
           </div>
