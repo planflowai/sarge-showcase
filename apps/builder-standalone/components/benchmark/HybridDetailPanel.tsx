@@ -60,15 +60,29 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
   const grade = finalScore ? getLetterGrade(finalScore.total) : null;
   const gradeColor = grade ? getGradeColor(grade) : "";
 
+  // Live preview: extract HTML from step-complete events as they arrive (before full chain completes)
+  const liveHtml = useMemo(() => {
+    for (let i = events.length - 1; i >= 0; i--) {
+      const ev = events[i];
+      if (ev.type === "hybrid:step-complete" && ev.stepResult?.extractedCode) {
+        return ev.stepResult.extractedCode;
+      }
+    }
+    return "";
+  }, [events]);
+
+  // Use final chain HTML if available, otherwise live step HTML
+  const displayHtml = finalHtml || liveHtml;
+
   // Preview HTML
   const previewHtml = useMemo(() => {
-    if (!finalHtml) return "";
-    const code = finalHtml;
+    if (!displayHtml) return "";
+    const code = displayHtml;
     if (code.toLowerCase().includes("<!doctype") || code.toLowerCase().includes("<html")) {
       return code;
     }
     return `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:system-ui,sans-serif;padding:1rem}</style></head><body>${code}</body></html>`;
-  }, [finalHtml]);
+  }, [displayHtml]);
 
   // ── Auto-trigger assessment after chain completes ──
   useEffect(() => {
@@ -226,8 +240,32 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
     );
   }
 
-  // ── Running state ──
+  // ── Running state — show live preview if step HTML available ──
   if (running && !chainResult) {
+    if (previewHtml) {
+      // A step completed — show live preview with running indicator
+      return (
+        <div className="flex flex-col h-full overflow-hidden">
+          <div className="flex items-center gap-2 px-4 py-2 border-b border-zinc-800 bg-zinc-900/40 flex-shrink-0">
+            <Loader2 className="w-4 h-4 animate-spin text-amber-400 flex-shrink-0" />
+            <span className="text-sm font-bold text-white">
+              Step {(currentStepIndex ?? 0) + 1} running...
+            </span>
+            <span className="text-sm text-zinc-400 truncate flex-1">{currentMessage}</span>
+            <span className="text-xs font-bold text-emerald-400 animate-pulse">LIVE</span>
+          </div>
+          <div className="flex-1">
+            <iframe
+              srcDoc={previewHtml}
+              sandbox="allow-scripts"
+              className="w-full h-full border-0 bg-white"
+              title="Hybrid Live Preview"
+            />
+          </div>
+        </div>
+      );
+    }
+    // No step HTML yet — show spinner
     return (
       <div className="flex flex-col items-center justify-center h-full">
         <div className="relative mb-6">
