@@ -251,7 +251,8 @@ Tag: working-2026-03-02-deploy-fix (last tagged)
 
 | Date | Commit | Change |
 |------|--------|--------|
-| Mar 5 | pending | iframe nav fix (anchor smooth-scroll, external → new tab, sandbox allow-same-origin+allow-forms), assessment+compiler 30s timeout (AbortSignal.timeout), skip assess/compile on empty output |
+| Mar 5 | pending | Delete 30 backup directories — 8,329 errors eliminated (8,747 → 418) |
+| Mar 5 | 48269b2 | iframe nav fix (anchor smooth-scroll, external → new tab, sandbox allow-same-origin+allow-forms), assessment+compiler 30s timeout (AbortSignal.timeout), skip assess/compile on empty output |
 | Mar 5 | e887869 | Fix nested button hydration crash (role="button" inside button → plain span), fix duplicate Mistral key in BuilderModelBar |
 | Mar 5 | 5d724f2 | Extract Thread Guardian + Jury Duty into `packages/guardian/`, wire 3-tier guardian check + jury verdict into hybrid chain, `hybrid:jury` event type, Build Log + Breakdown integration |
 | Mar 5 | ea24453 | Salvage audit — read only inventory (STATUS.md) |
@@ -538,7 +539,49 @@ Only 2 PM2 processes configured. All other standalone apps (chat, debate, tradin
 
 ## Error Baseline — March 5 2026
 
-Commit: `48269b2` | Branch: `sargebuild-v1`
+### Before cleanup: 8,747 errors (commit `48269b2`)
+
+### After cleanup: 418 errors (commit pending)
+
+**Deleted 30 backup directories (8,329 errors eliminated):**
+
+```
+backups/builder-full-ui-overhaul/
+backups/builder-original/
+backups/builder-standalone-2026-03-02_09-01/
+backups/builder-standalone-2026-03-02_09-08/
+backups/builder-standalone-2026-03-02_10-12/
+backups/builder-standalone-2026-03-02_10-46/
+backups/builder-standalone-2026-03-02_12-59/
+backups/builder-standalone-2026-03-02_13-10/
+backups/builder-standalone-2026-03-02_13-16/
+backups/builder-standalone-2026-03-02_13-30/
+backups/builder-standalone-2026-03-02_13-45/
+backups/builder-standalone-2026-03-02_13-55/
+backups/builder-standalone-2026-03-02_13-59/
+backups/builder-standalone-2026-03-02_14-26/
+backups/builder-standalone-2026-03-02_15-52/
+backups/builder-standalone-2026-03-02_17-29/
+backups/builder-standalone-2026-03-02_18-31/
+backups/builder-standalone-2026-03-02_18-46/
+backups/builder-standalone-2026-03-02_22-37/
+backups/builder-standalone-2026-03-02_23-55/
+backups/builder-standalone-2026-03-03_01-34/
+backups/builder-standalone-2026-03-03_11-11/
+backups/builder-standalone-2026-03-03_11-26/
+backups/builder-standalone-2026-03-03_11-34/
+backups/builder-standalone-2026-03-03_11-47/
+backups/builder-standalone-2026-03-03_22-50/
+backups/builder-standalone-2026-03-05_08-48/
+backups/chat-warroom-complete/
+backups/docs-archive-2026-03-04/
+apps/apps-standalone-backup/
+apps/builder-standalone-backup/
+apps/chat-standalone-backup/
+apps/diagnostics-standalone-backup/
+```
+
+**Verification:** Zero imports from any backup directory in `apps/builder-standalone/` or `packages/`.
 
 ### builder-standalone (own tsconfig — strict mode): CLEAN ✅
 
@@ -546,78 +589,29 @@ Commit: `48269b2` | Branch: `sargebuild-v1`
 npx tsc --noEmit → 0 errors, 0 warnings
 ```
 
-### Monorepo root (npx tsc --noEmit): 8,747 errors
-
-**Per app/package (real code only — 442 errors):**
+### Remaining 418 errors (all pre-existing, unmaintained code)
 
 | Location | Errors | Notes |
 |----------|--------|-------|
-| `apps/builder-standalone` | 234 | All from root tsconfig resolution — compiles clean in own tsconfig |
+| `apps/builder-standalone` | 234 | Root tsconfig only — clean in own tsconfig |
 | `apps/trading-standalone` | 67 | Unmaintained |
 | `apps/chat-standalone` | 57 | Unmaintained |
-| `apps/chat-standalone-backup` | 23 | Backup copy |
 | `apps/war-room` | 20 | Unmaintained |
 | `packages/builder` | 16 | Missing exports from @sarge/core |
 | `packages/diagnostics` | 6 | Missing provider module paths |
-| `apps/builder-standalone-backup` | 4 | Backup copy |
 | `apps/jury-standalone` | 4 | Unmaintained |
+| `__tests__` | 4 | vitest not installed |
 | `apps/guardian-standalone` | 3 | Unmaintained |
 | `apps/debate-standalone` | 2 | Missing type declarations |
 | `packages/chat` | 2 | Missing exports |
 | `apps/diagnostics-standalone` | 1 | Missing module |
-| `apps/diagnostics-standalone-backup` | 1 | Backup copy |
 | `apps/env-manager-standalone` | 1 | Missing module |
 | `apps/launchpad-standalone` | 1 | Missing module |
-| **TOTAL (real code)** | **442** | |
-
-**Backup directories: 8,301 errors** (26 backup folders, not maintained)
-
-**Test files: 4 errors** (`__tests__/templateSelection.test.ts` — vitest not installed)
-
-**Per error category (all 8,747):**
-
-| Code | Count | Description |
-|------|-------|-------------|
-| TS7006 | 5,740 | Implicit any parameter |
-| TS2307 | 2,525 | Cannot find module |
-| TS18046 | 150 | Unknown type |
-| TS7053 | 84 | Implicit any element access |
-| TS2322 | 68 | Type not assignable |
-| TS7031 | 68 | Implicit any binding element |
-| TS2305 | 59 | Module has no exported member |
-| TS2366 | 33 | Function lacks ending return |
-| TS2724 | 10 | Module has no exported member (did you mean) |
-| TS2339 | 5 | Property does not exist |
-| TS2740 | 3 | Missing properties from type |
-| TS2630 | 1 | Cannot assign to this |
-| TS2559 | 1 | No properties in common |
-
-**Per category (real code only — 442):**
-
-| Code | Count | Description |
-|------|-------|-------------|
-| TS7006 | 219 | Implicit any parameter |
-| TS2307 | 147 | Cannot find module |
-| TS2305 | 46 | Module has no exported member |
-| TS2724 | 10 | Module has no exported member (did you mean) |
-| TS7053 | 6 | Implicit any element access |
-| TS2322 | 5 | Type not assignable |
-| TS7031 | 4 | Implicit any binding element |
-| TS2339 | 2 | Property does not exist |
-| TS2366 | 1 | Function lacks ending return |
-| TS2630 | 1 | Cannot assign to this |
-| TS2559 | 1 | No properties in common |
-
-### New Errors Since Previous Audit
-
-**No new errors introduced.** The previous salvage audit (same day, commit `640c699`) reported ~8,815 lines of tsc output. Current count is 8,747 errors — slightly lower due to the nested button fix (`role="button"` removal) and duplicate key fix reducing type ambiguity. All 442 real-code errors are pre-existing missing module / implicit any issues from unmaintained standalones.
+| **TOTAL** | **418** | |
 
 ### Key Insight
 
-The only app under active development (`builder-standalone`) compiles **100% clean** with strict mode. All 8,747 monorepo errors come from:
-- 26 backup directories (8,301 errors — 95%)
-- Unmaintained standalone apps (442 errors — 5%)
-- Test files missing vitest (4 errors — <1%)
+The only app under active development (`builder-standalone`) compiles **100% clean** with strict mode. All 418 remaining errors are from unmaintained standalones and root tsconfig resolution mismatches.
 
 ---
 
