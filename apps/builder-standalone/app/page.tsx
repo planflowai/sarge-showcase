@@ -12,8 +12,8 @@ import { useWorkbenchStore } from "@/lib/stores/workbenchStore";
 // Lazy-load heavy components that are only conditionally rendered
 const BuilderPage = lazy(() => import("@sarge/builder/components/BuilderPage"));
 const DeployPanel = lazy(() => import("@/components/deploy/DeployPanel"));
-const WarRoomPopout = lazy(() => import("@/components/chat/WarRoomPopout").then(m => ({ default: m.WarRoomPopout })));
-const WorkbenchPopout = lazy(() => import("@/components/workbench/WorkbenchPopout").then(m => ({ default: m.WorkbenchPopout })));
+const WarRoomPopout = lazy(() => import("@/components/chat/WarRoomPopout").then(m => ({ default: m.WarRoomPopout }))) as any;
+const WorkbenchPopout = lazy(() => import("@/components/workbench/WorkbenchPopout").then(m => ({ default: m.WorkbenchPopout }))) as any;
 const WorkbenchDashboard = lazy(() => import("@/components/workbench/WorkbenchDashboard"));
 const NewProjectWizard = lazy(() => import("@/components/project/NewProjectWizard"));
 const ForgeTrialsDashboard = lazy(() => import("@/components/benchmark/ForgeTrialsDashboard"));

@@ -242,7 +242,7 @@ function StatusCard({
     complete: { label: "COMPLETE", dotCls: "bg-emerald-400" },
     error: { label: "ERROR", dotCls: "bg-red-500" },
     offline: { label: "OFFLINE", dotCls: "bg-zinc-700" },
-  }[slot.status] ?? { label: "\u2014", dotCls: "bg-zinc-700" };
+  }[slot.status as string] ?? { label: "\u2014", dotCls: "bg-zinc-700" };
 
   return (
     <div

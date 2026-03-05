@@ -445,7 +445,7 @@ export default function NewProjectWizard({
                             const info = TOGGLE_INFO.find((t: any) => t.key === key);
                             return (
                               <span
-                                key={key}
+                                key={key as string}
                                 className="px-2 py-0.5 text-xs font-bold rounded-full"
                                 style={{
                                   color: info?.color || "#888",

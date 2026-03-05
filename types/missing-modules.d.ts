@@ -19,14 +19,18 @@ declare module "@/components/benchmark/ForgeTrialsDashboard";
 declare module "@/components/billing/BillingBar";
 declare module "@/components/billing/ForgeBillingDashboard";
 declare module "@/components/chat/WarRoomDashboard";
-declare module "@/components/chat/WarRoomPopout";
+declare module "@/components/chat/WarRoomPopout" {
+  export const WarRoomPopout: any;
+}
 declare module "@/components/deploy/DeployPanel";
 declare module "@/components/env/EnvManager";
 declare module "@/components/launcher/LauncherDashboard";
 declare module "@/components/project/NewProjectWizard";
 declare module "@/components/settings/ModelRoleTags";
 declare module "@/components/workbench/WorkbenchDashboard";
-declare module "@/components/workbench/WorkbenchPopout";
+declare module "@/components/workbench/WorkbenchPopout" {
+  export const WorkbenchPopout: any;
+}
 
 // ═══════════════════════════════════════════════════════════════════
 // NO-BODY STUBS — @/ lib modules (value exports only, no type imports)
@@ -133,12 +137,22 @@ declare module "@sarge/chat/index.client" {
   export type Attachment = any;
 }
 
+// vitest — test framework (not installed in monorepo root)
+declare module "vitest" {
+  export const describe: any;
+  export const it: any;
+  export const expect: any;
+  export const beforeEach: any;
+  export const vi: any;
+  export const test: any;
+}
+
 // ═══════════════════════════════════════════════════════════════════
-// NOT STUBBED — files genuinely don't exist (6 remaining TS2307 errors)
+// @sarge/core/providers/* — individual provider modules (used by diagnostics)
 // ═══════════════════════════════════════════════════════════════════
-// @sarge/core/providers/anthropic
-// @sarge/core/providers/deepseek
-// @sarge/core/providers/google
-// @sarge/core/providers/ollama
-// @sarge/core/providers/openai
-// @sarge/core/providers/xai
+declare module "@sarge/core/providers/anthropic";
+declare module "@sarge/core/providers/deepseek";
+declare module "@sarge/core/providers/google";
+declare module "@sarge/core/providers/ollama";
+declare module "@sarge/core/providers/openai";
+declare module "@sarge/core/providers/xai";

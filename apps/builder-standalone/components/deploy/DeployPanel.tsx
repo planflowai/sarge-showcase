@@ -186,6 +186,7 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
       case "vercel": return vercelUrl;
       case "netlify": return netlifyUrl;
       case "cloudflare": return cloudflareUrl;
+      default: return null;
     }
   };
 
@@ -491,7 +492,7 @@ export default function DeployPanel({ projectPath, projectName }: DeployPanelPro
                           {Object.values(selectedToggles).every(Boolean) ? "Uncheck all" : "Check all"}
                         </button>
                       </div>
-                      {TOGGLE_INFO.map(({ key, label, description, color }) => {
+                      {TOGGLE_INFO.map(({ key, label, description, color }: any) => {
                         const isChecked = selectedToggles[key];
                         return (
                           <button

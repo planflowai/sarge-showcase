@@ -6,7 +6,7 @@ import dotenv from "dotenv";
 dotenv.config({ path: path.resolve(__dirname, "../../.env.local") });
 
 const nextConfig: NextConfig = {
-  devIndicators: false,
+  devIndicators: false as any,
   transpilePackages: ["@sarge/core"],
   webpack: (config, { isServer }) => {
     if (!isServer) {

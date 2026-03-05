@@ -50,7 +50,7 @@ interface AccordionItemProps {
   children: React.ReactNode;
 }
 
-export function AccordionItem({ value, className, children }: AccordionItemProps) {
+function AccordionItemBase({ value, className, children }: AccordionItemProps) {
   return (
     <div className={cn("border-b border-zinc-200 dark:border-zinc-800", className)} data-value={value}>
       {children}
@@ -100,14 +100,13 @@ export function AccordionContent({ className, children }: AccordionContentProps)
 // Internal context to pass value from AccordionItem to Trigger/Content
 const AccordionItemContext = createContext<string>("");
 
-// Patch AccordionItem to provide context
-const OriginalAccordionItem = AccordionItem;
-AccordionItem = function AccordionItemWithContext({ value, className, children }: AccordionItemProps) {
+// Wrap AccordionItem to provide context
+export function AccordionItem({ value, className, children }: AccordionItemProps) {
   return (
     <AccordionItemContext.Provider value={value}>
-      <OriginalAccordionItem value={value} className={className}>
+      <AccordionItemBase value={value} className={className}>
         {children}
-      </OriginalAccordionItem>
+      </AccordionItemBase>
     </AccordionItemContext.Provider>
   );
 };

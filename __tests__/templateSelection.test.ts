@@ -32,7 +32,7 @@ describe('Template Selection', () => {
     useUnifiedCapabilitiesStore.setState({
       websiteType: 'website_builder',
       orchestrationMode: 'single',
-      capabilities: {},
+      capabilities: {} as any,
       isPanelExpanded: true,
       showDependencyGraph: false,
       savedPresets: [],
@@ -132,7 +132,7 @@ describe('Template Selection', () => {
     it('should not crash when toggling capabilities with missing state', () => {
       // Start with empty capabilities
       useUnifiedCapabilitiesStore.setState({
-        capabilities: {},
+        capabilities: {} as any,
         hydrated: true,
       });
 
@@ -146,7 +146,7 @@ describe('Template Selection', () => {
 
     it('should initialize capability when toggling for first time', () => {
       useUnifiedCapabilitiesStore.setState({
-        capabilities: {},
+        capabilities: {} as any,
         hydrated: true,
       });
 
