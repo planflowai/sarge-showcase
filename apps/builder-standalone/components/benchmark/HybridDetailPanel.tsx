@@ -265,16 +265,42 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
   function extractScores(report: any): AuditScores {
     const violations: AuditScores["violations"] = [];
 
-    // Scores are at report.scores (top-level, from runAudit)
+    // Primary: scores at report.scores (from runAudit)
     const scores = report.scores || {};
-    const perf = typeof scores.performance === "number" ? scores.performance : 0;
-    const acc = typeof scores.accessibility === "number" ? scores.accessibility : 0;
-    const seo = typeof scores.seo === "number" ? scores.seo : 0;
-    const bp = typeof scores.bestPractices === "number" ? scores.bestPractices
+    let perf = typeof scores.performance === "number" ? scores.performance : 0;
+    let acc = typeof scores.accessibility === "number" ? scores.accessibility : 0;
+    let seo = typeof scores.seo === "number" ? scores.seo : 0;
+    let bp = typeof scores.bestPractices === "number" ? scores.bestPractices
       : typeof scores["best-practices"] === "number" ? (scores["best-practices"] as number) : 0;
 
-    // Violations are in report.results[] array — each result has a violations array
+    // Fallback: raw Lighthouse categories format (scores are 0-1 decimals)
+    const cats = report.categories;
+    if (cats) {
+      if (!perf && cats.performance?.score != null) perf = Math.round(cats.performance.score * 100);
+      if (!acc && cats.accessibility?.score != null) acc = Math.round(cats.accessibility.score * 100);
+      if (!seo && cats.seo?.score != null) seo = Math.round(cats.seo.score * 100);
+      if (!bp && cats["best-practices"]?.score != null) bp = Math.round(cats["best-practices"].score * 100);
+    }
+
+    // Fallback: scan results[] for Lighthouse entry with embedded scores
     const results = Array.isArray(report.results) ? report.results : [];
+    if (!perf || !seo || !bp) {
+      for (const r of results) {
+        if (r.tool !== "lighthouse") continue;
+        // Lighthouse result may carry a scores sub-object
+        const ls = r.scores;
+        if (ls) {
+          if (!perf && typeof ls.performance === "number") perf = ls.performance;
+          if (!seo && typeof ls.seo === "number") seo = ls.seo;
+          if (!bp) {
+            if (typeof ls.bestPractices === "number") bp = ls.bestPractices;
+            else if (typeof ls["best-practices"] === "number") bp = ls["best-practices"] as number;
+          }
+        }
+      }
+    }
+
+    // Collect violations from results[] array
     for (const result of results) {
       if (!Array.isArray(result.violations)) continue;
       for (const v of result.violations) {

@@ -1263,29 +1263,57 @@ export async function POST(request: NextRequest) {
             }
             // Don't update previousCode with bad output
           } else if (code && validation.valid) {
-            // Algorithmic validation passed — now run Guardian 3-tier check
-            const scenarioPromptForGuardian = chain.prompt || scenario.prompt;
-            const guardianResults = await runGuardianTieredCheck(
-              code, scenarioPromptForGuardian,
-              guardianModelId, guardianProvider,
-              si, abortController.signal,
-              emit, chainStartTime, chain.id,
-            );
+            // Regression check — detect sections removed from previous step
+            let regressionBlocked = false;
+            if (si > 0 && lastGoodCode) {
+              const regressionChangelog = generateChangelog(lastGoodCode, code);
+              if (regressionChangelog.regressionCheck === "FAILED") {
+                regressionBlocked = true;
+                stepFailed = true;
+                const removedStr = regressionChangelog.sectionsRemoved.join(", ");
+                emit({
+                  type: "hybrid:guardian",
+                  chainId: chain.id,
+                  stepIndex: si,
+                  message: `[Guardian T1] Step ${si + 1} output — REJECTED (regression detected — removed: ${removedStr} — passing Step ${si} HTML forward)`,
+                  timestamp: Date.now(),
+                });
+                emit({
+                  type: "hybrid:build-log",
+                  chainId: chain.id,
+                  stepIndex: si,
+                  message: `[${formatElapsed(chainStartTime)}] Guardian T1: Step ${si + 1} output REJECTED — regression detected — removed: ${removedStr}`,
+                  timestamp: Date.now(),
+                });
+                previousCode = lastGoodCode;
+              }
+            }
 
-            // If any guardian tier rejected, use last good code
-            const guardianRejected = guardianResults.some(r => !r.passed);
-            if (guardianRejected && lastGoodCode) {
-              emit({
-                type: "hybrid:build-log",
-                chainId: chain.id,
-                stepIndex: si,
-                message: `[${formatElapsed(chainStartTime)}] Thread Guardian: Step ${si + 1} output flagged — using last good HTML`,
-                timestamp: Date.now(),
-              });
-              previousCode = lastGoodCode;
-            } else {
-              previousCode = code;
-              lastGoodCode = code;
+            if (!regressionBlocked) {
+              // No regression — run Guardian 3-tier check
+              const scenarioPromptForGuardian = chain.prompt || scenario.prompt;
+              const guardianResults = await runGuardianTieredCheck(
+                code, scenarioPromptForGuardian,
+                guardianModelId, guardianProvider,
+                si, abortController.signal,
+                emit, chainStartTime, chain.id,
+              );
+
+              // If any guardian tier rejected, use last good code
+              const guardianRejected = guardianResults.some(r => !r.passed);
+              if (guardianRejected && lastGoodCode) {
+                emit({
+                  type: "hybrid:build-log",
+                  chainId: chain.id,
+                  stepIndex: si,
+                  message: `[${formatElapsed(chainStartTime)}] Thread Guardian: Step ${si + 1} output flagged — using last good HTML`,
+                  timestamp: Date.now(),
+                });
+                previousCode = lastGoodCode;
+              } else {
+                previousCode = code;
+                lastGoodCode = code;
+              }
             }
           } else {
             previousCode = code;

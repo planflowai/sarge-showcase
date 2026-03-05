@@ -251,7 +251,8 @@ Tag: working-2026-03-02-deploy-fix (last tagged)
 
 | Date | Commit | Change |
 |------|--------|--------|
-| Mar 5 | pending | iframe nav postMessage bridge, compiler extractScores fix, TS7053 keyof casts — all Forge Trials fixes |
+| Mar 5 | pending | Guardian enforces regression blocks (REJECTED event + lastGoodCode), compiler extractScores reads all 4 Lighthouse categories with fallback paths |
+| Mar 5 | ded0c25 | iframe nav postMessage bridge, compiler extractScores fix, TS7053 keyof casts — all Forge Trials fixes |
 | Mar 5 | 61c7f22 | Delete 3 unmaintained apps + fix remaining 21 — 0 errors achieved (141 → 0) |
 | Mar 5 | a899f8f | TS7006 implicit any fixes — 137 errors eliminated (278 → 141). 136 params annotated across 21 files |
 | Mar 5 | b190a91 | TS2305 exported member fixes — 19 errors eliminated (297 → 278). Import path fixes + stub updates |
