@@ -43,7 +43,14 @@ const STEP_NAMES = [
   "PII Injection",
   "Supabase Logging",
   "Revision Submission",
+  "Email Send",
+  "Build from Intake",
+  "Preview Approval",
+  "Rollback",
+  "Auto-Approval Check",
 ];
+
+const TOTAL_STEPS = STEP_NAMES.length;
 
 export function PipelineDiagnostics() {
   const [running, setRunning] = useState(false);
@@ -60,7 +67,7 @@ export function PipelineDiagnostics() {
 
     // Simulate step progress while waiting
     const interval = setInterval(() => {
-      setCurrentStep((prev) => (prev < 11 ? prev + 1 : prev));
+      setCurrentStep((prev) => (prev < TOTAL_STEPS ? prev + 1 : prev));
     }, 4000);
 
     try {
@@ -78,7 +85,7 @@ export function PipelineDiagnostics() {
 
       const data: PipelineReport = await res.json();
       setReport(data);
-      setCurrentStep(11);
+      setCurrentStep(TOTAL_STEPS);
     } catch (err: any) {
       clearInterval(interval);
       setError(err.message || "Pipeline test failed");
@@ -110,7 +117,7 @@ export function PipelineDiagnostics() {
             Pipeline Diagnostics
           </h2>
           <p className="text-xs text-zinc-500 mt-1">
-            Runs all 11 pipeline steps with dummy data using the cheapest
+            Runs all 16 pipeline steps with dummy data using the cheapest
             available cloud model.
           </p>
         </div>
@@ -140,14 +147,14 @@ export function PipelineDiagnostics() {
           <div className="flex items-center gap-2 mb-3">
             <Loader2 className="h-4 w-4 animate-spin text-violet-400" />
             <span className="text-sm text-zinc-300">
-              Step {currentStep} of 11:{" "}
+              Step {currentStep} of {TOTAL_STEPS}:{" "}
               {STEP_NAMES[currentStep - 1] || "..."}
             </span>
           </div>
           <div className="w-full bg-zinc-700 rounded-full h-1.5">
             <div
               className="bg-violet-500 h-1.5 rounded-full transition-all duration-500"
-              style={{ width: `${(currentStep / 11) * 100}%` }}
+              style={{ width: `${(currentStep / TOTAL_STEPS) * 100}%` }}
             />
           </div>
         </div>

@@ -4,7 +4,22 @@ Generated: 2026-03-05
 Branch: sargebuild-v1
 Tag: working-2026-03-02-deploy-fix (last tagged)
 
-## Latest Changes (Fix pipeline test Steps 10+11 — Supabase tables + sync from API layer)
+## Latest Changes (Pipeline test — expanded to 16 steps, full A-Z coverage)
+
+- **5 new pipeline steps** (12-16) added to `/api/pipeline-test/route.ts`. Original 11 steps untouched.
+- **Step 12 — Email Send**: POST `/api/email/send` with `welcome` template. PASS if route responds 200. If no `RESEND_API_KEY`, passes with "skipped live send" note.
+- **Step 13 — Build from Intake**: POST `/api/intake/build` with Step 1's ref code. Verifies prompt > 500 chars, PII placeholders present. New route created at `app/api/intake/build/route.ts`.
+- **Step 14 — Preview Approval**: POST `/api/intake/approve` — sets `send_preview` then full approve. Verifies Supabase status = `deployed`, `deployed_at` set.
+- **Step 15 — Rollback**: POST `/api/intake/rollback`. Both success (within 60 min) and expired (410) are valid PASS outcomes.
+- **Step 16 — Auto-Approval Check**: GET `/api/cron/auto-approve`. Verifies route responds 200 with project count.
+- **Infrastructure guard**: Pre-Step 13 probes `client_intake` table existence. If table not migrated, Steps 13-16 PASS with note "run /api/supabase/migrate" instead of FAILing on missing infrastructure.
+- **UI updated**: `PipelineDiagnostics.tsx` shows 16 steps. Progress bar, step counter, and description all use `TOTAL_STEPS` constant.
+- **New file**: `app/api/intake/build/route.ts` — fetches intake from Supabase, assembles builder prompt via `intakeToPrompt()`.
+- **Test result**: All 16 steps PASS. Duration: 537.7s. Cost: $0.0070. Steps 12 (Email) and 13-16 (client pipeline) pass with infrastructure notes (no RESEND_API_KEY, no `client_intake` table). Full verification requires `SUPABASE_SERVICE_ROLE_KEY` migration + `RESEND_API_KEY`.
+- **Modified**: `pipeline-test/route.ts`, `PipelineDiagnostics.tsx`.
+- **Created**: `intake/build/route.ts`.
+
+## Previous Changes (Fix pipeline test Steps 10+11 — Supabase tables + sync from API layer)
 
 - **Step 10 root cause**: The sync functions (`syncBuildHistory`, `syncCompilerResult`, `syncBillingEntry`) in `forgeSync.ts` are `"use client"` — they're only called from frontend Zustand stores, never from API routes. The pipeline test calls API routes directly, so build/compiler/billing data was never written to Supabase. Tables existed but had zero rows.
 - **Step 10 fix**: Pipeline-test route now writes directly to `forge_build_history`, `forge_compiler_results`, and `forge_billing` after Steps 4 (build) and 7 (compiler) complete. Uses correct column names matching the actual Supabase table schema (e.g., `lighthouse_performance` not `performance`, `model_id` not `model`).

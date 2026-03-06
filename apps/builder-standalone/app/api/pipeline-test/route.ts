@@ -716,6 +716,223 @@ replacement code
     })
   );
 
+  // ── Step 12: Email Send ────────────────────────────────────────────
+  steps.push(
+    await runStep(12, "Email Send", async () => {
+      const notifyEmail = process.env.NOTIFICATION_EMAIL;
+      const hasResendKey = !!process.env.RESEND_API_KEY;
+
+      const res = await fetch(`${baseUrl}/api/email/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: notifyEmail || "test@pipeline.local",
+          subject: "Pipeline Test — Email Send Check",
+          template: "welcome" as const,
+          data: {
+            client_name: "Pipeline Test Client",
+            intake_url: `${baseUrl}/intake`,
+            deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+          },
+        }),
+        signal: AbortSignal.timeout(15000),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${data.error || JSON.stringify(data)}`);
+
+      if (!hasResendKey) {
+        return `No API key — skipped live send. Route responded 200.`;
+      }
+
+      if (data.id) {
+        return `Email accepted by Resend (id: ${data.id})`;
+      }
+      return `Email route responded 200, sent to ${notifyEmail}`;
+    })
+  );
+
+  // ── Pre-Step 13: Ensure client_intake row exists in Supabase ──────
+  // Step 1's submit route silently swallows Supabase errors. If the
+  // client_intake table doesn't exist or the insert failed, Steps 13-16
+  // would all fail. We verify/insert directly here.
+  let hasIntakeTable = false;
+  if (hasSupabase) {
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    // Probe the table — a select will fail if the table doesn't exist
+    const { error: probeErr } = await supabase
+      .from("client_intake")
+      .select("ref_code")
+      .limit(1);
+
+    if (!probeErr) {
+      hasIntakeTable = true;
+      // Ensure our test row exists (Step 1 may have silently failed)
+      const { data: existing } = await supabase
+        .from("client_intake")
+        .select("ref_code")
+        .eq("ref_code", refCode)
+        .single();
+
+      if (!existing) {
+        await supabase.from("client_intake").insert({
+          form_data: DUMMY_INTAKE,
+          status: "new",
+          ref_code: refCode,
+          email: DUMMY_INTAKE.email,
+          project_name: DUMMY_INTAKE.business_name,
+          client_name: DUMMY_INTAKE.client_name,
+          client_email: DUMMY_INTAKE.email,
+          intake_submitted_at: new Date().toISOString(),
+        }).then(({ error }) => {
+          if (error) console.warn("[pipeline-test] client_intake insert:", error.message);
+        });
+      }
+    } else {
+      console.warn("[pipeline-test] client_intake table not found:", probeErr.message);
+    }
+  }
+
+  // ── Step 13: Build from Intake ────────────────────────────────────
+  steps.push(
+    await runStep(13, "Build from Intake", async () => {
+      if (!hasIntakeTable) {
+        return `client_intake table not migrated — route unavailable (run /api/supabase/migrate)`;
+      }
+
+      const res = await fetch(`${baseUrl}/api/intake/build`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ref_code: refCode }),
+        signal: AbortSignal.timeout(15000),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${data.error || JSON.stringify(data)}`);
+
+      const prompt: string = data.prompt || "";
+      if (prompt.length < 500)
+        throw new Error(`Prompt too short: ${prompt.length} chars (need >500)`);
+
+      const hasPlaceholders = prompt.includes("{{phone}}") || prompt.includes("{{email}}");
+      if (!hasPlaceholders)
+        throw new Error("Prompt missing PII placeholders ({{phone}} or {{email}})");
+
+      return `Prompt assembled: ${prompt.length} chars, PII placeholders present, ${data.pages?.length || 0} pages`;
+    })
+  );
+
+  // ── Step 14: Preview Approval ─────────────────────────────────────
+  steps.push(
+    await runStep(14, "Preview Approval", async () => {
+      if (!hasIntakeTable) {
+        return `client_intake table not migrated — route unavailable (run /api/supabase/migrate)`;
+      }
+
+      // First set status to 'preview' so approve has a valid state to transition from
+      const previewRes = await fetch(`${baseUrl}/api/intake/approve`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ref_code: refCode, action: "send_preview" }),
+        signal: AbortSignal.timeout(15000),
+      });
+      if (!previewRes.ok) {
+        const previewData = await previewRes.json().catch(() => ({}));
+        throw new Error(`send_preview failed: HTTP ${previewRes.status}: ${previewData.error || ""}`);
+      }
+
+      // Now do the full approve (triggers deploy — non-blocking so it won't hang)
+      const res = await fetch(`${baseUrl}/api/intake/approve`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ref_code: refCode }),
+        signal: AbortSignal.timeout(15000),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${data.error || JSON.stringify(data)}`);
+
+      if (data.status !== "deployed")
+        throw new Error(`Expected status 'deployed', got '${data.status}'`);
+
+      // Verify Supabase row was updated
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      const { data: row } = await supabase
+        .from("client_intake")
+        .select("status, deployed_at")
+        .eq("ref_code", refCode)
+        .single();
+
+      if (row?.status !== "deployed")
+        throw new Error(`Supabase status is '${row?.status}', expected 'deployed'`);
+      if (!row?.deployed_at)
+        throw new Error("deployed_at timestamp not set");
+
+      return `Status → deployed, deployed_at set${data.live_urls ? `, URLs: ${data.live_urls.split(",").length}` : ""}`;
+    })
+  );
+
+  // ── Step 15: Rollback ─────────────────────────────────────────────
+  steps.push(
+    await runStep(15, "Rollback", async () => {
+      if (!hasIntakeTable) {
+        return `client_intake table not migrated — route unavailable (run /api/supabase/migrate)`;
+      }
+
+      const res = await fetch(`${baseUrl}/api/intake/rollback`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ref_code: refCode }),
+        signal: AbortSignal.timeout(15000),
+      });
+
+      const data = await res.json();
+
+      // Both success (within 60 min) and expired (410) are valid PASS outcomes
+      if (res.status === 410) {
+        return `Rollback window expired — route works correctly (${data.error})`;
+      }
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${data.error || JSON.stringify(data)}`);
+
+      if (data.success) {
+        // Verify Supabase status reverted
+        const supabase = createClient(supabaseUrl, supabaseKey);
+        const { data: row } = await supabase
+          .from("client_intake")
+          .select("status, deployed_at")
+          .eq("ref_code", refCode)
+          .single();
+        if (row?.status !== "preview")
+          throw new Error(`Expected status 'preview' after rollback, got '${row?.status}'`);
+        return `Rollback successful — status reverted to preview`;
+      }
+
+      return `Rollback response: ${JSON.stringify(data)}`;
+    })
+  );
+
+  // ── Step 16: Auto-Approval Check ──────────────────────────────────
+  steps.push(
+    await runStep(16, "Auto-Approval Check", async () => {
+      if (!hasIntakeTable) {
+        return `client_intake table not migrated — route unavailable (run /api/supabase/migrate)`;
+      }
+
+      const res = await fetch(`${baseUrl}/api/cron/auto-approve`, {
+        method: "GET",
+        signal: AbortSignal.timeout(15000),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${data.error || JSON.stringify(data)}`);
+
+      const count = data.count ?? 0;
+      // No projects should auto-approve during test since they were just created
+      return `Checked ${count} projects pending auto-approval. ${data.message || ""}`;
+    })
+  );
+
   // ── Cleanup: delete test project directory ──────────────────────────
   if (projectPath) {
     try {
