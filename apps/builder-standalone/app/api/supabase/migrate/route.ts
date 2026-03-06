@@ -244,5 +244,42 @@ function getMigrationStatements(): string[] {
       key TEXT UNIQUE,
       value JSONB
     )`,
+
+    // TABLE 12: client_intake (SARGE_Client_Pipeline_Spec)
+    `CREATE TABLE IF NOT EXISTS client_intake (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      created_at TIMESTAMPTZ DEFAULT now(),
+      ref_code TEXT UNIQUE,
+      form_data JSONB,
+      status TEXT DEFAULT 'new',
+      email TEXT,
+      project_name TEXT,
+      client_name TEXT,
+      client_email TEXT,
+      intake_submitted_at TIMESTAMPTZ,
+      build_started_at TIMESTAMPTZ,
+      preview_sent_at TIMESTAMPTZ,
+      approved_at TIMESTAMPTZ,
+      deployed_at TIMESTAMPTZ
+    )`,
+
+    // TABLE 13: client_revisions (SARGE_Client_Pipeline_Spec)
+    `CREATE TABLE IF NOT EXISTS client_revisions (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      created_at TIMESTAMPTZ DEFAULT now(),
+      ref_code TEXT,
+      page TEXT,
+      description TEXT,
+      priority TEXT DEFAULT 'medium',
+      status TEXT DEFAULT 'new',
+      revision_number INTEGER DEFAULT 1,
+      attachment_url TEXT
+    )`,
+
+    // RLS + Policies for client tables
+    `ALTER TABLE client_intake ENABLE ROW LEVEL SECURITY`,
+    `ALTER TABLE client_revisions ENABLE ROW LEVEL SECURITY`,
+    `CREATE POLICY "client_intake_anon_all" ON client_intake FOR ALL TO anon USING (true) WITH CHECK (true)`,
+    `CREATE POLICY "client_revisions_anon_all" ON client_revisions FOR ALL TO anon USING (true) WITH CHECK (true)`,
   ];
 }

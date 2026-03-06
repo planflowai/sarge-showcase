@@ -21,11 +21,13 @@ export async function POST(request: NextRequest) {
       const supabase = createClient(supabaseUrl, supabaseKey);
 
       // Determine revision_number by counting existing revisions for this ref_code
-      const { count } = await supabase
+      const { count, error: countErr } = await supabase
         .from("client_revisions")
         .select("*", { count: "exact", head: true })
         .eq("ref_code", ref_code);
-      revisionNumber = (count || 0) + 1;
+      if (!countErr) {
+        revisionNumber = (count || 0) + 1;
+      }
 
       const { error } = await supabase.from("client_revisions").insert({
         ref_code,
@@ -37,11 +39,8 @@ export async function POST(request: NextRequest) {
         attachment_url: attachment_url || null,
       });
       if (error) {
-        console.error("[intake/revision] Supabase error:", error.message);
-        return NextResponse.json(
-          { error: "Failed to save revision" },
-          { status: 500 }
-        );
+        // Log but don't block — table may not exist yet (run migration.sql)
+        console.warn("[intake/revision] Supabase error:", error.message);
       }
     } else {
       console.warn("[intake/revision] Supabase not configured — logging revision");

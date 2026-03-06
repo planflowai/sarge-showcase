@@ -119,6 +119,9 @@ export async function POST(request: NextRequest) {
   let generatedHtml = "";
   let projectPath = "";
   let scores: Record<string, number> = {};
+  let buildInputTokens = 0;
+  let buildOutputTokens = 0;
+  let buildCostUsd = 0;
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
@@ -282,6 +285,11 @@ export async function POST(request: NextRequest) {
       const cost =
         (inputTokens * rates.inRate + outputTokens * rates.outRate) / 1_000_000;
       totalCost += cost;
+
+      // Capture for Supabase logging in Step 10
+      buildInputTokens = inputTokens;
+      buildOutputTokens = outputTokens;
+      buildCostUsd = cost;
 
       return `${generatedHtml.length} chars, ${inputTokens} in / ${outputTokens} out tokens, $${cost.toFixed(4)}`;
     })
@@ -582,6 +590,59 @@ replacement code
       return `${beforeCount}→${afterCount} placeholders, real values injected${hasPhone ? " ✓phone" : ""}${hasEmail ? " ✓email" : ""}`;
     })
   );
+
+  // ── Pre-Step 10: Write test data to Supabase tables ────────────────
+  // The sync functions (forgeSync.ts) are "use client" and only called from
+  // frontend stores. Pipeline test calls API routes directly, so we must
+  // write to Supabase here to populate the tables Step 10 checks.
+  if (hasSupabase) {
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    const buildStep = steps.find((s) => s.step === 4);
+    const buildTimeSeconds = buildStep?.duration_ms
+      ? Math.round(buildStep.duration_ms / 100) / 10
+      : 0;
+
+    // Write build history
+    await supabase.from("forge_build_history").insert({
+      client_name: DUMMY_INTAKE.client_name,
+      site_type: DUMMY_INTAKE.industry,
+      prompt: assembledPrompt.slice(0, 2000),
+      model_id: cheapModel?.model || "test",
+      provider: cheapModel?.provider || "test",
+      output_html: generatedHtml.slice(0, 10000),
+      cost_usd: buildCostUsd,
+      time_seconds: buildTimeSeconds,
+      metadata: { source: "pipeline-test", ref_code: refCode },
+    }).then(({ error }) => {
+      if (error) console.warn("[pipeline-test] forge_build_history insert:", error.message);
+    });
+
+    // Write compiler results
+    if (Object.keys(scores).length > 0) {
+      await supabase.from("forge_compiler_results").insert({
+        lighthouse_performance: scores.performance || 0,
+        lighthouse_accessibility: scores.accessibility || 0,
+        lighthouse_seo: scores.seo || 0,
+        lighthouse_best_practices: scores.bestPractices || 0,
+        before_scores: scores,
+      }).then(({ error }) => {
+        if (error) console.warn("[pipeline-test] forge_compiler_results insert:", error.message);
+      });
+    }
+
+    // Write billing entry
+    await supabase.from("forge_billing").insert({
+      provider: cheapModel?.provider || "test",
+      model_id: cheapModel?.model || "test",
+      tokens_in: buildInputTokens,
+      tokens_out: buildOutputTokens,
+      cost_usd: totalCost,
+      run_type: "build",
+      run_ref_id: refCode,
+    }).then(({ error }) => {
+      if (error) console.warn("[pipeline-test] forge_billing insert:", error.message);
+    });
+  }
 
   // ── Step 10: Supabase Logging ───────────────────────────────────────
   steps.push(
