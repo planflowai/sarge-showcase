@@ -775,18 +775,16 @@ replacement code
         .single();
 
       if (!existing) {
-        await supabase.from("client_intake").insert({
+        const { error: insertErr } = await supabase.from("client_intake").insert({
           form_data: DUMMY_INTAKE,
           status: "new",
           ref_code: refCode,
-          email: DUMMY_INTAKE.email,
           project_name: DUMMY_INTAKE.business_name,
           client_name: DUMMY_INTAKE.client_name,
           client_email: DUMMY_INTAKE.email,
           intake_submitted_at: new Date().toISOString(),
-        }).then(({ error }) => {
-          if (error) console.warn("[pipeline-test] client_intake insert:", error.message);
         });
+        if (insertErr) console.warn("[pipeline-test] client_intake insert:", insertErr.message);
       }
     } else {
       console.warn("[pipeline-test] client_intake table not found:", probeErr.message);

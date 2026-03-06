@@ -11,16 +11,14 @@ export async function POST(request: NextRequest) {
     // Generate ref code if not provided
     const refCode =
       formData.ref || "SARGE-" + Date.now().toString(36).toUpperCase();
-    const email = formData.email || null;
 
-    // Write to Supabase — columns aligned with SARGE_Client_Pipeline_Spec
+    // Write to Supabase — columns aligned with actual table schema
     if (supabaseUrl && supabaseKey) {
       const supabase = createClient(supabaseUrl, supabaseKey);
       const { error } = await supabase.from("client_intake").insert({
         form_data: formData,
         status: "new",
         ref_code: refCode,
-        email,
         project_name: formData.business_name || null,
         client_name: formData.contact_name || formData.business_name || null,
         client_email: formData.email || null,

@@ -4,7 +4,15 @@ Generated: 2026-03-05
 Branch: sargebuild-v1
 Tag: working-2026-03-02-deploy-fix (last tagged)
 
-## Latest Changes (Intake form — PlanFlowAI rebrand, dark/light mode, Supabase submit, ref code, live validation)
+## Latest Changes (Fix pipeline Steps 13-15 — email column mismatch in Supabase insert)
+
+- **Root cause**: `client_intake` table has no `email` column — only `client_email`. Both the intake submit route and the pipeline test's pre-Step 13 fallback insert included `email` as a column, causing Supabase to return a PGRST204 error. The error was caught but swallowed (logged, not thrown), so the route returned `{ success: true }` even though zero rows were written. Steps 13-15 then queried by `ref_code` and got 404 "not found" because the row never existed.
+- **Fix 1 — submit/route.ts**: Removed `email` field from the `supabase.from("client_intake").insert()` call. Removed unused `email` variable. The `client_email` field (which maps correctly) was already being set from `formData.email`.
+- **Fix 2 — pipeline-test/route.ts**: Removed `email: DUMMY_INTAKE.email` from the pre-Step 13 fallback insert. Same column mismatch.
+- **Test result**: 15/16 PASS. Steps 13 (Build from Intake), 14 (Preview Approval), 15 (Rollback) all PASS with real data. Step 12 (Email Send) FAIL due to Resend 429 rate limit (transient, not a code bug). Duration: 556.1s. Cost: $0.0062.
+- **Modified**: `apps/builder-standalone/app/api/intake/submit/route.ts`, `apps/builder-standalone/app/api/pipeline-test/route.ts`.
+
+## Previous Changes (Intake form — PlanFlowAI rebrand, dark/light mode, Supabase submit, ref code, live validation)
 
 - **Fix 1 — Top padding**: `.main` padding-top 160px → 190px so "Step 1 of 8" clears fixed progress bar on all screens.
 - **Fix 2 — PlanFlowAI rebrand**: Header logo replaced with `logo_png.png` img tag (height 36px). "SARGE Web Studio" → "PlanFlowAI". Title tag updated. Contact email → `info@planflowai.com`. Logo copied to `public/logo_png.png`.
