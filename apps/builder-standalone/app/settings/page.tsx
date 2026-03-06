@@ -29,6 +29,7 @@ import {
   Settings, Cpu, MessageSquare, ShieldCheck, ChevronDown, ChevronRight, Loader2,
   Database, FileText, RefreshCw, Radio,
   Hammer, Zap, TrendingUp, Activity, Wifi, WifiOff,
+  CheckCircle, XCircle, CircleDot, Cloud, HardDrive, Search, Mail, BarChart3, Image, Code2,
 } from "lucide-react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -443,22 +444,22 @@ export default function SettingsPage() {
   const [syncMessage, setSyncMessage] = useState("");
   const [syncSuccess, setSyncSuccess] = useState(false);
 
-  // API Connection Dashboard state
-  const [providerStatuses, setProviderStatuses] = useState<{ id: string; name: string; color: string; connected: boolean; latencyMs?: number; error?: string }[]>([]);
-  const [checkingProviders, setCheckingProviders] = useState(false);
-  const [providersChecked, setProvidersChecked] = useState(false);
+  // ENV Dashboard state
+  const [envCategories, setEnvCategories] = useState<Record<string, { id: string; name: string; envKey: string; category: string; configured: boolean; connected?: boolean; latencyMs?: number; error?: string }[]>>({});
+  const [checkingEnv, setCheckingEnv] = useState(false);
+  const [envChecked, setEnvChecked] = useState(false);
 
-  const checkProviders = async () => {
-    setCheckingProviders(true);
+  const checkEnv = async () => {
+    setCheckingEnv(true);
     try {
       const res = await fetch("/api/providers/check");
       const data = await res.json();
-      setProviderStatuses(data.providers || []);
-      setProvidersChecked(true);
+      setEnvCategories(data.categories || {});
+      setEnvChecked(true);
     } catch {
-      setProviderStatuses([]);
+      setEnvCategories({});
     }
-    setCheckingProviders(false);
+    setCheckingEnv(false);
   };
 
   useEffect(() => {
@@ -596,13 +597,6 @@ export default function SettingsPage() {
     }
   };
 
-  const apiKeyLabels: Record<string, string> = {
-    anthropic: "ANTHROPIC_API_KEY",
-    openai: "OPENAI_API_KEY",
-    google: "GOOGLE_API_KEY",
-    xai: "XAI_API_KEY",
-  };
-
   const getModelsForDisplay = (providerId: string): (EffectiveModel | { id: string; name: string; isBuiltIn: boolean; provider: string })[] => {
     if (providerId === "ollama") {
       return ollamaModels.map((m) => ({ id: m.id, name: m.name, provider: "ollama", isBuiltIn: false }));
@@ -668,88 +662,122 @@ export default function SettingsPage() {
       {/* Right content */}
       <div className="flex-1 px-8 py-6 min-w-0 overflow-y-auto">
         {section === "general" && (
-          <div className="space-y-8">
-            {/* ── Theme ── */}
-            <section>
-              <h2 className="mb-3 text-base font-bold uppercase tracking-wider text-white">Theme</h2>
-              <div className="flex gap-2">
-                {(["dark", "light"] as const).map((t) => (
-                  <Button key={t} variant={theme === t ? "secondary" : "ghost"} onClick={() => setTheme(t)} className="capitalize text-sm">{t}</Button>
-                ))}
+          <div className="space-y-6">
+            {/* ── Header row: Theme + Check button ── */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <h2 className="text-xl font-bold text-white">Environment Dashboard</h2>
+                <div className="flex gap-1.5">
+                  {(["dark", "light"] as const).map((t) => (
+                    <Button key={t} size="sm" variant={theme === t ? "secondary" : "ghost"} onClick={() => setTheme(t)} className="capitalize text-sm h-8">{t}</Button>
+                  ))}
+                </div>
               </div>
-            </section>
+              <Button
+                onClick={checkEnv}
+                disabled={checkingEnv}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white"
+              >
+                {checkingEnv ? (
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Scanning...</>
+                ) : (
+                  <><RefreshCw className="h-4 w-4 mr-2" /> {envChecked ? "Re-scan" : "Scan Connections"}</>
+                )}
+              </Button>
+            </div>
 
-            {/* ── API Connection Dashboard ── */}
-            <section>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-base font-bold uppercase tracking-wider text-white">API Connections</h2>
-                <Button
-                  onClick={checkProviders}
-                  disabled={checkingProviders}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
-                >
-                  {checkingProviders ? (
-                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Checking...</>
-                  ) : (
-                    <><RefreshCw className="h-4 w-4 mr-2" /> {providersChecked ? "Re-check" : "Check Connections"}</>
-                  )}
-                </Button>
-              </div>
+            {!envChecked && !checkingEnv && (
+              <p className="text-sm text-zinc-400">Scan your .env to see which services are configured and connected.</p>
+            )}
 
-              {!providersChecked && !checkingProviders && (
-                <p className="text-sm text-zinc-400">Click &quot;Check Connections&quot; to verify all API endpoints are live.</p>
-              )}
+            {/* ── Summary bar ── */}
+            {envChecked && (() => {
+              const all = Object.values(envCategories).flat();
+              const configured = all.filter(s => s.configured).length;
+              const connected = all.filter(s => s.connected).length;
+              const failed = all.filter(s => s.configured && s.connected === false).length;
+              const unconfigured = all.filter(s => !s.configured).length;
+              return (
+                <div className="flex items-center gap-6 text-sm py-3 px-4 rounded-lg bg-zinc-800/50 border border-zinc-700">
+                  <span className="text-white font-bold">{all.length} services</span>
+                  <span className="text-emerald-400 font-bold flex items-center gap-1.5"><CheckCircle className="h-4 w-4" />{connected} connected</span>
+                  <span className="text-zinc-300 font-medium flex items-center gap-1.5"><CircleDot className="h-4 w-4 text-zinc-400" />{configured - connected - failed} configured</span>
+                  {failed > 0 && <span className="text-red-400 font-bold flex items-center gap-1.5"><XCircle className="h-4 w-4" />{failed} failed</span>}
+                  <span className="text-zinc-500 flex items-center gap-1.5"><WifiOff className="h-4 w-4" />{unconfigured} not set</span>
+                </div>
+              );
+            })()}
 
-              {(providersChecked || checkingProviders) && (
-                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                  {providerStatuses.map((ps) => {
+            {/* ── Category sections ── */}
+            {envChecked && (() => {
+              const CATEGORY_META: Record<string, { icon: React.ElementType; color: string }> = {
+                "Cloud AI":  { icon: Cloud,     color: "text-blue-400" },
+                "Local AI":  { icon: HardDrive, color: "text-amber-400" },
+                "Database":  { icon: Database,  color: "text-violet-400" },
+                "Search":    { icon: Search,    color: "text-cyan-400" },
+                "Email":     { icon: Mail,      color: "text-pink-400" },
+                "Trading":   { icon: BarChart3, color: "text-green-400" },
+                "Media":     { icon: Image,     color: "text-orange-400" },
+                "Developer": { icon: Code2,     color: "text-indigo-400" },
+              };
+              const categoryOrder = ["Cloud AI", "Local AI", "Database", "Search", "Email", "Trading", "Media", "Developer"];
+              return (
+                <div className="space-y-4">
+                  {categoryOrder.filter(cat => envCategories[cat]?.length).map(cat => {
+                    const services = envCategories[cat];
+                    const meta = CATEGORY_META[cat] || { icon: Settings, color: "text-zinc-400" };
+                    const CatIcon = meta.icon;
+                    const connCount = services.filter(s => s.connected).length;
+                    const confCount = services.filter(s => s.configured).length;
                     return (
-                      <div
-                        key={ps.id}
-                        className={`rounded-lg border px-4 py-4 flex items-center gap-3 transition-colors ${
-                          ps.connected
-                            ? "border-emerald-500/40 bg-emerald-500/5"
-                            : ps.error === "No API key"
-                            ? "border-zinc-700 bg-zinc-800/30"
-                            : "border-red-500/40 bg-red-500/5"
-                        }`}
-                      >
-                        <div className="flex-shrink-0">
-                          {ps.connected ? (
-                            <Wifi className="h-5 w-5 text-emerald-400" />
-                          ) : (
-                            <WifiOff className="h-5 w-5 text-zinc-500" />
-                          )}
+                      <div key={cat} className="rounded-lg border border-zinc-700 overflow-hidden">
+                        <div className="flex items-center gap-3 px-4 py-3 bg-zinc-800/70">
+                          <CatIcon className={`h-5 w-5 ${meta.color}`} />
+                          <h3 className="text-base font-bold text-white uppercase tracking-wider flex-1">{cat}</h3>
+                          <span className="text-sm text-zinc-400">{confCount}/{services.length} configured{connCount > 0 ? ` · ${connCount} live` : ""}</span>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ backgroundColor: ps.color === "#000000" ? "#888" : ps.color }} />
-                            <span className="text-sm font-bold text-white truncate">{ps.name}</span>
-                          </div>
-                          <div className="text-xs mt-0.5">
-                            {ps.connected ? (
-                              <span className="text-emerald-400 font-semibold">Connected{ps.latencyMs ? ` · ${ps.latencyMs}ms` : ""}</span>
-                            ) : ps.error === "No API key" ? (
-                              <span className="text-zinc-500">Not configured</span>
-                            ) : (
-                              <span className="text-red-400 font-semibold">{ps.error || "Failed"}</span>
-                            )}
-                          </div>
+                        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-px bg-zinc-700/30">
+                          {services.map(svc => (
+                            <div
+                              key={svc.id}
+                              className={`px-4 py-3 bg-zinc-900 ${
+                                svc.connected ? "" : svc.configured && svc.connected === false ? "bg-red-950/10" : ""
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 mb-1">
+                                {svc.connected ? (
+                                  <CheckCircle className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+                                ) : svc.configured ? (
+                                  svc.connected === false ? (
+                                    <XCircle className="h-4 w-4 text-red-400 flex-shrink-0" />
+                                  ) : (
+                                    <CircleDot className="h-4 w-4 text-zinc-400 flex-shrink-0" />
+                                  )
+                                ) : (
+                                  <WifiOff className="h-4 w-4 text-zinc-600 flex-shrink-0" />
+                                )}
+                                <span className={`text-sm font-bold truncate ${svc.configured ? "text-white" : "text-zinc-500"}`}>{svc.name}</span>
+                              </div>
+                              <div className="text-xs pl-6">
+                                {svc.connected ? (
+                                  <span className="text-emerald-400">{svc.latencyMs ? `${svc.latencyMs}ms` : "OK"}</span>
+                                ) : svc.configured && svc.connected === false ? (
+                                  <span className="text-red-400">{svc.error || "Failed"}</span>
+                                ) : svc.configured ? (
+                                  <span className="text-zinc-400">Set</span>
+                                ) : (
+                                  <span className="text-zinc-600">Not set</span>
+                                )}
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     );
                   })}
                 </div>
-              )}
-
-              {providersChecked && (
-                <div className="mt-3 flex items-center gap-4 text-sm">
-                  <span className="text-emerald-400 font-bold">{providerStatuses.filter(p => p.connected).length} connected</span>
-                  <span className="text-zinc-500">{providerStatuses.filter(p => !p.connected && p.error !== "No API key").length} failed</span>
-                  <span className="text-zinc-600">{providerStatuses.filter(p => p.error === "No API key").length} not configured</span>
-                </div>
-              )}
-            </section>
+              );
+            })()}
           </div>
         )}
 
