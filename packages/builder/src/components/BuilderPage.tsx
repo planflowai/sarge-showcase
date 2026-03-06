@@ -41,6 +41,7 @@ export default function BuilderPage({ deployContent, billingBar }: { deployConte
   const [selectedModel, setSelectedModel] = useState<string | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<string>("deepseek");
   const [webSearch, setWebSearch] = useState(false);
+  const [autoImages, setAutoImages] = useState(true);
 
   // Artifact panel state - NOW PERSISTED via artifactStore
   const {
@@ -920,6 +921,8 @@ Please provide the complete modified version of this component. Make only the re
             onModelSelect={handleModelSelect}
             webSearch={webSearch}
             onWebSearchToggle={() => setWebSearch((v) => !v)}
+            autoImages={autoImages}
+            onAutoImagesToggle={() => setAutoImages((v) => !v)}
           />
 
           {/* Chat messages + input */}
@@ -943,6 +946,7 @@ Please provide the complete modified version of this component. Make only the re
               onFileWritten={handleFileWritten}
               autoApply={autoApply}
               webSearch={webSearch}
+              autoImages={autoImages}
               progressStartProgress={progress.startProgress}
               progressStartStep={progress.startStep}
               progressFinishProgress={progress.finishProgress}

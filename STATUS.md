@@ -4,7 +4,16 @@ Generated: 2026-03-05
 Branch: sargebuild-v1
 Tag: working-2026-03-02-deploy-fix (last tagged)
 
-## Latest Changes (Certificate generation — Gold and Silver tiers, PDF, Supabase)
+## Latest Changes (Image pipeline — Pexels + Pixabay auto-search before builds)
+
+- **Auto Images toggle**: Violet "Images" button in BuilderModelBar — ON by default. When enabled, searches stock photos before every build and injects URLs into the system prompt.
+- **Image search API**: `POST /api/images/search` — Pexels primary (URL embedding), Pixabay secondary (fallback). Returns up to 8 landscape photos matching the business type from the user's prompt.
+- **Smart query extraction**: Strips common builder instructions (build/create/html/css/etc.) from the prompt to extract business-relevant search terms.
+- **System prompt injection**: Image URLs injected invisibly into system prompt as `[STOCK IMAGES]` block. Model sees real photo URLs and embeds them with `<img>` tags. User never sees the injected context.
+- **Env keys**: `PEXELS_API_KEY` and `PIXABAY_API_KEY` in `.env.local`.
+- **Files**: New `app/api/images/search/route.ts`. Modified `BuilderModelBar.tsx` (toggle), `BuilderChat.tsx` (search + inject), `BuilderPage.tsx` (state).
+
+## Previous Changes (Certificate generation — Gold and Silver tiers, PDF, Supabase)
 
 - **Certificate tiers**: Gold (all 4 scores >= 90), Silver (all 4 scores >= 80). Badge in CompliancePanel header shows "GOLD CERTIFIED" / "SILVER CERTIFIED".
 - **PDF generation**: `POST /api/certificate` — Puppeteer renders a branded HTML certificate to PDF. Contains: SARGE Forge branding, client name, site URL, date, 4 Lighthouse score bars (color-coded), WCAG 2.1 AA badge if accessibility >= 90, model/provider, build time, cost.

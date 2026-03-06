@@ -44,6 +44,7 @@ interface BuilderChatProps {
   onFileWritten?: (filePath: string, content: string) => void;
   autoApply?: boolean;
   webSearch?: boolean;
+  autoImages?: boolean;
   // Progress callbacks (lifted from useProgressSteps to BuilderPage)
   progressStartProgress?: () => void;
   progressStartStep?: (step: string, label?: string) => void;
@@ -79,6 +80,7 @@ export default function BuilderChat({
   onFileWritten,
   autoApply: autoApplyProp,
   webSearch = false,
+  autoImages = true,
   progressStartProgress,
   progressStartStep,
   progressFinishProgress,
@@ -474,6 +476,29 @@ export default function BuilderChat({
     // Inject priority instruction for project mode: generate entry point first for live preview
     if (projectPath && builderMode === 'build') {
       systemPrompt += '\n\n' + `PRIORITY: When building a project, generate the main entry point file FIRST (index.html, main.jsx, app.tsx, etc). This allows the preview to load immediately while you generate supporting files. Generate entry point as your FIRST FILE: block, then other files follow.`;
+    }
+
+    // ── Auto Images: search stock photos and inject URLs into system prompt ──
+    if (autoImages && userMessage.trim().length > 10) {
+      try {
+        const imgRes = await fetch("/api/images/search", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: userMessage, count: 8 }),
+        });
+        if (imgRes.ok) {
+          const imgData = await imgRes.json();
+          if (imgData.images && imgData.images.length > 0) {
+            const imgLines = imgData.images.map(
+              (img: { url: string; alt: string; credit: string }, i: number) =>
+                `${i + 1}. ![${img.alt}](${img.url}) — Photo by ${img.credit}`
+            );
+            systemPrompt += `\n\n[STOCK IMAGES — Use these real photo URLs in your HTML. Embed them with <img src="URL" alt="description">. Pick the most relevant ones for the design.]\n${imgLines.join("\n")}\n[End Stock Images]\n`;
+          }
+        }
+      } catch {
+        // Image search failed — proceed without images
+      }
     }
 
     // "context" step stays in_progress until first token arrives.

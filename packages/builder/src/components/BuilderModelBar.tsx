@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { Zap, Globe, ChevronDown, X, RefreshCw } from "lucide-react";
+import { Zap, Globe, ChevronDown, X, RefreshCw, ImageIcon } from "lucide-react";
 import { useModelStore, useAIModeStore, useCustomProviderStore, fetchOllamaModels, fetchLMStudioModels, providers, groupOllamaModels, cn } from "@sarge/core";
 import type { LocalModel } from "@sarge/core";
 import Link from "next/link";
@@ -28,6 +28,8 @@ interface BuilderModelBarProps {
   onModelSelect: (modelId: string, provider: string) => void;
   webSearch?: boolean;
   onWebSearchToggle?: () => void;
+  autoImages?: boolean;
+  onAutoImagesToggle?: () => void;
 }
 
 export default function BuilderModelBar({
@@ -36,6 +38,8 @@ export default function BuilderModelBar({
   onModelSelect,
   webSearch = false,
   onWebSearchToggle,
+  autoImages = true,
+  onAutoImagesToggle,
 }: BuilderModelBarProps) {
   const { hydrated, hydrate, isBuilderModel, getDisplayName, getEffectiveModels, verifyModel: verifyModelFn, verifyAllCloudModels } = useModelStore();
   const allStoreModels = useModelStore((s) => s.models);
@@ -282,6 +286,23 @@ export default function BuilderModelBar({
           >
             <Globe className="h-3.5 w-3.5" />
             Web
+          </button>
+        )}
+
+        {/* Auto Images toggle */}
+        {onAutoImagesToggle && (
+          <button
+            onClick={onAutoImagesToggle}
+            title={autoImages ? "Auto images ON — searches stock photos before builds" : "Auto images OFF"}
+            className={cn(
+              "flex-shrink-0 flex items-center gap-1.5 px-2.5 py-2 rounded-md text-[13px] font-bold border transition-all",
+              autoImages
+                ? "bg-violet-500/20 border-violet-500/40 text-violet-400"
+                : "bg-transparent border-zinc-700 text-zinc-500 hover:text-zinc-300"
+            )}
+          >
+            <ImageIcon className="h-3.5 w-3.5" />
+            Images
           </button>
         )}
       </div>
