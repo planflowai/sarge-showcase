@@ -42,15 +42,41 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Update status
+    // Update status back to preview
     const { error: updateErr } = await supabase
       .from("client_intake")
-      .update({ status: "rolled_back" })
+      .update({
+        status: "preview",
+        deployed_at: null,
+      })
       .eq("ref_code", ref_code);
 
     if (updateErr) {
       console.error("[intake/rollback] Supabase error:", updateErr.message);
     }
+
+    // Redeploy coming-soon page to all hosts (non-blocking)
+    const projectName = (intake.project_name || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+    const BUILDER_PROJECTS_DIR = process.env.BUILDER_PROJECTS_DIR ||
+      (process.platform === "win32" ? "L:/AI_MASTER_BUILDS" : "/AI_MASTER_BUILDS");
+    const projectPath = `${BUILDER_PROJECTS_DIR}/${projectName}`;
+
+    // Use deploy API to push the coming-soon page back to all hosts
+    // The deploy route will commit current state and push to all targets
+    fetch(new URL("/api/deploy", req.url).toString(), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "push",
+        projectPath,
+        projectName,
+        targets: ["github", "vercel", "netlify", "cloudflare"],
+        commitMessage: "ROLLBACK — restored coming-soon page",
+      }),
+    }).catch((err) => console.warn("[intake/rollback] Redeploy failed:", err));
 
     // Send rollback alert email to owner (non-blocking)
     const emailEndpoint = new URL("/api/email/send", req.url).toString();
@@ -72,9 +98,7 @@ export async function POST(req: NextRequest) {
       }).catch((err) => console.warn("[intake/rollback] Rollback alert email failed:", err));
     }
 
-    // TODO (Phase D): Redeploy coming-soon HTML to all hosts
-
-    console.log(`[intake/rollback] Project ${ref_code} rolled back`);
+    console.log(`[intake/rollback] Project ${ref_code} rolled back — redeploying coming-soon`);
 
     return NextResponse.json({ success: true, status: "rolled_back" });
   } catch (err: any) {

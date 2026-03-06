@@ -99,7 +99,7 @@ function buildCertificateHtml(data: CertificateRequest): string {
   <!-- Header -->
   <div style="text-align:center;margin-bottom:36px;">
     <div style="font-size:14px;letter-spacing:6px;color:${accentColor};font-weight:700;text-transform:uppercase;margin-bottom:8px;">
-      S.A.R.G.E. Forge
+      PlanFlowAI
     </div>
     <div style="font-size:36px;font-weight:900;letter-spacing:2px;color:#F8FAFC;margin-bottom:4px;">
       CERTIFICATE OF COMPLIANCE
@@ -166,7 +166,7 @@ function buildCertificateHtml(data: CertificateRequest): string {
     </div>
     <div style="text-align:right;">
       <div style="font-size:10px;color:#64748B;text-transform:uppercase;letter-spacing:2px;margin-bottom:4px;">Verified by</div>
-      <div style="font-size:13px;color:#CBD5E1;font-weight:600;">SARGE Forge Compiler</div>
+      <div style="font-size:13px;color:#CBD5E1;font-weight:600;">PlanFlowAI Compiler</div>
       <div style="font-size:10px;color:#475569;">html-validate &bull; axe-core &bull; Lighthouse</div>
     </div>
   </div>
@@ -244,7 +244,7 @@ export async function POST(req: NextRequest) {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="sarge-certificate-${body.tier}-${Date.now()}.pdf"`,
+        "Content-Disposition": `attachment; filename="planflowai-certificate-${body.tier}-${Date.now()}.pdf"`,
       },
     });
   } catch (err: any) {

@@ -103,8 +103,8 @@ export default function RollbackPage() {
         <div style={{ width: "100%", maxWidth: 520, padding: "24px", textAlign: "center" }}>
           {/* Logo */}
           <div style={{ marginBottom: 32 }}>
-            <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, background: "#FF6700", borderRadius: 8, fontWeight: 700, fontSize: 18, color: "#000", marginBottom: 12 }}>S</div>
-            <div style={{ fontSize: 22, fontWeight: 600 }}>SARGE <span style={{ color: "#FF6700" }}>Web Studio</span></div>
+            <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, background: "#FF6700", borderRadius: 8, fontWeight: 700, fontSize: 18, color: "#000", marginBottom: 12 }}>P</div>
+            <div style={{ fontSize: 22, fontWeight: 600 }}>PlanFlow<span style={{ color: "#FF6700" }}>AI</span></div>
             <div style={{ color: "#9BA3AF", fontSize: 14, marginTop: 4 }}>Emergency Rollback</div>
           </div>
 
@@ -189,7 +189,7 @@ export default function RollbackPage() {
 
           {/* Footer */}
           <div style={{ marginTop: 24, fontSize: 11, color: "#64748B" }}>
-            Ref: {ref} &bull; Questions? Contact support@sargewebstudio.com
+            Ref: {ref} &bull; Questions? Contact support@planflowai.com
           </div>
         </div>
       </body>

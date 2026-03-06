@@ -6,9 +6,13 @@ import {
   Send, ExternalLink, MoreHorizontal, Pencil, Download,
   ArrowUpDown, Github, Globe, Cloud, ChevronDown, ChevronRight, Minus, Link,
   Users, Play, Shield, Eye, Zap, ClipboardList, BarChart3, Accessibility,
+  Hammer, Mail,
 } from "lucide-react";
 import { useProjectCommandStore, type HubProjectExtended, type DeployTarget } from "../stores/projectCommandStore";
 import { useBuilderStore } from "../stores/builderStore";
+import { useBuilderChatStore } from "../stores/builderChatStore";
+import { useBuilderModeStore } from "../stores/builderModeStore";
+import { intakeToPrompt } from "../lib/intakeToPrompt";
 import { PROJECT_TEMPLATES, type ProjectTemplate } from "../lib/projectTemplates";
 import { cn } from "@sarge/core";
 import { useUIStore } from "@sarge/core";
@@ -76,8 +80,13 @@ function ProjectCard({
   const [hubMeta, setHubMeta] = useState<any>(null);
   const [hubLoading, setHubLoading] = useState(false);
   const [hubRunning, setHubRunning] = useState<string | null>(null);
+  const [intakeData, setIntakeData] = useState<any>(null);
+  const [intakeLoading, setIntakeLoading] = useState(false);
+  const [sendingPreview, setSendingPreview] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const renameRef = useRef<HTMLInputElement>(null);
+  const { setPrefilledInput } = useBuilderChatStore();
+  const { setMode } = useBuilderModeStore();
 
   // Focus rename input
   useEffect(() => {
@@ -154,9 +163,98 @@ function ProjectCard({
     try {
       const res = await fetch(`/api/project/meta?path=${encodeURIComponent(project.path)}`);
       const data = await res.json();
-      if (data.exists && data.meta) setHubMeta(data.meta);
+      if (data.exists && data.meta) {
+        setHubMeta(data.meta);
+        // Try to fetch intake data from Supabase if we have a ref code
+        const refCode = data.meta.refCode || project.name;
+        fetch(`/api/intake/status?ref=${encodeURIComponent(refCode)}`)
+          .then(r => r.ok ? r.json() : null)
+          .then(intake => { if (intake) setIntakeData(intake); })
+          .catch(() => {});
+      }
     } catch { /* no meta */ }
     setHubLoading(false);
+  };
+
+  // ─── Build from Intake ──────────────────────────────────────────────────
+  const handleBuildFromIntake = async () => {
+    if (!intakeData?.form_data) return;
+    setIntakeLoading(true);
+    try {
+      // Assemble prompt from intake form data
+      const prompt = intakeToPrompt(intakeData.form_data);
+      // Pre-fill builder chat
+      setPrefilledInput(prompt);
+      // Switch to build mode
+      setMode("build");
+      // Update Supabase status to 'building'
+      fetch("/api/intake/status", {
+        method: "GET", // We'll use a separate update below
+      }).catch(() => {});
+      // Update Supabase: status='building', build_started_at
+      fetch("/api/intake/approve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ref_code: intakeData.ref_code,
+          action: "start_build",
+        }),
+      }).catch(() => {});
+      // Open the project
+      onOpen(project);
+      showToast({ message: "Intake loaded — prompt ready in builder. Hit Send to start.", type: "success" });
+    } catch {
+      showToast({ message: "Failed to load intake data", type: "error" });
+    } finally {
+      setIntakeLoading(false);
+    }
+  };
+
+  // ─── Send Preview to Client ─────────────────────────────────────────────
+  const handleSendPreview = async () => {
+    if (!intakeData?.ref_code || !intakeData?.client_email) {
+      showToast({ message: "No client email found for this project", type: "error" });
+      return;
+    }
+    setSendingPreview(true);
+    try {
+      const previewUrl = `${window.location.origin}/preview/${encodeURIComponent(intakeData.ref_code)}`;
+      const revisionUrl = `${window.location.origin}/revisions/${encodeURIComponent(intakeData.ref_code)}`;
+      const res = await fetch("/api/email/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: intakeData.client_email,
+          template: "preview_ready",
+          data: {
+            client_name: intakeData.client_name || "Client",
+            project_name: intakeData.project_name || project.name,
+            preview_url: previewUrl,
+            revision_url: revisionUrl,
+            revision_count: String(intakeData.max_revisions || 3),
+          },
+        }),
+      });
+      if (res.ok) {
+        // Update Supabase: status='preview', preview_sent_at
+        fetch("/api/intake/approve", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ref_code: intakeData.ref_code,
+            action: "send_preview",
+          }),
+        }).catch(() => {});
+        setIntakeData({ ...intakeData, status: "preview" });
+        showToast({ message: `Preview email sent to ${intakeData.client_email}`, type: "success" });
+      } else {
+        showToast({ message: "Failed to send preview email", type: "error" });
+      }
+    } catch {
+      showToast({ message: "Failed to send preview email", type: "error" });
+    } finally {
+      setSendingPreview(false);
+    }
   };
 
   const handleRunToggle = async (key: string) => {
@@ -411,6 +509,35 @@ function ProjectCard({
                   <span className="text-zinc-500">{hubMeta.clientEmail}</span>
                 )}
               </div>
+
+              {/* Pipeline actions (Build from Intake / Send Preview) */}
+              {intakeData && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  {(intakeData.status === "new" || intakeData.status === "reviewed") && (
+                    <button
+                      onClick={handleBuildFromIntake}
+                      disabled={intakeLoading}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold bg-[#FF6700] hover:bg-[#CC5200] text-white transition-colors disabled:opacity-50"
+                    >
+                      {intakeLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Hammer className="h-3.5 w-3.5" />}
+                      Build from Intake
+                    </button>
+                  )}
+                  {(intakeData.status === "building" || intakeData.status === "new" || intakeData.status === "reviewed") && intakeData.client_email && (
+                    <button
+                      onClick={handleSendPreview}
+                      disabled={sendingPreview}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white transition-colors disabled:opacity-50"
+                    >
+                      {sendingPreview ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Mail className="h-3.5 w-3.5" />}
+                      Send Preview to Client
+                    </button>
+                  )}
+                  <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">
+                    Status: {intakeData.status || "unknown"}
+                  </span>
+                </div>
+              )}
 
               {/* Toggle pills + Run Now */}
               <div className="space-y-1.5">

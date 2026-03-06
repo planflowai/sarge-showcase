@@ -88,8 +88,8 @@ export default function PreviewPage() {
         {/* Header */}
         <header style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, background: "rgba(11,14,17,0.92)", backdropFilter: "blur(20px)", borderBottom: "1px solid #2A3340", padding: "14px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 32, height: 32, background: "#FF6700", borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14, color: "#000" }}>S</div>
-            <span style={{ fontSize: 18, fontWeight: 600 }}>SARGE <span style={{ color: "#FF6700" }}>Web Studio</span></span>
+            <div style={{ width: 32, height: 32, background: "#FF6700", borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14, color: "#000" }}>P</div>
+            <span style={{ fontSize: 18, fontWeight: 600 }}>PlanFlow<span style={{ color: "#FF6700" }}>AI</span></span>
           </div>
           <div style={{ fontSize: 12, color: "#9BA3AF" }}>
             Site Preview {project ? `— ${project.project_name}` : ""}
@@ -223,7 +223,7 @@ export default function PreviewPage() {
               {" "}&bull;{" "}
               <a href="#" style={{ color: "#64748B", textDecoration: "underline" }}>Privacy Policy</a>
               {" "}&bull;{" "}
-              <span>Questions? Email us at support@sargewebstudio.com</span>
+              <span>Questions? Email us at support@planflowai.com</span>
             </div>
           </>
         )}

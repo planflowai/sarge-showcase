@@ -31,7 +31,7 @@ function wrapLayout(bodyContent: string): string {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SARGE Web Studio</title>
+<title>PlanFlowAI</title>
 </head>
 <body style="margin:0;padding:0;background:#0B0E11;font-family:'DM Sans',system-ui,-apple-system,sans-serif;color:#E2E8F0;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0B0E11;">
@@ -40,8 +40,7 @@ function wrapLayout(bodyContent: string): string {
 
 <!-- Header -->
 <tr><td style="padding:32px 40px 24px;text-align:center;border-bottom:1px solid #1E2128;">
-  <div style="font-size:12px;letter-spacing:4px;color:#FF6700;font-weight:700;text-transform:uppercase;margin-bottom:4px;">S.A.R.G.E.</div>
-  <div style="font-size:22px;font-weight:800;color:#F8FAFC;letter-spacing:0.5px;">Web Studio</div>
+  <div style="font-size:22px;font-weight:800;color:#F8FAFC;letter-spacing:0.5px;">PlanFlow<span style="color:#FF6700;">AI</span></div>
 </td></tr>
 
 <!-- Body -->
@@ -52,7 +51,7 @@ ${bodyContent}
 <!-- Footer -->
 <tr><td style="padding:24px 40px 32px;border-top:1px solid #1E2128;text-align:center;">
   <div style="font-size:11px;color:#64748B;line-height:1.6;">
-    SARGE Web Studio &bull; AI-Powered Website Development<br>
+    PlanFlowAI &bull; AI-Powered Website Development<br>
     This is an automated message. Reply to this email if you have questions.
   </div>
 </td></tr>
@@ -100,7 +99,7 @@ function infoRow(label: string, value: string): string {
 const TEMPLATES: Record<TemplateName, (data: Record<string, string>) => { subject: string; html: string }> = {
   // ── 1. Welcome ──────────────────────────────────────────────────────────────
   welcome: (data) => ({
-    subject: `Welcome to SARGE Web Studio — Your Project Has Started`,
+    subject: `Welcome to PlanFlowAI — Your Project Has Started`,
     html: wrapLayout(`
   <div style="font-size:15px;color:#E2E8F0;line-height:1.7;">
     <p style="margin:0 0 16px;">Hi <strong>${data.client_name || "there"}</strong>,</p>
@@ -198,7 +197,7 @@ const TEMPLATES: Record<TemplateName, (data: Record<string, string>) => { subjec
     </div>` : ""}
 
     <p style="margin:16px 0 0;font-size:13px;color:#94A3B8;">After 60 minutes, changes require a revision request through the normal process.</p>
-    <p style="margin:16px 0 0;font-size:13px;color:#94A3B8;">Thank you for choosing SARGE Web Studio. We'd love a testimonial if you're happy with your site — reply to this email with a few words about your experience.</p>
+    <p style="margin:16px 0 0;font-size:13px;color:#94A3B8;">Thank you for choosing PlanFlowAI. We'd love a testimonial if you're happy with your site — reply to this email with a few words about your experience.</p>
   </div>`),
   }),
 
@@ -297,7 +296,7 @@ export async function POST(req: NextRequest) {
         Authorization: `Bearer ${resendKey}`,
       },
       body: JSON.stringify({
-        from: "SARGE Web Studio <onboarding@resend.dev>",
+        from: "PlanFlowAI <onboarding@resend.dev>",
         to: [body.to],
         subject,
         html,

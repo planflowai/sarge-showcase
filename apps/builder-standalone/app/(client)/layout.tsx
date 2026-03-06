@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "SARGE Web Studio",
+  title: "PlanFlowAI",
   description: "Professional website development",
 };
 

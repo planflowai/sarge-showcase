@@ -141,8 +141,8 @@ export default function RevisionPage() {
       <body>
         <div className="container">
           <div className="logo">
-            <div className="logo-mark">S</div>
-            <h1>SARGE <span>Web Studio</span></h1>
+            <div className="logo-mark">P</div>
+            <h1>PlanFlow<span>AI</span></h1>
             <p>Request a Revision — {projectName || ref}</p>
           </div>
 
@@ -268,7 +268,7 @@ export default function RevisionPage() {
           )}
 
           <div style={{ textAlign: "center", marginTop: 16, fontSize: 11, color: "#64748B" }}>
-            Ref: {ref} &bull; Questions? Contact support@sargewebstudio.com
+            Ref: {ref} &bull; Questions? Contact support@planflowai.com
           </div>
         </div>
       </body>
