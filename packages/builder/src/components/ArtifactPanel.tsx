@@ -577,7 +577,7 @@ function ArtifactPanelInner({
             <button
               onClick={() => onTabChange("code")}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
+                "flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-bold transition-colors",
                 activeTab === "code"
                   ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
                   : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
@@ -589,7 +589,7 @@ function ArtifactPanelInner({
             <button
               onClick={() => onTabChange("preview")}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
+                "flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-bold transition-colors",
                 activeTab === "preview"
                   ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
                   : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
@@ -603,7 +603,7 @@ function ArtifactPanelInner({
               <button
                 onClick={() => onTabChange("diff")}
                 className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
+                  "flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-bold transition-colors",
                   activeTab === "diff"
                     ? "bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 shadow-sm"
                     : "text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200"
@@ -617,7 +617,7 @@ function ArtifactPanelInner({
             <button
               onClick={() => onTabChange("deploy")}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
+                "flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-bold transition-colors",
                 activeTab === "deploy"
                   ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
                   : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
@@ -629,22 +629,30 @@ function ArtifactPanelInner({
           </div>
 
           {/* Content type badge */}
-          <span className={cn("px-2 py-0.5 rounded text-[10px] font-medium text-white", badge.color)}>
+          <span className={cn("px-2 py-0.5 rounded text-sm font-bold text-white", badge.color)}>
             {badge.label}
           </span>
 
-          {/* Live streaming indicator */}
+          {/* P1: Streaming indicator with char count */}
           {isStreaming && (
             <span className={cn(
-              "flex items-center gap-1.5 px-2 py-0.5 rounded border",
+              "flex items-center gap-2 px-3 py-1 rounded border",
               streamingStartedWithPreviewRef.current
-                ? "bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400"
-                : "bg-red-500/10 border-red-500/30 text-red-500"
+                ? "bg-amber-500/10 border-amber-500/30 text-amber-400"
+                : "bg-[#FF6700]/10 border-[#FF6700]/30 text-[#FF6700]"
             )}>
-              <Radio className="h-3 w-3 animate-pulse" />
-              <span className="text-[10px] font-medium">
-                {streamingStartedWithPreviewRef.current ? "Updating..." : "Live"}
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FF6700] opacity-75" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#FF6700]" />
               </span>
+              <span className="text-sm font-bold">
+                {streamingStartedWithPreviewRef.current ? "Updating..." : "Building..."}
+              </span>
+              {code && (
+                <span className="text-sm font-mono text-zinc-300">
+                  ({code.length.toLocaleString()} chars)
+                </span>
+              )}
             </span>
           )}
 
@@ -661,7 +669,7 @@ function ArtifactPanelInner({
               >
                 <ChevronLeft className="h-3.5 w-3.5" />
               </Button>
-              <span className="text-[10px] font-medium text-zinc-500 whitespace-nowrap">
+              <span className="text-sm font-bold text-zinc-300 whitespace-nowrap">
                 v{displayVersion} of {totalVersions}
               </span>
               <Button
@@ -848,7 +856,7 @@ function ArtifactPanelInner({
               <iframe
                 ref={iframeRef}
                 srcDoc={previewContent}
-                sandbox="allow-scripts allow-forms"
+                sandbox="allow-scripts allow-forms allow-popups"
                 className="w-full h-full border-0"
                 title="Preview"
                 style={{
@@ -861,13 +869,50 @@ function ArtifactPanelInner({
               />
             ) : (
               <div className="flex flex-col items-center justify-center h-full bg-zinc-950/20">
-                <div className="relative mb-5">
-                  <div className="absolute inset-0 bg-purple-500/10 blur-2xl rounded-full scale-[2]" />
-                  <Hammer className="relative h-11 w-11 text-purple-500/30" />
-                </div>
-                <p className="text-xs font-semibold text-zinc-500 tracking-widest uppercase">
-                  Ready to forge
-                </p>
+                {isStreaming ? (
+                  /* P8: Foundry build animation while waiting for first content */
+                  <div className="flex flex-col items-center gap-6">
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-[#FF6700]/15 blur-3xl rounded-full scale-[3] animate-pulse" />
+                      <Hammer className="relative h-16 w-16 text-[#FF6700] animate-bounce" style={{ animationDuration: '1.5s' }} />
+                    </div>
+                    <div className="text-center space-y-3">
+                      <p className="text-lg font-bold text-white tracking-wide">
+                        The Foundry is building your site...
+                      </p>
+                      {/* Animated progress bar */}
+                      <div className="w-64 h-2 bg-zinc-800 rounded-full overflow-hidden mx-auto">
+                        <div
+                          className="h-full bg-gradient-to-r from-[#FF6700] to-[#FFD700] rounded-full"
+                          style={{
+                            animation: 'foundryProgress 3s ease-in-out infinite',
+                            width: '70%',
+                          }}
+                        />
+                      </div>
+                      <p className="text-sm text-zinc-400 animate-pulse">
+                        First content arriving soon...
+                      </p>
+                    </div>
+                    <style>{`
+                      @keyframes foundryProgress {
+                        0% { width: 10%; opacity: 0.6; }
+                        50% { width: 80%; opacity: 1; }
+                        100% { width: 10%; opacity: 0.6; }
+                      }
+                    `}</style>
+                  </div>
+                ) : (
+                  <>
+                    <div className="relative mb-5">
+                      <div className="absolute inset-0 bg-[#FF6700]/10 blur-2xl rounded-full scale-[2]" />
+                      <Hammer className="relative h-11 w-11 text-[#FF6700]/40" />
+                    </div>
+                    <p className="text-sm font-bold text-zinc-500 tracking-widest uppercase">
+                      Ready to forge
+                    </p>
+                  </>
+                )}
               </div>
             )}
           </div>

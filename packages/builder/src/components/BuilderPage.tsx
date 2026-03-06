@@ -703,35 +703,40 @@ Please provide the complete modified version of this component. Make only the re
 
   return (
     <div className="relative flex flex-col h-full w-full bg-zinc-50 dark:bg-zinc-950">
-      {/* The Pit + Forge Trials — fixed top LEFT, stacked vertically */}
-      <div className="fixed top-1 left-4 z-[100] flex flex-col items-start gap-1.5">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => window.dispatchEvent(new CustomEvent("pit:launch"))}
-            className="flex items-center justify-center gap-2 px-6 py-3 bg-zinc-900/80 hover:bg-zinc-800/80 border border-[#FF6700]/40 rounded-lg shadow-lg transition-all text-sm font-[800] tracking-[1px]"
-            title="Launch The Pit — 5-monitor workspace + dashboard"
-          >
-            <Rocket className="w-4 h-4 text-[#FF6700]" />
-            <span className="bg-gradient-to-r from-[#FF6700] to-[#FFD700] bg-clip-text text-transparent">The Pit</span>
-          </button>
-          <ThreadGuardianIndicator conversationId="builder-chat" />
-        </div>
+      {/* P2: Top nav — horizontal row, left side */}
+      <div className="fixed top-2 left-4 z-[100] flex items-center gap-2">
+        <button
+          onClick={() => window.dispatchEvent(new CustomEvent("pit:launch"))}
+          className="flex items-center justify-center gap-2 px-5 py-2.5 bg-zinc-900/90 hover:bg-zinc-800/90 border border-[#FF6700]/40 rounded-lg shadow-lg transition-all hover:shadow-[0_0_14px_rgba(255,103,0,0.3)]"
+          title="Launch The Pit — 5-monitor workspace + dashboard"
+          style={{ minWidth: '140px' }}
+        >
+          <Rocket className="w-4 h-4 text-[#FF6700]" />
+          <span className="text-sm font-[800] tracking-[1px] bg-gradient-to-r from-[#FF6700] to-[#FFD700] bg-clip-text text-transparent">The Pit</span>
+        </button>
         <button
           onClick={() => window.dispatchEvent(new CustomEvent("forge:trials"))}
-          className="flex items-center justify-center gap-2 px-6 py-3 bg-zinc-900/80 hover:bg-zinc-800/80 border border-[#FF6700]/40 rounded-lg shadow-lg transition-all text-sm font-[800] tracking-[1px] hover:shadow-[0_0_14px_rgba(255,103,0,0.3)]"
+          className="flex items-center justify-center gap-2 px-5 py-2.5 bg-zinc-900/90 hover:bg-zinc-800/90 border border-[#FF6700]/40 rounded-lg shadow-lg transition-all hover:shadow-[0_0_14px_rgba(255,103,0,0.3)]"
           title="Forge Trials — Model benchmark scorecard"
+          style={{ minWidth: '140px' }}
         >
           <Flame className="w-4 h-4 text-[#FF6700]" />
-          <span className="bg-gradient-to-r from-[#FF6700] to-[#FFD700] bg-clip-text text-transparent">Forge Trials</span>
+          <span className="text-sm font-[800] tracking-[1px] bg-gradient-to-r from-[#FF6700] to-[#FFD700] bg-clip-text text-transparent">Forge Trials</span>
         </button>
         <button
           onClick={() => window.dispatchEvent(new CustomEvent("forge:optimize"))}
-          className="flex items-center justify-center gap-2 px-6 py-3 bg-zinc-900/80 hover:bg-zinc-800/80 border border-[#FF6700]/40 rounded-lg shadow-lg transition-all text-sm font-[800] tracking-[1px] hover:shadow-[0_0_14px_rgba(255,103,0,0.3)]"
+          className="flex items-center justify-center gap-2 px-5 py-2.5 bg-zinc-900/90 hover:bg-zinc-800/90 border border-[#FF6700]/40 rounded-lg shadow-lg transition-all hover:shadow-[0_0_14px_rgba(255,103,0,0.3)]"
           title="Forge Optimization — SEO, Security, Privacy, Performance + more"
+          style={{ minWidth: '140px' }}
         >
           <SlidersHorizontal className="w-4 h-4 text-[#FF6700]" />
-          <span className="bg-gradient-to-r from-[#FF6700] to-[#FFD700] bg-clip-text text-transparent">Optimize</span>
+          <span className="text-sm font-[800] tracking-[1px] bg-gradient-to-r from-[#FF6700] to-[#FFD700] bg-clip-text text-transparent">Optimize</span>
         </button>
+      </div>
+
+      {/* P3: Thread Guardian shield — fixed upper right, status-aware */}
+      <div className="fixed top-2 right-48 z-[100]">
+        <ThreadGuardianIndicator conversationId="builder-chat" />
       </div>
 
       {/* Horizontal toolbar ribbon — full width, below header */}
@@ -758,26 +763,26 @@ Please provide the complete modified version of this component. Make only the re
           <div className="flex-shrink-0 flex items-center justify-center gap-2 px-3 py-2 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60">
             <button
               onClick={() => window.dispatchEvent(new CustomEvent("project:new-wizard"))}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FF6700]/10 hover:bg-[#FF6700]/20 text-[#FF6700] rounded-lg text-xs font-medium border border-[#FF6700]/30 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 rounded-lg text-sm font-bold border border-emerald-500/30 transition-colors"
               title="New Project"
             >
-              <FolderPlus className="w-3.5 h-3.5" />
+              <FolderPlus className="w-4 h-4" />
               New
             </button>
             <button
               onClick={() => useProjectCommandStore.getState().open("grid")}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FF6700]/10 hover:bg-[#FF6700]/20 text-[#FF6700] rounded-lg text-xs font-medium border border-[#FF6700]/30 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 bg-[#FF6700]/10 hover:bg-[#FF6700]/20 text-[#FF6700] rounded-lg text-sm font-bold border border-[#FF6700]/30 transition-colors"
               title="Projects"
             >
-              <FolderOpen className="w-3.5 h-3.5" />
+              <FolderOpen className="w-4 h-4" />
               Projects
             </button>
             <button
               onClick={() => useAssetLibraryStore.getState().open()}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FF6700]/10 hover:bg-[#FF6700]/20 text-[#FF6700] rounded-lg text-xs font-medium border border-[#FF6700]/30 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 bg-purple-500/15 hover:bg-purple-500/25 text-purple-400 rounded-lg text-sm font-bold border border-purple-500/30 transition-colors"
               title="Assets Library"
             >
-              <Package className="w-3.5 h-3.5" />
+              <Package className="w-4 h-4" />
               Assets
             </button>
           </div>

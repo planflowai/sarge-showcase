@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { useModelStore } from "./modelStore";
 
 export interface CustomProviderModel {
   id: string;
@@ -70,6 +71,20 @@ export const DEFAULT_MODELS: Record<string, CustomProviderModel[]> = {
   ],
 };
 
+/** Push a model into the global model store + set builder flag */
+function syncToModelStore(providerId: string, model: CustomProviderModel) {
+  const ms = useModelStore.getState();
+  ms.addModel(providerId, model.id, model.name);
+  ms.setBuilderFlag(model.id, true, providerId);
+}
+
+/** Sync all models from a provider into the global model store */
+function syncProviderToModelStore(provider: CustomProvider) {
+  for (const m of provider.models) {
+    syncToModelStore(provider.id, m);
+  }
+}
+
 interface CustomProviderState {
   providers: CustomProvider[];
   addProvider: (provider: CustomProvider) => void;
@@ -89,6 +104,8 @@ export const useCustomProviderStore = create<CustomProviderState>()(
         const existing = get().providers.find((p) => p.id === provider.id);
         if (existing) return;
         set((state) => ({ providers: [...state.providers, provider] }));
+        // Auto-sync all models to global model store
+        syncProviderToModelStore(provider);
       },
 
       removeProvider: (id) => {
@@ -113,6 +130,8 @@ export const useCustomProviderStore = create<CustomProviderState>()(
             return { ...p, models: [...p.models, model] };
           }),
         }));
+        // Auto-sync to global model store
+        syncToModelStore(providerId, model);
       },
 
       removeModelFromProvider: (providerId, modelId) => {
@@ -128,6 +147,13 @@ export const useCustomProviderStore = create<CustomProviderState>()(
     }),
     {
       name: "custom-provider-store",
+      // On rehydrate from localStorage, sync all persisted providers to model store
+      onRehydrateStorage: () => (state) => {
+        if (!state) return;
+        for (const provider of state.providers) {
+          syncProviderToModelStore(provider);
+        }
+      },
     }
   )
 );

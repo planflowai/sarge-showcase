@@ -274,43 +274,33 @@ export function Header() {
             {/* Separator */}
             <div className="h-5 w-px bg-zinc-300 dark:bg-zinc-700" />
 
-            {/* Billing Popout */}
+            {/* P6: Billing — bold icon + tooltip */}
             <button
               onClick={() => launchBillingPopout()}
-              title="Open Billing Dashboard"
-              className="flex items-center justify-center h-8 w-8 rounded-md transition-all duration-200 bg-zinc-800/60 border border-zinc-600/50 text-zinc-400 hover:bg-[#FF6700]/20 hover:text-[#FF6700] hover:border-[#FF6700]/50"
+              title="Billing & Usage"
+              className="flex items-center justify-center h-9 w-9 rounded-md transition-all duration-200 bg-zinc-800/60 border border-zinc-600/50 text-zinc-300 hover:bg-[#FF6700]/20 hover:text-[#FF6700] hover:border-[#FF6700]/50"
             >
-              <DollarSign className="h-4 w-4" />
+              <DollarSign className="h-5 w-5" />
             </button>
 
-            {/* Theme Toggle */}
-            <Button
-              variant="ghost"
-              size="icon"
+            {/* P6: Theme Toggle — bold icon + tooltip */}
+            <button
               onClick={toggleTheme}
-              className="h-8 w-8 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
-              title={
-                theme === "dark"
-                  ? "Switch to light mode"
-                  : "Switch to dark mode"
-              }
+              className="flex items-center justify-center h-9 w-9 rounded-md transition-all duration-200 bg-zinc-800/60 border border-zinc-600/50 hover:bg-zinc-700/70"
+              title={theme === "dark" ? "Toggle Theme — Light Mode" : "Toggle Theme — Dark Mode"}
             >
               {theme === "dark" ? (
-                <Sun className="h-4 w-4 text-amber-400 transition-transform hover:rotate-45" />
+                <Sun className="h-5 w-5 text-amber-400 transition-transform hover:rotate-45" />
               ) : (
-                <Moon className="h-4 w-4 text-indigo-500 transition-transform hover:-rotate-12" />
+                <Moon className="h-5 w-5 text-indigo-500 transition-transform hover:-rotate-12" />
               )}
-            </Button>
+            </button>
 
-            {/* Settings */}
+            {/* P6: Settings — bold icon + tooltip */}
             <Link href="/settings" title="Settings">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
-              >
-                <Settings className="h-4 w-4 transition-transform hover:rotate-90 duration-300" />
-              </Button>
+              <button className="flex items-center justify-center h-9 w-9 rounded-md transition-all duration-200 bg-zinc-800/60 border border-zinc-600/50 text-zinc-300 hover:bg-zinc-700/70 hover:text-white">
+                <Settings className="h-5 w-5 transition-transform hover:rotate-90 duration-300" />
+              </button>
             </Link>
           </div>
         </div>

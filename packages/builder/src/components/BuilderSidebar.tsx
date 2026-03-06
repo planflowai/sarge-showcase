@@ -149,12 +149,12 @@ const TOOLBAR_ITEMS: {
   hover: string;       // hover bg + text
   active: string;      // active bg + border + text
 }[] = [
-  { id: "files",      icon: FolderOpen,     label: "Project",      color: "text-amber-500 dark:text-amber-400",   hover: "hover:bg-amber-500/10 hover:text-amber-600 dark:hover:text-amber-300",   active: "bg-amber-500/15 border-amber-400/50 text-amber-700 dark:text-amber-300"   },
-  { id: "templates",  icon: LayoutTemplate, label: "Quick Start",  color: "text-purple-500 dark:text-purple-400", hover: "hover:bg-purple-500/10 hover:text-purple-600 dark:hover:text-purple-300", active: "bg-purple-500/15 border-purple-400/50 text-purple-700 dark:text-purple-300" },
-  { id: "prompts",    icon: BookOpen,       label: "Commands",     color: "text-blue-500 dark:text-blue-400",     hover: "hover:bg-blue-500/10 hover:text-blue-600 dark:hover:text-blue-300",     active: "bg-blue-500/15 border-blue-400/50 text-blue-700 dark:text-blue-300"     },
-  { id: "helpers",    icon: Cpu,            label: "AI Team",      color: "text-cyan-500 dark:text-cyan-400",     hover: "hover:bg-cyan-500/10 hover:text-cyan-600 dark:hover:text-cyan-300",     active: "bg-cyan-500/15 border-cyan-400/50 text-cyan-700 dark:text-cyan-300"     },
-  { id: "components", icon: Puzzle,         label: "UI Parts",     color: "text-emerald-500 dark:text-emerald-400", hover: "hover:bg-emerald-500/10 hover:text-emerald-600 dark:hover:text-emerald-300", active: "bg-emerald-500/15 border-emerald-400/50 text-emerald-700 dark:text-emerald-300" },
-  { id: "router",     icon: Layers,         label: "AI Router",    color: "text-rose-500 dark:text-rose-400",     hover: "hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-300",     active: "bg-rose-500/15 border-rose-400/50 text-rose-700 dark:text-rose-300"     },
+  { id: "files",      icon: FolderOpen,     label: "Project",      color: "text-white",   hover: "hover:bg-[#FF6700]/10 hover:text-[#FF6700]",   active: "bg-[#FF6700]/15 border-b-2 border-[#FF6700] text-[#FF6700] rounded-b-none"   },
+  { id: "templates",  icon: LayoutTemplate, label: "Quick Start",  color: "text-white", hover: "hover:bg-[#FF6700]/10 hover:text-[#FF6700]", active: "bg-[#FF6700]/15 border-b-2 border-[#FF6700] text-[#FF6700] rounded-b-none" },
+  { id: "prompts",    icon: Grid3X3,        label: "Commands",     color: "text-white",     hover: "hover:bg-[#FF6700]/10 hover:text-[#FF6700]",     active: "bg-[#FF6700]/15 border-b-2 border-[#FF6700] text-[#FF6700] rounded-b-none"     },
+  { id: "helpers",    icon: Cpu,            label: "AI Team",      color: "text-white",     hover: "hover:bg-[#FF6700]/10 hover:text-[#FF6700]",     active: "bg-[#FF6700]/15 border-b-2 border-[#FF6700] text-[#FF6700] rounded-b-none"     },
+  { id: "components", icon: Puzzle,         label: "UI Parts",     color: "text-white", hover: "hover:bg-[#FF6700]/10 hover:text-[#FF6700]", active: "bg-[#FF6700]/15 border-b-2 border-[#FF6700] text-[#FF6700] rounded-b-none" },
+  { id: "router",     icon: Layers,         label: "AI Router",    color: "text-white",     hover: "hover:bg-[#FF6700]/10 hover:text-[#FF6700]",     active: "bg-[#FF6700]/15 border-b-2 border-[#FF6700] text-[#FF6700] rounded-b-none"     },
 ];
 
 // ─── Props ────────────────────────────────────────────────────────────────────

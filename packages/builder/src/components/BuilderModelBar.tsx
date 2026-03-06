@@ -173,16 +173,13 @@ export default function BuilderModelBar({
               key={p.id + '-' + index}
               onClick={() => handleProviderSelect(p.id)}
               className={cn(
-                "px-2.5 py-1 rounded-md text-[10px] font-semibold transition-all whitespace-nowrap border",
+                "px-3 py-2 rounded-md text-[13px] font-bold transition-all whitespace-nowrap border",
                 isActive
-                  ? "border-current"
-                  : "border-transparent bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-700"
+                  ? "border-[#FF6700] text-[#FF6700] bg-[#FF6700]/10"
+                  : "border-zinc-700 bg-zinc-800 text-white hover:text-[#FF6700] hover:border-[#FF6700]/40"
               )}
-              style={isActive ? {
-                color: pColor,
-                backgroundColor: `${pColor}15`,
-                borderColor: `${pColor}60`,
-              } : undefined}
+              style={{ minHeight: '36px' }}
+              title={p.name}
             >
               {p.name}
             </button>
@@ -190,27 +187,23 @@ export default function BuilderModelBar({
         })}
 
         {/* Separator */}
-        <div className="w-px h-4 bg-zinc-300 dark:bg-zinc-700 mx-0.5" />
+        <div className="w-px h-6 bg-zinc-600 mx-1" />
 
         {/* Local providers */}
         {localProviders.map((p) => {
           const isActive = selectedProvider === p.id;
-          const pColor = p.color || "#10b981";
           return (
             <button
               key={p.id}
               onClick={() => handleProviderSelect(p.id)}
               className={cn(
-                "px-2.5 py-1 rounded-md text-[10px] font-semibold transition-all whitespace-nowrap border",
+                "px-3 py-2 rounded-md text-[13px] font-bold transition-all whitespace-nowrap border",
                 isActive
-                  ? "border-current"
-                  : "border-transparent bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-700"
+                  ? "border-[#FF6700] text-[#FF6700] bg-[#FF6700]/10"
+                  : "border-zinc-700 bg-zinc-800 text-white hover:text-[#FF6700] hover:border-[#FF6700]/40"
               )}
-              style={isActive ? {
-                color: pColor,
-                backgroundColor: `${pColor}15`,
-                borderColor: `${pColor}60`,
-              } : undefined}
+              style={{ minHeight: '36px' }}
+              title={p.name}
             >
               {p.name}
             </button>
@@ -236,13 +229,14 @@ export default function BuilderModelBar({
         )}
         <button
           onClick={() => setShowModelPanel(!showModelPanel)}
-          className="flex-1 flex items-center justify-between gap-1.5 px-2.5 py-1 rounded-md border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 hover:border-indigo-500 transition-colors min-w-0"
+          className="flex-1 flex items-center justify-between gap-2 px-3 py-2 rounded-md border border-zinc-600 bg-zinc-800 hover:border-[#FF6700]/50 transition-colors min-w-0"
+          style={{ minHeight: '40px' }}
         >
-          <span className="text-[11px] font-medium text-zinc-700 dark:text-zinc-300 truncate">
+          <span className="text-sm font-bold text-white truncate">
             {ollamaLoading ? "Loading..." : ollamaError ? ollamaError : displayModelName}
           </span>
           <ChevronDown className={cn(
-            "h-3 w-3 text-zinc-400 transition-transform flex-shrink-0",
+            "h-4 w-4 text-[#FF6700] transition-transform flex-shrink-0",
             showModelPanel && "rotate-180"
           )} />
         </button>
@@ -253,13 +247,13 @@ export default function BuilderModelBar({
             onClick={onWebSearchToggle}
             title={webSearch ? "Web search ON" : "Web search OFF"}
             className={cn(
-              "flex-shrink-0 flex items-center gap-1 px-1.5 py-1 rounded-md text-[9px] font-medium border transition-all",
+              "flex-shrink-0 flex items-center gap-1.5 px-2.5 py-2 rounded-md text-[13px] font-bold border transition-all",
               webSearch
                 ? "bg-sky-500/20 border-sky-500/40 text-sky-400"
                 : "bg-transparent border-zinc-700 text-zinc-500 hover:text-zinc-300"
             )}
           >
-            <Globe className="h-2.5 w-2.5" />
+            <Globe className="h-3.5 w-3.5" />
             Web
           </button>
         )}
