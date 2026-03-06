@@ -28,7 +28,7 @@ import {
   ArrowLeft, Trash2, Plus, Pencil, Lock, LockOpen, Shield,
   Settings, Cpu, MessageSquare, ShieldCheck, ChevronDown, ChevronRight, Loader2,
   Database, FileText, RefreshCw, Radio,
-  Hammer, Zap, TrendingUp, Activity,
+  Hammer, Zap, TrendingUp, Activity, Wifi, WifiOff,
 } from "lucide-react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -115,7 +115,7 @@ function ThreadGuardianSettings() {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="mb-1 text-base font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">Thread Guardian</h2>
+        <h2 className="mb-1 text-base font-bold uppercase tracking-wider text-white">Thread Guardian</h2>
         <p className="mb-4 text-xs font-medium text-zinc-300 dark:text-zinc-300">
           Background conversation maintenance system. Monitors threads for facts, contradictions, hallucinations, and topic drift.
         </p>
@@ -443,6 +443,24 @@ export default function SettingsPage() {
   const [syncMessage, setSyncMessage] = useState("");
   const [syncSuccess, setSyncSuccess] = useState(false);
 
+  // API Connection Dashboard state
+  const [providerStatuses, setProviderStatuses] = useState<{ id: string; name: string; color: string; connected: boolean; latencyMs?: number; error?: string }[]>([]);
+  const [checkingProviders, setCheckingProviders] = useState(false);
+  const [providersChecked, setProvidersChecked] = useState(false);
+
+  const checkProviders = async () => {
+    setCheckingProviders(true);
+    try {
+      const res = await fetch("/api/providers/check");
+      const data = await res.json();
+      setProviderStatuses(data.providers || []);
+      setProvidersChecked(true);
+    } catch {
+      setProviderStatuses([]);
+    }
+    setCheckingProviders(false);
+  };
+
   useEffect(() => {
     if (!hydrated) hydrate();
     if (!rolesHydrated) hydrateRoles();
@@ -623,9 +641,9 @@ export default function SettingsPage() {
         <div className="mb-6 flex items-center gap-3">
           <Link
             href="/"
-            className="inline-flex items-center justify-center h-9 w-9 rounded-md text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+            className="inline-flex items-center justify-center h-10 w-10 rounded-md text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors"
           >
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft className="h-6 w-6" />
           </Link>
           <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Settings</h1>
         </div>
@@ -636,12 +654,12 @@ export default function SettingsPage() {
               onClick={() => setSection(id)}
               className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-base transition-colors ${
                 section === id
-                  ? "bg-indigo-600/20 text-indigo-600 dark:text-indigo-400 font-medium"
-                  : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-700 dark:hover:text-zinc-200"
+                  ? "bg-indigo-600/20 text-indigo-400 font-bold"
+                  : "text-zinc-300 hover:bg-zinc-800 hover:text-white font-medium"
               }`}
             >
-              <Icon className="h-5 w-5" />
-              {label}
+              <Icon className="h-5 w-5 flex-shrink-0" />
+              <span>{label}</span>
             </button>
           ))}
         </div>
@@ -651,38 +669,95 @@ export default function SettingsPage() {
       <div className="flex-1 px-8 py-6 min-w-0 overflow-y-auto">
         {section === "general" && (
           <div className="space-y-8">
+            {/* ── Theme ── */}
             <section>
-              <h2 className="mb-3 text-base font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">Theme</h2>
+              <h2 className="mb-3 text-base font-bold uppercase tracking-wider text-white">Theme</h2>
               <div className="flex gap-2">
                 {(["dark", "light"] as const).map((t) => (
-                  <Button key={t} variant={theme === t ? "secondary" : "ghost"} onClick={() => setTheme(t)} className="capitalize">{t}</Button>
+                  <Button key={t} variant={theme === t ? "secondary" : "ghost"} onClick={() => setTheme(t)} className="capitalize text-sm">{t}</Button>
                 ))}
               </div>
             </section>
 
+            {/* ── API Connection Dashboard ── */}
             <section>
-              <h2 className="mb-3 text-base font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">API Keys (server-side .env)</h2>
-              <p className="mb-3 text-sm text-zinc-500 dark:text-zinc-400">API keys are configured in .env on the server and never exposed to the browser.</p>
-              <div className="space-y-2">
-                {Object.entries(apiKeyLabels).map(([id, envVar]) => (
-                  <div key={id} className="flex items-center gap-3">
-                    <span className="h-2.5 w-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: providers.find((p) => p.id === id)?.color }} />
-                    <span className="w-48 text-sm font-medium text-zinc-600 dark:text-zinc-300">{envVar}</span>
-                    <span className="text-sm text-zinc-400 dark:text-zinc-500">{"•".repeat(16)}</span>
-                  </div>
-                ))}
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-base font-bold uppercase tracking-wider text-white">API Connections</h2>
+                <Button
+                  onClick={checkProviders}
+                  disabled={checkingProviders}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                >
+                  {checkingProviders ? (
+                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Checking...</>
+                  ) : (
+                    <><RefreshCw className="h-4 w-4 mr-2" /> {providersChecked ? "Re-check" : "Check Connections"}</>
+                  )}
+                </Button>
               </div>
-            </section>
 
-            {/* Local AI Endpoint — hidden (placeholder, not wired) */}
+              {!providersChecked && !checkingProviders && (
+                <p className="text-sm text-zinc-400">Click &quot;Check Connections&quot; to verify all API endpoints are live.</p>
+              )}
+
+              {(providersChecked || checkingProviders) && (
+                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                  {providerStatuses.map((ps) => {
+                    return (
+                      <div
+                        key={ps.id}
+                        className={`rounded-lg border px-4 py-4 flex items-center gap-3 transition-colors ${
+                          ps.connected
+                            ? "border-emerald-500/40 bg-emerald-500/5"
+                            : ps.error === "No API key"
+                            ? "border-zinc-700 bg-zinc-800/30"
+                            : "border-red-500/40 bg-red-500/5"
+                        }`}
+                      >
+                        <div className="flex-shrink-0">
+                          {ps.connected ? (
+                            <Wifi className="h-5 w-5 text-emerald-400" />
+                          ) : (
+                            <WifiOff className="h-5 w-5 text-zinc-500" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ backgroundColor: ps.color === "#000000" ? "#888" : ps.color }} />
+                            <span className="text-sm font-bold text-white truncate">{ps.name}</span>
+                          </div>
+                          <div className="text-xs mt-0.5">
+                            {ps.connected ? (
+                              <span className="text-emerald-400 font-semibold">Connected{ps.latencyMs ? ` · ${ps.latencyMs}ms` : ""}</span>
+                            ) : ps.error === "No API key" ? (
+                              <span className="text-zinc-500">Not configured</span>
+                            ) : (
+                              <span className="text-red-400 font-semibold">{ps.error || "Failed"}</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {providersChecked && (
+                <div className="mt-3 flex items-center gap-4 text-sm">
+                  <span className="text-emerald-400 font-bold">{providerStatuses.filter(p => p.connected).length} connected</span>
+                  <span className="text-zinc-500">{providerStatuses.filter(p => !p.connected && p.error !== "No API key").length} failed</span>
+                  <span className="text-zinc-600">{providerStatuses.filter(p => p.error === "No API key").length} not configured</span>
+                </div>
+              )}
+            </section>
           </div>
         )}
 
         {section === "models" && (
           <div className="space-y-4">
             <div>
-              <h2 className="mb-1 text-base font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">Models</h2>
-              <p className="mb-4 text-sm text-zinc-500 dark:text-zinc-400">
+              <h2 className="mb-1 text-base font-bold uppercase tracking-wider text-white">Models</h2>
+              <p className="mb-4 text-sm text-zinc-400">
                 Add or remove models per provider. Click <Hammer className="inline h-4 w-4 text-indigo-500" /> to tag a model for the Builder. Click <Pencil className="inline h-4 w-4" /> to set a nickname.
               </p>
             </div>
@@ -775,9 +850,9 @@ export default function SettingsPage() {
                     className="flex w-full items-center gap-3 px-4 py-3 text-left"
                   >
                     <span className="h-2.5 w-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: cp.color }} />
-                    <span className="flex-1 text-sm font-medium text-zinc-900 dark:text-white">{cp.name}</span>
-                    <span className="text-xs text-emerald-500 uppercase px-1.5 py-0.5 rounded bg-emerald-500/10 mr-2">custom</span>
-                    <span className="text-xs font-medium text-zinc-300 dark:text-zinc-300">{cpModels.length} model{cpModels.length !== 1 ? "s" : ""}</span>
+                    <span className="flex-1 text-base font-bold text-zinc-900 dark:text-white">{cp.name}</span>
+                    <span className="text-xs text-emerald-500 uppercase px-1.5 py-0.5 rounded bg-emerald-500/10 mr-2 font-bold">custom</span>
+                    <span className="text-sm font-medium text-zinc-400 dark:text-zinc-300">{cpModels.length} model{cpModels.length !== 1 ? "s" : ""}</span>
                     {isExpanded ? <ChevronDown className="h-4 w-4 text-zinc-300" /> : <ChevronRight className="h-4 w-4 text-zinc-300" />}
                   </button>
                   {isExpanded && (
@@ -828,26 +903,26 @@ export default function SettingsPage() {
                           </button>
                         </div>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3">
                         {cpModels.map((m) => (
-                          <div key={m.id} className="flex items-center gap-2 rounded-lg border border-zinc-200 dark:border-zinc-700 px-2.5 py-2 text-xs transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-600" style={{ minHeight: '44px' }}>
+                          <div key={m.id} className="flex items-center gap-3 rounded-lg border border-zinc-200 dark:border-zinc-700 px-4 py-3 text-sm transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-600" style={{ minHeight: '56px' }}>
                             <div className="flex-1 min-w-0 overflow-hidden">
                               {nicknames[m.id] ? (
                                 <div className="flex flex-col">
-                                  <span className="font-medium text-zinc-900 dark:text-white truncate text-xs">{nicknames[m.id]}</span>
-                                  <span className="text-xs text-zinc-400 dark:text-zinc-300 truncate">{m.name}</span>
+                                  <span className="font-medium text-zinc-900 dark:text-white truncate text-base">{nicknames[m.id]}</span>
+                                  <span className="text-sm text-zinc-400 dark:text-zinc-300 truncate">{m.name}</span>
                                 </div>
                               ) : (
-                                <span className="text-zinc-800 dark:text-zinc-200 truncate block">{m.name}</span>
+                                <span className="text-zinc-800 dark:text-zinc-200 truncate block text-base font-medium">{m.name}</span>
                               )}
                               <ModelRoleTags modelId={m.id} />
                             </div>
-                            <div className="flex items-center gap-1.5 flex-shrink-0">
+                            <div className="flex items-center gap-2 flex-shrink-0">
                               <button onClick={() => setBuilderFlag(m.id, !isBuilderModel(m.id, cp.id))} className={`transition-colors ${isBuilderModel(m.id, cp.id) ? 'text-indigo-500' : 'text-zinc-400 hover:text-indigo-400'}`} title={isBuilderModel(m.id, cp.id) ? "Remove from Builder" : "Add to Builder"}>
-                                <Hammer className="h-3 w-3" />
+                                <Hammer className="h-4 w-4" />
                               </button>
                               <button onClick={() => { removeModel(cp.id, m.id); removeModelFromProvider(cp.id, m.id); }} className="text-zinc-300 hover:text-red-400">
-                                <Trash2 className="h-3 w-3" />
+                                <Trash2 className="h-4 w-4" />
                               </button>
                             </div>
                           </div>
@@ -939,8 +1014,8 @@ export default function SettingsPage() {
               );
             })}
 
-            {/* ── Built-in Providers ── */}
-            {providers.map((p) => {
+            {/* ── Built-in Providers (skip if custom provider with same ID exists) ── */}
+            {providers.filter((p) => !customProviders.some((cp) => cp.id === p.id)).map((p) => {
               const isExpanded = expandedProvider === p.id;
               const isOllama = p.id === "ollama";
               const isLMStudio = p.id === "lmstudio";
@@ -956,8 +1031,8 @@ export default function SettingsPage() {
                     className="flex w-full items-center gap-3 px-4 py-3 text-left"
                   >
                     <span className="h-2.5 w-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: p.color }} />
-                    <span className="flex-1 text-sm font-medium text-zinc-900 dark:text-white">{p.name}</span>
-                    <span className="text-xs font-medium text-zinc-300 dark:text-zinc-300">{modelCount}</span>
+                    <span className="flex-1 text-base font-bold text-zinc-900 dark:text-white">{p.name}</span>
+                    <span className="text-sm font-medium text-zinc-400 dark:text-zinc-300">{modelCount}</span>
                     {isExpanded ? <ChevronDown className="h-4 w-4 text-zinc-300" /> : <ChevronRight className="h-4 w-4 text-zinc-300" />}
                   </button>
 
@@ -1079,8 +1154,8 @@ export default function SettingsPage() {
         {section === "roles" && (
           <div className="space-y-6">
             <div>
-              <h2 className="mb-1 text-base font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">Custom Roles</h2>
-              <p className="mb-4 text-sm text-zinc-500 dark:text-zinc-400">Create roles with custom system prompts. Assign them to any LLM slot in debates.</p>
+              <h2 className="mb-1 text-base font-bold uppercase tracking-wider text-white">Custom Roles</h2>
+              <p className="mb-4 text-sm text-zinc-400">Create roles with custom system prompts. Assign them to any LLM slot in debates.</p>
             </div>
             <div className="space-y-2">
               {roles.map((role) => (
@@ -1127,8 +1202,8 @@ export default function SettingsPage() {
         {section === "prompts" && (
           <div className="space-y-6">
             <div>
-              <h2 className="mb-1 text-base font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">Saved Prompts</h2>
-              <p className="mb-4 text-sm text-zinc-500 dark:text-zinc-400">Create reusable prompt templates.</p>
+              <h2 className="mb-1 text-base font-bold uppercase tracking-wider text-white">Saved Prompts</h2>
+              <p className="mb-4 text-sm text-zinc-400">Create reusable prompt templates.</p>
             </div>
             {prompts.length === 0 && <p className="text-sm text-zinc-400 dark:text-zinc-300">No saved prompts yet.</p>}
             <div className="space-y-2">
