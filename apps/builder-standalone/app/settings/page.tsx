@@ -28,7 +28,7 @@ import {
   ArrowLeft, Trash2, Plus, Pencil, Lock, LockOpen, Shield,
   Settings, Cpu, MessageSquare, ShieldCheck, ChevronDown, ChevronRight, Loader2,
   Database, FileText, RefreshCw, Radio,
-  Hammer, Zap, TrendingUp,
+  Hammer, Zap, TrendingUp, Activity,
 } from "lucide-react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -50,10 +50,14 @@ const SettingsKnowledge = dynamic(
   () => import("@/components/settings/SettingsKnowledge").then((m) => ({ default: m.SettingsKnowledge })),
   { loading: () => <div className="animate-pulse text-xs text-zinc-400 py-8 text-center">Loading knowledge vault…</div> }
 );
+const PipelineDiagnostics = dynamic(
+  () => import("@/components/settings/PipelineDiagnostics").then((m) => ({ default: m.PipelineDiagnostics })),
+  { loading: () => <div className="animate-pulse text-xs text-zinc-400 py-8 text-center">Loading diagnostics…</div> }
+);
 import { RollCall } from "@/components/settings/RollCall";
 import { ModelRoleTags } from "@/components/settings/ModelRoleTags";
 
-type Section = "general" | "models" | "registry" | "rollcall" | "orchestration" | "roles" | "prompts" | "security" | "knowledge" | "logic" | "questions" | "poisons" | "sync" | "guardian" | "trading" | "build-docs";
+type Section = "general" | "models" | "registry" | "rollcall" | "orchestration" | "roles" | "prompts" | "security" | "knowledge" | "logic" | "questions" | "poisons" | "sync" | "guardian" | "trading" | "build-docs" | "diagnostics";
 
 const NAV_ITEMS: { id: Section; label: string; icon: React.ElementType }[] = [
   { id: "general", label: "General", icon: Settings },
@@ -70,6 +74,7 @@ const NAV_ITEMS: { id: Section; label: string; icon: React.ElementType }[] = [
   { id: "questions", label: "Questions", icon: MessageSquare },
   { id: "poisons", label: "Poisons", icon: Shield },
   { id: "build-docs", label: "Build Docs", icon: FileText },
+  { id: "diagnostics", label: "Diagnostics", icon: Activity },
   { id: "security", label: "Security", icon: ShieldCheck },
 ];
 
@@ -1301,6 +1306,8 @@ export default function SettingsPage() {
             </section>
           </div>
         )}
+
+        {section === "diagnostics" && <PipelineDiagnostics />}
 
         {section === "security" && (
           <div className="space-y-8">

@@ -4,7 +4,15 @@ Generated: 2026-03-05
 Branch: sargebuild-v1
 Tag: working-2026-03-02-deploy-fix (last tagged)
 
-## Latest Changes (Client pipeline — intake to Supabase, email notification, prompt assembly, PII injection, revision form)
+## Latest Changes (Automated A-Z pipeline test — 11 steps, full audit report, diagnostics UI)
+
+- **Pipeline test route**: New `POST /api/pipeline-test` runs 11 end-to-end steps with dummy data: (1) Intake submission to Supabase, (2) Prompt assembly from intake, (3) Project creation, (4) Build execution via cheapest cloud model (DeepSeek V3 or Gemini Flash Lite), (5) Conversation history follow-up, (6) Edit mode verification, (7) Compiler audit, (8) Certificate check, (9) PII injection, (10) Supabase logging verification, (11) Revision submission. Each step PASS/FAIL independently. Returns JSON report with timestamps, costs, duration, step details.
+- **Diagnostics UI**: New `PipelineDiagnostics` component in Settings → Diagnostics section. "Run Pipeline Test" button with live progress bar (11 steps), summary card (green/red), step-by-step results with pass/fail icons and timing, "Copy Report" button for JSON export.
+- **Auto-cleanup**: Test project directory deleted after run. Supabase rows preserved as audit trail.
+- **New files**: `app/api/pipeline-test/route.ts`, `components/settings/PipelineDiagnostics.tsx`.
+- **Modified**: `app/settings/page.tsx` (added "diagnostics" section type, nav item, PipelineDiagnostics render).
+
+## Previous Changes (Client pipeline — intake to Supabase, email notification, prompt assembly, PII injection, revision form)
 
 - **Feature 1 — Intake to Supabase**: New `POST /api/intake/submit` route. Writes intake form data to `client_intake` table (id UUID, created_at, form_data JSONB, status text default 'new', ref_code text, email text). Updated intake form's `submitForm()` to POST to this endpoint. Returns ref code.
 - **Feature 2 — Email notification**: After Supabase write, sends notification email via Resend API to `NOTIFICATION_EMAIL` (from env). Non-blocking. Falls back to console log if no Resend key.
