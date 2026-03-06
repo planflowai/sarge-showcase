@@ -1,13 +1,14 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback, useMemo, memo, lazy, Suspense } from "react";
-import { Code2, Eye, RefreshCw, AlertTriangle, Download, Copy, Check, Maximize2, Minimize2, Radio, GitCompare, X, Library, ChevronLeft, ChevronRight, Save, RotateCcw, Server, Monitor, Rocket, Hammer } from "lucide-react";
+import { Code2, Eye, RefreshCw, AlertTriangle, Download, Copy, Check, Maximize2, Minimize2, Radio, GitCompare, X, Library, ChevronLeft, ChevronRight, Save, RotateCcw, Server, Monitor, Rocket, Hammer, UserPlus } from "lucide-react";
 const Editor = lazy(() => import("@monaco-editor/react"));
 import { Button } from "@/components/ui/button";
 import { cn } from "@sarge/core";
 import { buildPreviewContent, detectLanguage, detectContentType } from "../lib/contentDetector";
 import { STREAMING_MIN_UPDATE_INTERVAL_MS, STREAMING_MIN_CONTENT_DELTA } from "@sarge/core";
 import { exportToZip, downloadZip } from "../lib/sarge-build";
+import { injectPII, countPlaceholders } from "../lib/piiInjector";
 import { useUIStore } from "@sarge/core";
 import { useArtifactStore } from "../stores/artifactStore";
 import { useBuilderStore } from "../stores/builderStore";
@@ -547,6 +548,24 @@ function ArtifactPanelInner({
     showToast({ message: `Downloaded ${filename}`, type: "success" });
   };
 
+  // Inject PII placeholders with real client data
+  const handleInjectPII = () => {
+    const placeholders = countPlaceholders(code);
+    if (placeholders === 0) {
+      showToast({ message: "No PII placeholders found in code", type: "info" });
+      return;
+    }
+    const name = prompt("Business / Client Name:");
+    if (name === null) return;
+    const phone = prompt("Phone number:") || "";
+    const email = prompt("Email address:") || "";
+    const address = prompt("Business address:") || "";
+    const result = injectPII(code, { name, phone, email, address });
+    onCodeChange(result);
+    const replaced = placeholders - countPlaceholders(result);
+    showToast({ message: `Injected client info — ${replaced} placeholder${replaced !== 1 ? 's' : ''} replaced`, type: "success" });
+  };
+
   // Content type badge
   const getContentTypeBadge = () => {
     switch (contentType) {
@@ -1067,6 +1086,19 @@ function ArtifactPanelInner({
           >
             <Download className="h-3.5 w-3.5" />
             Export for Client
+          </Button>
+
+          {/* Inject Client Info */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleInjectPII}
+            disabled={!code}
+            className="h-7 gap-1.5 px-2 text-xs text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-200 hover:bg-amber-50 dark:hover:bg-amber-500/10"
+            title="Replace PII placeholders with real client info"
+          >
+            <UserPlus className="h-3.5 w-3.5" />
+            Inject Client Info
           </Button>
 
           {/* Download */}

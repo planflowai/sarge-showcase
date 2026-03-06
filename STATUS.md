@@ -4,7 +4,17 @@ Generated: 2026-03-05
 Branch: sargebuild-v1
 Tag: working-2026-03-02-deploy-fix (last tagged)
 
-## Latest Changes (Builder pipeline — conversation history, edit mode enforcement, token limits, guardian optimization)
+## Latest Changes (Client pipeline — intake to Supabase, email notification, prompt assembly, PII injection, revision form)
+
+- **Feature 1 — Intake to Supabase**: New `POST /api/intake/submit` route. Writes intake form data to `client_intake` table (id UUID, created_at, form_data JSONB, status text default 'new', ref_code text, email text). Updated intake form's `submitForm()` to POST to this endpoint. Returns ref code.
+- **Feature 2 — Email notification**: After Supabase write, sends notification email via Resend API to `NOTIFICATION_EMAIL` (from env). Non-blocking. Falls back to console log if no Resend key.
+- **Feature 3 — Prompt template assembly**: New `packages/builder/src/lib/intakeToPrompt.ts`. Maps industry→style keywords (23 industries), pages→section requirements (11 page types), features→post-build toggles (8 features). Uses PII placeholders instead of real values. Returns complete builder prompt.
+- **Feature 4 — PII injection**: New `packages/builder/src/lib/piiInjector.ts`. Replaces {{phone}}, {{email}}, {{address}}, {{name}} placeholders with real values. "Inject Client Info" button added to ArtifactPanel toolbar (amber, UserPlus icon).
+- **Feature 5 — Revision form**: New `client-revision-form.html` + `POST /api/intake/revision` route. Writes to `client_revisions` table. Pre-fills ref code from `?ref=` URL param. Same dark theme as intake form.
+- **New files**: `app/api/intake/submit/route.ts`, `app/api/intake/revision/route.ts`, `intakeToPrompt.ts`, `piiInjector.ts`, `client-revision-form.html`.
+- **Modified**: `Intake fom.html` (submitForm POST), `ArtifactPanel.tsx` (Inject Client Info button).
+
+## Previous Changes (Builder pipeline — conversation history, edit mode enforcement, token limits, guardian optimization)
 
 - **FIX 1 — Conversation history**: Builder chat now sends last 10 messages (user + assistant pairs) as conversation history between system prompt and current user message. Code blocks in assistant messages are truncated (first 200 chars + `[code truncated]`) to save tokens. History is forwarded to all 7 providers: Anthropic, OpenAI, Gemini, DeepSeek, xAI, Ollama, LM Studio, and all OpenAI-compatible providers. Models now see what was previously discussed and can make incremental changes.
 - **FIX 2 — Edit mode diff enforcement**: When Edit Mode is active and the model ignores EDIT block format (returns full file instead), changes are NO LONGER auto-applied silently. Full file replacements in edit mode ALWAYS go through diff approval — user sees the diff and must explicitly approve. Surgical EDIT blocks still auto-apply when auto-apply is enabled.

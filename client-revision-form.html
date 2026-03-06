@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Request a Revision | SARGE Web Studio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0B0E11;
+            --bg-secondary: #12161B;
+            --bg-card: #181D24;
+            --bg-input: #1E242C;
+            --border: #2A3340;
+            --border-focus: #FF6700;
+            --text-primary: #F0F2F5;
+            --text-secondary: #9BA3AF;
+            --accent: #FF6700;
+            --accent-dark: #CC5200;
+            --success: #10B981;
+            --danger: #EF4444;
+            --radius: 12px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        .container {
+            width: 100%;
+            max-width: 560px;
+        }
+        .logo {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        .logo-mark {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: var(--accent);
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 18px;
+            color: #000;
+            margin-bottom: 12px;
+        }
+        .logo h1 {
+            font-size: 22px;
+            font-weight: 600;
+        }
+        .logo h1 span { color: var(--accent); }
+        .logo p {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-top: 4px;
+        }
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 32px;
+        }
+        .field {
+            margin-bottom: 20px;
+        }
+        .field label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+        .field input, .field textarea, .field select {
+            width: 100%;
+            padding: 10px 14px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .field input:focus, .field textarea:focus, .field select:focus {
+            border-color: var(--border-focus);
+        }
+        .field textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+        .field select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%239BA3AF' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            padding-right: 36px;
+        }
+        .priority-group {
+            display: flex;
+            gap: 8px;
+        }
+        .priority-btn {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg-input);
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .priority-btn:hover { border-color: var(--text-secondary); }
+        .priority-btn.selected {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: rgba(255, 103, 0, 0.1);
+        }
+        .submit-btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--accent);
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 8px;
+        }
+        .submit-btn:hover { background: var(--accent-dark); }
+        .submit-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .success-screen {
+            display: none;
+            text-align: center;
+            padding: 48px 24px;
+        }
+        .success-screen.active { display: block; }
+        .success-icon {
+            width: 64px;
+            height: 64px;
+            background: var(--success);
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin-bottom: 16px;
+        }
+        .success-screen h2 { font-size: 20px; margin-bottom: 8px; }
+        .success-screen p { color: var(--text-secondary); font-size: 14px; }
+        .error-msg {
+            color: var(--danger);
+            font-size: 13px;
+            margin-top: 8px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <div class="logo-mark">S</div>
+            <h1>SARGE <span>Web Studio</span></h1>
+            <p>Request a Revision</p>
+        </div>
+
+        <div class="card" id="formCard">
+            <form id="revisionForm" onsubmit="return false;">
+                <div class="field">
+                    <label>Reference Code</label>
+                    <input type="text" id="refCode" placeholder="SARGE-XXXXXXXX" required>
+                </div>
+
+                <div class="field">
+                    <label>Which page needs changes?</label>
+                    <select id="page" required>
+                        <option value="">Select a page...</option>
+                        <option value="home">Home Page</option>
+                        <option value="about">About Page</option>
+                        <option value="services">Services Page</option>
+                        <option value="contact">Contact Page</option>
+                        <option value="gallery">Gallery</option>
+                        <option value="testimonials">Testimonials</option>
+                        <option value="faq">FAQ</option>
+                        <option value="blog">Blog</option>
+                        <option value="pricing">Pricing</option>
+                        <option value="booking">Booking</option>
+                        <option value="shop">Shop</option>
+                        <option value="header">Header / Navigation</option>
+                        <option value="footer">Footer</option>
+                        <option value="overall">Overall / Sitewide</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label>Describe the change</label>
+                    <textarea id="description" placeholder="Please be as specific as possible. For example: 'Move the phone number from the footer to the top-right of the header' or 'Change the hero background color from blue to dark green (#1B4332)'" required></textarea>
+                </div>
+
+                <div class="field">
+                    <label>Priority</label>
+                    <div class="priority-group">
+                        <div class="priority-btn" data-value="low" onclick="selectPriority(this)">Low</div>
+                        <div class="priority-btn selected" data-value="medium" onclick="selectPriority(this)">Medium</div>
+                        <div class="priority-btn" data-value="high" onclick="selectPriority(this)">High</div>
+                    </div>
+                </div>
+
+                <div class="error-msg" id="errorMsg"></div>
+
+                <button type="button" class="submit-btn" id="submitBtn" onclick="submitRevision()">Submit Revision Request</button>
+            </form>
+        </div>
+
+        <div class="success-screen" id="successScreen">
+            <div class="success-icon">✓</div>
+            <h2>Revision Submitted</h2>
+            <p>We've received your revision request and will get to it shortly.</p>
+            <p style="margin-top: 16px; color: var(--accent); cursor: pointer;" onclick="resetForm()">Submit another revision →</p>
+        </div>
+    </div>
+
+<script>
+    // Pre-fill ref code from URL param
+    const params = new URLSearchParams(window.location.search);
+    const refParam = params.get('ref');
+    if (refParam) {
+        document.getElementById('refCode').value = refParam;
+    }
+
+    let selectedPriority = 'medium';
+
+    function selectPriority(el) {
+        document.querySelectorAll('.priority-btn').forEach(b => b.classList.remove('selected'));
+        el.classList.add('selected');
+        selectedPriority = el.dataset.value;
+    }
+
+    async function submitRevision() {
+        const refCode = document.getElementById('refCode').value.trim();
+        const page = document.getElementById('page').value;
+        const description = document.getElementById('description').value.trim();
+        const errorMsg = document.getElementById('errorMsg');
+
+        if (!refCode || !page || !description) {
+            errorMsg.textContent = 'Please fill in all required fields.';
+            errorMsg.style.display = 'block';
+            return;
+        }
+        errorMsg.style.display = 'none';
+
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = true;
+        btn.textContent = 'Submitting...';
+
+        const payload = {
+            ref_code: refCode,
+            page,
+            description,
+            priority: selectedPriority,
+        };
+
+        try {
+            const res = await fetch('/api/intake/revision', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(data.error || 'Submission failed');
+            }
+
+            document.getElementById('formCard').style.display = 'none';
+            document.getElementById('successScreen').classList.add('active');
+        } catch (err) {
+            errorMsg.textContent = err.message || 'Something went wrong. Please try again.';
+            errorMsg.style.display = 'block';
+            btn.disabled = false;
+            btn.textContent = 'Submit Revision Request';
+        }
+    }
+
+    function resetForm() {
+        document.getElementById('page').value = '';
+        document.getElementById('description').value = '';
+        document.querySelectorAll('.priority-btn').forEach(b => b.classList.remove('selected'));
+        document.querySelector('.priority-btn[data-value="medium"]').classList.add('selected');
+        selectedPriority = 'medium';
+        document.getElementById('formCard').style.display = 'block';
+        document.getElementById('successScreen').classList.remove('active');
+        document.getElementById('submitBtn').disabled = false;
+        document.getElementById('submitBtn').textContent = 'Submit Revision Request';
+    }
+</script>
+</body>
+</html>

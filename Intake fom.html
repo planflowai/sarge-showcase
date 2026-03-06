@@ -1,0 +1,1985 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Start Your Project | SARGE Web Studio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-primary: #0B0E11;
+            --bg-secondary: #12161B;
+            --bg-card: #181D24;
+            --bg-input: #1E242C;
+            --bg-hover: #252D37;
+            --border: #2A3340;
+            --border-focus: #FF6700;
+            --text-primary: #F0F2F5;
+            --text-secondary: #9BA3AF;
+            --text-muted: #6B7280;
+            --accent: #FF6700;
+            --accent-dark: #CC5200;
+            --accent-glow: rgba(255, 103, 0, 0.15);
+            --accent-glow-strong: rgba(255, 103, 0, 0.3);
+            --success: #10B981;
+            --warning: #F59E0B;
+            --danger: #EF4444;
+            --info: #3B82F6;
+            --radius: 12px;
+            --radius-sm: 8px;
+            --radius-xs: 6px;
+            --shadow: 0 4px 24px rgba(0,0,0,0.3);
+            --shadow-lg: 0 8px 40px rgba(0,0,0,0.4);
+            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── HEADER ─────────────────────────────── */
+        .site-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            background: rgba(11, 14, 17, 0.85);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .logo-mark {
+            width: 36px;
+            height: 36px;
+            background: var(--accent);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 16px;
+            color: #000;
+        }
+        .logo-text {
+            font-family: 'Playfair Display', serif;
+            font-size: 20px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+        }
+        .logo-text span { color: var(--accent); }
+        .header-help {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        .header-help a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        /* ── PROGRESS BAR ───────────────────────── */
+        .progress-container {
+            position: fixed;
+            top: 69px;
+            left: 0;
+            right: 0;
+            z-index: 99;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 20px 32px;
+        }
+        .progress-steps {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .progress-step {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+        }
+        .step-dot {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            transition: var(--transition);
+            flex-shrink: 0;
+        }
+        .step-dot.active {
+            border-color: var(--accent);
+            background: var(--accent);
+            color: #000;
+        }
+        .step-dot.completed {
+            border-color: var(--success);
+            background: var(--success);
+            color: #fff;
+        }
+        .step-connector {
+            width: 24px;
+            height: 2px;
+            background: var(--border);
+            transition: var(--transition);
+            flex-shrink: 0;
+        }
+        .step-connector.completed { background: var(--success); }
+        .step-label {
+            display: none;
+        }
+        @media (min-width: 900px) {
+            .step-label {
+                display: block;
+                font-size: 11px;
+                color: var(--text-muted);
+                margin-top: 2px;
+                white-space: nowrap;
+            }
+            .step-label.active { color: var(--accent); font-weight: 600; }
+            .step-label.completed { color: var(--success); }
+            .progress-step { flex-direction: column; gap: 6px; align-items: center; }
+            .step-connector { margin-top: -18px; }
+        }
+
+        /* ── MAIN CONTAINER ─────────────────────── */
+        .main {
+            max-width: 780px;
+            margin: 0 auto;
+            padding: 160px 24px 120px;
+        }
+
+        /* ── FORM STEP ──────────────────────────── */
+        .form-step {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+        .form-step.active { display: block; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .step-header {
+            margin-bottom: 36px;
+        }
+        .step-number {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 8px;
+        }
+        .step-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 32px;
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 10px;
+        }
+        .step-description {
+            font-size: 15px;
+            color: var(--text-secondary);
+            max-width: 600px;
+        }
+
+        /* ── FORM FIELDS ────────────────────────── */
+        .field-group {
+            margin-bottom: 24px;
+        }
+        .field-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        @media (max-width: 600px) {
+            .field-row { grid-template-columns: 1fr; }
+        }
+        .field-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+        }
+        .field-label .required {
+            color: var(--accent);
+            font-size: 12px;
+        }
+        .tooltip-trigger {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--bg-hover);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 11px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: help;
+            position: relative;
+            flex-shrink: 0;
+        }
+        .tooltip-trigger:hover .tooltip-content {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        .tooltip-content {
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%) translateY(4px);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 10px 14px;
+            font-size: 13px;
+            font-weight: 400;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            width: 280px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease;
+            z-index: 10;
+            box-shadow: var(--shadow);
+            pointer-events: none;
+        }
+        .tooltip-content::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-top-color: var(--border);
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="tel"],
+        input[type="url"],
+        input[type="number"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 14px;
+            transition: var(--transition);
+            outline: none;
+        }
+        input:focus, textarea:focus, select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+        input::placeholder, textarea::placeholder {
+            color: var(--text-muted);
+        }
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+        select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M6 8L1 3h10L6 8z' fill='%239BA3AF'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            padding-right: 36px;
+        }
+        select option {
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }
+
+        /* ── TOGGLE SWITCHES ────────────────────── */
+        .toggle-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+        .toggle-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .toggle-card:hover {
+            border-color: var(--accent);
+            background: var(--bg-hover);
+        }
+        .toggle-card.selected {
+            border-color: var(--accent);
+            background: var(--accent-glow);
+        }
+        .toggle-switch {
+            width: 44px;
+            height: 24px;
+            background: var(--bg-hover);
+            border-radius: 12px;
+            position: relative;
+            flex-shrink: 0;
+            margin-top: 2px;
+            transition: var(--transition);
+        }
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 18px;
+            height: 18px;
+            background: var(--text-muted);
+            border-radius: 50%;
+            transition: var(--transition);
+        }
+        .toggle-card.selected .toggle-switch {
+            background: var(--accent);
+        }
+        .toggle-card.selected .toggle-switch::after {
+            transform: translateX(20px);
+            background: #fff;
+        }
+        .toggle-info h4 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 3px;
+        }
+        .toggle-info p {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+        .toggle-badge {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-left: 8px;
+        }
+        .badge-recommended { background: var(--accent-glow); color: var(--accent); }
+        .badge-included { background: rgba(16,185,129,0.15); color: var(--success); }
+        .badge-addon { background: rgba(59,130,246,0.15); color: var(--info); }
+
+        /* ── COLOR PICKER ───────────────────────── */
+        .color-picker-row {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .color-field {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .color-field input[type="color"] {
+            width: 44px;
+            height: 44px;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            padding: 2px;
+            background: transparent;
+        }
+        .color-field input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+        .color-field input[type="color"]::-webkit-color-swatch { border: none; border-radius: 4px; }
+        .color-field label {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        /* ── FILE UPLOAD ────────────────────────── */
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius);
+            padding: 32px;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            background: var(--bg-card);
+        }
+        .upload-zone:hover {
+            border-color: var(--accent);
+            background: var(--accent-glow);
+        }
+        .upload-zone i {
+            font-size: 28px;
+            color: var(--accent);
+            margin-bottom: 10px;
+        }
+        .upload-zone p {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        .upload-zone .upload-hint {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+        .upload-zone input[type="file"] { display: none; }
+
+        /* ── DYNAMIC LIST (services, team, testimonials) ── */
+        .dynamic-list { display: flex; flex-direction: column; gap: 12px; }
+        .dynamic-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 14px 16px;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+        .dynamic-item .item-fields { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+        .dynamic-item .remove-btn {
+            background: none;
+            border: none;
+            color: var(--danger);
+            cursor: pointer;
+            font-size: 16px;
+            padding: 4px;
+            opacity: 0.6;
+            transition: var(--transition);
+        }
+        .dynamic-item .remove-btn:hover { opacity: 1; }
+        .add-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 16px;
+            background: var(--bg-card);
+            border: 1px dashed var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--accent);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .add-btn:hover {
+            border-color: var(--accent);
+            background: var(--accent-glow);
+        }
+
+        /* ── OPTION CARDS (style, pages, budget) ── */
+        .option-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 12px;
+        }
+        .option-card {
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .option-card:hover {
+            border-color: var(--accent);
+        }
+        .option-card.selected {
+            border-color: var(--accent);
+            background: var(--accent-glow);
+        }
+        .option-card i {
+            font-size: 24px;
+            color: var(--accent);
+            margin-bottom: 8px;
+        }
+        .option-card h4 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .option-card p {
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        /* ── CHECKBOX PILLS ─────────────────────── */
+        .pill-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .pill {
+            padding: 8px 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            user-select: none;
+        }
+        .pill:hover { border-color: var(--accent); }
+        .pill.selected {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #000;
+            font-weight: 600;
+        }
+
+        /* ── REVIEW SECTION ─────────────────────── */
+        .review-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px 24px;
+            margin-bottom: 16px;
+        }
+        .review-section h4 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .review-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-size: 13px;
+            border-bottom: 1px solid rgba(42,51,64,0.5);
+        }
+        .review-row:last-child { border-bottom: none; }
+        .review-row .label { color: var(--text-secondary); }
+        .review-row .value { color: var(--text-primary); font-weight: 500; text-align: right; max-width: 60%; }
+
+        /* ── LEGAL ──────────────────────────────── */
+        .legal-box {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px 24px;
+            margin-bottom: 20px;
+        }
+        .legal-box h4 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .legal-box p {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+        .consent-check {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-top: 16px;
+            cursor: pointer;
+        }
+        .consent-check input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            accent-color: var(--accent);
+            flex-shrink: 0;
+            margin-top: 2px;
+            cursor: pointer;
+        }
+        .consent-check label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            line-height: 1.5;
+        }
+        .consent-check label a {
+            color: var(--accent);
+            text-decoration: underline;
+        }
+
+        /* ── NAVIGATION BUTTONS ─────────────────── */
+        .form-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 40px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+        }
+        .btn {
+            padding: 14px 28px;
+            border-radius: var(--radius-sm);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-back {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+        .btn-back:hover {
+            border-color: var(--text-secondary);
+            color: var(--text-primary);
+        }
+        .btn-next {
+            background: var(--accent);
+            color: #000;
+        }
+        .btn-next:hover {
+            background: var(--accent-dark);
+        }
+        .btn-submit {
+            background: var(--success);
+            color: #fff;
+            padding: 16px 40px;
+            font-size: 16px;
+        }
+        .btn-submit:hover {
+            background: #0d9668;
+        }
+        .btn-save {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 13px;
+            padding: 10px 16px;
+        }
+        .btn-save:hover { color: var(--text-secondary); border-color: var(--text-muted); }
+
+        /* ── SAVE INDICATOR ─────────────────────── */
+        .save-indicator {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 10px 16px;
+            font-size: 13px;
+            color: var(--success);
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s ease;
+            z-index: 50;
+        }
+        .save-indicator.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ── DISCLAIMER BANNER ──────────────────── */
+        .disclaimer-banner {
+            background: var(--accent-glow);
+            border: 1px solid rgba(255,103,0,0.2);
+            border-radius: var(--radius);
+            padding: 16px 20px;
+            margin-bottom: 32px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+        .disclaimer-banner i {
+            color: var(--accent);
+            font-size: 18px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        .disclaimer-banner p {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+        .disclaimer-banner strong {
+            color: var(--text-primary);
+        }
+
+        /* ── SUBMITTED STATE ────────────────────── */
+        .submitted-screen {
+            display: none;
+            text-align: center;
+            padding: 80px 24px;
+            animation: fadeIn 0.5s ease;
+        }
+        .submitted-screen.active { display: block; }
+        .submitted-screen .check-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(16,185,129,0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+        }
+        .submitted-screen .check-circle i {
+            font-size: 36px;
+            color: var(--success);
+        }
+        .submitted-screen h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 32px;
+            margin-bottom: 12px;
+        }
+        .submitted-screen p {
+            color: var(--text-secondary);
+            font-size: 15px;
+            max-width: 500px;
+            margin: 0 auto;
+            line-height: 1.7;
+        }
+        .submitted-screen .ref-number {
+            display: inline-block;
+            margin-top: 24px;
+            padding: 12px 24px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--accent);
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="site-header">
+    <div class="logo">
+        <div class="logo-mark">S</div>
+        <div class="logo-text"><span>SARGE</span> Web Studio</div>
+    </div>
+    <div class="header-help">
+        Questions? <a href="mailto:hello@sargeweb.studio">hello@sargeweb.studio</a>
+    </div>
+</header>
+
+<!-- PROGRESS BAR -->
+<div class="progress-container">
+    <div class="progress-steps" id="progressSteps">
+        <!-- Generated by JS -->
+    </div>
+</div>
+
+<!-- MAIN FORM -->
+<main class="main">
+    <form id="intakeForm" novalidate>
+
+        <!-- ════════════════════════════════════════ -->
+        <!-- STEP 1: ABOUT YOU -->
+        <!-- ════════════════════════════════════════ -->
+        <div class="form-step active" data-step="1">
+            <div class="step-header">
+                <div class="step-number">Step 1 of 8</div>
+                <h1 class="step-title">Let's start with the basics</h1>
+                <p class="step-description">Tell us about you and your business. This helps us understand who you are and how to reach you.</p>
+            </div>
+
+            <div class="disclaimer-banner">
+                <i class="fas fa-shield-halved"></i>
+                <p><strong>Your information is secure.</strong> Everything you submit is encrypted and stored securely. We never sell or share your personal data with third parties. Your information is used solely to build your website.</p>
+            </div>
+
+            <div class="field-row">
+                <div class="field-group">
+                    <div class="field-label">Your Full Name <span class="required">*</span></div>
+                    <input type="text" name="client_name" placeholder="Jane Smith" required>
+                </div>
+                <div class="field-group">
+                    <div class="field-label">Business Name <span class="required">*</span></div>
+                    <input type="text" name="business_name" placeholder="Journeyman Journals LLC">
+                </div>
+            </div>
+            <div class="field-row">
+                <div class="field-group">
+                    <div class="field-label">Email Address <span class="required">*</span></div>
+                    <input type="email" name="email" placeholder="jane@example.com" required>
+                </div>
+                <div class="field-group">
+                    <div class="field-label">
+                        Phone Number
+                        <span class="tooltip-trigger">?
+                            <span class="tooltip-content">Optional. We'll only call if we need clarification on your project. Preferred method of contact is email.</span>
+                        </span>
+                    </div>
+                    <input type="tel" name="phone" placeholder="(612) 555-1234">
+                </div>
+            </div>
+            <div class="field-row">
+                <div class="field-group">
+                    <div class="field-label">
+                        Industry / Trade <span class="required">*</span>
+                        <span class="tooltip-trigger">?
+                            <span class="tooltip-content">Select the category that best fits your business. This helps us choose the right design style, stock images, and content structure for your industry.</span>
+                        </span>
+                    </div>
+                    <select name="industry" required>
+                        <option value="">Select your industry...</option>
+                        <option value="plumber">Plumbing</option>
+                        <option value="electrician">Electrical</option>
+                        <option value="hvac">HVAC / Heating & Cooling</option>
+                        <option value="landscaping">Landscaping / Lawn Care</option>
+                        <option value="construction">Construction / General Contractor</option>
+                        <option value="roofing">Roofing</option>
+                        <option value="painting">Painting</option>
+                        <option value="cleaning">Cleaning Services</option>
+                        <option value="auto">Automotive / Mechanic</option>
+                        <option value="restaurant">Restaurant / Food Service</option>
+                        <option value="salon">Salon / Barbershop</option>
+                        <option value="fitness">Fitness / Gym / Yoga</option>
+                        <option value="medical">Medical / Dental / Wellness</option>
+                        <option value="legal">Legal / Law Firm</option>
+                        <option value="realestate">Real Estate</option>
+                        <option value="photography">Photography / Videography</option>
+                        <option value="entertainment">Entertainment / Events / DJ</option>
+                        <option value="nonprofit">Nonprofit / Church</option>
+                        <option value="consulting">Consulting / Professional Services</option>
+                        <option value="retail">Retail / E-Commerce</option>
+                        <option value="tech">Technology / SaaS</option>
+                        <option value="bookkeeping">Bookkeeping / Accounting</option>
+                        <option value="other">Other (describe below)</option>
+                    </select>
+                </div>
+                <div class="field-group">
+                    <div class="field-label">Business Location</div>
+                    <input type="text" name="location" placeholder="Minneapolis, MN">
+                </div>
+            </div>
+            <div class="field-group">
+                <div class="field-label">
+                    Briefly describe what your business does
+                    <span class="tooltip-trigger">?
+                        <span class="tooltip-content">A few sentences is perfect. This becomes the foundation of your website's messaging. Think of it as your elevator pitch — what would you tell someone at a networking event?</span>
+                    </span>
+                </div>
+                <textarea name="business_description" placeholder="We provide reliable bookkeeping services for tradesmen and small businesses. We handle the numbers so our clients can focus on their craft..."></textarea>
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════ -->
+        <!-- STEP 2: YOUR VISION -->
+        <!-- ════════════════════════════════════════ -->
+        <div class="form-step" data-step="2">
+            <div class="step-header">
+                <div class="step-number">Step 2 of 8</div>
+                <h1 class="step-title">Tell us about your vision</h1>
+                <p class="step-description">Help us understand your goals, your audience, and what success looks like for your website.</p>
+            </div>
+
+            <div class="field-group">
+                <div class="field-label">
+                    What's the #1 thing you want visitors to do on your site? <span class="required">*</span>
+                    <span class="tooltip-trigger">?
+                        <span class="tooltip-content">This is your primary "call to action." Every design decision we make will guide visitors toward this goal. Pick the single most important action.</span>
+                    </span>
+                </div>
+                <div class="pill-group" data-name="primary_cta" data-single="true">
+                    <div class="pill" data-value="call">📞 Call me</div>
+                    <div class="pill" data-value="book">📅 Book an appointment</div>
+                    <div class="pill" data-value="quote">📝 Request a quote</div>
+                    <div class="pill" data-value="buy">🛒 Buy a product</div>
+                    <div class="pill" data-value="signup">✉️ Sign up / Subscribe</div>
+                    <div class="pill" data-value="contact">💬 Fill out contact form</div>
+                    <div class="pill" data-value="learn">📖 Learn about services</div>
+                </div>
+            </div>
+
+            <div class="field-group">
+                <div class="field-label">
+                    Who is your ideal customer?
+                    <span class="tooltip-trigger">?
+                        <span class="tooltip-content">Think about who you're trying to reach. Age range, location, interests, income level — anything that helps us design a site that speaks to THEM, not just looks nice to YOU.</span>
+                    </span>
+                </div>
+                <textarea name="target_audience" placeholder="Homeowners aged 30-65 in the Minneapolis metro area who need reliable plumbing services. They value trust, punctuality, and fair pricing..."></textarea>
+            </div>
+
+            <div class="field-group">
+                <div class="field-label">
+                    Do you have an existing website?
+                    <span class="tooltip-trigger">?
+                        <span class="tooltip-content">If you have a current site, we'll review it to understand what's working and what needs improvement. If you're starting from scratch, no worries — we'll build everything fresh.</span>
+                    </span>
+                </div>
+                <div class="field-row">
+                    <input type="url" name="existing_url" placeholder="https://www.yoursite.com (leave blank if none)">
+                    <input type="text" name="existing_likes_dislikes" placeholder="What do you like/dislike about it?">
+                </div>
+            </div>
+
+            <div class="field-group">
+                <div class="field-label">
+                    What's your unique selling point?
+                    <span class="tooltip-trigger">?
+                        <span class="tooltip-content">Why should someone choose YOU over a competitor? "We offer 24/7 emergency service" or "Family-owned for 30 years" or "Licensed, bonded, and insured with 500+ 5-star reviews."</span>
+                    </span>
+                </div>
+                <input type="text" name="usp" placeholder="What makes your business different from the competition?">
+            </div>
+
+            <div class="field-group">
+                <div class="field-label">
+                    Name 1-3 websites you like the look of
+                    <span class="tooltip-trigger">?
+                        <span class="tooltip-content">These don't have to be in your industry. We use them as style references — the vibe, the layout, the colors. If a coffee shop website has the feel you want for your plumbing company, that's useful information.</span>
+                    </span>
+                </div>
+                <input type="text" name="reference_sites" placeholder="https://example1.com, https://example2.com">
+            </div>
+
+            <div class="field-group">
+                <div class="field-label">
+                    Who are your top 2-3 competitors?
+                    <span class="tooltip-trigger">?
+                        <span class="tooltip-content">We'll review their websites to understand the competitive landscape. Our goal is to make your site look more professional and trustworthy than theirs.</span>
+                    </span>
+                </div>
+                <input type="text" name="competitors" placeholder="Competitor names or URLs">
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════ -->
+        <!-- STEP 3: CONTENT & MEDIA -->
+        <!-- ════════════════════════════════════════ -->
+        <div class="form-step" data-step="3">
+            <div class="step-header">
+                <div class="step-number">Step 3 of 8</div>
+                <h1 class="step-title">Content & media</h1>
+                <p class="step-description">The words and images that make your site come alive. Don't have everything ready? No problem — we can use professional stock photos and placeholder text to start.</p>
+            </div>
+
+            <div class="field-group">
+                <div class="field-label">
+                    About Your Business (long version)
+                    <span class="tooltip-trigger">?
+                        <span class="tooltip-content">This becomes your "About" page. Tell your story — how you started, what drives you, why clients trust you. The more you write, the more authentic your site will feel. If you're not sure, paste anything you've already written — marketing materials, social media bios, etc.</span>
+                    </span>
+                </div>
+                <textarea name="about_text" style="min-height: 160px;" placeholder="At Journeyman Journals, we believe skilled tradesmen should be focused on their craft — not buried in paperwork..."></textarea>
+            </div>
+
+            <div class="field-group">
+                <div class="field-label">Your Services</div>
+                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 10px;">Add each service you offer. These become individual cards or sections on your site.</p>
+                <div class="dynamic-list" id="servicesList">
+                    <div class="dynamic-item">
+                        <div class="item-fields">
+                            <input type="text" name="service_name[]" placeholder="Service name (e.g., Monthly Bookkeeping)">
+                            <input type="text" name="service_desc[]" placeholder="Brief description (e.g., We track income, expenses, and provide monthly reports)">
+                        </div>
+                        <button type="button" class="remove-btn" onclick="this.closest('.dynamic-item').remove()"><i class="fas fa-times"></i></button>
+                    </div>
+                </div>
+                <button type="button" class="add-btn" onclick="addService()"><i class="fas fa-plus"></i> Add another service</button>
+            </div>
+
+            <div class="field-group">
+                <div class="field-label">
+                    Team Members (optional)
+                    <span class="tooltip-trigger">?
+                        <span class="tooltip-content">If you want staff bios on your site, add them here. Photo is optional — we can use a professional placeholder silhouette instead.</span>
+                    </span>
+                </div>
+                <div class="dynamic-list" id="teamList">
+                    <div class="dynamic-item">
+                        <div class="item-fields">
+                            <div class="field-row">
+                                <input type="text" name="team_name[]" placeholder="Name">
+                                <input type="text" name="team_role[]" placeholder="Role / Title">
+                            </div>
+                            <input type="text" name="team_bio[]" placeholder="Short bio (1-2 sentences)">
+                        </div>
+                        <button type="button" class="remove-btn" onclick="this.closest('.dynamic-item').remove()"><i class="fas fa-times"></i></button>
+                    </div>
+                </div>
+                <button type="button" class="add-btn" onclick="addTeamMember()"><i class="fas fa-plus"></i> Add team member</button>
+            </div>
+
+            <div class="field-group">
+                <div class="field-label">
+                    Testimonials / Reviews
+                    <span class="tooltip-trigger">?
+                        <span class="tooltip-content">Social proof is one of the most powerful trust signals on a website. Even 2-3 short quotes from happy clients can dramatically increase conversions. Copy-paste from Google Reviews, Yelp, or anywhere you've received feedback.</span>
+                    </span>
+                </div>
+                <div class="dynamic-list" id="testimonialsList">
+                    <div class="dynamic-item">
+                        <div class="item-fields">
+                            <input type="text" name="testimonial_quote[]" placeholder="&quot;They saved me hours every month...&quot;">
+                            <input type="text" name="testimonial_name[]" placeholder="Client name (e.g., Mike T., Minneapolis)">
+                        </div>
+                        <button type="button" class="remove-btn" onclick="this.closest('.dynamic-item').remove()"><i class="fas fa-times"></i></button>
+                    </div>
+                </div>
+                <button type="button" class="add-btn" onclick="addTestimonial()"><i class="fas fa-plus"></i> Add testimonial</button>
+            </div>
+
+            <div class="field-group">
+                <div class="field-label">
+                    Images & Media
+                    <span class="tooltip-trigger">?
+                        <span class="tooltip-content">Upload your own photos (logo, team photos, project images) or choose "Use stock photos" and we'll find professional images that match your industry. You can always replace them with your own photos later.</span>
+                    </span>
+                </div>
+                <div class="pill-group" data-name="image_source" data-single="true" style="margin-bottom: 16px;">
+                    <div class="pill selected" data-value="stock">📸 Use professional stock photos</div>
+                    <div class="pill" data-value="upload">📁 I'll upload my own</div>
+                    <div class="pill" data-value="both">🔄 Mix of both</div>
+                </div>
+                <div class="upload-zone" onclick="this.querySelector('input').click()" id="imageUploadZone" style="display: none;">
+                    <input type="file" name="images" multiple accept="image/*">
+                    <i class="fas fa-cloud-arrow-up"></i>
+                    <p>Drag & drop images here, or click to browse</p>
+                    <p class="upload-hint">JPG, PNG, SVG, or WebP • Max 10MB per file</p>
+                </div>
+            </div>
+
+            <div class="field-group">
+                <div class="field-label">Logo Upload</div>
+                <div class="upload-zone" onclick="this.querySelector('input').click()">
+                    <input type="file" name="logo" accept="image/*,.svg,.ai,.eps,.pdf">
+                    <i class="fas fa-image"></i>
+                    <p>Upload your logo (if you have one)</p>
+                    <p class="upload-hint">SVG, PNG, or AI preferred • No logo? We'll use a clean text logo.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════ -->
+        <!-- STEP 4: SITE STRUCTURE -->
+        <!-- ════════════════════════════════════════ -->
+        <div class="form-step" data-step="4">
+            <div class="step-header">
+                <div class="step-number">Step 4 of 8</div>
+                <h1 class="step-title">Site structure</h1>
+                <p class="step-description">Choose which pages your site needs. Every site includes a Home page — select any additional pages below.</p>
+            </div>
+
+            <div class="field-group">
+                <div class="field-label">Pages to Include <span class="required">*</span></div>
+                <div class="toggle-grid">
+                    <div class="toggle-card selected" data-name="pages" data-value="home" onclick="return false;" style="cursor: default; opacity: 0.7;">
+                        <div class="toggle-switch" style="background: var(--success);"><span style="position:absolute;top:3px;left:3px;width:18px;height:18px;background:#fff;border-radius:50%;transform:translateX(20px);"></span></div>
+                        <div class="toggle-info">
+                            <h4>Home <span class="toggle-badge badge-included">Always Included</span></h4>
+                            <p>Your main landing page with hero banner, key messaging, and calls to action.</p>
+                        </div>
+                    </div>
+                    <div class="toggle-card" data-name="pages" data-value="about" onclick="toggleCard(this)">
+                        <div class="toggle-switch"></div>
+                        <div class="toggle-info">
+                            <h4>About <span class="toggle-badge badge-recommended">Recommended</span></h4>
+                            <p>Your story, mission, team bios, and what makes you different.</p>
+                        </div>
+                    </div>
+                    <div class="toggle-card" data-name="pages" data-value="services" onclick="toggleCard(this)">
+                        <div class="toggle-switch"></div>
+                        <div class="toggle-info">
+                            <h4>Services <span class="toggle-badge badge-recommended">Recommended</span></h4>
+                            <p>Detailed breakdown of what you offer, with descriptions and pricing if applicable.</p>
+                        </div>
+                    </div>
+                    <div class="toggle-card" data-name="pages" data-value="contact" onclick="toggleCard(this)">
+                        <div class="toggle-switch"></div>
+                        <div class="toggle-info">
+                            <h4>Contact <span class="toggle-badge badge-recommended">Recommended</span></h4>
+                            <p>Contact form, phone number, email, address, hours of operation, and embedded map.</p>
+                        </div>
+                    </div>
+                    <div class="toggle-card" data-name="pages" data-value="gallery" onclick="toggleCard(this)">
+                        <div class="toggle-switch"></div>
+                        <div class="toggle-info">
+                            <h4>Gallery / Portfolio</h4>
+                            <p>Showcase your work with a photo gallery, project case studies, or before/after images.</p>
+                        </div>
+                    </div>
+                    <div class="toggle-card" data-name="pages" data-value="testimonials" onclick="toggleCard(this)">
+                        <div class="toggle-switch"></div>
+                        <div class="toggle-info">
+                            <h4>Testimonials</h4>
+                            <p>Dedicated page for client reviews and success stories. Builds trust.</p>
+                        </div>
+                    </div>
+                    <div class="toggle-card" data-name="pages" data-value="faq" onclick="toggleCard(this)">
+                        <div class="toggle-switch"></div>
+                        <div class="toggle-info">
+                            <h4>FAQ</h4>
+                            <p>Frequently asked questions. Reduces support calls and helps SEO.</p>
+                        </div>
+                    </div>
+                    <div class="toggle-card" data-name="pages" data-value="blog" onclick="toggleCard(this)">
+                        <div class="toggle-switch"></div>
+                        <div class="toggle-info">
+                            <h4>Blog / News</h4>
+                            <p>Regular content updates. Great for SEO and establishing authority in your field.</p>
+                        </div>
+                    </div>
+                    <div class="toggle-card" data-name="pages" data-value="pricing" onclick="toggleCard(this)">
+                        <div class="toggle-switch"></div>
+                        <div class="toggle-info">
+                            <h4>Pricing</h4>
+                            <p>Transparent pricing tables or packages. Filters out tire-kickers.</p>
+                        </div>
+                    </div>
+                    <div class="toggle-card" data-name="pages" data-value="booking" onclick="toggleCard(this)">
+                        <div class="toggle-switch"></div>
+                        <div class="toggle-info">
+                            <h4>Booking / Scheduling <span class="toggle-badge badge-addon">Add-on</span></h4>
+                            <p>Online appointment scheduling via Calendly, Acuity, or similar integration.</p>
+                        </div>
+                    </div>
+                    <div class="toggle-card" data-name="pages" data-value="shop" onclick="toggleCard(this)">
+                        <div class="toggle-switch"></div>
+                        <div class="toggle-info">
+                            <h4>Shop / E-Commerce <span class="toggle-badge badge-addon">Add-on</span></h4>
+                            <p>Sell products or gift cards online with cart and checkout functionality.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="field-group">
+                <div class="field-label">
+                    Any other pages or sections you need?
+                </div>
+                <input type="text" name="custom_pages" placeholder="e.g., Careers page, Service Area map, Partners/Affiliates">
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════ -->
+        <!-- STEP 5: DESIGN PREFERENCES -->
+        <!-- ════════════════════════════════════════ -->
+        <div class="form-step" data-step="5">
+            <div class="step-header">
+                <div class="step-number">Step 5 of 8</div>
+                <h1 class="step-title">Design preferences</h1>
+                <p class="step-description">Let us know your style. Don't worry about getting it perfect — we'll refine everything together.</p>
+            </div>
+
+            <div class="field-group">
+                <div class="field-label">
+                    What vibe fits your brand? <span class="required">*</span>
+                    <span class="tooltip-trigger">?
+                        <span class="tooltip-content">This sets the overall tone of your website. "Professional" uses clean lines and corporate colors. "Bold & Modern" uses strong contrasts and movement. Pick what feels right for YOUR customers.</span>
+                    </span>
+                </div>
+                <div class="option-grid" data-name="style_vibe" data-single="true">
+                    <div class="option-card" data-value="professional" onclick="selectOption(this)">
+                        <i class="fas fa-briefcase"></i>
+                        <h4>Professional</h4>
+                        <p>Clean, corporate, trustworthy</p>
+                    </div>
+                    <div class="option-card" data-value="bold" onclick="selectOption(this)">
+                        <i class="fas fa-bolt"></i>
+                        <h4>Bold & Modern</h4>
+                        <p>Eye-catching, dynamic, energetic</p>
+                    </div>
+                    <div class="option-card" data-value="elegant" onclick="selectOption(this)">
+                        <i class="fas fa-gem"></i>
+                        <h4>Elegant</h4>
+                        <p>Refined, luxurious, sophisticated</p>
+                    </div>
+                    <div class="option-card" data-value="minimal" onclick="selectOption(this)">
+                        <i class="fas fa-minus"></i>
+                        <h4>Minimal</h4>
+                        <p>Simple, spacious, content-focused</p>
+                    </div>
+                    <div class="option-card" data-value="warm" onclick="selectOption(this)">
+                        <i class="fas fa-heart"></i>
+                        <h4>Warm & Friendly</h4>
+                        <p>Approachable, inviting, personal</p>
+                    </div>
+                    <div class="option-card" data-value="rugged" onclick="selectOption(this)">
+                        <i class="fas fa-hammer"></i>
+                        <h4>Rugged & Industrial</h4>
+                        <p>Strong, textured, trade-focused</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="field-group">
+                <div class="field-label">
+                    Brand Colors
+                    <span class="tooltip-trigger">?
+                        <span class="tooltip-content">Primary color: used for buttons, links, headers — the dominant brand color. Secondary: used for accents and highlights. Background: light (white) or dark theme. Not sure? Leave defaults and we'll suggest colors based on your industry.</span>
+                    </span>
+                </div>
+                <div class="color-picker-row">
+                    <div class="color-field">
+                        <input type="color" name="color_primary" value="#FF6700">
+                        <label>Primary</label>
+                    </div>
+                    <div class="color-field">
+                        <input type="color" name="color_secondary" value="#1E3A5F">
+                        <label>Secondary</label>
+                    </div>
+                    <div class="color-field">
+                        <input type="color" name="color_accent" value="#10B981">
+                        <label>Accent</label>
+                    </div>
+                </div>
+                <p style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">Not sure about colors? Leave the defaults — we'll choose colors that match your industry and vibe.</p>
+            </div>
+
+            <div class="field-group">
+                <div class="field-label">
+                    Light or Dark Theme?
+                </div>
+                <div class="pill-group" data-name="theme" data-single="true">
+                    <div class="pill selected" data-value="light">☀️ Light (white background)</div>
+                    <div class="pill" data-value="dark">🌙 Dark (dark background)</div>
+                    <div class="pill" data-value="auto">🔄 Let us decide based on industry</div>
+                </div>
+            </div>
+
+            <div class="field-group">
+                <div class="field-label">Anything else about the design?</div>
+                <textarea name="design_notes" placeholder="I like the look of Apple's website but with warmer colors... I want big photos... No stock photos of people shaking hands..."></textarea>
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════ -->
+        <!-- STEP 6: CONTACT & BUSINESS INFO -->
+        <!-- ════════════════════════════════════════ -->
+        <div class="form-step" data-step="6">
+            <div class="step-header">
+                <div class="step-number">Step 6 of 8</div>
+                <h1 class="step-title">Contact & business details</h1>
+                <p class="step-description">This information appears on your website. You can update any of it after the site is built.</p>
+            </div>
+
+            <div class="disclaimer-banner">
+                <i class="fas fa-user-shield"></i>
+                <p><strong>Privacy note:</strong> Your personal information (phone, email, address) is stored securely and separately from the AI build process. During site generation, we use anonymous placeholders like <code style="background:var(--bg-hover);padding:2px 6px;border-radius:4px;">{{phone}}</code> instead of your real info. Real details are injected after the build is complete. Your data never touches AI servers.</p>
+            </div>
+
+            <div class="field-row">
+                <div class="field-group">
+                    <div class="field-label">Business Phone (for the website)</div>
+                    <input type="tel" name="site_phone" placeholder="(612) 555-1234">
+                </div>
+                <div class="field-group">
+                    <div class="field-label">Business Email (for the website)</div>
+                    <input type="email" name="site_email" placeholder="info@yourbusiness.com">
+                </div>
+            </div>
+            <div class="field-group">
+                <div class="field-label">
+                    Business Address
+                    <span class="tooltip-trigger">?
+                        <span class="tooltip-content">This appears in your site's footer and contact page. If you're mobile / service-area only and don't want a physical address shown, just type your service area instead (e.g., "Serving the Minneapolis metro area").</span>
+                    </span>
+                </div>
+                <input type="text" name="site_address" placeholder="123 Main St, Minneapolis, MN 55401 — or — Serving the Twin Cities metro area">
+            </div>
+            <div class="field-row">
+                <div class="field-group">
+                    <div class="field-label">Hours of Operation</div>
+                    <input type="text" name="hours" placeholder="Mon-Fri 8am-5pm, Sat by appointment">
+                </div>
+                <div class="field-group">
+                    <div class="field-label">Service Area (if applicable)</div>
+                    <input type="text" name="service_area" placeholder="Minneapolis, St. Paul, and surrounding suburbs">
+                </div>
+            </div>
+
+            <div class="field-group">
+                <div class="field-label">Social Media Links</div>
+                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 10px;">Leave blank any you don't have. We'll only show icons for the ones you provide.</p>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <input type="url" name="social_facebook" placeholder="Facebook URL">
+                    <input type="url" name="social_instagram" placeholder="Instagram URL">
+                    <input type="url" name="social_linkedin" placeholder="LinkedIn URL">
+                    <input type="url" name="social_youtube" placeholder="YouTube URL">
+                    <input type="url" name="social_tiktok" placeholder="TikTok URL">
+                    <input type="url" name="social_google" placeholder="Google Business Profile URL">
+                </div>
+            </div>
+
+            <div class="field-group">
+                <div class="field-label">
+                    Scheduling / Booking Link
+                    <span class="tooltip-trigger">?
+                        <span class="tooltip-content">If you use Calendly, Acuity, Square Appointments, or similar, paste the link here. We'll embed the booking widget directly on your site so visitors can schedule without leaving the page.</span>
+                    </span>
+                </div>
+                <input type="url" name="booking_link" placeholder="https://calendly.com/yourbusiness">
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════ -->
+        <!-- STEP 7: FEATURES & COMPLIANCE -->
+        <!-- ════════════════════════════════════════ -->
+        <div class="form-step" data-step="7">
+            <div class="step-header">
+                <div class="step-number">Step 7 of 8</div>
+                <h1 class="step-title">Features & compliance</h1>
+                <p class="step-description">Choose the features and protections you want on your site. Everything marked "Included" comes standard at no extra charge.</p>
+            </div>
+
+            <div class="toggle-grid">
+                <div class="toggle-card selected" data-name="features" data-value="seo" onclick="toggleCard(this)">
+                    <div class="toggle-switch"></div>
+                    <div class="toggle-info">
+                        <h4><i class="fas fa-magnifying-glass" style="color:var(--accent);margin-right:6px;"></i> SEO Optimization <span class="toggle-badge badge-included">Included</span></h4>
+                        <p>Search Engine Optimization helps your site appear in Google results. We optimize page titles, meta descriptions, heading structure, image alt text, sitemap, and robots.txt so customers can find you online.</p>
+                    </div>
+                </div>
+                <div class="toggle-card selected" data-name="features" data-value="accessibility" onclick="toggleCard(this)">
+                    <div class="toggle-switch"></div>
+                    <div class="toggle-info">
+                        <h4><i class="fas fa-universal-access" style="color:var(--info);margin-right:6px;"></i> ADA Accessibility <span class="toggle-badge badge-included">Included</span></h4>
+                        <p>Makes your site usable by people with disabilities — screen reader support, keyboard navigation, color contrast, alt text. This is a legal requirement under the Americans with Disabilities Act and protects you from potential lawsuits.</p>
+                    </div>
+                </div>
+                <div class="toggle-card selected" data-name="features" data-value="security" onclick="toggleCard(this)">
+                    <div class="toggle-switch"></div>
+                    <div class="toggle-info">
+                        <h4><i class="fas fa-lock" style="color:var(--success);margin-right:6px;"></i> Security Headers <span class="toggle-badge badge-included">Included</span></h4>
+                        <p>HTTPS, content security policies, and security headers that protect your site and visitors from common web attacks. Standard best practice for any professional website.</p>
+                    </div>
+                </div>
+                <div class="toggle-card" data-name="features" data-value="analytics" onclick="toggleCard(this)">
+                    <div class="toggle-switch"></div>
+                    <div class="toggle-info">
+                        <h4><i class="fas fa-chart-line" style="color:var(--warning);margin-right:6px;"></i> Analytics Dashboard <span class="toggle-badge badge-recommended">Recommended</span></h4>
+                        <p>See how many people visit your site, which pages they view, and where they come from. We use privacy-friendly analytics (no cookie consent banners needed) so your visitors aren't bothered by popups.</p>
+                    </div>
+                </div>
+                <div class="toggle-card" data-name="features" data-value="privacy_policy" onclick="toggleCard(this)">
+                    <div class="toggle-switch"></div>
+                    <div class="toggle-info">
+                        <h4><i class="fas fa-file-shield" style="color:var(--info);margin-right:6px;"></i> Privacy Policy Page <span class="toggle-badge badge-recommended">Recommended</span></h4>
+                        <p>A legally-oriented privacy policy page explaining what data your site collects and how it's used. <strong>Note:</strong> This is a template — we recommend having it reviewed by a legal professional for your specific business.</p>
+                    </div>
+                </div>
+                <div class="toggle-card" data-name="features" data-value="newsletter" onclick="toggleCard(this)">
+                    <div class="toggle-switch"></div>
+                    <div class="toggle-info">
+                        <h4><i class="fas fa-envelope" style="color:var(--accent);margin-right:6px;"></i> Email Signup / Newsletter</h4>
+                        <p>Capture email addresses from visitors who want to stay in touch. Integrates with Mailchimp, ConvertKit, or similar services.</p>
+                    </div>
+                </div>
+                <div class="toggle-card" data-name="features" data-value="chat" onclick="toggleCard(this)">
+                    <div class="toggle-switch"></div>
+                    <div class="toggle-info">
+                        <h4><i class="fas fa-comments" style="color:var(--success);margin-right:6px;"></i> Live Chat Widget <span class="toggle-badge badge-addon">Add-on</span></h4>
+                        <p>Let visitors chat with you in real time. Great for capturing leads who might not fill out a form. Integrates with Tawk.to (free) or other providers.</p>
+                    </div>
+                </div>
+                <div class="toggle-card" data-name="features" data-value="maintenance" onclick="toggleCard(this)">
+                    <div class="toggle-switch"></div>
+                    <div class="toggle-info">
+                        <h4><i class="fas fa-wrench" style="color:var(--text-secondary);margin-right:6px;"></i> Ongoing Maintenance Plan <span class="toggle-badge badge-addon">Add-on</span></h4>
+                        <p>Monthly retainer ($50-150/mo) for weekly backups, uptime monitoring, content updates, and quarterly compliance checks. Peace of mind that your site stays healthy.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════ -->
+        <!-- STEP 8: BUDGET, TIMELINE & REVIEW -->
+        <!-- ════════════════════════════════════════ -->
+        <div class="form-step" data-step="8">
+            <div class="step-header">
+                <div class="step-number">Step 8 of 8</div>
+                <h1 class="step-title">Budget, timeline & review</h1>
+                <p class="step-description">Almost done! Confirm your budget range and timeline, review your answers, and submit.</p>
+            </div>
+
+            <div class="field-row">
+                <div class="field-group">
+                    <div class="field-label">
+                        Budget Range <span class="required">*</span>
+                        <span class="tooltip-trigger">?
+                            <span class="tooltip-content">This helps us scope the right package for you. All prices include design, development, SEO, accessibility, and deployment to a live URL. Hosting is separate ($15-40/month for all your sites on professional infrastructure).</span>
+                        </span>
+                    </div>
+                    <select name="budget" required>
+                        <option value="">Select budget range...</option>
+                        <option value="500-1000">$500 – $1,000 (Essential — 1-3 pages, clean & professional)</option>
+                        <option value="1000-1500">$1,000 – $1,500 (Standard — 3-5 pages, custom design, SEO)</option>
+                        <option value="1500-2500">$1,500 – $2,500 (Premium — 5+ pages, advanced features, priority)</option>
+                        <option value="2500+">$2,500+ (Custom — complex builds, e-commerce, integrations)</option>
+                        <option value="discuss">Not sure — let's discuss</option>
+                    </select>
+                </div>
+                <div class="field-group">
+                    <div class="field-label">
+                        Timeline
+                        <span class="tooltip-trigger">?
+                            <span class="tooltip-content">Most sites are delivered within 3-7 business days after we receive all your content and assets. Rush delivery is available for an additional fee.</span>
+                        </span>
+                    </div>
+                    <select name="timeline">
+                        <option value="flexible">Flexible — whenever it's ready</option>
+                        <option value="1week">Within 1 week</option>
+                        <option value="2weeks">Within 2 weeks</option>
+                        <option value="rush">ASAP / Rush (additional fee may apply)</option>
+                        <option value="specific">I have a specific deadline (describe below)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="field-group">
+                <div class="field-label">Anything else we should know?</div>
+                <textarea name="additional_notes" placeholder="Special launch date, upcoming event, specific deadline, questions, concerns — anything at all."></textarea>
+            </div>
+
+            <div class="field-group">
+                <div class="field-label">How did you hear about us?</div>
+                <select name="referral_source">
+                    <option value="">Select one...</option>
+                    <option value="google">Google Search</option>
+                    <option value="social">Social Media</option>
+                    <option value="referral">Referral / Word of Mouth</option>
+                    <option value="ad">Advertisement</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+
+            <!-- REVIEW SUMMARY -->
+            <div id="reviewSummary" style="margin-top: 32px;">
+                <h3 style="font-family: 'Playfair Display', serif; font-size: 22px; margin-bottom: 16px;">Review Your Submission</h3>
+                <div id="reviewContent">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- LEGAL -->
+            <div class="legal-box" style="margin-top: 24px;">
+                <h4><i class="fas fa-gavel" style="color: var(--accent);"></i> Terms & Agreements</h4>
+                <p>Please review and accept the following before submitting:</p>
+
+                <div class="consent-check">
+                    <input type="checkbox" id="consent_tos" name="consent_tos" required>
+                    <label for="consent_tos">I agree to the <a href="#" target="_blank">Terms of Service</a> and understand that this form describes the initial project scope. Changes beyond the agreed scope may incur additional charges.</label>
+                </div>
+
+                <div class="consent-check">
+                    <input type="checkbox" id="consent_data" name="consent_data" required>
+                    <label for="consent_data">I understand that my information will be stored securely and used solely for building my website. My personal details (phone, email, address) are handled separately from the AI build process using placeholder tokens. <strong>Data is never sold or shared with third parties.</strong></label>
+                </div>
+
+                <div class="consent-check">
+                    <input type="checkbox" id="consent_ai" name="consent_ai" required>
+                    <label for="consent_ai">I acknowledge that this website is built using AI-assisted tools. All output is reviewed, verified against accessibility and performance standards, and tested before delivery. A compliance certificate is provided with every completed project.</label>
+                </div>
+
+                <div class="consent-check">
+                    <input type="checkbox" id="consent_legal" name="consent_legal">
+                    <label for="consent_legal"><em>(Optional)</em> I understand that any Privacy Policy or Terms of Service generated for my site are templates and should be reviewed by a legal professional for my specific business needs.</label>
+                </div>
+
+                <div class="consent-check">
+                    <input type="checkbox" id="consent_payment" name="consent_payment" required>
+                    <label for="consent_payment">I understand the payment terms: 50% deposit due before work begins, remaining 50% due upon delivery and approval. I will receive a preview link for review before final deployment.</label>
+                </div>
+            </div>
+
+            <div class="legal-box">
+                <h4><i class="fas fa-shield-halved" style="color: var(--success);"></i> What Happens Next</h4>
+                <p>After you submit this form:</p>
+                <p style="margin-top: 8px;">
+                    <strong>1.</strong> We review your submission within 24 hours.<br>
+                    <strong>2.</strong> You receive a project proposal with scope, timeline, and exact pricing.<br>
+                    <strong>3.</strong> Upon deposit payment, we begin building your site.<br>
+                    <strong>4.</strong> You receive a private preview link to review the site.<br>
+                    <strong>5.</strong> 2-3 rounds of revisions are included in every package.<br>
+                    <strong>6.</strong> Final site deployed to your live URL, compliance certificate delivered.<br>
+                    <strong>7.</strong> Handover docs provided: URLs, DNS instructions, analytics access, maintenance options.
+                </p>
+            </div>
+        </div>
+
+    </form>
+
+    <!-- NAVIGATION -->
+    <div class="form-nav" id="formNav">
+        <div>
+            <button type="button" class="btn btn-back" id="backBtn" style="display:none;" onclick="navigate(-1)">
+                <i class="fas fa-arrow-left"></i> Back
+            </button>
+        </div>
+        <div style="display: flex; gap: 12px; align-items: center;">
+            <button type="button" class="btn btn-save" onclick="saveProgress()">
+                <i class="fas fa-bookmark"></i> Save Progress
+            </button>
+            <button type="button" class="btn btn-next" id="nextBtn" onclick="navigate(1)">
+                Continue <i class="fas fa-arrow-right"></i>
+            </button>
+            <button type="button" class="btn btn-submit" id="submitBtn" style="display:none;" onclick="submitForm()">
+                <i class="fas fa-paper-plane"></i> Submit Project
+            </button>
+        </div>
+    </div>
+
+    <!-- SUBMITTED STATE -->
+    <div class="submitted-screen" id="submittedScreen">
+        <div class="check-circle">
+            <i class="fas fa-check"></i>
+        </div>
+        <h2>You're all set!</h2>
+        <p>Thank you for submitting your project details. We'll review everything and get back to you within 24 hours with a proposal, timeline, and next steps.</p>
+        <p style="margin-top: 16px;">Check your email at <strong id="confirmEmail"></strong> for a confirmation.</p>
+        <div class="ref-number" id="refNumber">REF-XXXX</div>
+    </div>
+</main>
+
+<!-- SAVE INDICATOR -->
+<div class="save-indicator" id="saveIndicator">
+    <i class="fas fa-check-circle"></i> Progress saved
+</div>
+
+<script>
+    // ── STATE ────────────────────────────────
+    const TOTAL_STEPS = 8;
+    let currentStep = 1;
+    const stepNames = ['About You', 'Vision', 'Content', 'Structure', 'Design', 'Contact', 'Features', 'Review'];
+
+    // ── INIT ─────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+        buildProgressBar();
+        loadSavedData();
+        initPillGroups();
+        updateNav();
+    });
+
+    // ── PROGRESS BAR ─────────────────────────
+    function buildProgressBar() {
+        const container = document.getElementById('progressSteps');
+        container.innerHTML = '';
+        for (let i = 1; i <= TOTAL_STEPS; i++) {
+            const step = document.createElement('div');
+            step.className = 'progress-step';
+            step.innerHTML = `
+                <div class="step-dot ${i === currentStep ? 'active' : ''}" id="dot-${i}">${i}</div>
+                <span class="step-label ${i === currentStep ? 'active' : ''}" id="label-${i}">${stepNames[i-1]}</span>
+            `;
+            step.addEventListener('click', () => {
+                if (i <= getMaxVisitedStep()) goToStep(i);
+            });
+            container.appendChild(step);
+            if (i < TOTAL_STEPS) {
+                const conn = document.createElement('div');
+                conn.className = 'step-connector';
+                conn.id = `conn-${i}`;
+                container.appendChild(conn);
+            }
+        }
+    }
+
+    function updateProgressBar() {
+        for (let i = 1; i <= TOTAL_STEPS; i++) {
+            const dot = document.getElementById(`dot-${i}`);
+            const label = document.getElementById(`label-${i}`);
+            dot.className = 'step-dot';
+            if (label) label.className = 'step-label';
+            if (i < currentStep) {
+                dot.classList.add('completed');
+                dot.innerHTML = '<i class="fas fa-check" style="font-size:12px;"></i>';
+                if (label) label.classList.add('completed');
+            } else if (i === currentStep) {
+                dot.classList.add('active');
+                dot.innerHTML = i;
+                if (label) label.classList.add('active');
+            } else {
+                dot.innerHTML = i;
+            }
+            if (i < TOTAL_STEPS) {
+                const conn = document.getElementById(`conn-${i}`);
+                conn.className = 'step-connector' + (i < currentStep ? ' completed' : '');
+            }
+        }
+    }
+
+    // ── NAVIGATION ───────────────────────────
+    function navigate(direction) {
+        const next = currentStep + direction;
+        if (next < 1 || next > TOTAL_STEPS) return;
+        if (direction > 0 && !validateStep(currentStep)) return;
+        goToStep(next);
+    }
+
+    function goToStep(step) {
+        document.querySelectorAll('.form-step').forEach(s => s.classList.remove('active'));
+        document.querySelector(`[data-step="${step}"]`).classList.add('active');
+        currentStep = step;
+        updateProgressBar();
+        updateNav();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        saveProgress(true);
+        if (step === TOTAL_STEPS) buildReview();
+    }
+
+    function updateNav() {
+        document.getElementById('backBtn').style.display = currentStep === 1 ? 'none' : '';
+        document.getElementById('nextBtn').style.display = currentStep === TOTAL_STEPS ? 'none' : '';
+        document.getElementById('submitBtn').style.display = currentStep === TOTAL_STEPS ? '' : 'none';
+    }
+
+    function getMaxVisitedStep() {
+        const saved = localStorage.getItem('intake_max_step');
+        return Math.max(currentStep, saved ? parseInt(saved) : 1);
+    }
+
+    // ── VALIDATION ───────────────────────────
+    function validateStep(step) {
+        const stepEl = document.querySelector(`[data-step="${step}"]`);
+        const required = stepEl.querySelectorAll('[required]');
+        let valid = true;
+        required.forEach(field => {
+            if (!field.value.trim()) {
+                field.style.borderColor = 'var(--danger)';
+                valid = false;
+                setTimeout(() => { field.style.borderColor = ''; }, 3000);
+            }
+        });
+        if (!valid) {
+            const first = stepEl.querySelector('[required]:invalid, [required][style*="danger"]');
+            if (first) first.focus();
+        }
+        return valid;
+    }
+
+    // ── PILLS & OPTIONS ──────────────────────
+    function initPillGroups() {
+        document.querySelectorAll('.pill-group .pill').forEach(pill => {
+            pill.addEventListener('click', () => {
+                const group = pill.closest('.pill-group');
+                const single = group.dataset.single === 'true';
+                if (single) {
+                    group.querySelectorAll('.pill').forEach(p => p.classList.remove('selected'));
+                }
+                pill.classList.toggle('selected');
+
+                // Show/hide upload zone for image source
+                if (group.dataset.name === 'image_source') {
+                    const val = group.querySelector('.pill.selected')?.dataset.value;
+                    const zone = document.getElementById('imageUploadZone');
+                    zone.style.display = (val === 'upload' || val === 'both') ? 'block' : 'none';
+                }
+            });
+        });
+    }
+
+    function selectOption(card) {
+        const grid = card.closest('.option-grid');
+        const single = grid.dataset.single === 'true';
+        if (single) {
+            grid.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+        }
+        card.classList.toggle('selected');
+    }
+
+    function toggleCard(card) {
+        card.classList.toggle('selected');
+    }
+
+    // ── DYNAMIC LISTS ────────────────────────
+    function addService() {
+        const list = document.getElementById('servicesList');
+        const item = document.createElement('div');
+        item.className = 'dynamic-item';
+        item.innerHTML = `
+            <div class="item-fields">
+                <input type="text" name="service_name[]" placeholder="Service name">
+                <input type="text" name="service_desc[]" placeholder="Brief description">
+            </div>
+            <button type="button" class="remove-btn" onclick="this.closest('.dynamic-item').remove()"><i class="fas fa-times"></i></button>
+        `;
+        list.appendChild(item);
+    }
+
+    function addTeamMember() {
+        const list = document.getElementById('teamList');
+        const item = document.createElement('div');
+        item.className = 'dynamic-item';
+        item.innerHTML = `
+            <div class="item-fields">
+                <div class="field-row">
+                    <input type="text" name="team_name[]" placeholder="Name">
+                    <input type="text" name="team_role[]" placeholder="Role / Title">
+                </div>
+                <input type="text" name="team_bio[]" placeholder="Short bio">
+            </div>
+            <button type="button" class="remove-btn" onclick="this.closest('.dynamic-item').remove()"><i class="fas fa-times"></i></button>
+        `;
+        list.appendChild(item);
+    }
+
+    function addTestimonial() {
+        const list = document.getElementById('testimonialsList');
+        const item = document.createElement('div');
+        item.className = 'dynamic-item';
+        item.innerHTML = `
+            <div class="item-fields">
+                <input type="text" name="testimonial_quote[]" placeholder="&quot;Quote from client...&quot;">
+                <input type="text" name="testimonial_name[]" placeholder="Client name">
+            </div>
+            <button type="button" class="remove-btn" onclick="this.closest('.dynamic-item').remove()"><i class="fas fa-times"></i></button>
+        `;
+        list.appendChild(item);
+    }
+
+    // ── SAVE & LOAD ──────────────────────────
+    function saveProgress(silent = false) {
+        const form = document.getElementById('intakeForm');
+        const data = new FormData(form);
+        const obj = {};
+        for (const [key, val] of data.entries()) {
+            if (obj[key]) {
+                if (!Array.isArray(obj[key])) obj[key] = [obj[key]];
+                obj[key].push(val);
+            } else {
+                obj[key] = val;
+            }
+        }
+
+        // Save pill/option selections
+        obj._pills = {};
+        document.querySelectorAll('.pill-group').forEach(group => {
+            const name = group.dataset.name;
+            const selected = [...group.querySelectorAll('.pill.selected')].map(p => p.dataset.value);
+            obj._pills[name] = selected;
+        });
+        obj._options = {};
+        document.querySelectorAll('.option-grid').forEach(grid => {
+            const name = grid.dataset.name;
+            const selected = [...grid.querySelectorAll('.option-card.selected')].map(c => c.dataset.value);
+            obj._options[name] = selected;
+        });
+        obj._toggles = {};
+        document.querySelectorAll('.toggle-card.selected').forEach(card => {
+            const name = card.dataset.name;
+            const val = card.dataset.value;
+            if (!obj._toggles[name]) obj._toggles[name] = [];
+            obj._toggles[name].push(val);
+        });
+
+        obj._currentStep = currentStep;
+        obj._maxStep = getMaxVisitedStep();
+        localStorage.setItem('intake_form_data', JSON.stringify(obj));
+        localStorage.setItem('intake_max_step', Math.max(currentStep, obj._maxStep));
+
+        if (!silent) {
+            const indicator = document.getElementById('saveIndicator');
+            indicator.classList.add('visible');
+            setTimeout(() => indicator.classList.remove('visible'), 2500);
+        }
+    }
+
+    function loadSavedData() {
+        const saved = localStorage.getItem('intake_form_data');
+        if (!saved) return;
+        try {
+            const obj = JSON.parse(saved);
+            const form = document.getElementById('intakeForm');
+
+            // Restore form fields
+            Object.entries(obj).forEach(([key, val]) => {
+                if (key.startsWith('_')) return;
+                const field = form.querySelector(`[name="${key}"]`);
+                if (field && !Array.isArray(val)) field.value = val;
+            });
+
+            // Restore pills
+            if (obj._pills) {
+                Object.entries(obj._pills).forEach(([name, vals]) => {
+                    const group = document.querySelector(`.pill-group[data-name="${name}"]`);
+                    if (!group) return;
+                    group.querySelectorAll('.pill').forEach(p => {
+                        p.classList.toggle('selected', vals.includes(p.dataset.value));
+                    });
+                });
+            }
+
+            // Restore options
+            if (obj._options) {
+                Object.entries(obj._options).forEach(([name, vals]) => {
+                    const grid = document.querySelector(`.option-grid[data-name="${name}"]`);
+                    if (!grid) return;
+                    grid.querySelectorAll('.option-card').forEach(c => {
+                        c.classList.toggle('selected', vals.includes(c.dataset.value));
+                    });
+                });
+            }
+
+            // Restore toggles
+            if (obj._toggles) {
+                Object.entries(obj._toggles).forEach(([name, vals]) => {
+                    document.querySelectorAll(`.toggle-card[data-name="${name}"]`).forEach(card => {
+                        card.classList.toggle('selected', vals.includes(card.dataset.value));
+                    });
+                });
+            }
+
+            if (obj._currentStep) goToStep(obj._currentStep);
+        } catch (e) {
+            console.warn('Failed to load saved form data', e);
+        }
+    }
+
+    // ── REVIEW SUMMARY ───────────────────────
+    function buildReview() {
+        const form = document.getElementById('intakeForm');
+        const data = new FormData(form);
+        const container = document.getElementById('reviewContent');
+
+        const get = (name) => data.get(name) || '—';
+        const getSelected = (selector) => {
+            return [...document.querySelectorAll(selector)].map(el => el.dataset.value || el.textContent.trim()).join(', ') || '—';
+        };
+
+        container.innerHTML = `
+            <div class="review-section">
+                <h4><i class="fas fa-user"></i> About You</h4>
+                <div class="review-row"><span class="label">Name</span><span class="value">${get('client_name')}</span></div>
+                <div class="review-row"><span class="label">Business</span><span class="value">${get('business_name')}</span></div>
+                <div class="review-row"><span class="label">Email</span><span class="value">${get('email')}</span></div>
+                <div class="review-row"><span class="label">Industry</span><span class="value">${get('industry')}</span></div>
+                <div class="review-row"><span class="label">Location</span><span class="value">${get('location')}</span></div>
+            </div>
+            <div class="review-section">
+                <h4><i class="fas fa-eye"></i> Vision</h4>
+                <div class="review-row"><span class="label">Primary CTA</span><span class="value">${getSelected('.pill-group[data-name="primary_cta"] .pill.selected')}</span></div>
+                <div class="review-row"><span class="label">Existing site</span><span class="value">${get('existing_url')}</span></div>
+                <div class="review-row"><span class="label">USP</span><span class="value">${get('usp')}</span></div>
+            </div>
+            <div class="review-section">
+                <h4><i class="fas fa-palette"></i> Design</h4>
+                <div class="review-row"><span class="label">Style</span><span class="value">${getSelected('.option-grid[data-name="style_vibe"] .option-card.selected')}</span></div>
+                <div class="review-row"><span class="label">Theme</span><span class="value">${getSelected('.pill-group[data-name="theme"] .pill.selected')}</span></div>
+                <div class="review-row"><span class="label">Images</span><span class="value">${getSelected('.pill-group[data-name="image_source"] .pill.selected')}</span></div>
+            </div>
+            <div class="review-section">
+                <h4><i class="fas fa-sitemap"></i> Pages</h4>
+                <div class="review-row"><span class="label">Selected</span><span class="value">${getSelected('.toggle-card.selected[data-name="pages"]')}</span></div>
+            </div>
+            <div class="review-section">
+                <h4><i class="fas fa-cog"></i> Features</h4>
+                <div class="review-row"><span class="label">Enabled</span><span class="value">${getSelected('.toggle-card.selected[data-name="features"]')}</span></div>
+            </div>
+            <div class="review-section">
+                <h4><i class="fas fa-dollar-sign"></i> Budget & Timeline</h4>
+                <div class="review-row"><span class="label">Budget</span><span class="value">${get('budget')}</span></div>
+                <div class="review-row"><span class="label">Timeline</span><span class="value">${get('timeline')}</span></div>
+            </div>
+        `;
+    }
+
+    // ── SUBMIT ────────────────────────────────
+    function submitForm() {
+        // Validate consents
+        const required = ['consent_tos', 'consent_data', 'consent_ai', 'consent_payment'];
+        for (const id of required) {
+            const cb = document.getElementById(id);
+            if (!cb.checked) {
+                cb.closest('.consent-check').style.outline = '2px solid var(--danger)';
+                cb.focus();
+                setTimeout(() => { cb.closest('.consent-check').style.outline = ''; }, 3000);
+                return;
+            }
+        }
+
+        // Collect all data
+        const form = document.getElementById('intakeForm');
+        const data = new FormData(form);
+        const submission = {};
+        for (const [key, val] of data.entries()) {
+            if (submission[key]) {
+                if (!Array.isArray(submission[key])) submission[key] = [submission[key]];
+                submission[key].push(val);
+            } else {
+                submission[key] = val;
+            }
+        }
+
+        // Add selections
+        submission.primary_cta = [...document.querySelectorAll('.pill-group[data-name="primary_cta"] .pill.selected')].map(p => p.dataset.value);
+        submission.style_vibe = [...document.querySelectorAll('.option-grid[data-name="style_vibe"] .option-card.selected')].map(c => c.dataset.value);
+        submission.theme = [...document.querySelectorAll('.pill-group[data-name="theme"] .pill.selected')].map(p => p.dataset.value);
+        submission.image_source = [...document.querySelectorAll('.pill-group[data-name="image_source"] .pill.selected')].map(p => p.dataset.value);
+        submission.pages = [...document.querySelectorAll('.toggle-card.selected[data-name="pages"]')].map(c => c.dataset.value);
+        submission.features = [...document.querySelectorAll('.toggle-card.selected[data-name="features"]')].map(c => c.dataset.value);
+        submission.ref = 'SARGE-' + Date.now().toString(36).toUpperCase();
+        submission.submitted_at = new Date().toISOString();
+
+        console.log('SUBMISSION:', JSON.stringify(submission, null, 2));
+
+        // POST to intake API (Supabase + email notification)
+        fetch('/api/intake/submit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(submission),
+        }).then(res => res.json()).then(data => {
+            if (data.ref_code) submission.ref = data.ref_code;
+            console.log('[Intake] Saved to Supabase, ref:', data.ref_code);
+        }).catch(err => console.warn('[Intake] API submit failed:', err));
+
+        // Show success
+        document.getElementById('intakeForm').style.display = 'none';
+        document.getElementById('formNav').style.display = 'none';
+        document.getElementById('submittedScreen').classList.add('active');
+        document.getElementById('confirmEmail').textContent = submission.email || 'your email';
+        document.getElementById('refNumber').textContent = submission.ref;
+
+        // Clear saved data
+        localStorage.removeItem('intake_form_data');
+        localStorage.removeItem('intake_max_step');
+    }
+</script>
+</body>
+</html>
