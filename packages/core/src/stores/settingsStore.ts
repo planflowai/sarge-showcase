@@ -1,6 +1,7 @@
 "use client";
 
 import { create } from "zustand";
+import { syncUserSettings } from "../lib/supabase/forgeSync";
 
 export interface Settings {
   theme: "light" | "dark";
@@ -60,26 +61,32 @@ export const useSettingsStore = create<SettingsState>((set) => ({
 
   setTheme: (theme) => {
     set({ theme });
+    syncUserSettings({ setting_key: "theme", setting_value: theme }).catch(() => {});
   },
 
   setDefaultProvider: (provider) => {
     set({ defaultProvider: provider });
+    syncUserSettings({ setting_key: "defaultProvider", setting_value: provider }).catch(() => {});
   },
 
   setDefaultModel: (model) => {
     set({ defaultModel: model });
+    syncUserSettings({ setting_key: "defaultModel", setting_value: model }).catch(() => {});
   },
 
   setLocalEndpoint: (endpoint) => {
     set({ localEndpoint: endpoint });
+    syncUserSettings({ setting_key: "localEndpoint", setting_value: endpoint }).catch(() => {});
   },
 
   setBuildDocsAutoInject: (inject) => {
     set({ buildDocsAutoInject: inject });
+    syncUserSettings({ setting_key: "buildDocsAutoInject", setting_value: inject }).catch(() => {});
   },
 
   setAirGapMode: (enabled) => {
     set({ airGapMode: enabled });
+    syncUserSettings({ setting_key: "airGapMode", setting_value: enabled }).catch(() => {});
   },
 
   resetSettings: () => {

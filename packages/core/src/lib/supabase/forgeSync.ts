@@ -334,6 +334,95 @@ export async function syncCertificate(row: CertificateRow): Promise<boolean> {
   }
 }
 
+// ─── Build History Sync ─────────────────────────────────────────
+
+export interface BuildHistoryRow {
+  prompt: string;
+  model: string;
+  provider: string;
+  tokens_in: number;
+  tokens_out: number;
+  cost_usd: number;
+  build_time_ms: number;
+  status: "success" | "error";
+  code_length: number;
+}
+
+/**
+ * Log a completed builder build to Supabase.
+ * Non-blocking — fire and forget.
+ */
+export async function syncBuildHistory(row: BuildHistoryRow): Promise<boolean> {
+  try {
+    const { error } = await supabase.from("forge_build_history").insert(row);
+    if (error) {
+      console.warn("[ForgeSync] Build history write failed:", error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn("[ForgeSync] Build history error:", err);
+    return false;
+  }
+}
+
+// ─── Model Registry Sync ────────────────────────────────────────
+
+export interface ModelRegistryRow {
+  model_id: string;
+  name: string;
+  provider: string;
+  tags: string[];
+  enabled: boolean;
+}
+
+/**
+ * Upsert a model registry entry to Supabase when tags/config change.
+ * Non-blocking — fire and forget.
+ */
+export async function syncModelRegistry(row: ModelRegistryRow): Promise<boolean> {
+  try {
+    const { error } = await supabase.from("forge_model_registry").upsert(row, {
+      onConflict: "model_id",
+    });
+    if (error) {
+      console.warn("[ForgeSync] Model registry write failed:", error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn("[ForgeSync] Model registry error:", err);
+    return false;
+  }
+}
+
+// ─── User Settings Sync ─────────────────────────────────────────
+
+export interface UserSettingsRow {
+  setting_key: string;
+  setting_value: unknown;
+}
+
+/**
+ * Upsert a user setting to Supabase when settings change.
+ * Non-blocking — fire and forget.
+ */
+export async function syncUserSettings(row: UserSettingsRow): Promise<boolean> {
+  try {
+    const { error } = await supabase.from("user_settings").upsert(row, {
+      onConflict: "setting_key",
+    });
+    if (error) {
+      console.warn("[ForgeSync] User settings write failed:", error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn("[ForgeSync] User settings error:", err);
+    return false;
+  }
+}
+
 // ─── Compiler/Compliance Results Sync ───────────────────────────
 
 export interface CompilerResultRow {

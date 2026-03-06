@@ -1,6 +1,7 @@
 "use client";
 
 import { create } from "zustand";
+import { syncModelRegistry } from "../lib/supabase/forgeSync";
 
 export type SargePool = 'd1' | 'd2' | 'd3' | 'judge';
 export type ModelCategory = 'general' | 'vision' | 'code' | 'image_gen' | 'video_gen' | 'audio' | 'embedding' | 'toy' | 'unknown';
@@ -61,11 +62,25 @@ export const useModelRegistryStore = create<ModelRegistryState>((set, get) => ({
   },
 
   updateModel: (id, updates) => {
-    set((state) => ({
-      models: state.models.map((m) =>
+    set((state) => {
+      const updated = state.models.map((m) =>
         m.id === id ? { ...m, ...updates } : m
-      ),
-    }));
+      );
+      // Sync to Supabase when tags change — fire and forget
+      if (updates.tags) {
+        const model = updated.find((m) => m.id === id);
+        if (model) {
+          syncModelRegistry({
+            model_id: model.id,
+            name: model.name,
+            provider: model.provider,
+            tags: model.tags,
+            enabled: model.enabled,
+          }).catch(() => {});
+        }
+      }
+      return { models: updated };
+    });
   },
 
   removeModel: (id) => {

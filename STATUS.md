@@ -4,7 +4,16 @@ Generated: 2026-03-05
 Branch: sargebuild-v1
 Tag: working-2026-03-02-deploy-fix (last tagged)
 
-## Latest Changes (Billing — real token counts, verified rates, live balances)
+## Latest Changes (Supabase dual-write — build history, model registry, settings)
+
+- **forge_build_history**: Wired in `builderChatStore.sendMessage()` — after every successful build, logs prompt (truncated to 500 chars), model, provider, token counts, build time, code length. Fire-and-forget.
+- **forge_model_registry**: Wired in `modelRegistryStore.updateModel()` — when model tags change, upserts model_id, name, provider, tags, enabled to Supabase. Fire-and-forget.
+- **user_settings**: Wired in `settingsStore` setters — theme, defaultProvider, defaultModel, localEndpoint, buildDocsAutoInject, airGapMode each sync their key/value pair on change. Fire-and-forget.
+- **Already wired** (previous commits): `forge_compiler_results` (complianceStore), `forge_certificates` (CompliancePanel).
+- **Pattern**: All use `forgeSync.ts` fire-and-forget pattern — `try { supabase.upsert/insert } catch { console.warn }`. localStorage remains primary. Supabase failure never blocks UI.
+- **Files**: Modified `forgeSync.ts` (+3 sync functions, +3 interfaces), `builderChatStore.ts` (+syncBuildHistory call), `modelRegistryStore.ts` (+syncModelRegistry call), `settingsStore.ts` (+syncUserSettings calls on 6 setters).
+
+## Previous Changes (Billing — real token counts, verified rates, live balances)
 
 - **FIX 1 — Real token counts**: All streaming handlers (Anthropic, OpenAI, Gemini, DeepSeek, xAI, generic OpenAI-compatible) now emit `usage` events with real `input_tokens` and `output_tokens` from provider responses. OpenAI/xAI/DeepSeek/compatible use `stream_options: { include_usage: true }`. Anthropic captures `message_start` + `message_delta` usage. Gemini captures `usageMetadata`. Ollama forwards `eval_count` + `prompt_eval_count`. BuilderChatStore now parses these events instead of chunk-counting. Input tokens tracked (previously always 0).
 - **FIX 2 — Verified rates**: Cross-referenced all pricing against provider pages (Mar 2026). Corrections: Opus 4.6 $5/$25 (was $15/$75), Haiku 4.5 $1/$5 (was $0.80/$4), O3 $2/$8 (was $10/$40), Gemini 2.5 Flash $0.30/$2.50 (was $0.15/$0.60), DeepSeek unified to $0.28/$0.42 (was separate chat/reasoner pricing).

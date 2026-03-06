@@ -5,6 +5,7 @@ import { persist } from "zustand/middleware";
 import { useThreadGuardianStore } from "@sarge/core";
 import { countTokens } from "@sarge/core";
 import { createDebouncedStorage } from "@sarge/core";
+import { syncBuildHistory } from "@sarge/core";
 
 // Fixed conversation ID for builder chat (isolated from main chat)
 const BUILDER_CONVERSATION_ID = 'builder-chat';
@@ -326,6 +327,21 @@ export const useBuilderChatStore = create<BuilderChatState>()(
             tokensOut: tc,
             durationMs: latencyMs,
           }),
+        }).catch(() => {});
+      } catch {}
+
+      // Sync build history to Supabase — fire and forget
+      try {
+        syncBuildHistory({
+          prompt: displayMessage.slice(0, 500),
+          model,
+          provider,
+          tokens_in: inputTokens || 0,
+          tokens_out: tokenCount || countTokens(totalContent),
+          cost_usd: 0, // Calculated server-side by billing
+          build_time_ms: latencyMs,
+          status: "success",
+          code_length: totalContent.length,
         }).catch(() => {});
       } catch {}
 
