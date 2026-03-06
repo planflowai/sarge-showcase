@@ -28,15 +28,25 @@ async function testOllama(model: string): Promise<TestResult> {
   }
 }
 
+// OpenAI reasoning models (o-series) require max_completion_tokens instead of max_tokens
+const REASONING_MODELS = ["o3", "o4-mini", "o3-mini", "o1", "o1-mini", "o1-preview"];
+
+function isReasoningModel(model: string): boolean {
+  return REASONING_MODELS.some(rm => model === rm || model.startsWith(`${rm}-`));
+}
+
 async function testOpenAICompatible(
   model: string, apiKey: string, baseUrl: string
 ): Promise<TestResult> {
   const start = Date.now();
   try {
+    const tokenParam = isReasoningModel(model)
+      ? { max_completion_tokens: 100 }
+      : { max_tokens: 100 };
     const res = await fetch(`${baseUrl}/chat/completions`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({ model, max_tokens: 100, messages: [{ role: "user", content: ROLLCALL_PROMPT }] }),
+      body: JSON.stringify({ model, ...tokenParam, messages: [{ role: "user", content: ROLLCALL_PROMPT }] }),
       signal: AbortSignal.timeout(30000),
     });
     const latencyMs = Date.now() - start;
