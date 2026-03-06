@@ -36,6 +36,13 @@ export async function updateConfig(config: Partial<BillingConfig>): Promise<Bill
   return res.json();
 }
 
+/** Fetch live provider balances (cached 5 min server-side). */
+export async function getBalances(force = false): Promise<{ balances: any[]; cached: boolean }> {
+  const url = force ? "/api/billing/refresh" : "/api/billing/balances";
+  const res = await fetch(url);
+  return res.json();
+}
+
 /** Client-side function to log usage via POST. Fire-and-forget. */
 export async function logUsageClient(params: {
   model: string;

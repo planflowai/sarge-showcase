@@ -210,6 +210,7 @@ export const useBuilderChatStore = create<BuilderChatState>()(
     let totalContent = "";
     let totalThinking = "";
     let tokenCount = 0;
+    let inputTokens = 0;  // Real input tokens from provider usage
 
     try {
       // Determine if local or cloud
@@ -277,12 +278,18 @@ export const useBuilderChatStore = create<BuilderChatState>()(
               }
               if (data.message?.content) {
                 totalContent += data.message.content;
-                tokenCount++;
+                tokenCount++;  // Fallback: chunk counting (overwritten by real usage below)
                 updateStreamingMessage(assistantId, totalContent);
               }
-              // Handle done signal from Ollama
+              // Real usage data from provider (emitted by streaming route)
+              if (data.usage) {
+                if (data.usage.output_tokens) tokenCount = data.usage.output_tokens;
+                if (data.usage.input_tokens) inputTokens = data.usage.input_tokens;
+              }
+              // Handle done signal from Ollama (legacy path)
               if (data.done && data.eval_count) {
                 tokenCount = data.eval_count;
+                if (data.prompt_eval_count) inputTokens = data.prompt_eval_count;
               }
             } catch {
               // Not valid JSON, might be partial
@@ -306,7 +313,8 @@ export const useBuilderChatStore = create<BuilderChatState>()(
       // Log usage to billing — fire and forget, never block chat
       try {
         const tc = tokenCount || countTokens(totalContent);
-        console.log('[Billing] Logging usage:', { model, provider, tokensOut: tc, durationMs: latencyMs });
+        const ti = inputTokens || 0;
+        console.log('[Billing] Logging usage:', { model, provider, tokensIn: ti, tokensOut: tc, durationMs: latencyMs });
         fetch("/api/billing/log", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -314,7 +322,7 @@ export const useBuilderChatStore = create<BuilderChatState>()(
             model,
             provider,
             app: "builder",
-            tokensIn: 0,
+            tokensIn: ti,
             tokensOut: tc,
             durationMs: latencyMs,
           }),

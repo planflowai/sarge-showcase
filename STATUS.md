@@ -4,7 +4,14 @@ Generated: 2026-03-05
 Branch: sargebuild-v1
 Tag: working-2026-03-02-deploy-fix (last tagged)
 
-## Latest Changes (Image pipeline — Pexels + Pixabay auto-search before builds)
+## Latest Changes (Billing — real token counts, verified rates, live balances)
+
+- **FIX 1 — Real token counts**: All streaming handlers (Anthropic, OpenAI, Gemini, DeepSeek, xAI, generic OpenAI-compatible) now emit `usage` events with real `input_tokens` and `output_tokens` from provider responses. OpenAI/xAI/DeepSeek/compatible use `stream_options: { include_usage: true }`. Anthropic captures `message_start` + `message_delta` usage. Gemini captures `usageMetadata`. Ollama forwards `eval_count` + `prompt_eval_count`. BuilderChatStore now parses these events instead of chunk-counting. Input tokens tracked (previously always 0).
+- **FIX 2 — Verified rates**: Cross-referenced all pricing against provider pages (Mar 2026). Corrections: Opus 4.6 $5/$25 (was $15/$75), Haiku 4.5 $1/$5 (was $0.80/$4), O3 $2/$8 (was $10/$40), Gemini 2.5 Flash $0.30/$2.50 (was $0.15/$0.60), DeepSeek unified to $0.28/$0.42 (was separate chat/reasoner pricing).
+- **FIX 3 — Live balances**: Already implemented — `/api/billing/balances` (GET, 5-min cache) queries DeepSeek `/user/balance`, OpenAI credit grants, HuggingFace whoami. Dashboard auto-fetches on mount + manual refresh. Added `getBalances()` export to billing store.
+- **Files**: Modified `app/api/test/stream/route.ts` (all 7 streaming handlers), `builderChatStore.ts` (usage parsing + billing log), `packages/billing/src/rates.ts` (5 rate corrections), `packages/billing/src/store.ts` (getBalances export).
+
+## Previous Changes (Image pipeline — Pexels + Pixabay auto-search before builds)
 
 - **Auto Images toggle**: Violet "Images" button in BuilderModelBar — ON by default. When enabled, searches stock photos before every build and injects URLs into the system prompt.
 - **Image search API**: `POST /api/images/search` — Pexels primary (URL embedding), Pixabay secondary (fallback). Returns up to 8 landscape photos matching the business type from the user's prompt.

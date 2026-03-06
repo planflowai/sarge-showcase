@@ -178,6 +178,12 @@ export async function POST(request: NextRequest) {
                   JSON.stringify({ message: { content } }) + '\n'
                 ));
               }
+              // Ollama sends eval_count + prompt_eval_count in the final done=true message
+              if (data.done && data.eval_count) {
+                controller.enqueue(new TextEncoder().encode(
+                  JSON.stringify({ done: true, eval_count: data.eval_count, prompt_eval_count: data.prompt_eval_count || 0, usage: { input_tokens: data.prompt_eval_count || 0, output_tokens: data.eval_count } }) + '\n'
+                ));
+              }
             } catch {
               // Forward raw line if not valid JSON
               controller.enqueue(new TextEncoder().encode(trimmed + '\n'));
@@ -319,7 +325,7 @@ async function streamOpenAICompatible(
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey}`,
     },
-    body: JSON.stringify({ model, messages, max_tokens: 8192, stream: true }),
+    body: JSON.stringify({ model, messages, max_tokens: 8192, stream: true, stream_options: { include_usage: true } }),
   });
 
   if (!res.ok || !res.body) {
@@ -338,6 +344,11 @@ async function streamOpenAICompatible(
           if (content) {
             controller.enqueue(new TextEncoder().encode(
               JSON.stringify({ message: { content } }) + '\n'
+            ));
+          }
+          if (data.usage) {
+            controller.enqueue(new TextEncoder().encode(
+              JSON.stringify({ usage: { input_tokens: data.usage.prompt_tokens, output_tokens: data.usage.completion_tokens } }) + '\n'
             ));
           }
         } catch {}
@@ -394,7 +405,7 @@ async function streamAnthropic(model: string, prompt: string, systemPrompt?: str
     return NextResponse.json({ error: err }, { status: res.status });
   }
 
-  // Transform Anthropic SSE → simple NDJSON chunks
+  // Transform Anthropic SSE → simple NDJSON chunks + capture usage
   const transform = new TransformStream({
     transform(chunk, controller) {
       const text = new TextDecoder().decode(chunk);
@@ -405,6 +416,18 @@ async function streamAnthropic(model: string, prompt: string, systemPrompt?: str
           if (data.type === 'content_block_delta' && data.delta?.text) {
             controller.enqueue(new TextEncoder().encode(
               JSON.stringify({ message: { content: data.delta.text } }) + '\n'
+            ));
+          }
+          // Anthropic sends usage in message_delta (final event)
+          if (data.type === 'message_delta' && data.usage) {
+            controller.enqueue(new TextEncoder().encode(
+              JSON.stringify({ usage: { input_tokens: data.usage.input_tokens, output_tokens: data.usage.output_tokens } }) + '\n'
+            ));
+          }
+          // Also capture from message_start (has input_tokens)
+          if (data.type === 'message_start' && data.message?.usage) {
+            controller.enqueue(new TextEncoder().encode(
+              JSON.stringify({ usage: { input_tokens: data.message.usage.input_tokens, output_tokens: data.message.usage.output_tokens } }) + '\n'
             ));
           }
         } catch {}
@@ -449,7 +472,7 @@ async function streamOpenAI(model: string, messages: { role: string; content: an
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey}`,
     },
-    body: JSON.stringify({ model, messages, ...tokenParam, stream: true }),
+    body: JSON.stringify({ model, messages, ...tokenParam, stream: true, stream_options: { include_usage: true } }),
   });
 
   if (!res.ok || !res.body) {
@@ -468,6 +491,12 @@ async function streamOpenAI(model: string, messages: { role: string; content: an
           if (content) {
             controller.enqueue(new TextEncoder().encode(
               JSON.stringify({ message: { content } }) + '\n'
+            ));
+          }
+          // OpenAI sends usage in final chunk when stream_options.include_usage=true
+          if (data.usage) {
+            controller.enqueue(new TextEncoder().encode(
+              JSON.stringify({ usage: { input_tokens: data.usage.prompt_tokens, output_tokens: data.usage.completion_tokens } }) + '\n'
             ));
           }
         } catch {}
@@ -489,7 +518,7 @@ async function streamXAI(model: string, messages: { role: string; content: strin
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey}`,
     },
-    body: JSON.stringify({ model, messages, max_tokens: 8192, stream: true }),
+    body: JSON.stringify({ model, messages, max_tokens: 8192, stream: true, stream_options: { include_usage: true } }),
   });
 
   if (!res.ok || !res.body) {
@@ -508,6 +537,11 @@ async function streamXAI(model: string, messages: { role: string; content: strin
           if (content) {
             controller.enqueue(new TextEncoder().encode(
               JSON.stringify({ message: { content } }) + '\n'
+            ));
+          }
+          if (data.usage) {
+            controller.enqueue(new TextEncoder().encode(
+              JSON.stringify({ usage: { input_tokens: data.usage.prompt_tokens, output_tokens: data.usage.completion_tokens } }) + '\n'
             ));
           }
         } catch {}
@@ -574,6 +608,12 @@ async function streamGemini(model: string, prompt: string, systemPrompt?: string
               JSON.stringify({ message: { content } }) + '\n'
             ));
           }
+          // Gemini sends usageMetadata in streaming chunks (typically the last one)
+          if (data.usageMetadata) {
+            controller.enqueue(new TextEncoder().encode(
+              JSON.stringify({ usage: { input_tokens: data.usageMetadata.promptTokenCount, output_tokens: data.usageMetadata.candidatesTokenCount } }) + '\n'
+            ));
+          }
         } catch {}
       }
     }
@@ -593,7 +633,7 @@ async function streamDeepSeek(model: string, messages: { role: string; content: 
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey}`,
     },
-    body: JSON.stringify({ model, messages, max_tokens: 8192, stream: true }),
+    body: JSON.stringify({ model, messages, max_tokens: 8192, stream: true, stream_options: { include_usage: true } }),
   });
 
   if (!res.ok || !res.body) {
@@ -620,6 +660,11 @@ async function streamDeepSeek(model: string, messages: { role: string; content: 
           if (content) {
             controller.enqueue(new TextEncoder().encode(
               JSON.stringify({ message: { content } }) + '\n'
+            ));
+          }
+          if (data.usage) {
+            controller.enqueue(new TextEncoder().encode(
+              JSON.stringify({ usage: { input_tokens: data.usage.prompt_tokens, output_tokens: data.usage.completion_tokens } }) + '\n'
             ));
           }
         } catch {}
