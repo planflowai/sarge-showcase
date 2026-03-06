@@ -103,7 +103,7 @@ export default function RollbackPage() {
         <div style={{ width: "100%", maxWidth: 520, padding: "24px", textAlign: "center" }}>
           {/* Logo */}
           <div style={{ marginBottom: 32 }}>
-            <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, background: "#FF6700", borderRadius: 8, fontWeight: 700, fontSize: 18, color: "#000", marginBottom: 12 }}>P</div>
+            <img src="/assets/logo.png" alt="PlanFlowAI" height={48} style={{ display: "block", margin: "0 auto 12px", borderRadius: 8 }} />
             <div style={{ fontSize: 22, fontWeight: 600 }}>PlanFlow<span style={{ color: "#FF6700" }}>AI</span></div>
             <div style={{ color: "#9BA3AF", fontSize: 14, marginTop: 4 }}>Emergency Rollback</div>
           </div>

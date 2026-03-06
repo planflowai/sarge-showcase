@@ -4,6 +4,36 @@ Generated: 2026-03-06
 Branch: sargebuild-v1
 Tag: working-2026-03-02-deploy-fix (last tagged)
 
+## PlanFlowAI Branding Audit (2026-03-06) — Logo on all client-facing touchpoints
+
+### What Changed
+
+| # | Touchpoint | Before | After |
+|---|-----------|--------|-------|
+| 1 | Email templates (all 6) | Text "PlanFlowAI" header | Base64 logo `<img>` centered, 60px height |
+| 2 | Intake form (intake-form.html) | Already had logo img | **No change needed** — already uses `/logo_png.png` |
+| 3 | Client revision form (both copies) | "SARGE Web Studio" with "S" logo mark | PlanFlowAI logo SVG + rebranded title/placeholder |
+| 4 | Preview page (/preview/[ref]) | Orange "P" box placeholder | Actual logo-sm.png from `/assets/` |
+| 5 | Rollback page (/rollback/[ref]) | Orange "P" box placeholder | Actual logo.png from `/assets/` |
+| 6 | Coming soon template (helloPage.ts) | Rocket emoji 🚀, generic "Built with AI Builder" | Logo.png, "Powered by PlanFlowAI", branded footer |
+| 7 | Certificate PDF | Text-only "PLANFLOWAI" header | Base64 logo image above text header |
+| 8 | 404 page | Did not exist | Created `not-found.tsx` (client + root) with logo, branded styling, link to planflowai.com |
+
+### Files Modified
+- `apps/builder-standalone/app/api/email/send/route.ts` — LOGO_B64 constant + img tag in wrapLayout header
+- `apps/builder-standalone/app/api/certificate/route.ts` — CERT_LOGO_B64 constant + img in header
+- `apps/builder-standalone/app/(client)/preview/[ref]/page.tsx` — logo-sm.png in header
+- `apps/builder-standalone/app/(client)/rollback/[ref]/page.tsx` — logo.png in header
+- `apps/builder-standalone/lib/templates/helloPage.ts` — logo.png + PlanFlowAI branding
+- `app/builder/client-revision-form.html` — SARGE → PlanFlowAI rebrand
+- `client-revision-form.html` — SARGE → PlanFlowAI rebrand (root copy)
+
+### Files Created
+- `apps/builder-standalone/app/(client)/not-found.tsx` — branded 404 for client routes
+- `apps/builder-standalone/app/not-found.tsx` — branded 404 for all other routes
+
+---
+
 ## Settings Cleanup (2026-03-06) — 19 non-functional features hidden
 
 Audited every Settings page feature for actual backend wiring. Hid all features that have UI but no consumer/backend. Code and stores are preserved — only removed from rendered UI.

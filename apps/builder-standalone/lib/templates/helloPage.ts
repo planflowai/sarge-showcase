@@ -88,14 +88,25 @@ export function generateHelloPage(opts: HelloPageOptions): string {
 
     .logo-ring {
       width: 80px; height: 80px;
-      margin: 0 auto 2rem;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #667eea, #764ba2);
+      margin: 0 auto 1rem;
+      border-radius: 16px;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 2rem;
-      box-shadow: 0 0 30px rgba(102, 126, 234, 0.4);
+    }
+    .logo-ring img {
+      width: 80px; height: 80px;
+      border-radius: 16px;
+      object-fit: contain;
+    }
+    .powered-by {
+      font-size: 0.75rem;
+      color: #64748b;
+      margin-bottom: 1.5rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-weight: 600;
     }
 
     h1 {
@@ -173,7 +184,8 @@ export function generateHelloPage(opts: HelloPageOptions): string {
 </head>
 <body>
   <div class="card">
-    <div class="logo-ring">🚀</div>
+    <div class="logo-ring"><img src="/assets/logo.png" alt="PlanFlowAI"></div>
+    <p class="powered-by">Powered by PlanFlowAI</p>
     <h1>${esc(projectName)}</h1>
     <p class="tagline">Something amazing is on the way.</p>
     ${builtFor}
@@ -181,7 +193,7 @@ export function generateHelloPage(opts: HelloPageOptions): string {
     <span class="domain-badge">${esc(displayDomain)}</span>
     ${contactLine}
   </div>
-  <p class="footer">Built with AI Builder</p>
+  <p class="footer">Built with <strong style="color:#FF6700;">PlanFlowAI</strong></p>
 </body>
 </html>`;
 }
