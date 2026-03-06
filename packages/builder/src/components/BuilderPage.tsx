@@ -21,6 +21,7 @@ import { LayoutGrid, X, Plus, Save, Terminal as TerminalIcon, Loader2, FolderOpe
 import { ThreadGuardianIndicator } from "@sarge/chat";
 import { useProjectCommandStore } from "../stores/projectCommandStore";
 import { useAssetLibraryStore } from "../stores/assetLibraryStore";
+import { useComplianceStore, runComplianceCheck } from "../stores/complianceStore";
 
 // Lazy-load overlay modals — only rendered when opened
 const ProjectCommandCenter = lazy(() => import("./ProjectCommandCenter"));
@@ -376,6 +377,30 @@ export default function BuilderPage({ deployContent, billingBar }: { deployConte
     }
   }, [generationStartTime, updateCurrentContent, setStreamingCode, setIsStreaming, setActiveTab, finalizeStreaming]);
 
+  // ─── Compliance auto-check after build completes ────────────────────────────
+  const complianceAutoCheck = useComplianceStore((s) => s.autoCheck);
+  const prevStreamingRef = useRef(false);
+
+  useEffect(() => {
+    // Detect streaming transition: true → false (build just finished)
+    const wasStreaming = prevStreamingRef.current;
+    prevStreamingRef.current = isStreaming;
+
+    if (wasStreaming && !isStreaming && complianceAutoCheck) {
+      const code = useArtifactStore.getState().code;
+      if (code && code.trim().length > 100) {
+        console.log("[BuilderPage] Build complete — triggering compliance check");
+        runComplianceCheck(code, false); // audit-only, no auto-fix
+      }
+    }
+  }, [isStreaming, complianceAutoCheck]);
+
+  // Apply AI-fixed HTML back to artifact
+  const handleApplyComplianceFix = useCallback((fixedHtml: string) => {
+    setArtifactCode(fixedHtml, artifactPath, "Compliance Fix");
+    updateCurrentContent(fixedHtml);
+  }, [setArtifactCode, artifactPath, updateCurrentContent]);
+
   // Toggle terminal
   const handleTerminalToggle = useCallback(() => {
     setTerminalOpen(prev => !prev);
@@ -654,6 +679,7 @@ Please provide the complete modified version of this component. Make only the re
           progressVisible={progress.isVisible}
           streamingContent={latestStreamingContent}
           previewRefreshKey={previewRefreshKey}
+          onApplyComplianceFix={handleApplyComplianceFix}
         />
       </div>
     );
@@ -953,6 +979,7 @@ Please provide the complete modified version of this component. Make only the re
             progressVisible={progress.isVisible}
             streamingContent={latestStreamingContent}
             previewRefreshKey={previewRefreshKey}
+            onApplyComplianceFix={handleApplyComplianceFix}
           />
         </div>
       </div>

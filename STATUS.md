@@ -4,7 +4,16 @@ Generated: 2026-03-05
 Branch: sargebuild-v1
 Tag: working-2026-03-02-deploy-fix (last tagged)
 
-## Latest Changes (Builder UI — hydration fix, toolbar layout, nav colors, responsive default)
+## Latest Changes (Wire compiler loop into Foundry builder — auto-verify after every build)
+
+- **Compliance auto-check**: After every build completes (streaming ends), auto-triggers `POST /api/benchmark/compile` against the generated HTML.
+- **CompliancePanel**: New collapsible panel below preview iframe — 4 score cards (Performance, Accessibility, SEO, Best Practices), PASSED/NEEDS REVIEW badge, collapsible violations list (first 15 with severity badges), AI Fix apply button when fix available.
+- **complianceStore**: Zustand store with `runComplianceCheck(html, autoFix)` — parses audit report, supports optional AI fix pass, auto-expands panel on results.
+- **Supabase logging**: Results logged to `forge_compiler_results` via `syncCompilerResult()` (fire-and-forget).
+- **Score thresholds**: >=90 emerald, >=70 amber, <70 red. Passed = all 4 scores >= 80.
+- **Files**: New `complianceStore.ts`, `CompliancePanel.tsx`. Modified `BuilderPage.tsx` (auto-trigger), `ArtifactPanel.tsx` (panel render), `forgeSync.ts` (Supabase sync).
+
+## Previous Changes (Builder UI — hydration fix, toolbar layout, nav colors, responsive default)
 
 - **FIX 1 — Hydration**: Removed `<button>` nested inside `<Link>` (renders as `<a>`) in Header.tsx and settings/page.tsx. Link now styled directly.
 - **FIX 2 — Bottom toolbar**: Row 2 buttons from h-7 to h-9, Row 3 from h-auto/tiny to h-8. Icons 3.5px, text xs. Proper gap-2 between buttons. Clear left/right grouping.

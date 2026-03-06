@@ -298,3 +298,40 @@ export async function testForgeConnection(): Promise<boolean> {
     return false;
   }
 }
+
+// ─── Compiler/Compliance Results Sync ───────────────────────────
+
+export interface CompilerResultRow {
+  source: "builder" | "hybrid" | "trials";
+  performance: number;
+  accessibility: number;
+  seo: number;
+  best_practices: number;
+  violations_count: number;
+  passed: boolean;
+  ai_fix_applied: boolean;
+  after_performance: number | null;
+  after_accessibility: number | null;
+  after_seo: number | null;
+  after_best_practices: number | null;
+  after_violations_count: number | null;
+  after_passed: boolean | null;
+}
+
+/**
+ * Log a compliance/compiler result to Supabase.
+ * Non-blocking — fire and forget.
+ */
+export async function syncCompilerResult(row: CompilerResultRow): Promise<boolean> {
+  try {
+    const { error } = await supabase.from("forge_compiler_results").insert(row);
+    if (error) {
+      console.warn("[ForgeSync] Compiler result write failed:", error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn("[ForgeSync] Compiler result error:", err);
+    return false;
+  }
+}

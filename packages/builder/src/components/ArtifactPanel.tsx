@@ -15,6 +15,7 @@ import { useAirGapStore } from "@sarge/core";
 const BuilderDiffEditor = lazy(() => import("./BuilderDiffEditor"));
 import SaveToLibraryDialog from "./SaveToLibraryDialog";
 import BuilderStatusStrip from "./BuilderStatusStrip";
+import CompliancePanel from "./CompliancePanel";
 import type { ProgressStep } from "./ProgressCards";
 
 export interface DiffViewState {
@@ -43,6 +44,7 @@ interface ArtifactPanelProps {
   progressVisible?: boolean;
   streamingContent?: string;
   previewRefreshKey?: number; // Increment to force preview rebuild (e.g., after CSS/JS file writes)
+  onApplyComplianceFix?: (fixedHtml: string) => void; // Apply AI-fixed HTML from compliance check
 }
 
 // Check if HTML code is complete (has closing </html> tag)
@@ -67,6 +69,7 @@ function ArtifactPanelInner({
   progressVisible = false,
   streamingContent,
   previewRefreshKey = 0,
+  onApplyComplianceFix,
 }: ArtifactPanelProps) {
   const [previewContent, setPreviewContent] = useState<string>("");
   const [previewError, setPreviewError] = useState<string | null>(null);
@@ -815,106 +818,105 @@ function ArtifactPanelInner({
         )}
 
         {activeTab === "preview" && (
-          <div className="h-full w-full bg-white dark:bg-zinc-900">
-            {/* Dev server mode — point iframe directly at localhost */}
-            {devPreviewMode === 'localhost' && devServerRunning && !isStreaming ? (
-              <iframe
-                key="localhost-preview"
-                src="http://localhost:3000"
-                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-                className="w-full h-full border-0"
-                title="Dev Server Preview (localhost:3000)"
-                style={{ display: 'block', minHeight: '100%' }}
-              />
-            ) : previewError ? (
-              <div className="flex items-center gap-2 p-4 text-red-500">
-                <AlertTriangle className="h-5 w-5" />
-                <span className="text-sm">{previewError}</span>
-              </div>
-            ) : previewUrl ? (
-              // API-based preview for multi-file projects (inlines CSS/JS)
-              // Use key for API preview since URL changes require reload
-              <iframe
-                key={previewUrl}
-                ref={iframeRef}
-                src={previewUrl}
-                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-                className="w-full h-full border-0"
-                title="Preview"
-                style={{
-                  display: 'block',
-                  minHeight: '100%',
-                  opacity: isFading ? 0.3 : 1,
-                  transition: 'opacity 0.15s ease-in-out',
-                }}
-              />
-            ) : previewContent && code && code.trim().length > 0 ? (
-              // srcdoc-based preview for streaming/no project
-              // CRITICAL: No key prop - prevents iframe remount which causes white flash
-              // sandbox: no allow-same-origin (prevents iframe from sharing parent state/navigation)
-              //          no allow-popups (prevents opening new windows from preview links)
-              <iframe
-                ref={iframeRef}
-                srcDoc={previewContent}
-                sandbox="allow-scripts allow-forms allow-popups"
-                className="w-full h-full border-0"
-                title="Preview"
-                style={{
-                  display: 'block',
-                  minHeight: '100%',
-                  // Smooth opacity for non-streaming updates only
-                  opacity: isFading ? 0.3 : 1,
-                  transition: 'opacity 0.1s ease-in-out',
-                }}
-              />
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full bg-zinc-950/20">
-                {isStreaming ? (
-                  /* P8: Foundry build animation while waiting for first content */
-                  <div className="flex flex-col items-center gap-6">
-                    <div className="relative">
-                      <div className="absolute inset-0 bg-[#FF6700]/15 blur-3xl rounded-full scale-[3] animate-pulse" />
-                      <Hammer className="relative h-16 w-16 text-[#FF6700] animate-bounce" style={{ animationDuration: '1.5s' }} />
-                    </div>
-                    <div className="text-center space-y-3">
-                      <p className="text-lg font-bold text-white tracking-wide">
-                        The Foundry is building your site...
-                      </p>
-                      {/* Animated progress bar */}
-                      <div className="w-64 h-2 bg-zinc-800 rounded-full overflow-hidden mx-auto">
-                        <div
-                          className="h-full bg-gradient-to-r from-[#FF6700] to-[#FFD700] rounded-full"
-                          style={{
-                            animation: 'foundryProgress 3s ease-in-out infinite',
-                            width: '70%',
-                          }}
-                        />
+          <div className="h-full w-full flex flex-col bg-white dark:bg-zinc-900">
+            {/* Preview iframe — takes available space */}
+            <div className="flex-1 min-h-0">
+              {/* Dev server mode — point iframe directly at localhost */}
+              {devPreviewMode === 'localhost' && devServerRunning && !isStreaming ? (
+                <iframe
+                  key="localhost-preview"
+                  src="http://localhost:3000"
+                  sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+                  className="w-full h-full border-0"
+                  title="Dev Server Preview (localhost:3000)"
+                  style={{ display: 'block', minHeight: '100%' }}
+                />
+              ) : previewError ? (
+                <div className="flex items-center gap-2 p-4 text-red-500">
+                  <AlertTriangle className="h-5 w-5" />
+                  <span className="text-sm">{previewError}</span>
+                </div>
+              ) : previewUrl ? (
+                // API-based preview for multi-file projects (inlines CSS/JS)
+                <iframe
+                  key={previewUrl}
+                  ref={iframeRef}
+                  src={previewUrl}
+                  sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+                  className="w-full h-full border-0"
+                  title="Preview"
+                  style={{
+                    display: 'block',
+                    minHeight: '100%',
+                    opacity: isFading ? 0.3 : 1,
+                    transition: 'opacity 0.15s ease-in-out',
+                  }}
+                />
+              ) : previewContent && code && code.trim().length > 0 ? (
+                // srcdoc-based preview for streaming/no project
+                <iframe
+                  ref={iframeRef}
+                  srcDoc={previewContent}
+                  sandbox="allow-scripts allow-forms allow-popups"
+                  className="w-full h-full border-0"
+                  title="Preview"
+                  style={{
+                    display: 'block',
+                    minHeight: '100%',
+                    opacity: isFading ? 0.3 : 1,
+                    transition: 'opacity 0.1s ease-in-out',
+                  }}
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full bg-zinc-950/20">
+                  {isStreaming ? (
+                    <div className="flex flex-col items-center gap-6">
+                      <div className="relative">
+                        <div className="absolute inset-0 bg-[#FF6700]/15 blur-3xl rounded-full scale-[3] animate-pulse" />
+                        <Hammer className="relative h-16 w-16 text-[#FF6700] animate-bounce" style={{ animationDuration: '1.5s' }} />
                       </div>
-                      <p className="text-sm text-zinc-400 animate-pulse">
-                        First content arriving soon...
+                      <div className="text-center space-y-3">
+                        <p className="text-lg font-bold text-white tracking-wide">
+                          The Foundry is building your site...
+                        </p>
+                        <div className="w-64 h-2 bg-zinc-800 rounded-full overflow-hidden mx-auto">
+                          <div
+                            className="h-full bg-gradient-to-r from-[#FF6700] to-[#FFD700] rounded-full"
+                            style={{
+                              animation: 'foundryProgress 3s ease-in-out infinite',
+                              width: '70%',
+                            }}
+                          />
+                        </div>
+                        <p className="text-sm text-zinc-400 animate-pulse">
+                          First content arriving soon...
+                        </p>
+                      </div>
+                      <style>{`
+                        @keyframes foundryProgress {
+                          0% { width: 10%; opacity: 0.6; }
+                          50% { width: 80%; opacity: 1; }
+                          100% { width: 10%; opacity: 0.6; }
+                        }
+                      `}</style>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="relative mb-5">
+                        <div className="absolute inset-0 bg-[#FF6700]/10 blur-2xl rounded-full scale-[2]" />
+                        <Hammer className="relative h-11 w-11 text-[#FF6700]/40" />
+                      </div>
+                      <p className="text-sm font-bold text-zinc-500 tracking-widest uppercase">
+                        Ready to forge
                       </p>
-                    </div>
-                    <style>{`
-                      @keyframes foundryProgress {
-                        0% { width: 10%; opacity: 0.6; }
-                        50% { width: 80%; opacity: 1; }
-                        100% { width: 10%; opacity: 0.6; }
-                      }
-                    `}</style>
-                  </div>
-                ) : (
-                  <>
-                    <div className="relative mb-5">
-                      <div className="absolute inset-0 bg-[#FF6700]/10 blur-2xl rounded-full scale-[2]" />
-                      <Hammer className="relative h-11 w-11 text-[#FF6700]/40" />
-                    </div>
-                    <p className="text-sm font-bold text-zinc-500 tracking-widest uppercase">
-                      Ready to forge
-                    </p>
-                  </>
-                )}
-              </div>
-            )}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Compliance panel — collapsible, below preview */}
+            <CompliancePanel onApplyFix={onApplyComplianceFix} />
           </div>
         )}
 
@@ -1158,7 +1160,8 @@ const ArtifactPanel = memo(ArtifactPanelInner, (prevProps, nextProps) => {
     prevProps.progressSteps === nextProps.progressSteps &&
     prevProps.progressVisible === nextProps.progressVisible &&
     prevProps.streamingContent === nextProps.streamingContent &&
-    prevProps.previewRefreshKey === nextProps.previewRefreshKey
+    prevProps.previewRefreshKey === nextProps.previewRefreshKey &&
+    prevProps.onApplyComplianceFix === nextProps.onApplyComplianceFix
   );
 });
 

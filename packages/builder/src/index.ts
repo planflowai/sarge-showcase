@@ -12,6 +12,7 @@ export * from './stores/changesStore';
 export * from './stores/workspaceStore';
 export * from './stores/previewStore';
 export * from './stores/componentLibraryStore';
+export * from './stores/complianceStore';
 
 // ─── Components ──────────────────────────────────────────
 export { default as AddHelperModal } from './components/AddHelperModal';
@@ -48,6 +49,7 @@ export { default as SessionActivity } from './components/SessionActivity';
 export { default as StreamingMessageRenderer } from './components/StreamingMessageRenderer';
 export { default as TemplateCard } from './components/TemplateCard';
 export { default as TemplatePickerPanel } from './components/TemplatePickerPanel';
+export { default as CompliancePanel } from './components/CompliancePanel';
 
 // ─── Hooks ───────────────────────────────────────────────
 export * from './hooks/useStreamingUpdates';
