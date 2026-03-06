@@ -4,7 +4,18 @@ Generated: 2026-03-05
 Branch: sargebuild-v1
 Tag: working-2026-03-02-deploy-fix (last tagged)
 
-## Latest Changes (Phase B — email system, 6 templates, welcome + intake wired)
+## Latest Changes (Phase C — preview/approval page, revision enhancements, rollback page, intake hosting)
+
+- **Client route group**: New `(client)` route group in builder-standalone with bare layout (no Header/Foundry UI). All 4 client-facing pages use dark branded theme (#0B0E11 bg, #FF6700 accent, DM Sans font), fully mobile responsive.
+- **Intake hosting**: `/intake/[ref]` — serves intake form HTML via iframe with ref code pre-filled and locked. Intake form copied to `public/intake-form.html` for static serving.
+- **Preview/approval page**: `/preview/[ref]` — full-width iframe preview, site info bar (project name, client, ref), APPROVE (green) and REQUEST CHANGES (amber) buttons, revision counter, auto-approval countdown from `preview_sent_at` (14 days). Reads from Supabase via `GET /api/intake/status`. APPROVE calls `POST /api/intake/approve`.
+- **Rollback page**: `/rollback/[ref]` — live countdown timer (updates every second), big red "Take My Site Offline" button, progress bar showing time remaining. After 60 min: button disappears, shows expired state with link to revision form. Rollback calls `POST /api/intake/rollback` which sends `rollback_alert` email to NOTIFICATION_EMAIL.
+- **Enhanced revision form**: `/revisions/[ref]` — React page with revision counter ("This is revision N of M"), $75 additional charge notice when over limit, image upload with thumbnail preview, structured change request form. Reads revision count from Supabase via `/api/intake/status`.
+- **New API routes**: `GET /api/intake/status` (project data by ref code), `POST /api/intake/approve` (marks approved, updates Supabase), `POST /api/intake/rollback` (validates 60-min window, updates status, sends rollback email).
+- **New files**: `app/(client)/layout.tsx`, `app/(client)/intake/[ref]/page.tsx`, `app/(client)/preview/[ref]/page.tsx`, `app/(client)/revisions/[ref]/page.tsx`, `app/(client)/rollback/[ref]/page.tsx`, `app/api/intake/status/route.ts`, `app/api/intake/approve/route.ts`, `app/api/intake/rollback/route.ts`, `public/intake-form.html`.
+- **NOT modified**: email system, intake form HTML, revision form HTML, builder pipeline, Supabase schema.
+
+## Previous Changes (Phase B — email system, 6 templates, welcome + intake wired)
 
 - **Email send route**: New `POST /api/email/send` — accepts `to`, `subject`, `template`, `data`. Uses Resend API. Falls back to console logging if `RESEND_API_KEY` not set — never blocks pipeline.
 - **6 branded templates**: `welcome`, `intake_received`, `preview_ready`, `site_live`, `revision_received`, `rollback_alert`. All share dark branded layout (#0B0E11 bg, #FF6700 accent, DM Sans font). Mobile responsive (600px max, table-based). Each uses `{{variable}}` replacement from data object. Legal safeguards embedded (7/14 day deadlines, scope lock, revision limits, auto-approval, rollback window).
