@@ -624,10 +624,11 @@ export default function SettingsPage() {
       {/* Left nav */}
       <nav className="w-64 flex-shrink-0 px-6 py-6 border-r border-zinc-200 dark:border-zinc-800 overflow-y-auto">
         <div className="mb-6 flex items-center gap-3">
-          <Link href="/">
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
+          <Link
+            href="/"
+            className="inline-flex items-center justify-center h-8 w-8 rounded-md text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
           </Link>
           <h1 className="text-xl font-bold text-zinc-900 dark:text-white">Settings</h1>
         </div>

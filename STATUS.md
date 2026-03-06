@@ -1,9 +1,15 @@
 # S.A.R.G.E. — System Status Report
 
 Generated: 2026-03-05
-Commit: 640c699
 Branch: sargebuild-v1
 Tag: working-2026-03-02-deploy-fix (last tagged)
+
+## Latest Changes (Builder UI — hydration fix, toolbar layout, nav colors, responsive default)
+
+- **FIX 1 — Hydration**: Removed `<button>` nested inside `<Link>` (renders as `<a>`) in Header.tsx and settings/page.tsx. Link now styled directly.
+- **FIX 2 — Bottom toolbar**: Row 2 buttons from h-7 to h-9, Row 3 from h-auto/tiny to h-8. Icons 3.5px, text xs. Proper gap-2 between buttons. Clear left/right grouping.
+- **FIX 3 — Brand colors**: Provider tabs now use per-provider brand colors (Anthropic=amber, OpenAI=emerald, Google=blue, xAI=violet, DeepSeek=cyan, Mistral=orange, Groq=red, HuggingFace=gold). Sidebar toolbar items differentiated (amber/emerald/blue/purple/cyan/rose).
+- **FIX 4 — Responsive default**: Added "Build fully responsive, full-width layouts. Never constrain page to narrow container. Use 100vw. Ensure mobile responsiveness with proper breakpoints." to both BUILDER_SYSTEM_PROMPT and BUILDER_SYSTEM_PROMPTS.build.
 
 ---
 

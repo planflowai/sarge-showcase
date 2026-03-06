@@ -68,7 +68,8 @@ ADDITIONAL RULES:
 - HTML must be self-contained: inline CSS in <style>, inline JS in <script>
 - NEVER reference external files like ./main.js or ./style.css
 - When modifying code: change ONLY what was asked, preserve everything else
-- Do NOT dump extra commentary after the code block`;
+- Do NOT dump extra commentary after the code block
+- Build fully responsive, full-width layouts. Never constrain the page to a narrow container. Use 100vw or full viewport width. Ensure mobile responsiveness with proper breakpoints.`;
 
 export interface BuilderMessage {
   id: string;

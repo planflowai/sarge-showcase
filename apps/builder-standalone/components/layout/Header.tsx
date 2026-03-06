@@ -297,10 +297,12 @@ export function Header() {
             </button>
 
             {/* P6: Settings — bold icon + tooltip */}
-            <Link href="/settings" title="Settings">
-              <button className="flex items-center justify-center h-9 w-9 rounded-md transition-all duration-200 bg-zinc-800/60 border border-zinc-600/50 text-zinc-300 hover:bg-zinc-700/70 hover:text-white">
-                <Settings className="h-5 w-5 transition-transform hover:rotate-90 duration-300" />
-              </button>
+            <Link
+              href="/settings"
+              title="Settings"
+              className="flex items-center justify-center h-9 w-9 rounded-md transition-all duration-200 bg-zinc-800/60 border border-zinc-600/50 text-zinc-300 hover:bg-zinc-700/70 hover:text-white"
+            >
+              <Settings className="h-5 w-5 transition-transform hover:rotate-90 duration-300" />
             </Link>
           </div>
         </div>

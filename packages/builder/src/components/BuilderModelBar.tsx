@@ -6,6 +6,22 @@ import { useModelStore, useAIModeStore, useCustomProviderStore, fetchOllamaModel
 import type { LocalModel } from "@sarge/core";
 import Link from "next/link";
 
+// Brand colors per provider
+const PROVIDER_BRAND_COLORS: Record<string, string> = {
+  anthropic: "#D97706",
+  openai: "#10B981",
+  google: "#3B82F6",
+  xai: "#8B5CF6",
+  deepseek: "#06B6D4",
+  mistral: "#F97316",
+  groq: "#EF4444",
+  together: "#EC4899",
+  perplexity: "#6366F1",
+  huggingface: "#FF9D00",
+  ollama: "#6B7280",
+  lmstudio: "#6B7280",
+};
+
 interface BuilderModelBarProps {
   selectedModel: string | null;
   selectedProvider: string;
@@ -167,7 +183,7 @@ export default function BuilderModelBar({
         {/* Cloud providers */}
         {cloudProviders.map((p, index) => {
           const isActive = selectedProvider === p.id;
-          const pColor = p.color || "#8b5cf6";
+          const brandColor = PROVIDER_BRAND_COLORS[p.id] || p.color || "#8b5cf6";
           return (
             <button
               key={p.id + '-' + index}
@@ -175,10 +191,15 @@ export default function BuilderModelBar({
               className={cn(
                 "px-3 py-2 rounded-md text-[13px] font-bold transition-all whitespace-nowrap border",
                 isActive
-                  ? "border-[#FF6700] text-[#FF6700] bg-[#FF6700]/10"
-                  : "border-zinc-700 bg-zinc-800 text-white hover:text-[#FF6700] hover:border-[#FF6700]/40"
+                  ? "border-current"
+                  : "border-zinc-700 bg-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-500"
               )}
-              style={{ minHeight: '36px' }}
+              style={isActive ? {
+                minHeight: '36px',
+                color: brandColor,
+                backgroundColor: `${brandColor}15`,
+                borderColor: brandColor,
+              } : { minHeight: '36px' }}
               title={p.name}
             >
               {p.name}
@@ -192,6 +213,7 @@ export default function BuilderModelBar({
         {/* Local providers */}
         {localProviders.map((p) => {
           const isActive = selectedProvider === p.id;
+          const brandColor = PROVIDER_BRAND_COLORS[p.id] || "#6B7280";
           return (
             <button
               key={p.id}
@@ -199,10 +221,15 @@ export default function BuilderModelBar({
               className={cn(
                 "px-3 py-2 rounded-md text-[13px] font-bold transition-all whitespace-nowrap border",
                 isActive
-                  ? "border-[#FF6700] text-[#FF6700] bg-[#FF6700]/10"
-                  : "border-zinc-700 bg-zinc-800 text-white hover:text-[#FF6700] hover:border-[#FF6700]/40"
+                  ? "border-current"
+                  : "border-zinc-700 bg-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-500"
               )}
-              style={{ minHeight: '36px' }}
+              style={isActive ? {
+                minHeight: '36px',
+                color: brandColor,
+                backgroundColor: `${brandColor}15`,
+                borderColor: brandColor,
+              } : { minHeight: '36px' }}
               title={p.name}
             >
               {p.name}
