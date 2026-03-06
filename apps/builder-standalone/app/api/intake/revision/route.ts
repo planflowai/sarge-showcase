@@ -115,6 +115,7 @@ async function sendRevisionEmails(
             timeline: "2-3",
           },
         }),
+        signal: AbortSignal.timeout(5000),
       })
         .then((r) => { if (!r.ok) console.warn("[intake/revision] Client email failed:", r.status); })
         .catch((err) => console.warn("[intake/revision] Client email error:", err)),
@@ -142,6 +143,7 @@ async function sendRevisionEmails(
             timeline: "2-3",
           },
         }),
+        signal: AbortSignal.timeout(5000),
       })
         .then((r) => { if (!r.ok) console.warn("[intake/revision] Notification failed:", r.status); })
         .catch((err) => console.warn("[intake/revision] Notification error:", err)),

@@ -640,16 +640,18 @@ replacement code
   // ── Step 11: Revision Form ──────────────────────────────────────────
   steps.push(
     await runStep(11, "Revision Submission", async () => {
+      const revisionPayload = { ...DUMMY_REVISION, ref_code: refCode };
       const res = await fetch(`${baseUrl}/api/intake/revision`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(DUMMY_REVISION),
+        body: JSON.stringify(revisionPayload),
+        signal: AbortSignal.timeout(15000),
       });
       const data = await res.json();
       if (!res.ok)
         throw new Error(`HTTP ${res.status}: ${data.error}`);
       if (!data.success) throw new Error("success=false");
-      return `Revision created for ref ${DUMMY_REVISION.ref_code}, page: ${DUMMY_REVISION.page}`;
+      return `Revision created for ref ${refCode}, page: ${revisionPayload.page}`;
     })
   );
 

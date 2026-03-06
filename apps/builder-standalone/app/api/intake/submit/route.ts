@@ -87,6 +87,7 @@ async function sendIntakeEmails(
             ref_code: refCode,
           },
         }),
+        signal: AbortSignal.timeout(5000),
       })
         .then((r) => {
           if (!r.ok) console.warn("[intake/submit] Client confirmation email failed:", r.status);
@@ -115,6 +116,7 @@ async function sendIntakeEmails(
             ref_code: refCode,
           },
         }),
+        signal: AbortSignal.timeout(5000),
       })
         .then((r) => {
           if (!r.ok) console.warn("[intake/submit] Notification email failed:", r.status);

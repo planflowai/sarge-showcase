@@ -301,6 +301,7 @@ export async function POST(req: NextRequest) {
         subject,
         html,
       }),
+      signal: AbortSignal.timeout(10000),
     });
 
     if (!res.ok) {
