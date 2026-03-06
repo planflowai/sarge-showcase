@@ -4,7 +4,16 @@ Generated: 2026-03-05
 Branch: sargebuild-v1
 Tag: working-2026-03-02-deploy-fix (last tagged)
 
-## Latest Changes (Pipeline test — expanded to 16 steps, full A-Z coverage)
+## Latest Changes (ENV manager — sync keys to all standalone apps, not just root)
+
+- **Root cause**: ENV manager save/add/delete routes only wrote to root `.env.local`. Standalone apps (builder, debate, guardian, etc.) load env vars at startup via `dotenv.config()` in `next.config.ts` pointing to root. But env changes after startup were invisible until manual "Push to Apps" + PM2 restart.
+- **Fix**: Added `syncToApps()` function to `helpers.ts`. After every save, add, or delete operation, the master `.env.local` is automatically copied to all `apps/*-standalone/.env.local` files. Writing to each app's `.env.local` triggers Next.js dev-mode file watcher restart, making new keys visible without manual intervention.
+- **Architecture**: Root `.env.local` remains single source of truth. All 10 app directories (`apps/*/`) receive a copy on every mutation. The manual "Push to Apps" button still works for explicit sync.
+- **Verified**: RESEND_API_KEY now readable from builder-standalone — email route makes live Resend API call (403 domain validation = key is being read, vs previous "no API key" fallback).
+- **Modified**: `env-manager-standalone/app/api/env/helpers.ts` (added `syncToApps()`, fixed `readdirSync` import), `save/route.ts`, `add/route.ts`, `delete/route.ts` (all call `syncToApps()` after mutation).
+- **Not modified**: push/route.ts (still works independently), restart/route.ts, env-manager UI.
+
+## Previous Changes (Pipeline test — expanded to 16 steps, full A-Z coverage)
 
 - **5 new pipeline steps** (12-16) added to `/api/pipeline-test/route.ts`. Original 11 steps untouched.
 - **Step 12 — Email Send**: POST `/api/email/send` with `welcome` template. PASS if route responds 200. If no `RESEND_API_KEY`, passes with "skipped live send" note.

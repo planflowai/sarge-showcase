@@ -3,6 +3,7 @@ import {
   MASTER_ENV_PATH,
   updateEnvKey,
   updateRotationLog,
+  syncToApps,
 } from "../helpers";
 
 export async function POST(req: Request) {
@@ -26,7 +27,10 @@ export async function POST(req: Request) {
     // Update rotation log
     updateRotationLog(key);
 
-    return NextResponse.json({ success: true, key });
+    // Sync to all standalone apps
+    const { synced } = syncToApps();
+
+    return NextResponse.json({ success: true, key, synced: synced.length });
   } catch (err: any) {
     return NextResponse.json(
       { error: err.message || "Failed to save key" },

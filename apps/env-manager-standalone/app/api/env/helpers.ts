@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, existsSync, statSync } from "fs";
+import { readFileSync, writeFileSync, existsSync, statSync, readdirSync } from "fs";
 import { join } from "path";
 
 // Master .env.local is at the monorepo root
@@ -259,7 +259,6 @@ export function findAppEnvPaths(): string[] {
   const appsDir = join(ROOT, "apps");
   const paths: string[] = [];
   try {
-    const { readdirSync } = require("fs");
     const dirs = readdirSync(appsDir, { withFileTypes: true });
     for (const d of dirs) {
       if (!d.isDirectory()) continue;
@@ -269,4 +268,29 @@ export function findAppEnvPaths(): string[] {
     }
   } catch {}
   return paths;
+}
+
+/* ── Sync master .env.local to all standalone apps ── */
+// Called after every save/add/delete so all apps see changes immediately.
+// Writing to each app's .env.local triggers Next.js dev-mode hot-restart.
+
+export function syncToApps(): { synced: string[]; failed: string[] } {
+  const synced: string[] = [];
+  const failed: string[] = [];
+
+  if (!existsSync(MASTER_ENV_PATH)) return { synced, failed };
+
+  const masterContent = readFileSync(MASTER_ENV_PATH, "utf-8");
+  const appPaths = findAppEnvPaths();
+
+  for (const appEnvPath of appPaths) {
+    try {
+      writeFileSync(appEnvPath, masterContent, "utf-8");
+      synced.push(appEnvPath);
+    } catch {
+      failed.push(appEnvPath);
+    }
+  }
+
+  return { synced, failed };
 }

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { MASTER_ENV_PATH, parseEnvFile, appendEnvKey } from "../helpers";
+import { MASTER_ENV_PATH, parseEnvFile, appendEnvKey, syncToApps } from "../helpers";
 
 export async function POST(req: Request) {
   try {
@@ -27,7 +27,10 @@ export async function POST(req: Request) {
 
     appendEnvKey(MASTER_ENV_PATH, key, value || "");
 
-    return NextResponse.json({ success: true, key });
+    // Sync to all standalone apps
+    const { synced } = syncToApps();
+
+    return NextResponse.json({ success: true, key, synced: synced.length });
   } catch (err: any) {
     return NextResponse.json(
       { error: err.message || "Failed to add key" },
