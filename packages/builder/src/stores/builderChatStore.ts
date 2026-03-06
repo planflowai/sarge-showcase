@@ -233,6 +233,13 @@ export const useBuilderChatStore = create<BuilderChatState>()(
           : m.content,
       }));
 
+      // Read max output tokens from localStorage (set in Settings)
+      let maxOutputTokens = 8192;
+      try {
+        const stored = typeof window !== 'undefined' ? localStorage.getItem('builder-max-output-tokens') : null;
+        if (stored) maxOutputTokens = parseInt(stored, 10) || 8192;
+      } catch {}
+
       // Call the streaming API - use apiPrompt which includes context injection
       const response = await fetch("/api/test/stream", {
         method: "POST",
@@ -244,6 +251,7 @@ export const useBuilderChatStore = create<BuilderChatState>()(
           systemPrompt: effectiveSystemPrompt,
           source,
           webSearch,
+          maxOutputTokens,
           images: images && images.length > 0 ? images : undefined,
           conversationHistory: conversationHistory.length > 0 ? conversationHistory : undefined,
         }),

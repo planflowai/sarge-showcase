@@ -4,6 +4,37 @@ Generated: 2026-03-05
 Branch: sargebuild-v1
 Tag: working-2026-03-02-deploy-fix (last tagged)
 
+## Builder Readiness Audit (2026-03-06, re-run after fixes)
+
+10 verification tests — ALL PASS after 7 targeted fixes.
+
+### Results Summary
+
+| # | Test | Result | Evidence |
+|---|------|--------|----------|
+| 1 | Multi-file preview | **PASS** | ArtifactPanel.tsx has multi-file content detection + preview rendering. Asset proxy serves CSS/JS/images. |
+| 2 | Streaming preview | **PASS** | `useStreamingUpdates` fires `onStreamingUpdate()` on every chunk. ArtifactPanel debounces at 80ms/30 chars. |
+| 3 | Per-model context windows | **PASS** | `BuilderChat.tsx` has `CLOUD_CONTEXT_WINDOWS` lookup with 16 per-model entries (Anthropic 200K, GPT-4.1 1M, Gemini 1M, etc.) + provider defaults fallback. |
+| 4 | Token limit config UI | **PASS** | Settings has "Builder Output Tokens" dropdown (4096/8192/16384/32768). `builderChatStore` reads from localStorage. All 6+ streaming functions accept `tokenLimit` param. |
+| 5 | File rename | **PASS** | `BuilderFileTree.tsx` has RenameDialog component. Right-click → Rename → dialog → calls store `renameFile()`. |
+| 6 | Compiler fix loop | **PASS** | `BASELINE_FIX_CHECKLIST` includes all 19+ items: skip nav, prefers-reduced-motion, srcset+sizes, font-display:swap on @import, preconnect for gstatic.com, favicon. |
+| 7 | sitemap.xml + robots.txt | **PASS** | `optimizer.ts` generates both. Sitemap includes index + common pages. Robots.txt includes sitemap reference. |
+| 8 | Favicon generation | **PASS** | Compiler checklist has FAVICON section with inline SVG data URI. Build prompt has favicon instruction. |
+| 9 | Build prompt web standards | **PASS** | `BUILDER_SYSTEM_PROMPTS.build` has WEB STANDARDS section with all 9 items: srcset, font-display, preconnect, JSON-LD, OG tags, prefers-reduced-motion, skip nav, ARIA labels, loading=lazy. |
+| 10 | Multi-file certificate | **PASS** | Certificate route accepts `pages[]` array. Computes average scores. Tier by weakest-link min score. Per-page table in PDF. |
+
+### Fixes Applied (2026-03-06)
+
+| Fix | Test | What Changed |
+|-----|------|-------------|
+| FIX 1 | TEST 3 | Added `CLOUD_CONTEXT_WINDOWS` lookup table + `getModelContextWindow()` to `BuilderChat.tsx` |
+| FIX 2 | TEST 4 | Added `maxOutputTokens` to request body in `builderChatStore.ts`, threaded through all 6+ streaming functions in `stream/route.ts`, added Settings UI dropdown |
+| FIX 3 | TEST 5 | Added `RenameDialog` component + wired `handleRename()` to store `renameFile()` in `BuilderFileTree.tsx` |
+| FIX 4 | TEST 6 | Added 5 missing items to `BASELINE_FIX_CHECKLIST`: skip nav, prefers-reduced-motion, srcset+sizes, font-display on @import, preconnect gstatic.com |
+| FIX 5 | TEST 8 | Added FAVICON section to compiler checklist + build prompt with inline SVG data URI |
+| FIX 6 | TEST 9 | Added WEB STANDARDS section (11 items) to `BUILDER_SYSTEM_PROMPTS.build` |
+| FIX 7 | TEST 10 | Added `pages[]` support, `computeAverageScores()`, `getMinScore()`, per-page table to certificate route |
+
 ## Latest Changes (Compiler — enhanced fix loop targeting 95+ on all Lighthouse audits)
 
 - **Problem**: Compiler AI fix loop was single-pass, skipped Lighthouse during fix, and used a minimal prompt that didn't target specific Lighthouse audit items. Result: SEO stuck at 90, Best Practices at 82, Accessibility variable.

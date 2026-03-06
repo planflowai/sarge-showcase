@@ -25,6 +25,41 @@ import HelperBubble from "./HelperBubble";
 import { useStreamingUpdates } from "../hooks/useStreamingUpdates";
 import { useAIHelpers } from "../hooks/useAIHelpers";
 
+// ── Per-model context window lookup ──────────────────────────────────────────
+const CLOUD_CONTEXT_WINDOWS: Record<string, number> = {
+  // Anthropic
+  "claude-opus-4-20250514": 200000, "claude-sonnet-4-20250514": 200000,
+  "claude-3-7-sonnet-20250219": 200000, "claude-3-5-sonnet-20241022": 200000,
+  "claude-3-5-haiku-20241022": 200000, "claude-3-opus-20240229": 200000,
+  // OpenAI
+  "gpt-4.1": 1047576, "gpt-4.1-mini": 1047576, "gpt-4.1-nano": 1047576,
+  "gpt-4o": 128000, "gpt-4o-mini": 128000, "o3": 200000, "o4-mini": 200000,
+  // Google
+  "gemini-2.5-flash": 1048576, "gemini-2.5-pro": 1048576,
+  "gemini-2.0-flash": 1048576, "gemini-1.5-pro": 1048576,
+  // DeepSeek
+  "deepseek-chat": 131072, "deepseek-reasoner": 131072,
+  // xAI
+  "grok-3": 131072, "grok-3-mini": 131072, "grok-2": 131072,
+};
+
+function getModelContextWindow(model: string, provider: string): number {
+  // Exact match first
+  if (CLOUD_CONTEXT_WINDOWS[model]) return CLOUD_CONTEXT_WINDOWS[model];
+  // Prefix match (e.g. "claude-sonnet-4" matches "claude-sonnet-4-20250514")
+  for (const [key, val] of Object.entries(CLOUD_CONTEXT_WINDOWS)) {
+    if (model.startsWith(key) || key.startsWith(model)) return val;
+  }
+  // Provider defaults
+  const providerDefaults: Record<string, number> = {
+    anthropic: 200000, openai: 128000, google: 1048576,
+    deepseek: 131072, xai: 131072, mistral: 128000,
+    groq: 128000, together: 32768, perplexity: 128000,
+    ollama: 8192, lmstudio: 8192,
+  };
+  return providerDefaults[provider] || 128000;
+}
+
 interface BuilderChatProps {
   selectedModel: string | null;
   selectedProvider: string;
@@ -479,10 +514,9 @@ export default function BuilderChat({
       console.log('[BuilderChat] Using Generate Mode - full file generation', { isProjectMode });
     }
 
-    // FIX 4: Strip guardian if total input would exceed 80% of model context window
+    // Strip guardian if total input would exceed 80% of model context window
     if (guardianContext) {
-      const isLocal = selectedProvider === 'ollama' || selectedProvider === 'lmstudio';
-      const contextWindow = isLocal ? 8192 : 128000;
+      const contextWindow = getModelContextWindow(selectedModel, selectedProvider);
       const totalEstimate = Math.ceil(
         (systemPrompt.length + finalPrompt.length + guardianContext.length + vaultContext.length) / 4
       );

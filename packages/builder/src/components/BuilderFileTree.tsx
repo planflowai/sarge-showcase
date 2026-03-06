@@ -331,6 +331,64 @@ function DeleteDialog({ path, isDirectory, onConfirm, onCancel }: DeleteDialogPr
   );
 }
 
+// ─── Rename Dialog ──────────────────────────────────────────────────────
+
+interface RenameDialogProps {
+  currentName: string;
+  onSubmit: (newName: string) => void;
+  onCancel: () => void;
+}
+
+function RenameDialog({ currentName, onSubmit, onCancel }: RenameDialogProps) {
+  const [name, setName] = useState(currentName);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (name.trim() && name.trim() !== currentName) {
+      onSubmit(name.trim());
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-zinc-800 rounded-lg p-4 w-80">
+        <h3 className="font-medium mb-3 flex items-center gap-2 text-sm">
+          <Edit2 className="w-4 h-4" /> Rename
+        </h3>
+        <form onSubmit={handleSubmit}>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full bg-zinc-700 border border-zinc-600 rounded px-3 py-2 text-sm mb-3 focus:outline-none focus:border-emerald-500"
+            autoFocus
+            onFocus={(e) => {
+              const dotIndex = name.lastIndexOf(".");
+              if (dotIndex > 0) e.target.setSelectionRange(0, dotIndex);
+            }}
+          />
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="flex-1 px-3 py-1.5 text-sm bg-zinc-700 hover:bg-zinc-600 rounded"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={!name.trim() || name.trim() === currentName}
+              className="flex-1 px-3 py-1.5 text-sm bg-emerald-600 hover:bg-emerald-700 rounded disabled:opacity-50"
+            >
+              Rename
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 interface BuilderFileTreeProps {
@@ -378,6 +436,10 @@ export function BuilderFileTree({ onFileSelect, className }: BuilderFileTreeProp
   const [deleteDialog, setDeleteDialog] = useState<{
     path: string;
     isDirectory: boolean;
+  } | null>(null);
+  const [renameDialog, setRenameDialog] = useState<{
+    oldPath: string;
+    currentName: string;
   } | null>(null);
   const [showNewProject, setShowNewProject] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
@@ -435,8 +497,21 @@ export function BuilderFileTree({ onFileSelect, className }: BuilderFileTreeProp
   };
 
   const handleRename = () => {
-    // TODO: Implement rename dialog
+    if (!contextMenu) return;
+    const entry = contextMenu.entry;
+    setRenameDialog({ oldPath: entry.path, currentName: entry.name });
     setContextMenu(null);
+  };
+
+  const handleConfirmRename = async (newName: string) => {
+    if (!renameDialog || !currentProject) return;
+    const oldRelative = renameDialog.oldPath.replace(currentProject.path + "/", "");
+    const parentDir = oldRelative.includes("/")
+      ? oldRelative.split("/").slice(0, -1).join("/") + "/"
+      : "";
+    const newRelative = parentDir + newName;
+    await renameFile(oldRelative, newRelative);
+    setRenameDialog(null);
   };
 
   const handleDelete = () => {
@@ -659,6 +734,15 @@ export function BuilderFileTree({ onFileSelect, className }: BuilderFileTreeProp
           isDirectory={deleteDialog.isDirectory}
           onConfirm={handleConfirmDelete}
           onCancel={() => setDeleteDialog(null)}
+        />
+      )}
+
+      {/* Rename Dialog */}
+      {renameDialog && (
+        <RenameDialog
+          currentName={renameDialog.currentName}
+          onSubmit={handleConfirmRename}
+          onCancel={() => setRenameDialog(null)}
         />
       )}
 

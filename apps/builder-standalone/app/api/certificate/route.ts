@@ -3,23 +3,85 @@ import puppeteer from "puppeteer";
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
+interface PageScores {
+  performance: number;
+  accessibility: number;
+  seo: number;
+  bestPractices: number;
+}
+
+interface PageEntry {
+  name: string;
+  url?: string;
+  scores: PageScores;
+}
+
 interface CertificateRequest {
   tier: "platinum" | "gold" | "silver";
   clientName: string;
   siteUrl: string;
-  scores: {
-    performance: number;
-    accessibility: number;
-    seo: number;
-    bestPractices: number;
-  };
+  scores: PageScores;
+  /** Multi-page: array of per-page scores. If provided, scores field is ignored and averages are computed. */
+  pages?: PageEntry[];
   model: string;
   provider: string;
   buildTimeMs: number;
   cost: number;
 }
 
+function computeAverageScores(pages: PageEntry[]): PageScores {
+  const n = pages.length;
+  return {
+    performance: Math.round(pages.reduce((s, p) => s + p.scores.performance, 0) / n),
+    accessibility: Math.round(pages.reduce((s, p) => s + p.scores.accessibility, 0) / n),
+    seo: Math.round(pages.reduce((s, p) => s + p.scores.seo, 0) / n),
+    bestPractices: Math.round(pages.reduce((s, p) => s + p.scores.bestPractices, 0) / n),
+  };
+}
+
+function getMinScore(pages: PageEntry[]): number {
+  let min = 100;
+  for (const p of pages) {
+    min = Math.min(min, p.scores.performance, p.scores.accessibility, p.scores.seo, p.scores.bestPractices);
+  }
+  return min;
+}
+
 // ─── Certificate HTML Template ──────────────────────────────────────────────────
+
+function buildPerPageSection(pages: PageEntry[], accentColor: string): string {
+  if (!pages || pages.length <= 1) return "";
+
+  const rows = pages.map(p => `
+    <tr>
+      <td style="padding:6px 12px;font-size:12px;color:#CBD5E1;font-weight:500;border-bottom:1px solid #1E293B;">${escapeHtml(p.name)}</td>
+      <td style="padding:6px 8px;font-size:12px;color:${p.scores.performance >= 90 ? '#10B981' : p.scores.performance >= 70 ? '#F59E0B' : '#EF4444'};font-weight:700;text-align:center;border-bottom:1px solid #1E293B;">${p.scores.performance}</td>
+      <td style="padding:6px 8px;font-size:12px;color:${p.scores.accessibility >= 90 ? '#10B981' : p.scores.accessibility >= 70 ? '#F59E0B' : '#EF4444'};font-weight:700;text-align:center;border-bottom:1px solid #1E293B;">${p.scores.accessibility}</td>
+      <td style="padding:6px 8px;font-size:12px;color:${p.scores.seo >= 90 ? '#10B981' : p.scores.seo >= 70 ? '#F59E0B' : '#EF4444'};font-weight:700;text-align:center;border-bottom:1px solid #1E293B;">${p.scores.seo}</td>
+      <td style="padding:6px 8px;font-size:12px;color:${p.scores.bestPractices >= 90 ? '#10B981' : p.scores.bestPractices >= 70 ? '#F59E0B' : '#EF4444'};font-weight:700;text-align:center;border-bottom:1px solid #1E293B;">${p.scores.bestPractices}</td>
+    </tr>`).join("");
+
+  return `
+  <div style="background:#0F172A;border:1px solid #334155;border-radius:12px;padding:20px 24px;margin-bottom:16px;">
+    <div style="font-size:11px;color:#64748B;text-transform:uppercase;letter-spacing:3px;margin-bottom:12px;font-weight:600;">
+      Per-Page Scores (${pages.length} pages)
+    </div>
+    <table style="width:100%;border-collapse:collapse;">
+      <thead>
+        <tr>
+          <th style="padding:6px 12px;font-size:10px;color:#64748B;text-transform:uppercase;letter-spacing:1px;text-align:left;border-bottom:1px solid #334155;">Page</th>
+          <th style="padding:6px 8px;font-size:10px;color:#64748B;text-transform:uppercase;letter-spacing:1px;text-align:center;border-bottom:1px solid #334155;">Perf</th>
+          <th style="padding:6px 8px;font-size:10px;color:#64748B;text-transform:uppercase;letter-spacing:1px;text-align:center;border-bottom:1px solid #334155;">A11y</th>
+          <th style="padding:6px 8px;font-size:10px;color:#64748B;text-transform:uppercase;letter-spacing:1px;text-align:center;border-bottom:1px solid #334155;">SEO</th>
+          <th style="padding:6px 8px;font-size:10px;color:#64748B;text-transform:uppercase;letter-spacing:1px;text-align:center;border-bottom:1px solid #334155;">BP</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows}
+      </tbody>
+    </table>
+  </div>`;
+}
 
 function buildCertificateHtml(data: CertificateRequest): string {
   const isPlatinum = data.tier === "platinum";
@@ -136,6 +198,8 @@ function buildCertificateHtml(data: CertificateRequest): string {
     ${scoreBar("Best Practices", data.scores.bestPractices)}
   </div>
 
+  ${data.pages && data.pages.length > 1 ? buildPerPageSection(data.pages, accentColor) : ""}
+
   ${wcagNote}
 
   <!-- Build Details -->
@@ -188,6 +252,16 @@ function escapeHtml(str: string): string {
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as CertificateRequest;
+
+    // If multi-page, compute averaged scores and use weakest-link tier
+    if (body.pages && body.pages.length > 0) {
+      body.scores = computeAverageScores(body.pages);
+      // Tier by weakest individual score across all pages
+      const minScore = getMinScore(body.pages);
+      if (minScore >= 95) body.tier = "platinum";
+      else if (minScore >= 90) body.tier = "gold";
+      else if (minScore >= 80) body.tier = "silver";
+    }
 
     // Validate tier matches scores
     const { performance, accessibility, seo, bestPractices } = body.scores;

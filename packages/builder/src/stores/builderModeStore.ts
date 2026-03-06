@@ -145,6 +145,19 @@ STYLE DEFAULTS (unless user specifies otherwise):
 - Shadows: shadow-lg with colored glow on hover
 - Fonts: system-ui stack, proper weights (400/500/600/700)
 
+WEB STANDARDS (always include):
+- Add <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,..."> with a relevant emoji favicon
+- Add srcset and sizes attributes on hero/banner images for responsive loading
+- Add font-display: swap to @font-face rules; append &display=swap to Google Fonts URLs
+- Add <link rel="preconnect" href="https://fonts.googleapis.com"> and <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin> when using Google Fonts
+- Add JSON-LD structured data (<script type="application/ld+json">) matching the business type
+- Add Open Graph meta tags: og:title, og:description, og:image, og:url, og:type
+- Add @media (prefers-reduced-motion: reduce) to disable animations for accessibility
+- Add a skip navigation link as first element in <body>: <a href="#main-content" class="skip-link">Skip to main content</a>
+- Add ARIA labels on all interactive elements (buttons, links, form controls)
+- Add loading="lazy" to all images except the first visible one (above the fold)
+- Add rel="noopener noreferrer" to all external links (href starting with http)
+
 NAVIGATION & LINKS:
 - IMPORTANT: All navigation links must use JavaScript onclick handlers, NOT href attributes
 - Do NOT use <a href="..."> for page navigation

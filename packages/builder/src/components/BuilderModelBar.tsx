@@ -311,11 +311,11 @@ export default function BuilderModelBar({
       {showModelPanel && (
         <div
           ref={panelRef}
-          className="absolute left-0 right-0 top-full z-50 bg-zinc-900 border border-zinc-700 rounded-b-lg shadow-2xl max-h-[300px] overflow-y-auto"
+          className="absolute left-0 right-0 top-full z-50 bg-zinc-900 border border-zinc-700 rounded-b-lg shadow-2xl max-h-[400px] overflow-y-auto"
         >
           {/* Header with verify + close */}
           <div className="flex items-center justify-between px-3 py-1.5 border-b border-zinc-800">
-            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+            <span className="text-xs font-bold text-zinc-300 uppercase tracking-wider">
               {currentProviderConfig?.name} Models
             </span>
             <div className="flex items-center gap-1.5">
@@ -324,14 +324,14 @@ export default function BuilderModelBar({
                   onClick={handleVerifyAll}
                   disabled={verifying}
                   title={verifying ? "Verifying all..." : "Verify all cloud models"}
-                  className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium text-zinc-500 hover:text-emerald-400 hover:bg-zinc-800 disabled:opacity-50 transition-colors"
+                  className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-zinc-400 hover:text-emerald-400 hover:bg-zinc-800 disabled:opacity-50 transition-colors"
                 >
-                  <RefreshCw className={cn("h-2.5 w-2.5", verifying && "animate-spin")} />
+                  <RefreshCw className={cn("h-3.5 w-3.5", verifying && "animate-spin")} />
                   {verifying ? "Checking..." : "Verify All"}
                 </button>
               )}
-              <button onClick={() => setShowModelPanel(false)} className="text-zinc-500 hover:text-zinc-300">
-                <X className="h-3 w-3" />
+              <button onClick={() => setShowModelPanel(false)} className="text-zinc-400 hover:text-zinc-200">
+                <X className="h-3.5 w-3.5" />
               </button>
             </div>
           </div>
@@ -340,9 +340,9 @@ export default function BuilderModelBar({
           <div className="p-2 grid grid-cols-2 gap-1.5">
             {isLocalProvider ? (
               ollamaLoading ? (
-                <span className="col-span-2 text-center text-[10px] text-zinc-500 py-4">Loading models...</span>
+                <span className="col-span-2 text-center text-sm text-zinc-400 py-4">Loading models...</span>
               ) : currentProviderModels.length === 0 ? (
-                <span className="col-span-2 text-center text-[10px] text-zinc-500 py-4">
+                <span className="col-span-2 text-center text-sm text-zinc-400 py-4">
                   No models available — <Link href="/settings" className="text-indigo-400 hover:underline">Settings</Link>
                 </span>
               ) : (
@@ -354,21 +354,21 @@ export default function BuilderModelBar({
                         key={model.id}
                         onClick={() => { onModelSelect(model.id, selectedProvider); setShowModelPanel(false); }}
                         className={cn(
-                          "text-left px-2.5 py-2 rounded-lg border transition-all text-[11px]",
+                          "text-left px-3 py-2.5 rounded-lg border transition-all text-sm",
                           isSelected
                             ? "border-indigo-500/50 bg-indigo-500/10 text-indigo-300"
-                            : "border-zinc-800 bg-zinc-800/50 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200"
+                            : "border-zinc-800 bg-zinc-800/50 text-zinc-300 hover:border-zinc-600 hover:text-zinc-100"
                         )}
                       >
                         <div className="font-medium truncate">{getDisplayName(model.id, model.name)}</div>
-                        {model.hint && <div className="text-[9px] text-zinc-500 truncate mt-0.5">{model.hint}</div>}
+                        {model.hint && <div className="text-xs text-zinc-400 truncate mt-0.5">{model.hint}</div>}
                       </button>
                     );
                   })
                 )
               )
             ) : currentProviderModels.length === 0 ? (
-              <span className="col-span-2 text-center text-[10px] text-zinc-500 py-4">
+              <span className="col-span-2 text-center text-sm text-zinc-400 py-4">
                 No builder models — <Link href="/settings" className="text-indigo-400 hover:underline">Tag in Settings</Link>
               </span>
             ) : (
@@ -381,10 +381,10 @@ export default function BuilderModelBar({
                     key={model.id}
                     onClick={() => { onModelSelect(model.id, selectedProvider); setShowModelPanel(false); }}
                     className={cn(
-                      "text-left px-2.5 py-2 rounded-lg border transition-all text-[11px]",
+                      "text-left px-3 py-2.5 rounded-lg border transition-all text-sm",
                       isSelected
                         ? "border-current bg-opacity-10"
-                        : "border-zinc-800 bg-zinc-800/50 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200"
+                        : "border-zinc-800 bg-zinc-800/50 text-zinc-300 hover:border-zinc-600 hover:text-zinc-100"
                     )}
                     style={isSelected ? {
                       borderColor: `${providerColor}60`,
@@ -392,9 +392,9 @@ export default function BuilderModelBar({
                       backgroundColor: `${providerColor}15`,
                     } : undefined}
                   >
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-2">
                       <span
-                        className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                        className="w-2 h-2 rounded-full flex-shrink-0"
                         style={{ backgroundColor: dotColor }}
                         title={mStatus === "active" ? "Online" : mStatus === "error" ? "Failed" : mStatus === "unchecked" ? "Checking..." : "Not verified"}
                       />

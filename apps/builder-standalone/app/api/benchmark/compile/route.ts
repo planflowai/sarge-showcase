@@ -32,6 +32,11 @@ SEO:
 - <html lang="en"> attribute on the html tag
 - <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+FAVICON:
+- Add a favicon using an inline SVG data URI: <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌐</text></svg>">
+- Add <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌐</text></svg>">
+- Choose an emoji that matches the page content (🏠 for real estate, 🍕 for restaurant, 💼 for business, etc.)
+
 BEST PRACTICES:
 - All external links (<a> with href starting with http) get rel="noopener noreferrer"
 - NEVER use document.write()
@@ -51,12 +56,15 @@ ACCESSIBILITY:
 - All form inputs must have associated labels
 - All images must have alt text
 - ARIA attributes must be valid
+- Add a skip navigation link as the FIRST element in <body>: <a href="#main-content" class="skip-link">Skip to main content</a> with CSS to show only on focus
+- Add @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
 
 PERFORMANCE:
 - Add loading="lazy" to all <img> tags EXCEPT the first visible one (above the fold)
-- Add font-display: swap to all @font-face rules and Google Font <link> tags
-- Add <link rel="preconnect" href="https://fonts.googleapis.com"> if using Google Fonts
+- Add font-display: swap to all @font-face rules AND Google Font @import URLs (append &display=swap to Google Fonts import URLs)
+- Add <link rel="preconnect" href="https://fonts.googleapis.com"> AND <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin> if using Google Fonts
 - No render-blocking external resources
+- Use srcset and sizes attributes on hero/banner <img> tags for responsive images (e.g., srcset="img-320.jpg 320w, img-640.jpg 640w, img-1280.jpg 1280w" sizes="(max-width: 640px) 100vw, 50vw")
 `.trim();
 
 // ── Helpers ──────────────────────────────────────────────────────────────────

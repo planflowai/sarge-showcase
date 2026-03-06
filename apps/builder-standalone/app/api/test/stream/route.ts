@@ -42,6 +42,7 @@ async function tavilySearch(query: string): Promise<string> {
 export async function POST(request: NextRequest) {
   const body = await request.json();
   const { model, prompt, systemPrompt, source, provider, images, webSearch } = body;
+  const maxOutputTokens: number = body.maxOutputTokens || 8192;
   const conversationHistory: { role: string; content: string }[] = body.conversationHistory || [];
 
   const hasImages = Array.isArray(images) && images.length > 0;
@@ -97,7 +98,7 @@ export async function POST(request: NextRequest) {
       const res = await fetch(`${lmstudioUrl}/chat/completions`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ model, messages: hasImages ? messagesWithNote : messages, max_tokens: 8192, stream: true }),
+        body: JSON.stringify({ model, messages: hasImages ? messagesWithNote : messages, max_tokens: maxOutputTokens, stream: true }),
       });
 
       if (!res.ok) {
@@ -165,7 +166,7 @@ export async function POST(request: NextRequest) {
       const res = await fetch(`${ollamaUrl}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model, messages: ollamaMessages, stream: true, options: { num_predict: 8192 } }),
+        body: JSON.stringify({ model, messages: ollamaMessages, stream: true, options: { num_predict: maxOutputTokens } }),
       });
 
       if (!res.ok || !res.body) {
@@ -228,62 +229,62 @@ export async function POST(request: NextRequest) {
       if (!process.env.ANTHROPIC_API_KEY && !process.env.CLAUDE_API_KEY) {
         return NextResponse.json({ error: 'Anthropic API key not configured. Please add ANTHROPIC_API_KEY to your .env file.' }, { status: 500 });
       }
-      return await streamAnthropic(model, prompt, enrichedSystemPrompt, hasImages ? images : undefined, conversationHistory);
+      return await streamAnthropic(model, prompt, enrichedSystemPrompt, hasImages ? images : undefined, conversationHistory, maxOutputTokens);
     }
     if (model.includes('gpt') || model.startsWith('o3') || model.startsWith('o4')) {
       if (!process.env.OPENAI_API_KEY) {
         return NextResponse.json({ error: 'OpenAI API key not configured. Please add OPENAI_API_KEY to your .env file.' }, { status: 500 });
       }
-      return await streamOpenAI(model, messages, hasImages ? images : undefined);
+      return await streamOpenAI(model, messages, hasImages ? images : undefined, maxOutputTokens);
     }
     if (model.includes('gemini')) {
       if (!process.env.GOOGLE_API_KEY) {
         return NextResponse.json({ error: 'Google API key not configured. Please add GOOGLE_API_KEY to your .env file.' }, { status: 500 });
       }
-      return await streamGemini(model, prompt, enrichedSystemPrompt, hasImages ? images : undefined, conversationHistory);
+      return await streamGemini(model, prompt, enrichedSystemPrompt, hasImages ? images : undefined, conversationHistory, maxOutputTokens);
     }
     if (model.includes('grok')) {
       if (!process.env.XAI_API_KEY) {
         return NextResponse.json({ error: 'xAI API key not configured. Please add XAI_API_KEY to your .env file.' }, { status: 500 });
       }
-      return await streamXAI(model, hasImages ? messagesWithNote : messages);
+      return await streamXAI(model, hasImages ? messagesWithNote : messages, maxOutputTokens);
     }
     if (model.includes('deepseek')) {
       if (!process.env.DEEPSEEK_API_KEY) {
         return NextResponse.json({ error: 'DeepSeek API key not configured. Please add DEEPSEEK_API_KEY to your .env file.' }, { status: 500 });
       }
-      return await streamDeepSeek(model, hasImages ? messagesWithNote : messages);
+      return await streamDeepSeek(model, hasImages ? messagesWithNote : messages, maxOutputTokens);
     }
     // Fallback: use the `provider` field if model name pattern didn't match
     if (provider === 'anthropic') {
       if (!process.env.ANTHROPIC_API_KEY && !process.env.CLAUDE_API_KEY) {
         return NextResponse.json({ error: 'Anthropic API key not configured.' }, { status: 500 });
       }
-      return await streamAnthropic(model, prompt, enrichedSystemPrompt, hasImages ? images : undefined, conversationHistory);
+      return await streamAnthropic(model, prompt, enrichedSystemPrompt, hasImages ? images : undefined, conversationHistory, maxOutputTokens);
     }
     if (provider === 'openai') {
       if (!process.env.OPENAI_API_KEY) {
         return NextResponse.json({ error: 'OpenAI API key not configured.' }, { status: 500 });
       }
-      return await streamOpenAI(model, messages, hasImages ? images : undefined);
+      return await streamOpenAI(model, messages, hasImages ? images : undefined, maxOutputTokens);
     }
     if (provider === 'google') {
       if (!process.env.GOOGLE_API_KEY) {
         return NextResponse.json({ error: 'Google API key not configured.' }, { status: 500 });
       }
-      return await streamGemini(model, prompt, enrichedSystemPrompt, hasImages ? images : undefined, conversationHistory);
+      return await streamGemini(model, prompt, enrichedSystemPrompt, hasImages ? images : undefined, conversationHistory, maxOutputTokens);
     }
     if (provider === 'xai') {
       if (!process.env.XAI_API_KEY) {
         return NextResponse.json({ error: 'xAI API key not configured.' }, { status: 500 });
       }
-      return await streamXAI(model, hasImages ? messagesWithNote : messages);
+      return await streamXAI(model, hasImages ? messagesWithNote : messages, maxOutputTokens);
     }
     if (provider === 'deepseek') {
       if (!process.env.DEEPSEEK_API_KEY) {
         return NextResponse.json({ error: 'DeepSeek API key not configured.' }, { status: 500 });
       }
-      return await streamDeepSeek(model, hasImages ? messagesWithNote : messages);
+      return await streamDeepSeek(model, hasImages ? messagesWithNote : messages, maxOutputTokens);
     }
     // ── Custom provider fallback (OpenAI-compatible) ──
     // 1. Check if explicit custom config was passed in the body
@@ -294,7 +295,7 @@ export async function POST(request: NextRequest) {
       if (!apiKey) {
         return NextResponse.json({ error: `API key not configured. Please add ${customEnvKey} to your .env.local file.` }, { status: 500 });
       }
-      return await streamOpenAICompatible(model, messages, customBaseUrl, apiKey);
+      return await streamOpenAICompatible(model, messages, customBaseUrl, apiKey, maxOutputTokens);
     }
     // 2. Look up by provider ID for known OpenAI-compatible providers
     const KNOWN_BASE_URLS: Record<string, string> = {
@@ -311,7 +312,7 @@ export async function POST(request: NextRequest) {
       if (!apiKey) {
         return NextResponse.json({ error: `API key not configured. Please add ${envKey} to your .env.local file.` }, { status: 500 });
       }
-      return await streamOpenAICompatible(model, messages, knownBaseUrl, apiKey);
+      return await streamOpenAICompatible(model, messages, knownBaseUrl, apiKey, maxOutputTokens);
     }
 
     return NextResponse.json({ error: `Unknown model provider: model="${model}", provider="${provider}"` }, { status: 400 });
@@ -325,7 +326,8 @@ async function streamOpenAICompatible(
   model: string,
   messages: { role: string; content: any }[],
   baseUrl: string,
-  apiKey: string
+  apiKey: string,
+  tokenLimit: number = 8192
 ) {
   const endpoint = baseUrl.endsWith('/chat/completions')
     ? baseUrl
@@ -337,7 +339,7 @@ async function streamOpenAICompatible(
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey}`,
     },
-    body: JSON.stringify({ model, messages, max_tokens: 8192, stream: true, stream_options: { include_usage: true } }),
+    body: JSON.stringify({ model, messages, max_tokens: tokenLimit, stream: true, stream_options: { include_usage: true } }),
   });
 
   if (!res.ok || !res.body) {
@@ -374,7 +376,7 @@ async function streamOpenAICompatible(
 }
 
 // ── Anthropic (Claude) — native SSE streaming with vision ───────────────
-async function streamAnthropic(model: string, prompt: string, systemPrompt?: string, images?: string[], history?: { role: string; content: string }[]) {
+async function streamAnthropic(model: string, prompt: string, systemPrompt?: string, images?: string[], history?: { role: string; content: string }[], tokenLimit: number = 8192) {
   const apiKey = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY || '';
 
   // Build content array with images + text
@@ -414,7 +416,7 @@ async function streamAnthropic(model: string, prompt: string, systemPrompt?: str
     },
     body: JSON.stringify({
       model,
-      max_tokens: 8192,
+      max_tokens: tokenLimit,
       stream: true,
       system: systemPrompt || undefined,
       messages: anthropicMessages,
@@ -462,13 +464,13 @@ async function streamAnthropic(model: string, prompt: string, systemPrompt?: str
 }
 
 // ── OpenAI (GPT) — native SSE streaming with vision ─────────────────────
-async function streamOpenAI(model: string, messages: { role: string; content: any }[], images?: string[]) {
+async function streamOpenAI(model: string, messages: { role: string; content: any }[], images?: string[], tokenLimit: number = 8192) {
   const apiKey = process.env.OPENAI_API_KEY || '';
   const isReasoning = model.startsWith('o1') || model.startsWith('o3') || model.startsWith('o4')
     || model.includes('gpt-5') || model.includes('nano') || model.includes('reasoning');
   const tokenParam = isReasoning
-    ? { max_completion_tokens: 8192 }
-    : { max_tokens: 8192 };
+    ? { max_completion_tokens: tokenLimit }
+    : { max_tokens: tokenLimit };
 
   // If images present, convert last user message to multimodal content
   if (images && images.length > 0) {
@@ -531,7 +533,7 @@ async function streamOpenAI(model: string, messages: { role: string; content: an
 }
 
 // ── xAI (Grok) — OpenAI-compatible SSE streaming (no vision) ───────────
-async function streamXAI(model: string, messages: { role: string; content: string }[]) {
+async function streamXAI(model: string, messages: { role: string; content: string }[], tokenLimit: number = 8192) {
   const apiKey = process.env.XAI_API_KEY || process.env.GROK_API_KEY || '';
   const res = await fetch('https://api.x.ai/v1/chat/completions', {
     method: 'POST',
@@ -539,7 +541,7 @@ async function streamXAI(model: string, messages: { role: string; content: strin
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey}`,
     },
-    body: JSON.stringify({ model, messages, max_tokens: 8192, stream: true, stream_options: { include_usage: true } }),
+    body: JSON.stringify({ model, messages, max_tokens: tokenLimit, stream: true, stream_options: { include_usage: true } }),
   });
 
   if (!res.ok || !res.body) {
@@ -576,7 +578,7 @@ async function streamXAI(model: string, messages: { role: string; content: strin
 }
 
 // ── Google (Gemini) — streamGenerateContent with vision ─────────────────
-async function streamGemini(model: string, prompt: string, systemPrompt?: string, images?: string[], history?: { role: string; content: string }[]) {
+async function streamGemini(model: string, prompt: string, systemPrompt?: string, images?: string[], history?: { role: string; content: string }[], tokenLimit: number = 8192) {
   const apiKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY || '';
   const contents: any[] = [];
   if (systemPrompt) {
@@ -617,7 +619,7 @@ async function streamGemini(model: string, prompt: string, systemPrompt?: string
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents }),
+      body: JSON.stringify({ contents, generationConfig: { maxOutputTokens: tokenLimit } }),
     }
   );
 
@@ -656,7 +658,7 @@ async function streamGemini(model: string, prompt: string, systemPrompt?: string
 }
 
 // ── DeepSeek — OpenAI-compatible SSE streaming with reasoning support ───
-async function streamDeepSeek(model: string, messages: { role: string; content: string }[]) {
+async function streamDeepSeek(model: string, messages: { role: string; content: string }[], tokenLimit: number = 8192) {
   const apiKey = process.env.DEEPSEEK_API_KEY || '';
   const res = await fetch('https://api.deepseek.com/chat/completions', {
     method: 'POST',
@@ -664,7 +666,7 @@ async function streamDeepSeek(model: string, messages: { role: string; content: 
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey}`,
     },
-    body: JSON.stringify({ model, messages, max_tokens: 8192, stream: true, stream_options: { include_usage: true } }),
+    body: JSON.stringify({ model, messages, max_tokens: tokenLimit, stream: true, stream_options: { include_usage: true } }),
   });
 
   if (!res.ok || !res.body) {

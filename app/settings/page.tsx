@@ -1142,6 +1142,25 @@ export default function SettingsPage() {
         {section === "build-docs" && (
           <div className="space-y-8">
             <section>
+              <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-500">Builder Output Tokens</h2>
+              <p className="mb-4 text-xs font-medium text-zinc-600 dark:text-zinc-500">
+                Maximum output tokens per AI response in Builder chat. Higher values allow longer code generation. Applies to all models.
+              </p>
+              <div className="flex items-center gap-3 p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/30">
+                <label className="text-sm font-medium text-zinc-900 dark:text-white whitespace-nowrap">Max Output Tokens</label>
+                <select
+                  value={typeof window !== 'undefined' ? (localStorage.getItem('builder-max-output-tokens') || '8192') : '8192'}
+                  onChange={(e) => { localStorage.setItem('builder-max-output-tokens', e.target.value); e.target.dispatchEvent(new Event('change')); }}
+                  className="px-3 py-1.5 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm"
+                >
+                  <option value="4096">4,096</option>
+                  <option value="8192">8,192 (Default)</option>
+                  <option value="16384">16,384</option>
+                  <option value="32768">32,768</option>
+                </select>
+              </div>
+            </section>
+            <section>
               <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-500">Build Documentation</h2>
               <p className="mb-4 text-xs font-medium text-zinc-600 dark:text-zinc-500">
                 Automatically inject SARGE build documentation into AI context. When enabled, the system will include relevant docs (pages, AI logic, architecture, stores, API routes, models) invisibly in system prompts. This helps AI understand your build structure and provide better context-aware responses.
