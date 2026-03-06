@@ -299,6 +299,41 @@ export async function testForgeConnection(): Promise<boolean> {
   }
 }
 
+// ─── Certificate Sync ───────────────────────────────────────────
+
+export interface CertificateRow {
+  tier: "gold" | "silver";
+  client_name: string;
+  site_url: string;
+  performance: number;
+  accessibility: number;
+  seo: number;
+  best_practices: number;
+  wcag_aa: boolean;
+  model: string;
+  provider: string;
+  build_time_ms: number;
+  cost_usd: number;
+}
+
+/**
+ * Log a certificate issuance to Supabase.
+ * Non-blocking — fire and forget.
+ */
+export async function syncCertificate(row: CertificateRow): Promise<boolean> {
+  try {
+    const { error } = await supabase.from("forge_certificates").insert(row);
+    if (error) {
+      console.warn("[ForgeSync] Certificate write failed:", error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn("[ForgeSync] Certificate error:", err);
+    return false;
+  }
+}
+
 // ─── Compiler/Compliance Results Sync ───────────────────────────
 
 export interface CompilerResultRow {

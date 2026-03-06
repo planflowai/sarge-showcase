@@ -4,7 +4,16 @@ Generated: 2026-03-05
 Branch: sargebuild-v1
 Tag: working-2026-03-02-deploy-fix (last tagged)
 
-## Latest Changes (Wire compiler loop into Foundry builder — auto-verify after every build)
+## Latest Changes (Certificate generation — Gold and Silver tiers, PDF, Supabase)
+
+- **Certificate tiers**: Gold (all 4 scores >= 90), Silver (all 4 scores >= 80). Badge in CompliancePanel header shows "GOLD CERTIFIED" / "SILVER CERTIFIED".
+- **PDF generation**: `POST /api/certificate` — Puppeteer renders a branded HTML certificate to PDF. Contains: SARGE Forge branding, client name, site URL, date, 4 Lighthouse score bars (color-coded), WCAG 2.1 AA badge if accessibility >= 90, model/provider, build time, cost.
+- **Download button**: "Download PDF" button in CompliancePanel when tier is earned. Gold = amber accent, Silver = slate accent.
+- **Supabase logging**: `syncCertificate()` in forgeSync.ts → `forge_certificates` table (tier, scores, model, provider, build time, cost, WCAG AA flag).
+- **Files**: New `app/api/certificate/route.ts`. Modified `CompliancePanel.tsx` (download button + tier badge), `ArtifactPanel.tsx` + `BuilderPage.tsx` (pass model/provider/buildTime), `forgeSync.ts` (syncCertificate).
+- **Dependency**: Added `puppeteer` to builder-standalone.
+
+## Previous Changes (Wire compiler loop into Foundry builder — auto-verify after every build)
 
 - **Compliance auto-check**: After every build completes (streaming ends), auto-triggers `POST /api/benchmark/compile` against the generated HTML.
 - **CompliancePanel**: New collapsible panel below preview iframe — 4 score cards (Performance, Accessibility, SEO, Best Practices), PASSED/NEEDS REVIEW badge, collapsible violations list (first 15 with severity badges), AI Fix apply button when fix available.

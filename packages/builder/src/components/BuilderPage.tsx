@@ -273,6 +273,21 @@ export default function BuilderPage({ deployContent, billingBar }: { deployConte
     return last?.isStreaming ? last.content : undefined;
   });
 
+  // Get last assistant message metadata for certificate generation
+  const lastAssistantMeta = useBuilderChatStore((state) => {
+    const msgs = state.messages;
+    for (let i = msgs.length - 1; i >= 0; i--) {
+      if (msgs[i].role === "assistant") {
+        return {
+          model: msgs[i].model,
+          provider: msgs[i].provider,
+          latencyMs: msgs[i].latencyMs,
+        };
+      }
+    }
+    return { model: "", provider: "", latencyMs: 0 };
+  });
+
   // Refs for layout debugging
   const chatRef = useRef<HTMLDivElement>(null);
   const artifactRef = useRef<HTMLDivElement>(null);
@@ -680,6 +695,9 @@ Please provide the complete modified version of this component. Make only the re
           streamingContent={latestStreamingContent}
           previewRefreshKey={previewRefreshKey}
           onApplyComplianceFix={handleApplyComplianceFix}
+          certModel={lastAssistantMeta.model}
+          certProvider={lastAssistantMeta.provider}
+          certBuildTimeMs={lastAssistantMeta.latencyMs || 0}
         />
       </div>
     );

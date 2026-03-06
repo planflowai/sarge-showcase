@@ -45,6 +45,9 @@ interface ArtifactPanelProps {
   streamingContent?: string;
   previewRefreshKey?: number; // Increment to force preview rebuild (e.g., after CSS/JS file writes)
   onApplyComplianceFix?: (fixedHtml: string) => void; // Apply AI-fixed HTML from compliance check
+  certModel?: string;
+  certProvider?: string;
+  certBuildTimeMs?: number;
 }
 
 // Check if HTML code is complete (has closing </html> tag)
@@ -70,6 +73,9 @@ function ArtifactPanelInner({
   streamingContent,
   previewRefreshKey = 0,
   onApplyComplianceFix,
+  certModel,
+  certProvider,
+  certBuildTimeMs,
 }: ArtifactPanelProps) {
   const [previewContent, setPreviewContent] = useState<string>("");
   const [previewError, setPreviewError] = useState<string | null>(null);
@@ -916,7 +922,12 @@ function ArtifactPanelInner({
             </div>
 
             {/* Compliance panel — collapsible, below preview */}
-            <CompliancePanel onApplyFix={onApplyComplianceFix} />
+            <CompliancePanel
+              onApplyFix={onApplyComplianceFix}
+              model={certModel}
+              provider={certProvider}
+              buildTimeMs={certBuildTimeMs}
+            />
           </div>
         )}
 
@@ -1161,7 +1172,10 @@ const ArtifactPanel = memo(ArtifactPanelInner, (prevProps, nextProps) => {
     prevProps.progressVisible === nextProps.progressVisible &&
     prevProps.streamingContent === nextProps.streamingContent &&
     prevProps.previewRefreshKey === nextProps.previewRefreshKey &&
-    prevProps.onApplyComplianceFix === nextProps.onApplyComplianceFix
+    prevProps.onApplyComplianceFix === nextProps.onApplyComplianceFix &&
+    prevProps.certModel === nextProps.certModel &&
+    prevProps.certProvider === nextProps.certProvider &&
+    prevProps.certBuildTimeMs === nextProps.certBuildTimeMs
   );
 });
 

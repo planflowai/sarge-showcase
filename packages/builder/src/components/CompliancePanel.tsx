@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   ChevronDown,
   ChevronRight,
@@ -11,8 +11,10 @@ import {
   Loader2,
   Sparkles,
   X,
+  Award,
+  Download,
 } from "lucide-react";
-import { cn } from "@sarge/core";
+import { cn, syncCertificate } from "@sarge/core";
 import {
   useComplianceStore,
   type AuditScores,
@@ -89,10 +91,29 @@ function ScoreCard({
 
 // ─── Main CompliancePanel ───────────────────────────────────────────────────────
 
+// ─── Certificate tier helpers ───────────────────────────────────────────────────
+
+function getCertTier(scores: AuditScores): "gold" | "silver" | null {
+  const { performance, accessibility, seo, bestPractices } = scores;
+  if (performance >= 90 && accessibility >= 90 && seo >= 90 && bestPractices >= 90) return "gold";
+  if (performance >= 80 && accessibility >= 80 && seo >= 80 && bestPractices >= 80) return "silver";
+  return null;
+}
+
+// ─── Main CompliancePanel ───────────────────────────────────────────────────────
+
 export default function CompliancePanel({
   onApplyFix,
+  model,
+  provider,
+  buildTimeMs,
+  cost,
 }: {
   onApplyFix?: (fixedHtml: string) => void;
+  model?: string;
+  provider?: string;
+  buildTimeMs?: number;
+  cost?: number;
 }) {
   const result = useComplianceStore((s) => s.result);
   const loading = useComplianceStore((s) => s.loading);
@@ -102,12 +123,82 @@ export default function CompliancePanel({
   const clear = useComplianceStore((s) => s.clear);
 
   const [violationsOpen, setViolationsOpen] = useState(false);
+  const [certLoading, setCertLoading] = useState(false);
+
+  const handleDownloadCert = useCallback(async () => {
+    if (!result) return;
+    const scores = result.after || result.before;
+    const tier = getCertTier(scores);
+    if (!tier) return;
+
+    setCertLoading(true);
+    try {
+      const payload = {
+        tier,
+        clientName: "SARGE Forge User",
+        siteUrl: window.location.origin,
+        scores: {
+          performance: scores.performance,
+          accessibility: scores.accessibility,
+          seo: scores.seo,
+          bestPractices: scores.bestPractices,
+        },
+        model: model || "Unknown",
+        provider: provider || "Unknown",
+        buildTimeMs: buildTimeMs || 0,
+        cost: cost || 0,
+      };
+
+      const res = await fetch("/api/certificate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Failed" }));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+
+      // Download PDF
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `sarge-certificate-${tier}-${Date.now()}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      // Fire-and-forget Supabase logging
+      syncCertificate({
+        tier,
+        client_name: payload.clientName,
+        site_url: payload.siteUrl,
+        performance: scores.performance,
+        accessibility: scores.accessibility,
+        seo: scores.seo,
+        best_practices: scores.bestPractices,
+        wcag_aa: scores.accessibility >= 90,
+        model: payload.model,
+        provider: payload.provider,
+        build_time_ms: payload.buildTimeMs,
+        cost_usd: payload.cost,
+      }).catch(() => {});
+    } catch (err: any) {
+      console.error("[Certificate] Download error:", err);
+    } finally {
+      setCertLoading(false);
+    }
+  }, [result, model, provider, buildTimeMs, cost]);
 
   // Nothing to show
   if (!result && !loading && !error) return null;
 
   const scores = result?.after || result?.before;
   const hasAfter = result?.after != null;
+  const certTier = scores ? getCertTier(scores) : null;
 
   return (
     <div className="flex-shrink-0 border-t border-zinc-800 bg-zinc-950/80">
@@ -141,12 +232,22 @@ export default function CompliancePanel({
           <span
             className={cn(
               "ml-auto text-[10px] font-bold px-2 py-0.5 rounded border",
-              scores.passed
-                ? "bg-emerald-900/30 text-emerald-400 border-emerald-600/30"
-                : "bg-amber-900/30 text-amber-400 border-amber-600/30"
+              certTier === "gold"
+                ? "bg-amber-900/30 text-amber-400 border-amber-500/40"
+                : certTier === "silver"
+                  ? "bg-slate-700/30 text-slate-300 border-slate-500/40"
+                  : scores.passed
+                    ? "bg-emerald-900/30 text-emerald-400 border-emerald-600/30"
+                    : "bg-amber-900/30 text-amber-400 border-amber-600/30"
             )}
           >
-            {scores.passed ? "PASSED" : "NEEDS REVIEW"}
+            {certTier === "gold"
+              ? "GOLD CERTIFIED"
+              : certTier === "silver"
+                ? "SILVER CERTIFIED"
+                : scores.passed
+                  ? "PASSED"
+                  : "NEEDS REVIEW"}
           </span>
         )}
 
@@ -186,6 +287,38 @@ export default function CompliancePanel({
                 before={result!.before.bestPractices}
                 after={result?.after?.bestPractices}
               />
+            </div>
+          )}
+
+          {/* Certificate download */}
+          {certTier && (
+            <div className="flex items-center gap-2">
+              <Award
+                className={cn(
+                  "h-4 w-4 flex-shrink-0",
+                  certTier === "gold" ? "text-amber-400" : "text-slate-400"
+                )}
+              />
+              <span className="text-[11px] font-bold text-zinc-200">
+                {certTier === "gold" ? "Gold" : "Silver"} Certificate Earned
+              </span>
+              <button
+                onClick={handleDownloadCert}
+                disabled={certLoading}
+                className={cn(
+                  "ml-auto flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold rounded border transition-colors",
+                  certTier === "gold"
+                    ? "border-amber-500/40 text-amber-400 hover:bg-amber-500/10"
+                    : "border-slate-500/40 text-slate-300 hover:bg-slate-500/10"
+                )}
+              >
+                {certLoading ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <Download className="h-3 w-3" />
+                )}
+                {certLoading ? "Generating..." : "Download PDF"}
+              </button>
             </div>
           )}
 
