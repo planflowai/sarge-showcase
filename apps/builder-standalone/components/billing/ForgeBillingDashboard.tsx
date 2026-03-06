@@ -58,8 +58,7 @@ function saveManualBalances(balances: Record<string, number>) {
 export default function ForgeBillingDashboard({ onClose }: { onClose: () => void }) {
   const theme = useSettingsStore((s) => s.theme);
   const setTheme = useSettingsStore((s) => s.setTheme);
-  const secureMode = useAirGapStore((s) => s.secureMode);
-  const toggleSecureMode = useAirGapStore((s) => s.toggleSecureMode);
+  // secureMode hidden — no backend wired
   const airGapEnabled = useAirGapStore((s) => s.airGapEnabled);
   const toggleAirGap = useAirGapStore((s) => s.toggleAirGap);
   const isDark = theme === "dark";
@@ -282,9 +281,6 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
           <span className="text-lg font-[900] tracking-[3px] bg-gradient-to-r from-[#FF6700] via-[#FF8C00] to-[#FFD700] bg-clip-text text-transparent">FORGE BILLING</span>
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
-          <button onClick={toggleSecureMode} title={secureMode ? "Disable Secure Mode" : "Enable Secure Mode"} className={`flex items-center justify-center h-7 w-7 rounded-md text-sm transition-all border ${secureMode ? "bg-red-600/30 border-red-500/60 text-red-300" : "bg-zinc-800/60 border-zinc-700 text-zinc-400 hover:text-zinc-200"}`}>
-            {secureMode ? <Shield className="h-4 w-4" /> : <ShieldOff className="h-4 w-4" />}
-          </button>
           <button onClick={toggleAirGap} title={airGapEnabled ? "Disable Air-Gap" : "Enable Air-Gap"} className={`flex items-center justify-center h-7 w-7 rounded-md text-sm transition-all border ${airGapEnabled ? "bg-amber-500/20 border-amber-400/50 text-amber-300" : "bg-zinc-800/60 border-zinc-700 text-zinc-400 hover:text-zinc-200"}`}>
             {airGapEnabled ? <Plane className="h-4 w-4 rotate-45" /> : <Radio className="h-4 w-4" />}
           </button>
@@ -322,10 +318,10 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
                   <div className="text-sm font-bold text-zinc-300 text-center">{pb.message || "—"}</div>
                 )}
                 {/* Remaining after spend */}
-                {remaining !== undefined && spent > 0 && (
+                {remaining !== undefined && (
                   <div className="text-xs text-zinc-300 font-bold">Remaining: <span className="text-white">${remaining.toFixed(2)}</span></div>
                 )}
-                {spent > 0 && (
+                {displayBalance !== undefined && (
                   <div className="text-xs text-zinc-300 font-bold">Spent: <span className="text-white">{formatCost(spent)}</span></div>
                 )}
                 {/* Editable balance input */}

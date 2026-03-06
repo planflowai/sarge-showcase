@@ -1,8 +1,61 @@
 # S.A.R.G.E. — System Status Report
 
-Generated: 2026-03-05
+Generated: 2026-03-06
 Branch: sargebuild-v1
 Tag: working-2026-03-02-deploy-fix (last tagged)
+
+## Settings Cleanup (2026-03-06) — 19 non-functional features hidden
+
+Audited every Settings page feature for actual backend wiring. Hid all features that have UI but no consumer/backend. Code and stores are preserved — only removed from rendered UI.
+
+### What Was Hidden
+
+| # | Feature | Reason |
+|---|---------|--------|
+| 1 | Secure Mode toggle + banner | `cyberSecure.ts` never imported; banner is CSS-only theater |
+| 2 | PIN Lock setup/indicator | No lock screen, no inactivity timer, no middleware |
+| 3 | AI Orchestration panel | Stores values but chat always routes to single model |
+| 4 | Thread Guardian config (3-tier) | No background engine; stats permanently 0/0/0/0 |
+| 5 | Trading APIs (Alpaca/Finnhub/Tavily) | Static disabled inputs; no trading feature exists |
+| 6-10 | Role tags: Builder/Chat/Image/Guard/Code | No consumers; "Builder" duplicates working hammer button |
+| 11 | Default Provider/Model | Stored but never read by chat or builder |
+| 12 | Voice Persona (Jarvis/Friday) | No voice chat in builder-standalone |
+| 13 | Local AI Endpoint | Stored but API routes hardcode 127.0.0.1:11434 |
+| 14 | Build Docs Auto-Inject toggle | `buildSystemPromptWithDocs()` never called |
+| 15 | Logic Editor / Debate templates | Configures Debate mode which doesn't exist here |
+| 16 | Questions list | View-only, monolith test mode only |
+| 17 | Poisons list | View-only, monolith test mode only |
+| 18 | Sync section | Unreachable nav + nonexistent API route |
+| 19 | Header dead imports (warRoom/workbench) | Imported but never rendered |
+
+### What Remains (working features only)
+
+| Section | Status |
+|---------|--------|
+| General → Theme toggle | **Working** — sets dark/light, synced to `<html>` class |
+| General → API Keys display | **Working** — shows env var names (server-side) |
+| Models → Provider list + expand | **Working** — lists all providers, models, expand/collapse |
+| Models → Add/Remove models | **Working** — add custom models, delete non-built-in |
+| Models → Test model connection | **Working** — fires test stream, shows OK/FAIL |
+| Models → Builder flag (hammer) | **Working** — tags models for builder dropdown |
+| Models → Rename (nickname) | **Working** — sets display name |
+| Models → Add Provider | **Working** — custom provider with base URL, env key, fetch models |
+| Models → Role tags (Trials only) | **Working** — consumed by Forge Trials |
+| Model Registry | **Working** — capability matrix |
+| Roll Call | **Working** — provider availability check |
+| Roles | **Working** — custom system prompts for debate slots |
+| Prompts | **Working** — saved prompt templates |
+| Knowledge | **Working** — knowledge vault with file drag/drop |
+| Diagnostics | **Working** — pipeline diagnostics |
+| Header → Air-Gap toggle | **Working** — blocks cloud APIs |
+| Billing dashboard → all features | **Working** — balances, spend tracking, charts |
+
+### Files Modified
+
+- `apps/builder-standalone/app/settings/page.tsx` — removed 11 nav items, hid section renders
+- `apps/builder-standalone/components/settings/ModelRoleTags.tsx` — only show "Trials" tag
+- `apps/builder-standalone/components/layout/Header.tsx` — removed Secure Mode toggle/banner, dead imports
+- `apps/builder-standalone/components/billing/ForgeBillingDashboard.tsx` — removed Secure Mode toggle
 
 ## Builder Readiness Audit (2026-03-06, re-run after fixes)
 

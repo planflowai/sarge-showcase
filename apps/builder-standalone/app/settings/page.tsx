@@ -64,18 +64,10 @@ const NAV_ITEMS: { id: Section; label: string; icon: React.ElementType }[] = [
   { id: "models", label: "Models", icon: Cpu },
   { id: "registry", label: "Model Registry", icon: Database },
   { id: "rollcall", label: "Roll Call", icon: Radio },
-  { id: "orchestration", label: "AI Orchestration", icon: Zap },
-  { id: "guardian", label: "Thread Guardian", icon: Shield },
   { id: "roles", label: "Roles", icon: Shield },
   { id: "prompts", label: "Prompts", icon: MessageSquare },
   { id: "knowledge", label: "Knowledge", icon: Database },
-  { id: "trading", label: "Trading APIs", icon: TrendingUp },
-  { id: "logic", label: "Logic Editor", icon: FileText },
-  { id: "questions", label: "Questions", icon: MessageSquare },
-  { id: "poisons", label: "Poisons", icon: Shield },
-  { id: "build-docs", label: "Build Docs", icon: FileText },
   { id: "diagnostics", label: "Diagnostics", icon: Activity },
-  { id: "security", label: "Security", icon: ShieldCheck },
 ];
 
 // Thread Guardian Settings Component
@@ -669,41 +661,6 @@ export default function SettingsPage() {
             </section>
 
             <section>
-              <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">Default Provider</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {providers.map((p) => (
-                  <Button key={p.id} variant={defaultProvider === p.id ? "secondary" : "ghost"} onClick={() => { setDefaultProvider(p.id); setDefaultModel(p.models[0]?.id ?? ""); }} className="justify-start gap-2">
-                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: p.color }} />
-                    {p.name}
-                  </Button>
-                ))}
-              </div>
-            </section>
-
-            <section>
-              <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">Default Model</h2>
-              <div className="flex flex-wrap gap-2">
-                {getEffectiveModels(defaultProvider).map((m) => (
-                  <Button key={m.id} variant={defaultModel === m.id ? "secondary" : "ghost"} onClick={() => setDefaultModel(m.id)} size="sm">
-                    {getDisplayName(m.id, m.name)}
-                  </Button>
-                ))}
-              </div>
-            </section>
-
-            <section>
-              <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">Voice Persona</h2>
-              <p className="mb-3 text-xs font-medium text-zinc-300 dark:text-zinc-300">Choose a voice persona for Ollama voice chat. Requires XTTS-v2 server running.</p>
-              <div className="flex gap-2">
-                {(["none", "jarvis", "friday"] as const).map((p) => (
-                  <Button key={p} variant={voicePersona === p ? "secondary" : "ghost"} onClick={() => setVoicePersona(p)} className="capitalize">
-                    {p === "none" ? "Default (Browser)" : p}
-                  </Button>
-                ))}
-              </div>
-            </section>
-
-            <section>
               <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">API Keys (server-side .env)</h2>
               <p className="mb-3 text-xs font-medium text-zinc-300 dark:text-zinc-300">API keys are configured in .env on the server and never exposed to the browser.</p>
               <div className="space-y-2">
@@ -717,10 +674,7 @@ export default function SettingsPage() {
               </div>
             </section>
 
-            <section>
-              <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">Local AI Endpoint</h2>
-              <Input value={localEndpoint} onChange={(e) => setLocalEndpoint(e.target.value)} placeholder="http://localhost:11434" className={`max-w-sm ${inputCls}`} />
-            </section>
+            {/* Local AI Endpoint — hidden (placeholder, not wired) */}
           </div>
         )}
 
@@ -729,7 +683,7 @@ export default function SettingsPage() {
             <div>
               <h2 className="mb-1 text-sm font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">Models</h2>
               <p className="mb-4 text-xs font-medium text-zinc-300 dark:text-zinc-300">
-                Add or remove models per provider. Click <Hammer className="inline h-3 w-3 text-indigo-500" /> to tag a model for the Builder. Click <Pencil className="inline h-3 w-3" /> to set a nickname. Role tags: <span className="text-xs font-bold text-indigo-400">B</span>uilder <span className="text-xs font-bold text-amber-400">T</span>rials <span className="text-xs font-bold text-sky-400">C</span>hat <span className="text-xs font-bold text-pink-400">I</span>mage <span className="text-xs font-bold text-emerald-400">G</span>uardian <span className="text-xs font-bold text-violet-400">X</span>=Code
+                Add or remove models per provider. Click <Hammer className="inline h-3 w-3 text-indigo-500" /> to tag a model for the Builder. Click <Pencil className="inline h-3 w-3" /> to set a nickname.
               </p>
             </div>
 
@@ -992,7 +946,7 @@ export default function SettingsPage() {
               const isLMStudio = p.id === "lmstudio";
               const isLocalProvider = isOllama || isLMStudio;
               const models = isLocalProvider ? [] : getEffectiveModels(p.id);
-              const displayModels = isLocalProvider ? getModelsForDisplay(p.id) : models;
+              const displayModels = (isLocalProvider ? getModelsForDisplay(p.id) : models).slice().sort((a, b) => a.name.localeCompare(b.name));
               const modelCount = isLocalProvider && !isExpanded ? "live" : `${displayModels.length} model${displayModels.length !== 1 ? "s" : ""}`;
 
               return (
@@ -1022,12 +976,12 @@ export default function SettingsPage() {
                       )}
                       {isLMStudio && lmstudioError && <p className="text-xs text-red-400 py-1">{lmstudioError}</p>}
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3">
                         {displayModels.map((m) => (
                           <div
                             key={m.id}
-                            className={`flex items-center gap-2 rounded-lg border border-zinc-200 dark:border-zinc-700 px-2.5 py-2 text-xs transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-600 ${editingNickname === m.id ? 'col-span-full' : ''}`}
-                            style={{ minHeight: '44px' }}
+                            className={`flex items-center gap-3 rounded-lg border border-zinc-200 dark:border-zinc-700 px-4 py-3 text-sm transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-600 ${editingNickname === m.id ? 'col-span-full' : ''}`}
+                            style={{ minHeight: '56px' }}
                           >
                             {editingNickname === m.id ? (
                               <div className="flex flex-1 items-center gap-2">
@@ -1045,15 +999,15 @@ export default function SettingsPage() {
                                 <div className="flex-1 min-w-0 overflow-hidden">
                                   {nicknames[m.id] ? (
                                     <div className="flex flex-col">
-                                      <span className="font-medium text-zinc-900 dark:text-white truncate text-xs">{nicknames[m.id]}</span>
-                                      <span className="text-xs text-zinc-400 dark:text-zinc-300 truncate">{m.name}</span>
+                                      <span className="font-medium text-zinc-900 dark:text-white truncate text-base">{nicknames[m.id]}</span>
+                                      <span className="text-sm text-zinc-400 dark:text-zinc-300 truncate">{m.name}</span>
                                     </div>
                                   ) : (
-                                    <span className="text-zinc-800 dark:text-zinc-200 truncate block">{m.name}</span>
+                                    <span className="text-zinc-800 dark:text-zinc-200 truncate block text-base font-medium">{m.name}</span>
                                   )}
                                   <ModelRoleTags modelId={m.id} />
                                 </div>
-                                <div className="flex items-center gap-1.5 flex-shrink-0">
+                                <div className="flex items-center gap-2 flex-shrink-0">
                                   {(() => {
                                     const testKey = `${p.id}:${m.id}`;
                                     const isTesting = testingModel === testKey;
@@ -1062,7 +1016,7 @@ export default function SettingsPage() {
                                       <button
                                         onClick={() => handleTestModel(m.id, p.id)}
                                         disabled={isTesting}
-                                        className={`transition-colors text-xs font-bold px-1.5 py-0.5 rounded border ${
+                                        className={`flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-md border transition-colors ${
                                           result?.status === "ok"
                                             ? "text-emerald-400 border-emerald-500/40 bg-emerald-500/10"
                                             : result?.status === "fail"
@@ -1071,23 +1025,27 @@ export default function SettingsPage() {
                                         }`}
                                         title={result?.error || (result?.status === "ok" ? "Connected" : "Test model connection")}
                                       >
-                                        {isTesting ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : result?.status === "ok" ? "OK" : result?.status === "fail" ? "FAIL" : "Test"}
+                                        {isTesting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Radio className="h-4 w-4" />}
+                                        <span>{isTesting ? "Testing..." : result?.status === "ok" ? "OK" : result?.status === "fail" ? "FAIL" : "Test"}</span>
                                       </button>
                                     );
                                   })()}
-                                  <button onClick={() => setBuilderFlag(m.id, !isBuilderModel(m.id, p.id))} className={`transition-colors ${isBuilderModel(m.id, p.id) ? 'text-indigo-500' : 'text-zinc-400 hover:text-indigo-400'}`} title={isBuilderModel(m.id, p.id) ? "Remove from Builder" : "Add to Builder"}>
-                                    <Hammer className="h-3 w-3" />
+                                  <button onClick={() => setBuilderFlag(m.id, !isBuilderModel(m.id, p.id))} className={`flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-md border transition-colors ${isBuilderModel(m.id, p.id) ? 'text-indigo-400 border-indigo-500/40 bg-indigo-500/10' : 'text-zinc-500 border-zinc-600 hover:text-indigo-400 hover:border-indigo-500/40'}`}>
+                                    <Hammer className="h-4 w-4" />
+                                    <span>Builder</span>
                                   </button>
-                                  <button onClick={() => { setEditingNickname(m.id); setNicknameValue(nicknames[m.id] || ""); }} className="text-zinc-400 hover:text-indigo-400" title="Set nickname">
-                                    <Pencil className="h-3 w-3" />
+                                  <button onClick={() => { setEditingNickname(m.id); setNicknameValue(nicknames[m.id] || ""); }} className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-md border border-zinc-600 text-zinc-500 hover:text-indigo-400 hover:border-indigo-500/40 transition-colors">
+                                    <Pencil className="h-4 w-4" />
+                                    <span>Rename</span>
                                   </button>
                                   {m.isBuiltIn ? (
-                                    <span className="text-xs text-zinc-400 dark:text-zinc-300 uppercase px-1 py-0.5 rounded bg-zinc-200 dark:bg-zinc-700/50">built-in</span>
+                                    <span className="text-sm text-zinc-400 dark:text-zinc-300 uppercase px-3 py-1.5 rounded-md bg-zinc-200 dark:bg-zinc-700/50 font-semibold">built-in</span>
                                   ) : isLocalProvider ? (
-                                    <span className="text-xs text-emerald-500 uppercase px-1 py-0.5 rounded bg-emerald-500/10">local</span>
+                                    <span className="text-sm text-emerald-500 uppercase px-3 py-1.5 rounded-md bg-emerald-500/10 font-semibold">local</span>
                                   ) : (
-                                    <button onClick={() => removeModel(p.id, m.id)} className="text-zinc-300 hover:text-red-400">
-                                      <Trash2 className="h-3 w-3" />
+                                    <button onClick={() => removeModel(p.id, m.id)} className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-md border border-zinc-600 text-zinc-500 hover:text-red-400 hover:border-red-500/40 transition-colors">
+                                      <Trash2 className="h-4 w-4" />
+                                      <span>Delete</span>
                                     </button>
                                   )}
                                 </div>
@@ -1116,7 +1074,7 @@ export default function SettingsPage() {
 
         {section === "registry" && <ModelRegistry />}
         {section === "rollcall" && <RollCall />}
-        {section === "orchestration" && <SettingsOrchestration />}
+        {/* orchestration — hidden (placeholder, not wired to chat routing) */}
 
         {section === "roles" && (
           <div className="space-y-6">
@@ -1210,163 +1168,18 @@ export default function SettingsPage() {
         )}
 
         {section === "knowledge" && <SettingsKnowledge />}
-        {section === "trading" && <SettingsTradingAPIs />}
-        {section === "logic" && <SettingsLogicEditor />}
+        {/* trading — hidden (static decoration, no trading feature) */}
+        {/* logic — hidden (configures Debate mode which doesn't exist here) */}
 
-        {section === "questions" && (
-          <div className="space-y-8">
-            <section>
-              <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">Test Questions</h2>
-              <p className="text-xs text-zinc-300 dark:text-zinc-400 mb-4">Questions used in poison pill tests.</p>
-              <div className="space-y-3">
-                {questions.map((q) => (
-                  <div key={q.id} className={cardCls}>
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1">
-                        <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100 mb-1">{q.question}</div>
-                        <div className="flex items-center gap-2 text-xs text-zinc-300 dark:text-zinc-400">
-                          {q.poisonId && (
-                            <span className="px-2 py-0.5 rounded bg-red-500/20 text-red-600 dark:text-red-400">
-                              Poison: {poisons.find(p => p.id === q.poisonId)?.name || q.poisonId}
-                            </span>
-                          )}
-                          {q.tier && <span className="px-2 py-0.5 rounded bg-zinc-200 dark:bg-zinc-700">{q.tier}</span>}
-                        </div>
-                      </div>
-                      <Button variant="ghost" size="sm" onClick={() => removeQuestion(q.id)} className="text-red-400 hover:text-red-300">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-                {questions.length === 0 && (
-                  <div className="text-center py-8 text-sm text-zinc-300 dark:text-zinc-400">No questions yet.</div>
-                )}
-              </div>
-            </section>
-          </div>
-        )}
-
-        {section === "poisons" && (
-          <div className="space-y-8">
-            <section>
-              <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">Poison Pills</h2>
-              <p className="text-xs text-zinc-300 dark:text-zinc-400 mb-4">False claims injected into debates to test if AI agents can detect them.</p>
-              <div className="space-y-3">
-                {poisons.map((p) => (
-                  <div key={p.id} className={cardCls}>
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1">
-                        <div className="text-xs font-semibold text-zinc-300 dark:text-zinc-400 mb-1">{p.name}</div>
-                        <div className="text-sm text-zinc-900 dark:text-zinc-100 mb-2">&quot;{p.content}&quot;</div>
-                        {p.markers && p.markers.length > 0 && (
-                          <div className="flex items-center gap-1 flex-wrap">
-                            <span className="text-xs text-zinc-300 dark:text-zinc-400">Markers:</span>
-                            {p.markers.map((marker, idx) => (
-                              <span key={idx} className="text-xs px-2 py-0.5 rounded bg-amber-500/20 text-amber-600 dark:text-amber-400">{marker}</span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      <Button variant="ghost" size="sm" onClick={() => removePoison(p.id)} className="text-red-400 hover:text-red-300">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-                {poisons.length === 0 && (
-                  <div className="text-center py-8 text-sm text-zinc-300 dark:text-zinc-400">No poison pills yet.</div>
-                )}
-              </div>
-            </section>
-          </div>
-        )}
-
-        {section === "build-docs" && (
-          <div className="space-y-8">
-            <section>
-              <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">Build Documentation</h2>
-              <p className="mb-4 text-xs font-medium text-zinc-300 dark:text-zinc-300">
-                Automatically inject SARGE build documentation into AI context.
-              </p>
-              <div className="flex items-center gap-3 p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/30">
-                <button
-                  onClick={() => setBuildDocsAutoInject(!buildDocsAutoInject)}
-                  className={`flex-shrink-0 h-6 w-10 rounded-full transition-colors ${buildDocsAutoInject ? 'bg-indigo-600' : 'bg-zinc-300 dark:bg-zinc-700'}`}
-                >
-                  <div className={`h-5 w-5 rounded-full bg-white transition-transform ${buildDocsAutoInject ? 'translate-x-4.5' : 'translate-x-0.5'}`} />
-                </button>
-                <div className="flex-1">
-                  <div className="text-sm font-medium text-zinc-900 dark:text-white">Auto-Inject Build Docs</div>
-                  <div className="text-xs text-zinc-300 dark:text-zinc-400 mt-1">
-                    {buildDocsAutoInject ? 'Enabled — Docs injected invisibly into AI context per mode' : 'Disabled — No documentation injected'}
-                  </div>
-                </div>
-              </div>
-            </section>
-          </div>
-        )}
+        {/* questions — hidden (view-only, monolith test mode only) */}
+        {/* poisons — hidden (view-only, monolith test mode only) */}
+        {/* build-docs — hidden (toggle with no consumer) */}
 
         {section === "diagnostics" && <PipelineDiagnostics />}
 
-        {section === "security" && (
-          <div className="space-y-8">
-            <section>
-              <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">PIN Lock</h2>
-              {pinEnabled ? (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3 rounded-lg border border-emerald-300 dark:border-emerald-700/30 bg-emerald-50 dark:bg-emerald-950/20 p-3">
-                    <Lock className="h-4 w-4 text-emerald-500 dark:text-emerald-400" />
-                    <span className="text-sm text-emerald-700 dark:text-emerald-300">PIN protection is enabled</span>
-                  </div>
-                  <p className="text-xs font-medium text-zinc-300 dark:text-zinc-300">App locks after 30 minutes of inactivity.</p>
-                  <Button variant="ghost" onClick={removePin} className="text-red-400 hover:text-red-300 hover:bg-red-950/20">
-                    <LockOpen className="h-3.5 w-3.5 mr-1.5" /> Remove PIN
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <p className="text-xs font-medium text-zinc-300 dark:text-zinc-300">Set a 4-6 digit PIN to lock The Foundry.</p>
-                  <div className="flex gap-2">
-                    <Input type="password" inputMode="numeric" maxLength={6} value={newPin} onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ""))} placeholder="PIN" className={`w-24 text-center ${inputCls}`} />
-                    <Input type="password" inputMode="numeric" maxLength={6} value={confirmNewPin} onChange={(e) => setConfirmNewPin(e.target.value.replace(/\D/g, ""))} placeholder="Confirm" className={`w-24 text-center ${inputCls}`} />
-                    <Button onClick={() => { if (newPin.length >= 4 && newPin === confirmNewPin) { storePinSet(newPin); setNewPin(""); setConfirmNewPin(""); } }} disabled={newPin.length < 4 || newPin !== confirmNewPin} className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40">
-                      <Lock className="h-3.5 w-3.5 mr-1.5" /> Set PIN
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </section>
-          </div>
-        )}
-
-        {section === "guardian" && <ThreadGuardianSettings />}
-
-        {section === "sync" && (
-          <div className="space-y-8">
-            <section>
-              <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">Sync Settings</h2>
-              <div className="space-y-3">
-                <div className={cardCls}>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-sm font-medium text-zinc-900 dark:text-white">Reverse Sync</div>
-                      <div className="text-xs text-zinc-300 dark:text-zinc-300 mt-0.5">Copy recent changes from main app to sandbox</div>
-                    </div>
-                    <Button onClick={handleReverseSync} disabled={reverseSyncing} className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40" size="sm">
-                      {reverseSyncing ? (<><Loader2 className="h-3 w-3 mr-1 animate-spin" />Syncing...</>) : (<><RefreshCw className="h-3 w-3 mr-1" />Reverse Sync</>)}
-                    </Button>
-                  </div>
-                  {syncMessage && (
-                    <div className={`mt-3 p-3 rounded text-sm ${syncSuccess ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20" : "bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20"}`}>
-                      {syncMessage}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </section>
-          </div>
-        )}
+        {/* security/PIN — hidden (no lock screen, no inactivity timer) */}
+        {/* guardian — hidden (no background engine, stats always 0) */}
+        {/* sync — hidden (unreachable + nonexistent API route) */}
       </div>
     </div>
   );

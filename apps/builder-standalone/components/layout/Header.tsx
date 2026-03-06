@@ -5,8 +5,6 @@ import {
   Sun,
   Settings,
   Flame,
-  Shield,
-  ShieldOff,
   Plane,
   Radio,
   Hammer,
@@ -18,8 +16,6 @@ import {
   useSettingsStore,
   useAirGapStore,
 } from "@sarge/core";
-import { useWarRoomStore } from "@/lib/stores/warRoomStore";
-import { useWorkbenchStore } from "@/lib/stores/workbenchStore";
 import { launchBillingPopout } from "@/lib/billingPopoutManager";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -65,21 +61,9 @@ export function Header() {
   const theme = useSettingsStore((s) => s.theme);
   const setTheme = useSettingsStore((s) => s.setTheme);
 
-  // Workbench (War Room — chat standalone)
-  const warRoomEnabled = useWarRoomStore((s: any) => s.enabled);
-  const setWarRoomEnabled = useWarRoomStore((s: any) => s.setEnabled);
-
-  // Workbench (Builder Command Center)
-  const workbenchActive = useWorkbenchStore((s: any) => s.active);
-  const setWorkbenchActive = useWorkbenchStore((s: any) => s.setActive);
-
   // Air-gap mode
   const airGapEnabled = useAirGapStore((s) => s.airGapEnabled);
   const toggleAirGap = useAirGapStore((s) => s.toggleAirGap);
-
-  // Secure mode (cybersecurity)
-  const secureMode = useAirGapStore((s) => s.secureMode);
-  const toggleSecureMode = useAirGapStore((s) => s.toggleSecureMode);
 
   useEffect(() => {
     setMounted(true);
@@ -126,44 +110,21 @@ export function Header() {
 
   return (
     <>
-      {/* Security Banners - Show when Secure or Air-Gap modes are enabled */}
-      {(secureMode || airGapEnabled) && (
+      {/* Air-Gap Banner */}
+      {airGapEnabled && (
         <div
-          className={cn(
-            "text-white px-4 py-2 flex items-center justify-center gap-4 shadow-lg border-b-2",
-            secureMode && airGapEnabled
-              ? "bg-gradient-to-r from-red-700 via-red-600 to-amber-600 border-red-800/50"
-              : secureMode
-              ? "bg-gradient-to-r from-red-700 via-red-600 to-red-700 border-red-800/50"
-              : "bg-gradient-to-r from-amber-600 via-orange-500 to-amber-600 border-amber-700/50 animate-pulse-slow"
-          )}
+          className="text-white px-4 py-2 flex items-center justify-center gap-4 shadow-lg border-b-2 bg-gradient-to-r from-amber-600 via-orange-500 to-amber-600 border-amber-700/50 animate-pulse-slow"
         >
-          <div className="flex items-center gap-2">
-            {secureMode && <Shield className="h-5 w-5" />}
-            {airGapEnabled && <Plane className="h-5 w-5 rotate-45" />}
-          </div>
+          <Plane className="h-5 w-5 rotate-45" />
           <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-3">
             <span className="font-black tracking-widest text-sm uppercase drop-shadow-sm">
-              {secureMode && airGapEnabled
-                ? "🔒 MAXIMUM SECURITY"
-                : secureMode
-                ? "🔴 SECURE MODE"
-                : "✈️ AIR-GAP MODE"}
+              AIR-GAP MODE
             </span>
             <span className="text-white/80 text-xs font-medium hidden sm:inline">
-              {secureMode && airGapEnabled
-                ? "All threats blocked • Fully isolated • Local only • FIPS sanitization active"
-                : secureMode
-                ? "Input/output sanitization • Threat detection • Code injection blocked"
-                : "All cloud APIs blocked • Fully isolated • Local models only"}
+              All cloud APIs blocked &bull; Fully isolated &bull; Local models only
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            {airGapEnabled && (
-              <Plane className="h-5 w-5 -rotate-45 scale-x-[-1]" />
-            )}
-            {secureMode && <Shield className="h-5 w-5" />}
-          </div>
+          <Plane className="h-5 w-5 -rotate-45 scale-x-[-1]" />
         </div>
       )}
 
@@ -216,33 +177,6 @@ export function Header() {
 
           {/* Right side: Status + Air-Gap + Theme + Settings */}
           <div className="flex items-center gap-2">
-            {/* SECURE Mode Button - Cybersecurity */}
-            <button
-              onClick={toggleSecureMode}
-              title={
-                secureMode
-                  ? "Disable Secure Mode (standard operation)"
-                  : "Enable Secure Mode (input/output sanitization, threat blocking)"
-              }
-              className={cn(
-                "group flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-bold transition-all duration-300 border",
-                secureMode
-                  ? "bg-gradient-to-r from-red-600/40 to-red-500/40 border-red-500/70 text-red-100 hover:from-red-600/50 hover:to-red-500/50 ring-1 ring-red-500/60 shadow-[0_0_15px_rgba(239,68,68,0.4)] animate-pulse"
-                  : "bg-zinc-800/60 border-zinc-600/50 text-zinc-400 hover:bg-zinc-700/70 hover:text-zinc-200"
-              )}
-            >
-              {secureMode ? (
-                <>
-                  <Shield className="h-4 w-4" />
-                  <span className="hidden sm:inline tracking-widest">
-                    SECURE
-                  </span>
-                </>
-              ) : (
-                <ShieldOff className="h-4 w-4" />
-              )}
-            </button>
-
             {/* Air-Gap Toggle Button - Airplane Mode Style */}
             <button
               onClick={toggleAirGap}

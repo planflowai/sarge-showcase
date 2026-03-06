@@ -741,7 +741,7 @@ export default function SettingsPage() {
               const isLMStudio = p.id === "lmstudio";
               const isLocalProvider = isOllama || isLMStudio;
               const models = isLocalProvider ? [] : getEffectiveModels(p.id);
-              const displayModels = isLocalProvider ? getModelsForDisplay(p.id) : models;
+              const displayModels = (isLocalProvider ? getModelsForDisplay(p.id) : models).slice().sort((a, b) => a.name.localeCompare(b.name));
               const modelCount = isLocalProvider && !isExpanded ? "live" : `${displayModels.length} model${displayModels.length !== 1 ? "s" : ""}`;
 
               return (
@@ -776,14 +776,14 @@ export default function SettingsPage() {
                       )}
 
                       {/* Compact grid layout for models - 2-4 columns responsive */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3">
                         {displayModels.map((m) => (
                           <div
                             key={m.id}
-                            className={`flex items-center gap-2 rounded-lg border border-zinc-200 dark:border-zinc-700 px-2.5 py-2 text-xs transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-600 ${
+                            className={`flex items-center gap-3 rounded-lg border border-zinc-200 dark:border-zinc-700 px-4 py-3 text-sm transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-600 ${
                               editingNickname === m.id ? 'col-span-full' : ''
                             }`}
-                            style={{ minHeight: '44px' }}
+                            style={{ minHeight: '56px' }}
                           >
                             {editingNickname === m.id ? (
                               <div className="flex flex-1 items-center gap-2">
@@ -823,35 +823,30 @@ export default function SettingsPage() {
                                 <div className="flex-1 min-w-0 overflow-hidden">
                                   {nicknames[m.id] ? (
                                     <div className="flex flex-col">
-                                      <span className="font-medium text-zinc-900 dark:text-white truncate text-xs">{nicknames[m.id]}</span>
-                                      <span className="text-[10px] text-zinc-400 dark:text-zinc-500 truncate">{m.name}</span>
+                                      <span className="font-medium text-zinc-900 dark:text-white truncate text-base">{nicknames[m.id]}</span>
+                                      <span className="text-sm text-zinc-400 dark:text-zinc-500 truncate">{m.name}</span>
                                     </div>
                                   ) : (
-                                    <span className="text-zinc-800 dark:text-zinc-200 truncate block">{m.name}</span>
+                                    <span className="text-zinc-800 dark:text-zinc-200 truncate block text-base font-medium">{m.name}</span>
                                   )}
                                 </div>
-                                <div className="flex items-center gap-1.5 flex-shrink-0">
-                                  <button
-                                    onClick={() => setBuilderFlag(m.id, !isBuilderModel(m.id, p.id))}
-                                    className={`transition-colors ${isBuilderModel(m.id, p.id) ? 'text-indigo-500' : 'text-zinc-400 hover:text-indigo-400'}`}
-                                    title={isBuilderModel(m.id, p.id) ? "Remove from Builder" : "Add to Builder"}
-                                  >
-                                    <Hammer className="h-3 w-3" />
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                  <button onClick={() => setBuilderFlag(m.id, !isBuilderModel(m.id, p.id))} className={`flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-md border transition-colors ${isBuilderModel(m.id, p.id) ? 'text-indigo-400 border-indigo-500/40 bg-indigo-500/10' : 'text-zinc-500 border-zinc-600 hover:text-indigo-400 hover:border-indigo-500/40'}`}>
+                                    <Hammer className="h-4 w-4" />
+                                    <span>Builder</span>
                                   </button>
-                                  <button
-                                    onClick={() => { setEditingNickname(m.id); setNicknameValue(nicknames[m.id] || ""); }}
-                                    className="text-zinc-400 hover:text-indigo-400"
-                                    title="Set nickname"
-                                  >
-                                    <Pencil className="h-3 w-3" />
+                                  <button onClick={() => { setEditingNickname(m.id); setNicknameValue(nicknames[m.id] || ""); }} className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-md border border-zinc-600 text-zinc-500 hover:text-indigo-400 hover:border-indigo-500/40 transition-colors">
+                                    <Pencil className="h-4 w-4" />
+                                    <span>Rename</span>
                                   </button>
                                   {m.isBuiltIn ? (
-                                    <span className="text-[9px] text-zinc-400 dark:text-zinc-600 uppercase px-1 py-0.5 rounded bg-zinc-200 dark:bg-zinc-700/50">built-in</span>
+                                    <span className="text-sm text-zinc-400 dark:text-zinc-300 uppercase px-3 py-1.5 rounded-md bg-zinc-200 dark:bg-zinc-700/50 font-semibold">built-in</span>
                                   ) : isLocalProvider ? (
-                                    <span className="text-[9px] text-emerald-500 uppercase px-1 py-0.5 rounded bg-emerald-500/10">local</span>
+                                    <span className="text-sm text-emerald-500 uppercase px-3 py-1.5 rounded-md bg-emerald-500/10 font-semibold">local</span>
                                   ) : (
-                                    <button onClick={() => removeModel(p.id, m.id)} className="text-zinc-500 hover:text-red-400">
-                                      <Trash2 className="h-3 w-3" />
+                                    <button onClick={() => removeModel(p.id, m.id)} className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-md border border-zinc-600 text-zinc-500 hover:text-red-400 hover:border-red-500/40 transition-colors">
+                                      <Trash2 className="h-4 w-4" />
+                                      <span>Delete</span>
                                     </button>
                                   )}
                                 </div>
