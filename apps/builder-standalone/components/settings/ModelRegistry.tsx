@@ -30,7 +30,7 @@ const STRENGTH_COLOR: Record<string, string> = {
 
 export function ModelRegistry() {
   const {
-    registry, hydrated, hydrate, classifying,
+    registry, hydrated, hydrate, classifying, lastScanTimestamp,
     registerModels, toggleExcluded, setPools, classifyWithAI, getUnclassifiedModels, clearRegistry
   } = useModelRegistryStore();
 
@@ -164,6 +164,10 @@ export function ModelRegistry() {
         <button onClick={() => { if (confirm('Clear all registry data?')) clearRegistry(); }}
           className="text-sm text-red-500 hover:text-red-400 font-medium">Clear</button>
       </div>
+
+      {lastScanTimestamp && (
+        <div className="text-xs text-zinc-500">Last scan: {new Date(lastScanTimestamp).toLocaleString()} — data saved to browser, survives reload</div>
+      )}
 
       {error && <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-sm">{error}</div>}
 
