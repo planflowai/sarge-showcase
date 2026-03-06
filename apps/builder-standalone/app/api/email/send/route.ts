@@ -296,7 +296,7 @@ export async function POST(req: NextRequest) {
         Authorization: `Bearer ${resendKey}`,
       },
       body: JSON.stringify({
-        from: "PlanFlowAI <onboarding@resend.dev>",
+        from: "PlanFlowAI <noreply@planflowai.com>",
         to: [body.to],
         subject,
         html,
