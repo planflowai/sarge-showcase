@@ -115,7 +115,7 @@ function ThreadGuardianSettings() {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="mb-1 text-sm font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">Thread Guardian</h2>
+        <h2 className="mb-1 text-base font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">Thread Guardian</h2>
         <p className="mb-4 text-xs font-medium text-zinc-300 dark:text-zinc-300">
           Background conversation maintenance system. Monitors threads for facts, contradictions, hallucinations, and topic drift.
         </p>
@@ -623,24 +623,24 @@ export default function SettingsPage() {
         <div className="mb-6 flex items-center gap-3">
           <Link
             href="/"
-            className="inline-flex items-center justify-center h-8 w-8 rounded-md text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+            className="inline-flex items-center justify-center h-9 w-9 rounded-md text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-5 w-5" />
           </Link>
-          <h1 className="text-xl font-bold text-zinc-900 dark:text-white">Settings</h1>
+          <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Settings</h1>
         </div>
         <div className="space-y-1">
           {NAV_ITEMS.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               onClick={() => setSection(id)}
-              className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors ${
+              className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-base transition-colors ${
                 section === id
                   ? "bg-indigo-600/20 text-indigo-600 dark:text-indigo-400 font-medium"
-                  : "text-zinc-300 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-700 dark:hover:text-zinc-200"
+                  : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-700 dark:hover:text-zinc-200"
               }`}
             >
-              <Icon className="h-4 w-4" />
+              <Icon className="h-5 w-5" />
               {label}
             </button>
           ))}
@@ -652,7 +652,7 @@ export default function SettingsPage() {
         {section === "general" && (
           <div className="space-y-8">
             <section>
-              <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">Theme</h2>
+              <h2 className="mb-3 text-base font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">Theme</h2>
               <div className="flex gap-2">
                 {(["dark", "light"] as const).map((t) => (
                   <Button key={t} variant={theme === t ? "secondary" : "ghost"} onClick={() => setTheme(t)} className="capitalize">{t}</Button>
@@ -661,14 +661,14 @@ export default function SettingsPage() {
             </section>
 
             <section>
-              <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">API Keys (server-side .env)</h2>
-              <p className="mb-3 text-xs font-medium text-zinc-300 dark:text-zinc-300">API keys are configured in .env on the server and never exposed to the browser.</p>
+              <h2 className="mb-3 text-base font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">API Keys (server-side .env)</h2>
+              <p className="mb-3 text-sm text-zinc-500 dark:text-zinc-400">API keys are configured in .env on the server and never exposed to the browser.</p>
               <div className="space-y-2">
                 {Object.entries(apiKeyLabels).map(([id, envVar]) => (
                   <div key={id} className="flex items-center gap-3">
                     <span className="h-2.5 w-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: providers.find((p) => p.id === id)?.color }} />
-                    <span className="w-40 text-xs font-medium text-zinc-300 dark:text-zinc-400">{envVar}</span>
-                    <span className="text-xs text-zinc-400 dark:text-zinc-300">{"•".repeat(16)}</span>
+                    <span className="w-48 text-sm font-medium text-zinc-600 dark:text-zinc-300">{envVar}</span>
+                    <span className="text-sm text-zinc-400 dark:text-zinc-500">{"•".repeat(16)}</span>
                   </div>
                 ))}
               </div>
@@ -681,9 +681,9 @@ export default function SettingsPage() {
         {section === "models" && (
           <div className="space-y-4">
             <div>
-              <h2 className="mb-1 text-sm font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">Models</h2>
-              <p className="mb-4 text-xs font-medium text-zinc-300 dark:text-zinc-300">
-                Add or remove models per provider. Click <Hammer className="inline h-3 w-3 text-indigo-500" /> to tag a model for the Builder. Click <Pencil className="inline h-3 w-3" /> to set a nickname.
+              <h2 className="mb-1 text-base font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">Models</h2>
+              <p className="mb-4 text-sm text-zinc-500 dark:text-zinc-400">
+                Add or remove models per provider. Click <Hammer className="inline h-4 w-4 text-indigo-500" /> to tag a model for the Builder. Click <Pencil className="inline h-4 w-4" /> to set a nickname.
               </p>
             </div>
 
@@ -1079,8 +1079,8 @@ export default function SettingsPage() {
         {section === "roles" && (
           <div className="space-y-6">
             <div>
-              <h2 className="mb-1 text-sm font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">Custom Roles</h2>
-              <p className="mb-4 text-xs font-medium text-zinc-300 dark:text-zinc-300">Create roles with custom system prompts. Assign them to any LLM slot in debates.</p>
+              <h2 className="mb-1 text-base font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">Custom Roles</h2>
+              <p className="mb-4 text-sm text-zinc-500 dark:text-zinc-400">Create roles with custom system prompts. Assign them to any LLM slot in debates.</p>
             </div>
             <div className="space-y-2">
               {roles.map((role) => (
@@ -1127,8 +1127,8 @@ export default function SettingsPage() {
         {section === "prompts" && (
           <div className="space-y-6">
             <div>
-              <h2 className="mb-1 text-sm font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">Saved Prompts</h2>
-              <p className="mb-4 text-xs font-medium text-zinc-300 dark:text-zinc-300">Create reusable prompt templates.</p>
+              <h2 className="mb-1 text-base font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">Saved Prompts</h2>
+              <p className="mb-4 text-sm text-zinc-500 dark:text-zinc-400">Create reusable prompt templates.</p>
             </div>
             {prompts.length === 0 && <p className="text-sm text-zinc-400 dark:text-zinc-300">No saved prompts yet.</p>}
             <div className="space-y-2">

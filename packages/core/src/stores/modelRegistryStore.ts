@@ -127,13 +127,36 @@ export const useModelRegistryStore = create<ModelRegistryState>((set, get) => ({
     }));
   },
 
-  classifyWithAI: async (modelIds, classifierModel) => {
+  classifyWithAI: async (modelIds, _classifierModel) => {
     set({ classifying: true });
     try {
-      // Placeholder - would call API to classify models
+      const res = await fetch('/api/models/classify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ modelIds }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Classification failed' }));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      const classifications = data.classifications || {};
+      set((state) => {
+        const updated = { ...state.registry };
+        for (const [id, info] of Object.entries(classifications) as [string, { category?: string; strength?: string }][]) {
+          if (updated[id]) {
+            updated[id] = {
+              ...updated[id],
+              category: (info.category as any) || updated[id].category,
+              strength: (info.strength as any) || updated[id].strength,
+            };
+          }
+        }
+        return { registry: updated, classifying: false };
+      });
+    } catch (e) {
       set({ classifying: false });
-    } catch {
-      set({ classifying: false });
+      throw e;
     }
   },
 
