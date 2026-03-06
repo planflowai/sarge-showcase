@@ -76,6 +76,7 @@ export function PipelineDiagnostics() {
   const [currentStep, setCurrentStep] = useState(0);
   const [copied, setCopied] = useState(false);
   const [expandedSteps, setExpandedSteps] = useState<Set<number>>(new Set());
+  const [liveSteps, setLiveSteps] = useState<StepResult[]>([]);
 
   const runTest = useCallback(async () => {
     setRunning(true);
@@ -83,10 +84,7 @@ export function PipelineDiagnostics() {
     setError(null);
     setCurrentStep(1);
     setExpandedSteps(new Set());
-
-    const interval = setInterval(() => {
-      setCurrentStep((prev) => (prev < TOTAL_STEPS ? prev + 1 : prev));
-    }, 4000);
+    setLiveSteps([]);
 
     try {
       const res = await fetch("/api/pipeline-test", {
@@ -94,23 +92,62 @@ export function PipelineDiagnostics() {
         headers: { "Content-Type": "application/json" },
       });
 
-      clearInterval(interval);
-
       if (!res.ok) {
         const text = await res.text().catch(() => "");
         throw new Error(`HTTP ${res.status}: ${text.slice(0, 200)}`);
       }
 
-      const data: PipelineReport = await res.json();
-      setReport(data);
-      setCurrentStep(TOTAL_STEPS);
+      const reader = res.body?.getReader();
+      if (!reader) throw new Error("No response body");
 
-      // Auto-expand any failed steps
-      const failedSteps = new Set<number>();
-      data.steps.forEach(s => { if (s.status === "FAIL") failedSteps.add(s.step); });
-      setExpandedSteps(failedSteps);
+      const decoder = new TextDecoder();
+      let buffer = "";
+      const failedSet = new Set<number>();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+          try {
+            const data = JSON.parse(trimmed);
+            if (data.type === "step") {
+              const stepResult: StepResult = {
+                step: data.step,
+                name: data.name,
+                status: data.status,
+                details: data.details,
+                duration_ms: data.duration_ms,
+              };
+              setLiveSteps(prev => [...prev, stepResult]);
+              setCurrentStep(data.step + 1);
+              if (data.status === "FAIL") failedSet.add(data.step);
+            } else if (data.type === "summary") {
+              setReport({
+                timestamp: data.timestamp,
+                duration_seconds: data.duration_seconds,
+                total_cost: data.total_cost,
+                steps: [], // steps are in liveSteps
+                passed: data.passed,
+                failed: data.failed,
+                skipped: data.skipped,
+                summary: data.summary,
+              });
+              setCurrentStep(TOTAL_STEPS);
+              setExpandedSteps(failedSet);
+            }
+          } catch {
+            // Skip malformed lines
+          }
+        }
+      }
     } catch (err: any) {
-      clearInterval(interval);
       setError(err.message || "Pipeline test failed");
     } finally {
       setRunning(false);
@@ -118,15 +155,18 @@ export function PipelineDiagnostics() {
   }, []);
 
   const copyReport = useCallback(() => {
-    if (!report) return;
+    if (!report && liveSteps.length === 0) return;
     const lines: string[] = [];
-    lines.push(`SARGE Pipeline Diagnostics — ${new Date(report.timestamp).toLocaleString()}`);
+    const ts = report?.timestamp ? new Date(report.timestamp).toLocaleString() : new Date().toLocaleString();
+    lines.push(`SARGE Pipeline Diagnostics — ${ts}`);
     lines.push("═".repeat(60));
-    lines.push(`Result: ${report.summary}`);
-    lines.push(`Duration: ${report.duration_seconds}s · Cost: ${report.total_cost}`);
-    lines.push(`Passed: ${report.passed} · Failed: ${report.failed} · Skipped: ${report.skipped}`);
+    if (report) {
+      lines.push(`Result: ${report.summary}`);
+      lines.push(`Duration: ${report.duration_seconds}s · Cost: ${report.total_cost}`);
+      lines.push(`Passed: ${report.passed} · Failed: ${report.failed} · Skipped: ${report.skipped}`);
+    }
     lines.push("");
-    for (const step of report.steps) {
+    for (const step of liveSteps) {
       const icon = step.status === "PASS" ? "✓" : step.status === "FAIL" ? "✗" : "–";
       const dur = step.duration_ms !== undefined
         ? step.duration_ms < 1000 ? `${step.duration_ms}ms` : `${(step.duration_ms / 1000).toFixed(1)}s`
@@ -138,7 +178,7 @@ export function PipelineDiagnostics() {
     navigator.clipboard.writeText(lines.join("\n"));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  }, [report]);
+  }, [report, liveSteps]);
 
   const toggleStep = (step: number) => {
     setExpandedSteps(prev => {
@@ -150,7 +190,7 @@ export function PipelineDiagnostics() {
   };
 
   const getStepResult = (stepNum: number): StepResult | undefined => {
-    return report?.steps.find(s => s.step === stepNum);
+    return liveSteps.find(s => s.step === stepNum);
   };
 
   return (
@@ -167,7 +207,7 @@ export function PipelineDiagnostics() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {report && (
+          {(report || liveSteps.length > 0) && (
             <Button
               onClick={copyReport}
               variant="outline"
@@ -194,27 +234,26 @@ export function PipelineDiagnostics() {
         </div>
       </div>
 
-      {/* Progress bar during run */}
+      {/* Live progress during run */}
       {running && (
-        <div className="rounded-lg border border-violet-500/30 bg-violet-500/5 p-4">
-          <div className="flex items-center gap-3 mb-3">
-            <Loader2 className="h-5 w-5 animate-spin text-violet-400" />
+        <div className="rounded-lg border border-violet-500/30 bg-violet-500/5 px-4 py-3 flex items-center gap-3">
+          <Loader2 className="h-5 w-5 animate-spin text-violet-400 flex-shrink-0" />
+          <div className="flex items-center gap-2 flex-1">
             <span className="text-sm font-bold text-white">
-              Step {currentStep} of {TOTAL_STEPS}
+              {liveSteps.length} of {TOTAL_STEPS} complete
             </span>
-            <span className="text-sm text-zinc-400">
-              {STEP_INFO[currentStep - 1]?.name || "..."}
-            </span>
-            <span className="text-sm text-zinc-500 ml-auto">
-              {STEP_INFO[currentStep - 1]?.description}
-            </span>
+            <div className="flex-1 bg-zinc-700 rounded-full h-2 max-w-xs">
+              <div
+                className="bg-violet-500 h-2 rounded-full transition-all duration-300 ease-out"
+                style={{ width: `${(liveSteps.length / TOTAL_STEPS) * 100}%` }}
+              />
+            </div>
           </div>
-          <div className="w-full bg-zinc-700 rounded-full h-2">
-            <div
-              className="bg-violet-500 h-2 rounded-full transition-all duration-700 ease-out"
-              style={{ width: `${(currentStep / TOTAL_STEPS) * 100}%` }}
-            />
-          </div>
+          {currentStep <= TOTAL_STEPS && STEP_INFO[currentStep - 1] && (
+            <span className="text-sm text-zinc-400 flex-shrink-0">
+              Running: {STEP_INFO[currentStep - 1].name}
+            </span>
+          )}
         </div>
       )}
 
@@ -258,8 +297,8 @@ export function PipelineDiagnostics() {
         </div>
       )}
 
-      {/* Phase groups with steps */}
-      {(report || !running) && (
+      {/* Phase groups with steps — visible during run and after */}
+      {(liveSteps.length > 0 || report || !running) && (
         <div className="space-y-4">
           {PHASES.map((phase) => {
             const PhaseIcon = phase.icon;

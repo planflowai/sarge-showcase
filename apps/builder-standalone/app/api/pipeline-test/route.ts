@@ -106,12 +106,33 @@ async function runStep(
   }
 }
 
-// ── Main route ──────────────────────────────────────────────────────────
+// ── Main route (streaming NDJSON — each step emitted as it completes) ──
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
   const baseUrl = getBaseUrl(request);
   const steps: StepResult[] = [];
   let totalCost = 0;
+
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(controller) {
+      const emit = (data: Record<string, unknown>) => {
+        controller.enqueue(encoder.encode(JSON.stringify(data) + "\n"));
+      };
+      const emitStep = async (result: StepResult) => {
+        steps.push(result);
+        emit({ type: "step", ...result });
+      };
+
+      await runPipeline(emit, emitStep, controller);
+    },
+  });
+
+  async function runPipeline(
+    emit: (data: Record<string, unknown>) => void,
+    emitStep: (result: StepResult) => Promise<void>,
+    controller: ReadableStreamDefaultController,
+  ) {
 
   // Shared state between steps
   let refCode = DUMMY_INTAKE.ref;
@@ -139,7 +160,7 @@ export async function POST(request: NextRequest) {
       : null;
 
   // ── Step 1: Intake Submission ───────────────────────────────────────
-  steps.push(
+  await emitStep(
     await runStep(1, "Intake Submission", async () => {
       const res = await fetch(`${baseUrl}/api/intake/submit`, {
         method: "POST",
@@ -156,7 +177,7 @@ export async function POST(request: NextRequest) {
   );
 
   // ── Step 2: Prompt Assembly ─────────────────────────────────────────
-  steps.push(
+  await emitStep(
     await runStep(2, "Prompt Assembly", async () => {
       assembledPrompt = intakeToPrompt(DUMMY_INTAKE);
       if (!assembledPrompt || assembledPrompt.length < 100)
@@ -183,7 +204,7 @@ export async function POST(request: NextRequest) {
   const testProjectName = `pipeline-test-${Date.now()}`;
   projectPath = `${projectsDir}/${testProjectName}`;
 
-  steps.push(
+  await emitStep(
     await runStep(3, "Project Creation", async () => {
       const res = await fetch(`${baseUrl}/api/builder/create-project`, {
         method: "POST",
@@ -202,7 +223,7 @@ export async function POST(request: NextRequest) {
   );
 
   // ── Step 4: Build Execution ─────────────────────────────────────────
-  steps.push(
+  await emitStep(
     await runStep(4, "Build Execution", async () => {
       if (!cheapModel)
         throw new Error(
@@ -296,7 +317,7 @@ export async function POST(request: NextRequest) {
   );
 
   // ── Step 5: Conversation History ────────────────────────────────────
-  steps.push(
+  await emitStep(
     await runStep(5, "Conversation History", async () => {
       if (!cheapModel) throw new Error("No cloud API key");
       if (!generatedHtml)
@@ -373,7 +394,7 @@ export async function POST(request: NextRequest) {
   );
 
   // ── Step 6: Edit Mode ───────────────────────────────────────────────
-  steps.push(
+  await emitStep(
     await runStep(6, "Edit Mode", async () => {
       if (!cheapModel) throw new Error("No cloud API key");
       if (!generatedHtml)
@@ -460,7 +481,7 @@ replacement code
   );
 
   // ── Step 7: Compiler ────────────────────────────────────────────────
-  steps.push(
+  await emitStep(
     await runStep(7, "Compiler", async () => {
       const htmlToAudit = generatedHtml || "<html><body><h1>Test</h1></body></html>";
 
@@ -514,7 +535,7 @@ replacement code
   );
 
   // ── Step 8: Certificate Check ───────────────────────────────────────
-  steps.push(
+  await emitStep(
     await runStep(8, "Certificate Check", async () => {
       const allAbove80 = Object.values(scores).every(
         (s) => s >= 80
@@ -559,7 +580,7 @@ replacement code
   );
 
   // ── Step 9: PII Injection ───────────────────────────────────────────
-  steps.push(
+  await emitStep(
     await runStep(9, "PII Injection", async () => {
       // Test with HTML that has placeholders
       const testHtml = generatedHtml || `<html><body>Call {{phone}} or email {{email}} at {{address}}. Welcome to {{name}}.</body></html>`;
@@ -645,7 +666,7 @@ replacement code
   }
 
   // ── Step 10: Supabase Logging ───────────────────────────────────────
-  steps.push(
+  await emitStep(
     await runStep(10, "Supabase Logging", async () => {
       if (!hasSupabase)
         throw new Error("Supabase not configured");
@@ -699,7 +720,7 @@ replacement code
   );
 
   // ── Step 11: Revision Form ──────────────────────────────────────────
-  steps.push(
+  await emitStep(
     await runStep(11, "Revision Submission", async () => {
       const revisionPayload = { ...DUMMY_REVISION, ref_code: refCode };
       const res = await fetch(`${baseUrl}/api/intake/revision`, {
@@ -717,7 +738,7 @@ replacement code
   );
 
   // ── Step 12: Email Send ────────────────────────────────────────────
-  steps.push(
+  await emitStep(
     await runStep(12, "Email Send", async () => {
       const notifyEmail = process.env.NOTIFICATION_EMAIL;
       const hasResendKey = !!process.env.RESEND_API_KEY;
@@ -792,7 +813,7 @@ replacement code
   }
 
   // ── Step 13: Build from Intake ────────────────────────────────────
-  steps.push(
+  await emitStep(
     await runStep(13, "Build from Intake", async () => {
       if (!hasIntakeTable) {
         return `client_intake table not migrated — route unavailable (run /api/supabase/migrate)`;
@@ -821,7 +842,7 @@ replacement code
   );
 
   // ── Step 14: Preview Approval ─────────────────────────────────────
-  steps.push(
+  await emitStep(
     await runStep(14, "Preview Approval", async () => {
       if (!hasIntakeTable) {
         return `client_intake table not migrated — route unavailable (run /api/supabase/migrate)`;
@@ -871,7 +892,7 @@ replacement code
   );
 
   // ── Step 15: Rollback ─────────────────────────────────────────────
-  steps.push(
+  await emitStep(
     await runStep(15, "Rollback", async () => {
       if (!hasIntakeTable) {
         return `client_intake table not migrated — route unavailable (run /api/supabase/migrate)`;
@@ -911,7 +932,7 @@ replacement code
   );
 
   // ── Step 16: Auto-Approval Check ──────────────────────────────────
-  steps.push(
+  await emitStep(
     await runStep(16, "Auto-Approval Check", async () => {
       if (!hasIntakeTable) {
         return `client_intake table not migrated — route unavailable (run /api/supabase/migrate)`;
@@ -947,11 +968,11 @@ replacement code
   const skipped = steps.filter((s) => s.status === "SKIP").length;
   const durationSeconds = (Date.now() - startTime) / 1000;
 
-  const report: PipelineReport = {
+  emit({
+    type: "summary",
     timestamp: new Date().toISOString(),
     duration_seconds: Math.round(durationSeconds * 10) / 10,
     total_cost: `$${totalCost.toFixed(4)}`,
-    steps,
     passed,
     failed,
     skipped,
@@ -959,7 +980,16 @@ replacement code
       failed === 0
         ? `PIPELINE HEALTHY — all ${passed} steps passed`
         : `PIPELINE ISSUES — ${passed} passed, ${failed} failed`,
-  };
+  });
 
-  return NextResponse.json(report);
+  controller.close();
+  } // end runPipeline
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "application/x-ndjson",
+      "Cache-Control": "no-cache",
+      "Transfer-Encoding": "chunked",
+    },
+  });
 }
