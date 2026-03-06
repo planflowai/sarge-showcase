@@ -275,18 +275,22 @@ export default function BuilderPage({ deployContent, billingBar }: { deployConte
   });
 
   // Get last assistant message metadata for certificate generation
+  // Returns stable ref to prevent infinite re-render from new object allocation
+  const lastAssistantMetaRef = useRef({ model: "", provider: "", latencyMs: 0 as number | undefined });
   const lastAssistantMeta = useBuilderChatStore((state) => {
     const msgs = state.messages;
     for (let i = msgs.length - 1; i >= 0; i--) {
       if (msgs[i].role === "assistant") {
-        return {
-          model: msgs[i].model,
-          provider: msgs[i].provider,
-          latencyMs: msgs[i].latencyMs,
-        };
+        const prev = lastAssistantMetaRef.current;
+        if (prev.model === msgs[i].model && prev.provider === msgs[i].provider && prev.latencyMs === msgs[i].latencyMs) {
+          return prev;
+        }
+        const next = { model: msgs[i].model, provider: msgs[i].provider, latencyMs: msgs[i].latencyMs };
+        lastAssistantMetaRef.current = next;
+        return next;
       }
     }
-    return { model: "", provider: "", latencyMs: 0 };
+    return lastAssistantMetaRef.current;
   });
 
   // Refs for layout debugging
