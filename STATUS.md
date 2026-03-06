@@ -4,7 +4,19 @@ Generated: 2026-03-05
 Branch: sargebuild-v1
 Tag: working-2026-03-02-deploy-fix (last tagged)
 
-## Latest Changes (Fix pipeline Steps 13-15 — email column mismatch in Supabase insert)
+## Latest Changes (Compiler — enhanced fix loop targeting 95+ on all Lighthouse audits)
+
+- **Problem**: Compiler AI fix loop was single-pass, skipped Lighthouse during fix, and used a minimal prompt that didn't target specific Lighthouse audit items. Result: SEO stuck at 90, Best Practices at 82, Accessibility variable.
+- **Fix — 3-pass loop**: Rewrote `/api/benchmark/compile` route. Fix mode now runs up to 3 Gemini passes, each followed by a full Lighthouse re-audit. Stops early when all 4 Lighthouse scores reach 95+.
+- **Fix — enhanced prompts**: Pass 1 uses a comprehensive checklist targeting every common score killer: meta description, Open Graph + Twitter Card meta tags, canonical URL, JSON-LD structured data, heading hierarchy, color contrast ratios (with specific WCAG values), `lang` attribute, `rel="noopener noreferrer"` on external links, image width/height/alt/loading attributes, `font-display: swap`, `preconnect` hints, `charset` as first head child, proper doctype. Pass 2+ uses a targeted prompt with only the remaining failing audits.
+- **Fix — Lighthouse on every pass**: Previously `skipLighthouse: true` during fix. Now runs full Lighthouse audit (html-validate + axe-core + Lighthouse) after each fix pass so scores are accurate.
+- **Fix — response enrichment**: Response now includes `passes` count and `passLog` array showing score progression per pass.
+- **Test result**: Sample plumber HTML went from Perf 100 / A11y 83 / SEO 90 / BP 96 → Perf 100 / A11y 100 / SEO 100 / BP 96 after just 1 pass (33s). All ≥ 95 target met.
+- **Pipeline test**: All 16 steps PASS. Step 7 (Compiler audit-only) still works unchanged. Duration: 522.1s.
+- **Modified**: `apps/builder-standalone/app/api/benchmark/compile/route.ts` (full rewrite, 103→~300 lines).
+- **Callers unchanged**: `complianceStore.ts`, `HybridDetailPanel.tsx`, `pipeline-test` — all use same request/response shape.
+
+## Previous Changes (Fix pipeline Steps 13-15 — email column mismatch in Supabase insert)
 
 - **Root cause**: `client_intake` table has no `email` column — only `client_email`. Both the intake submit route and the pipeline test's pre-Step 13 fallback insert included `email` as a column, causing Supabase to return a PGRST204 error. The error was caught but swallowed (logged, not thrown), so the route returned `{ success: true }` even though zero rows were written. Steps 13-15 then queried by `ref_code` and got 404 "not found" because the row never existed.
 - **Fix 1 — submit/route.ts**: Removed `email` field from the `supabase.from("client_intake").insert()` call. Removed unused `email` variable. The `client_email` field (which maps correctly) was already being set from `formData.email`.
