@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Start Your Project | SARGE Web Studio</title>
+    <title>Start Your Project | PlanFlowAI</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
@@ -34,6 +34,21 @@
             --shadow: 0 4px 24px rgba(0,0,0,0.3);
             --shadow-lg: 0 8px 40px rgba(0,0,0,0.4);
             --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        html.light {
+            --bg-primary: #F8F9FA;
+            --bg-secondary: #FFFFFF;
+            --bg-card: #FFFFFF;
+            --bg-input: #F0F2F5;
+            --bg-hover: #E9ECEF;
+            --border: #DEE2E6;
+            --text-primary: #1A1A2E;
+            --text-secondary: #495057;
+            --text-muted: #868E96;
+        }
+        html.light .site-header {
+            background: rgba(248, 249, 250, 0.9);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -173,7 +188,7 @@
         .main {
             max-width: 780px;
             margin: 0 auto;
-            padding: 160px 24px 120px;
+            padding: 190px 24px 120px;
         }
 
         /* ── FORM STEP ──────────────────────────── */
@@ -798,11 +813,16 @@
 <!-- HEADER -->
 <header class="site-header">
     <div class="logo">
-        <div class="logo-mark">S</div>
-        <div class="logo-text"><span>SARGE</span> Web Studio</div>
+        <img src="/logo_png.png" alt="PlanFlowAI" height="36" style="border-radius:6px;">
+        <div class="logo-text"><span>PlanFlow</span>AI</div>
     </div>
-    <div class="header-help">
-        Questions? <a href="mailto:hello@sargeweb.studio">hello@sargeweb.studio</a>
+    <div style="display:flex;align-items:center;gap:20px;">
+        <button type="button" id="themeToggle" onclick="toggleTheme()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:8px 10px;cursor:pointer;color:var(--text-secondary);font-size:16px;display:flex;align-items:center;transition:var(--transition);" title="Toggle light/dark mode">
+            <i class="fas fa-moon" id="themeIcon"></i>
+        </button>
+        <div class="header-help">
+            Questions? <a href="mailto:info@planflowai.com">info@planflowai.com</a>
+        </div>
     </div>
 </header>
 
@@ -1589,12 +1609,69 @@
     let currentStep = 1;
     const stepNames = ['About You', 'Vision', 'Content', 'Structure', 'Design', 'Contact', 'Features', 'Review'];
 
+    // ── REF CODE FROM URL ─────────────────────
+    let urlRefCode = null;
+
+    // ── THEME TOGGLE ─────────────────────────
+    function toggleTheme() {
+        const isLight = document.documentElement.classList.toggle('light');
+        localStorage.setItem('intake_theme', isLight ? 'light' : 'dark');
+        document.getElementById('themeIcon').className = isLight ? 'fas fa-sun' : 'fas fa-moon';
+    }
+
+    function loadTheme() {
+        const saved = localStorage.getItem('intake_theme');
+        if (saved === 'light') {
+            document.documentElement.classList.add('light');
+            document.getElementById('themeIcon').className = 'fas fa-sun';
+        }
+    }
+
+    // ── LIVE VALIDATION ON BLUR ──────────────
+    function initBlurValidation() {
+        document.querySelectorAll('[required]').forEach(field => {
+            field.addEventListener('blur', () => {
+                if (!field.value.trim()) {
+                    field.style.borderColor = 'var(--danger)';
+                }
+            });
+            field.addEventListener('input', () => {
+                if (field.value.trim()) {
+                    field.style.borderColor = '';
+                }
+            });
+        });
+    }
+
     // ── INIT ─────────────────────────────────
     document.addEventListener('DOMContentLoaded', () => {
+        loadTheme();
         buildProgressBar();
         loadSavedData();
         initPillGroups();
+        initBlurValidation();
         updateNav();
+
+        // Read ?ref= from URL
+        const params = new URLSearchParams(window.location.search);
+        const ref = params.get('ref');
+        if (ref) {
+            urlRefCode = ref;
+            // Try to pre-fill from existing project data
+            fetch('/api/intake/status?ref=' + encodeURIComponent(ref))
+                .then(r => r.ok ? r.json() : null)
+                .then(data => {
+                    if (data && data.client_name) {
+                        const nameField = document.querySelector('[name="client_name"]');
+                        if (nameField && !nameField.value) nameField.value = data.client_name;
+                    }
+                    if (data && (data.client_email || data.email)) {
+                        const emailField = document.querySelector('[name="email"]');
+                        if (emailField && !emailField.value) emailField.value = data.client_email || data.email;
+                    }
+                })
+                .catch(() => {});
+        }
     });
 
     // ── PROGRESS BAR ─────────────────────────
@@ -1954,31 +2031,49 @@
         submission.image_source = [...document.querySelectorAll('.pill-group[data-name="image_source"] .pill.selected')].map(p => p.dataset.value);
         submission.pages = [...document.querySelectorAll('.toggle-card.selected[data-name="pages"]')].map(c => c.dataset.value);
         submission.features = [...document.querySelectorAll('.toggle-card.selected[data-name="features"]')].map(c => c.dataset.value);
-        submission.ref = 'SARGE-' + Date.now().toString(36).toUpperCase();
+        submission.ref = urlRefCode || ('SARGE-' + Date.now().toString(36).toUpperCase());
         submission.submitted_at = new Date().toISOString();
 
         console.log('SUBMISSION:', JSON.stringify(submission, null, 2));
+
+        // Disable submit button during request
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Submitting...';
 
         // POST to intake API (Supabase + email notification)
         fetch('/api/intake/submit', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(submission),
-        }).then(res => res.json()).then(data => {
+        }).then(res => {
+            if (!res.ok) throw new Error('Server error ' + res.status);
+            return res.json();
+        }).then(data => {
             if (data.ref_code) submission.ref = data.ref_code;
             console.log('[Intake] Saved to Supabase, ref:', data.ref_code);
-        }).catch(err => console.warn('[Intake] API submit failed:', err));
 
-        // Show success
-        document.getElementById('intakeForm').style.display = 'none';
-        document.getElementById('formNav').style.display = 'none';
-        document.getElementById('submittedScreen').classList.add('active');
-        document.getElementById('confirmEmail').textContent = submission.email || 'your email';
-        document.getElementById('refNumber').textContent = submission.ref;
+            // Show success
+            document.getElementById('intakeForm').style.display = 'none';
+            document.getElementById('formNav').style.display = 'none';
+            document.getElementById('submittedScreen').classList.add('active');
+            document.getElementById('confirmEmail').textContent = submission.email || 'your email';
+            document.getElementById('refNumber').textContent = submission.ref;
 
-        // Clear saved data
-        localStorage.removeItem('intake_form_data');
-        localStorage.removeItem('intake_max_step');
+            // Clear saved data
+            localStorage.removeItem('intake_form_data');
+            localStorage.removeItem('intake_max_step');
+        }).catch(err => {
+            console.error('[Intake] Submit failed:', err);
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Submit My Project';
+            // Show error without losing form data
+            const errorDiv = document.createElement('div');
+            errorDiv.style.cssText = 'background:var(--danger);color:#fff;padding:12px 20px;border-radius:8px;margin-top:12px;font-size:14px;';
+            errorDiv.textContent = 'Submission failed — please try again. If the problem persists, email info@planflowai.com.';
+            submitBtn.parentNode.insertBefore(errorDiv, submitBtn.nextSibling);
+            setTimeout(() => errorDiv.remove(), 8000);
+        });
     }
 </script>
 </body>

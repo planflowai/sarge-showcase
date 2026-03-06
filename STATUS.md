@@ -4,7 +4,18 @@ Generated: 2026-03-05
 Branch: sargebuild-v1
 Tag: working-2026-03-02-deploy-fix (last tagged)
 
-## Latest Changes (ENV manager — sync keys to all standalone apps, not just root)
+## Latest Changes (Intake form — PlanFlowAI rebrand, dark/light mode, Supabase submit, ref code, live validation)
+
+- **Fix 1 — Top padding**: `.main` padding-top 160px → 190px so "Step 1 of 8" clears fixed progress bar on all screens.
+- **Fix 2 — PlanFlowAI rebrand**: Header logo replaced with `logo_png.png` img tag (height 36px). "SARGE Web Studio" → "PlanFlowAI". Title tag updated. Contact email → `info@planflowai.com`. Logo copied to `public/logo_png.png`.
+- **Fix 3 — Dark/Light mode toggle**: Sun/moon button in header. Light mode CSS variables (white bg, dark text, accent stays #FF6700). Persists to localStorage. Defaults to dark.
+- **Fix 4 — Supabase submit**: `submitForm()` now does a proper `fetch POST /api/intake/submit`. On success → shows submitted screen. On error → shows red error banner without losing form data. Submit button shows "Submitting..." and disables during request.
+- **Fix 5 — Ref code from URL**: Reads `?ref=` query param on page load. If present, uses it as `ref_code` in submission. Fetches `/api/intake/status?ref=` to pre-fill client name and email from existing project data.
+- **Fix 6 — Live validation on blur**: Required fields show red border immediately when blurred empty. Border clears on input. No longer waits for Continue button click.
+- **Modified**: `apps/builder-standalone/public/intake-form.html`.
+- **Added**: `apps/builder-standalone/public/logo_png.png` (copied from `app/builder/assets/`).
+
+## Previous Changes (ENV manager — sync keys to all standalone apps, not just root)
 
 - **Root cause**: ENV manager save/add/delete routes only wrote to root `.env.local`. Standalone apps (builder, debate, guardian, etc.) load env vars at startup via `dotenv.config()` in `next.config.ts` pointing to root. But env changes after startup were invisible until manual "Push to Apps" + PM2 restart.
 - **Fix**: Added `syncToApps()` function to `helpers.ts`. After every save, add, or delete operation, the master `.env.local` is automatically copied to all `apps/*-standalone/.env.local` files. Writing to each app's `.env.local` triggers Next.js dev-mode file watcher restart, making new keys visible without manual intervention.
