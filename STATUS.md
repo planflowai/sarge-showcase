@@ -4,7 +4,17 @@ Generated: 2026-03-05
 Branch: sargebuild-v1
 Tag: working-2026-03-02-deploy-fix (last tagged)
 
-## Latest Changes (Phase D — pipeline wiring, Build from Intake, approve/deploy/rollback connected, PlanFlowAI rebrand)
+## Latest Changes (Fix pipeline test Step 11 — revision submission hang)
+
+- **Root cause**: Self-fetch calls from `/api/intake/revision` and `/api/intake/submit` to `/api/email/send` had no timeout. In Next.js dev mode, unbounded self-fetches can deadlock or exhaust connections, preventing response delivery. The pipeline test would hang indefinitely on Step 11.
+- **Fix 1**: `AbortSignal.timeout(10000)` on Resend API fetch in `/api/email/send` — prevents indefinite hang when Resend is unreachable.
+- **Fix 2**: `AbortSignal.timeout(5000)` on email self-fetch calls in `/api/intake/revision` — bounds background email work.
+- **Fix 3**: `AbortSignal.timeout(5000)` on email self-fetch calls in `/api/intake/submit` — same pattern fix for Step 1's background emails.
+- **Fix 4**: `AbortSignal.timeout(15000)` on Step 11 fetch in pipeline-test + use live `refCode` from Step 1 instead of module-level constant.
+- **Test result**: Full pipeline test completes in ~46s. Step 11 responds in 1890ms (was hanging indefinitely). 6/11 steps pass (Steps 4-6 fail on DeepSeek API, Step 10 cascade, Step 11 fails on missing `client_revisions` table — all expected failures, not hangs).
+- **Modified**: `email/send/route.ts`, `intake/revision/route.ts`, `intake/submit/route.ts`, `pipeline-test/route.ts`.
+
+## Previous Changes (Phase D — pipeline wiring, Build from Intake, approve/deploy/rollback connected, PlanFlowAI rebrand)
 
 - **Build from Intake button**: ProjectCommandCenter Client Hub panel now has "Build from Intake" button (orange, Hammer icon). Converts `form_data` to builder prompt via `intakeToPrompt()`, pre-fills chat, switches to build mode, updates Supabase status to `building`. Only shown when status is `new` or `reviewed`.
 - **Send Preview button**: "Send Preview to Client" button (indigo, Mail icon) appears when status is `building` and client email exists. Sends `preview_ready` email via `/api/email/send`, updates Supabase status to `preview` via approve route's `send_preview` action.
