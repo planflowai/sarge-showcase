@@ -42,6 +42,7 @@ async function tavilySearch(query: string): Promise<string> {
 export async function POST(request: NextRequest) {
   const body = await request.json();
   const { model, prompt, systemPrompt, source, provider, images, webSearch } = body;
+  const conversationHistory: { role: string; content: string }[] = body.conversationHistory || [];
 
   const hasImages = Array.isArray(images) && images.length > 0;
 
@@ -70,12 +71,19 @@ export async function POST(request: NextRequest) {
   if (enrichedSystemPrompt) {
     messages.push({ role: 'system', content: enrichedSystemPrompt });
   }
+  // Insert conversation history between system and user
+  for (const msg of conversationHistory) {
+    messages.push({ role: msg.role, content: msg.content });
+  }
   messages.push({ role: 'user', content: prompt });
 
   // Messages with image note for non-vision providers
   const messagesWithNote: { role: string; content: string }[] = [];
   if (systemPrompt) {
     messagesWithNote.push({ role: 'system', content: systemPrompt });
+  }
+  for (const msg of conversationHistory) {
+    messagesWithNote.push({ role: msg.role, content: msg.content });
   }
   messagesWithNote.push({ role: 'user', content: promptWithImageNote });
 
@@ -89,7 +97,7 @@ export async function POST(request: NextRequest) {
       const res = await fetch(`${lmstudioUrl}/chat/completions`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ model, messages: hasImages ? messagesWithNote : messages, max_tokens: 1024, stream: true }),
+        body: JSON.stringify({ model, messages: hasImages ? messagesWithNote : messages, max_tokens: 8192, stream: true }),
       });
 
       if (!res.ok) {
@@ -139,6 +147,10 @@ export async function POST(request: NextRequest) {
       if (enrichedSystemPrompt) {
         ollamaMessages.push({ role: 'system', content: enrichedSystemPrompt });
       }
+      // Insert conversation history
+      for (const msg of conversationHistory) {
+        ollamaMessages.push({ role: msg.role, content: msg.content });
+      }
       if (hasImages) {
         // Ollama expects images as base64 strings (without the data:image/... prefix)
         const ollamaImages = images
@@ -153,7 +165,7 @@ export async function POST(request: NextRequest) {
       const res = await fetch(`${ollamaUrl}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model, messages: ollamaMessages, stream: true }),
+        body: JSON.stringify({ model, messages: ollamaMessages, stream: true, options: { num_predict: 8192 } }),
       });
 
       if (!res.ok || !res.body) {
@@ -216,7 +228,7 @@ export async function POST(request: NextRequest) {
       if (!process.env.ANTHROPIC_API_KEY && !process.env.CLAUDE_API_KEY) {
         return NextResponse.json({ error: 'Anthropic API key not configured. Please add ANTHROPIC_API_KEY to your .env file.' }, { status: 500 });
       }
-      return await streamAnthropic(model, prompt, enrichedSystemPrompt, hasImages ? images : undefined);
+      return await streamAnthropic(model, prompt, enrichedSystemPrompt, hasImages ? images : undefined, conversationHistory);
     }
     if (model.includes('gpt') || model.startsWith('o3') || model.startsWith('o4')) {
       if (!process.env.OPENAI_API_KEY) {
@@ -228,7 +240,7 @@ export async function POST(request: NextRequest) {
       if (!process.env.GOOGLE_API_KEY) {
         return NextResponse.json({ error: 'Google API key not configured. Please add GOOGLE_API_KEY to your .env file.' }, { status: 500 });
       }
-      return await streamGemini(model, prompt, enrichedSystemPrompt, hasImages ? images : undefined);
+      return await streamGemini(model, prompt, enrichedSystemPrompt, hasImages ? images : undefined, conversationHistory);
     }
     if (model.includes('grok')) {
       if (!process.env.XAI_API_KEY) {
@@ -247,7 +259,7 @@ export async function POST(request: NextRequest) {
       if (!process.env.ANTHROPIC_API_KEY && !process.env.CLAUDE_API_KEY) {
         return NextResponse.json({ error: 'Anthropic API key not configured.' }, { status: 500 });
       }
-      return await streamAnthropic(model, prompt, enrichedSystemPrompt, hasImages ? images : undefined);
+      return await streamAnthropic(model, prompt, enrichedSystemPrompt, hasImages ? images : undefined, conversationHistory);
     }
     if (provider === 'openai') {
       if (!process.env.OPENAI_API_KEY) {
@@ -259,7 +271,7 @@ export async function POST(request: NextRequest) {
       if (!process.env.GOOGLE_API_KEY) {
         return NextResponse.json({ error: 'Google API key not configured.' }, { status: 500 });
       }
-      return await streamGemini(model, prompt, enrichedSystemPrompt, hasImages ? images : undefined);
+      return await streamGemini(model, prompt, enrichedSystemPrompt, hasImages ? images : undefined, conversationHistory);
     }
     if (provider === 'xai') {
       if (!process.env.XAI_API_KEY) {
@@ -362,7 +374,7 @@ async function streamOpenAICompatible(
 }
 
 // ── Anthropic (Claude) — native SSE streaming with vision ───────────────
-async function streamAnthropic(model: string, prompt: string, systemPrompt?: string, images?: string[]) {
+async function streamAnthropic(model: string, prompt: string, systemPrompt?: string, images?: string[], history?: { role: string; content: string }[]) {
   const apiKey = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY || '';
 
   // Build content array with images + text
@@ -384,6 +396,15 @@ async function streamAnthropic(model: string, prompt: string, systemPrompt?: str
   }
   content.push({ type: 'text', text: prompt });
 
+  // Build Anthropic messages: history + current user message
+  const anthropicMessages: any[] = [];
+  if (history && history.length > 0) {
+    for (const msg of history) {
+      anthropicMessages.push({ role: msg.role, content: msg.content });
+    }
+  }
+  anthropicMessages.push({ role: 'user', content });
+
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -396,7 +417,7 @@ async function streamAnthropic(model: string, prompt: string, systemPrompt?: str
       max_tokens: 8192,
       stream: true,
       system: systemPrompt || undefined,
-      messages: [{ role: 'user', content }],
+      messages: anthropicMessages,
     }),
   });
 
@@ -555,12 +576,22 @@ async function streamXAI(model: string, messages: { role: string; content: strin
 }
 
 // ── Google (Gemini) — streamGenerateContent with vision ─────────────────
-async function streamGemini(model: string, prompt: string, systemPrompt?: string, images?: string[]) {
+async function streamGemini(model: string, prompt: string, systemPrompt?: string, images?: string[], history?: { role: string; content: string }[]) {
   const apiKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY || '';
   const contents: any[] = [];
   if (systemPrompt) {
     contents.push({ role: 'user', parts: [{ text: systemPrompt }] });
     contents.push({ role: 'model', parts: [{ text: 'Understood.' }] });
+  }
+
+  // Insert conversation history
+  if (history && history.length > 0) {
+    for (const msg of history) {
+      contents.push({
+        role: msg.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: msg.content }],
+      });
+    }
   }
 
   // Build user message parts with images + text

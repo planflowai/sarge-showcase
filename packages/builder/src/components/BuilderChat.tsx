@@ -421,6 +421,18 @@ export default function BuilderChat({
     let guardianContext = '';
     if (shouldInjectContext(BUILDER_CONVERSATION_ID)) {
       guardianContext = buildContextForModel(BUILDER_CONVERSATION_ID);
+
+      // FIX 4: Cap guardian context to 500 tokens in build mode
+      if (guardianContext && builderMode === 'build') {
+        const guardianTokens = Math.ceil(guardianContext.length / 4);
+        if (guardianTokens > 500) {
+          guardianContext = guardianContext.slice(0, 2000);
+          const lastNl = guardianContext.lastIndexOf('\n');
+          if (lastNl > 1500) guardianContext = guardianContext.slice(0, lastNl);
+          guardianContext += '\n[END GUARDIAN CONTEXT]\n\n';
+          console.log('[BuilderChat] Guardian context capped to 500 tokens for builder mode');
+        }
+      }
     }
 
     // Build prompt with context injection
@@ -465,6 +477,19 @@ export default function BuilderChat({
       const isProjectMode = !!projectPath;
       systemPrompt = getBuilderSystemPrompt(builderMode, isProjectMode);
       console.log('[BuilderChat] Using Generate Mode - full file generation', { isProjectMode });
+    }
+
+    // FIX 4: Strip guardian if total input would exceed 80% of model context window
+    if (guardianContext) {
+      const isLocal = selectedProvider === 'ollama' || selectedProvider === 'lmstudio';
+      const contextWindow = isLocal ? 8192 : 128000;
+      const totalEstimate = Math.ceil(
+        (systemPrompt.length + finalPrompt.length + guardianContext.length + vaultContext.length) / 4
+      );
+      if (totalEstimate > contextWindow * 0.8) {
+        console.warn(`[BuilderChat] Input ~${totalEstimate} tokens exceeds 80% of ${contextWindow} context window — stripping guardian`);
+        guardianContext = '';
+      }
     }
 
     // Append vault/guardian context to system prompt so it doesn't pollute the user message

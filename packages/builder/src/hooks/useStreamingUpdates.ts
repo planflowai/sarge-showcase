@@ -175,16 +175,24 @@ export function useStreamingUpdates({
         }
 
         if (modifiedCode && modifiedCode !== artifactCode) {
-          if (autoApply) {
-            // Auto-apply is ON: apply changes directly without showing diff
-            console.log('[useStreamingUpdates] Auto-apply enabled, applying changes directly');
-            pendingEditRef.current = null;  // Clear pending edit so banner doesn't show
+          const wasEditBlocks = parsed.hasEditBlocks && parsed.editBlocks.length > 0;
+          // Auto-apply ONLY for surgical EDIT blocks when autoApply is ON.
+          // Full file replacements in edit mode ALWAYS require diff approval —
+          // the model ignored the edit instruction, user must review.
+          const shouldAutoApply = wasEditBlocks && autoApply;
+
+          if (shouldAutoApply) {
+            console.log('[useStreamingUpdates] Surgical edit blocks + auto-apply — applying directly');
+            pendingEditRef.current = null;
             onStreamingUpdate?.(modifiedCode, false);
           } else {
-            // Auto-apply is OFF: show diff for user approval
+            if (!wasEditBlocks) {
+              console.log('[useStreamingUpdates] Full file replacement in edit mode — requiring diff approval');
+            } else {
+              console.log('[useStreamingUpdates] Diff computed, awaiting approval');
+            }
             const summary = getDiffSummary(artifactCode, modifiedCode);
             pendingEditRef.current = { original: artifactCode, modified: modifiedCode, summary };
-            console.log('[useStreamingUpdates] Diff computed, awaiting approval');
             onViewDiff?.('[Pending Edits]', artifactCode, modifiedCode);
           }
         } else {

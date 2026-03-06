@@ -218,6 +218,21 @@ export const useBuilderChatStore = create<BuilderChatState>()(
       const isLocal = provider === "ollama" || provider === "lmstudio";
       const source = isLocal ? "local" : "cloud";
 
+      // Build conversation history: last 10 messages excluding current exchange
+      const currentMessages = get().messages;
+      const historyMessages = currentMessages
+        .slice(0, -2)  // Exclude just-added user + assistant placeholder
+        .filter(m => m.role === 'user' || m.role === 'assistant')
+        .slice(-10);
+      const conversationHistory = historyMessages.map(m => ({
+        role: m.role as string,
+        content: m.role === 'assistant'
+          ? m.content.replace(/```[\s\S]*?```/g, (block) =>
+              block.length > 250 ? block.slice(0, 200) + '\n... [code truncated]\n```' : block
+            )
+          : m.content,
+      }));
+
       // Call the streaming API - use apiPrompt which includes context injection
       const response = await fetch("/api/test/stream", {
         method: "POST",
@@ -230,6 +245,7 @@ export const useBuilderChatStore = create<BuilderChatState>()(
           source,
           webSearch,
           images: images && images.length > 0 ? images : undefined,
+          conversationHistory: conversationHistory.length > 0 ? conversationHistory : undefined,
         }),
         signal: abortController.signal,
       });

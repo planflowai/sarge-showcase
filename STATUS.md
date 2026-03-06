@@ -4,7 +4,15 @@ Generated: 2026-03-05
 Branch: sargebuild-v1
 Tag: working-2026-03-02-deploy-fix (last tagged)
 
-## Latest Changes (Supabase dual-write — build history, model registry, settings)
+## Latest Changes (Builder pipeline — conversation history, edit mode enforcement, token limits, guardian optimization)
+
+- **FIX 1 — Conversation history**: Builder chat now sends last 10 messages (user + assistant pairs) as conversation history between system prompt and current user message. Code blocks in assistant messages are truncated (first 200 chars + `[code truncated]`) to save tokens. History is forwarded to all 7 providers: Anthropic, OpenAI, Gemini, DeepSeek, xAI, Ollama, LM Studio, and all OpenAI-compatible providers. Models now see what was previously discussed and can make incremental changes.
+- **FIX 2 — Edit mode diff enforcement**: When Edit Mode is active and the model ignores EDIT block format (returns full file instead), changes are NO LONGER auto-applied silently. Full file replacements in edit mode ALWAYS go through diff approval — user sees the diff and must explicitly approve. Surgical EDIT blocks still auto-apply when auto-apply is enabled.
+- **FIX 3 — Token limits**: LM Studio `max_tokens` increased from 1024 to 8192 (was too low for HTML pages). Ollama now sends `options: { num_predict: 8192 }` (previously unbounded/model default, which varied wildly).
+- **FIX 4 — Guardian optimization**: In build mode, guardian context is capped at 500 tokens (was up to 3000). If total estimated input exceeds 80% of model context window (8192 for local, 128000 for cloud), guardian context is stripped entirely and a warning is logged. Prevents context window overflow on small local models.
+- **Files**: Modified `app/api/test/stream/route.ts` (conversation history + token limits for all providers), `builderChatStore.ts` (history extraction + truncation), `useStreamingUpdates.ts` (edit mode enforcement), `BuilderChat.tsx` (guardian capping + context overflow check).
+
+## Previous Changes (Supabase dual-write — build history, model registry, settings)
 
 - **forge_build_history**: Wired in `builderChatStore.sendMessage()` — after every successful build, logs prompt (truncated to 500 chars), model, provider, token counts, build time, code length. Fire-and-forget.
 - **forge_model_registry**: Wired in `modelRegistryStore.updateModel()` — when model tags change, upserts model_id, name, provider, tags, enabled to Supabase. Fire-and-forget.
