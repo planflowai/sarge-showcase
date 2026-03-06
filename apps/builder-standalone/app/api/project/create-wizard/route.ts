@@ -379,6 +379,46 @@ export async function POST(request: NextRequest) {
       await runCmd("git push origin", projectPath).catch(() => {});
       send("finalize", "done", "All deploy URLs saved");
 
+      // ── Step 11: Send welcome email (non-blocking) ──
+      if (clientEmail) {
+        const comingSoonUrl = vercelUrl || netlifyUrl || cloudflareUrl || githubUrl;
+        const refCode = "SARGE-" + Date.now().toString(36).toUpperCase();
+        const intakeFormUrl = comingSoonUrl
+          ? comingSoonUrl.replace(/\/$/, "").replace(/\/[^/]*$/, "") + "/intake"
+          : "";
+        send("email", "running", "Sending welcome email");
+        try {
+          const emailRes = await fetch(
+            new URL("/api/email/send", request.url).toString(),
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                to: clientEmail as string,
+                template: "welcome",
+                data: {
+                  client_name: (clientName as string) || projectName,
+                  project_name: projectName,
+                  coming_soon_url: comingSoonUrl,
+                  intake_form_url: intakeFormUrl
+                    ? `${intakeFormUrl}?ref=${refCode}`
+                    : "",
+                  ref_code: refCode,
+                  your_phone: "",
+                },
+              }),
+            },
+          );
+          if (emailRes.ok) {
+            send("email", "done", `Welcome email sent to ${clientEmail}`);
+          } else {
+            send("email", "skip", "Welcome email failed — project still created");
+          }
+        } catch {
+          send("email", "skip", "Welcome email failed — project still created");
+        }
+      }
+
       // ── Done ──
       close({
         projectPath,

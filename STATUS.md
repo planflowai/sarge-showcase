@@ -4,7 +4,16 @@ Generated: 2026-03-05
 Branch: sargebuild-v1
 Tag: working-2026-03-02-deploy-fix (last tagged)
 
-## Latest Changes (Phase A — foundations verified, schema aligned, Platinum tier added)
+## Latest Changes (Phase B — email system, 6 templates, welcome + intake wired)
+
+- **Email send route**: New `POST /api/email/send` — accepts `to`, `subject`, `template`, `data`. Uses Resend API. Falls back to console logging if `RESEND_API_KEY` not set — never blocks pipeline.
+- **6 branded templates**: `welcome`, `intake_received`, `preview_ready`, `site_live`, `revision_received`, `rollback_alert`. All share dark branded layout (#0B0E11 bg, #FF6700 accent, DM Sans font). Mobile responsive (600px max, table-based). Each uses `{{variable}}` replacement from data object. Legal safeguards embedded (7/14 day deadlines, scope lock, revision limits, auto-approval, rollback window).
+- **Welcome email wired**: After project creation wizard deploys coming-soon page (Step 10), auto-sends welcome email to client with coming-soon URL, intake form link, and 7/14 day deadline. Non-blocking — if email fails, project still creates.
+- **Intake received email wired**: After `/api/intake/submit` writes to Supabase, sends two emails: (a) confirmation to client with form summary (business, industry, pages, features, style), scope lock notice, and timeline; (b) notification to `NOTIFICATION_EMAIL` with same summary + client email. Replaced old `sendNotificationEmail()` plain-text function with branded HTML via `/api/email/send`.
+- **New files**: `app/api/email/send/route.ts`.
+- **Modified**: `app/api/project/create-wizard/route.ts` (welcome email step), `app/api/intake/submit/route.ts` (dual-email via `/api/email/send`).
+
+## Previous Changes (Phase A — foundations verified, schema aligned, Platinum tier added)
 
 - **Intake submit aligned**: `/api/intake/submit` now writes `project_name`, `client_name`, `client_email`, `intake_submitted_at` columns per SARGE_Client_Pipeline_Spec. Pipeline lifecycle columns (`build_started_at`, `preview_sent_at`, `approved_at`, `deployed_at`) defined in schema for future phases.
 - **Revision route aligned**: `/api/intake/revision` now auto-calculates `revision_number` by counting existing revisions for the ref_code, and accepts `attachment_url`.
