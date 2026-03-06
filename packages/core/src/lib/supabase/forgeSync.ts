@@ -302,7 +302,7 @@ export async function testForgeConnection(): Promise<boolean> {
 // ─── Certificate Sync ───────────────────────────────────────────
 
 export interface CertificateRow {
-  tier: "gold" | "silver";
+  tier: "platinum" | "gold" | "silver";
   client_name: string;
   site_url: string;
   performance: number;

@@ -93,8 +93,9 @@ function ScoreCard({
 
 // ─── Certificate tier helpers ───────────────────────────────────────────────────
 
-function getCertTier(scores: AuditScores): "gold" | "silver" | null {
+function getCertTier(scores: AuditScores): "platinum" | "gold" | "silver" | null {
   const { performance, accessibility, seo, bestPractices } = scores;
+  if (performance >= 95 && accessibility >= 95 && seo >= 95 && bestPractices >= 95) return "platinum";
   if (performance >= 90 && accessibility >= 90 && seo >= 90 && bestPractices >= 90) return "gold";
   if (performance >= 80 && accessibility >= 80 && seo >= 80 && bestPractices >= 80) return "silver";
   return null;
@@ -232,22 +233,26 @@ export default function CompliancePanel({
           <span
             className={cn(
               "ml-auto text-[10px] font-bold px-2 py-0.5 rounded border",
-              certTier === "gold"
-                ? "bg-amber-900/30 text-amber-400 border-amber-500/40"
-                : certTier === "silver"
-                  ? "bg-slate-700/30 text-slate-300 border-slate-500/40"
-                  : scores.passed
-                    ? "bg-emerald-900/30 text-emerald-400 border-emerald-600/30"
-                    : "bg-amber-900/30 text-amber-400 border-amber-600/30"
+              certTier === "platinum"
+                ? "bg-teal-900/30 text-teal-400 border-teal-500/40"
+                : certTier === "gold"
+                  ? "bg-amber-900/30 text-amber-400 border-amber-500/40"
+                  : certTier === "silver"
+                    ? "bg-slate-700/30 text-slate-300 border-slate-500/40"
+                    : scores.passed
+                      ? "bg-emerald-900/30 text-emerald-400 border-emerald-600/30"
+                      : "bg-amber-900/30 text-amber-400 border-amber-600/30"
             )}
           >
-            {certTier === "gold"
-              ? "GOLD CERTIFIED"
-              : certTier === "silver"
-                ? "SILVER CERTIFIED"
-                : scores.passed
-                  ? "PASSED"
-                  : "NEEDS REVIEW"}
+            {certTier === "platinum"
+              ? "PLATINUM CERTIFIED"
+              : certTier === "gold"
+                ? "GOLD CERTIFIED"
+                : certTier === "silver"
+                  ? "SILVER CERTIFIED"
+                  : scores.passed
+                    ? "PASSED"
+                    : "NEEDS REVIEW"}
           </span>
         )}
 
@@ -296,20 +301,22 @@ export default function CompliancePanel({
               <Award
                 className={cn(
                   "h-4 w-4 flex-shrink-0",
-                  certTier === "gold" ? "text-amber-400" : "text-slate-400"
+                  certTier === "platinum" ? "text-teal-400" : certTier === "gold" ? "text-amber-400" : "text-slate-400"
                 )}
               />
               <span className="text-[11px] font-bold text-zinc-200">
-                {certTier === "gold" ? "Gold" : "Silver"} Certificate Earned
+                {certTier === "platinum" ? "Platinum" : certTier === "gold" ? "Gold" : "Silver"} Certificate Earned
               </span>
               <button
                 onClick={handleDownloadCert}
                 disabled={certLoading}
                 className={cn(
                   "ml-auto flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold rounded border transition-colors",
-                  certTier === "gold"
-                    ? "border-amber-500/40 text-amber-400 hover:bg-amber-500/10"
-                    : "border-slate-500/40 text-slate-300 hover:bg-slate-500/10"
+                  certTier === "platinum"
+                    ? "border-teal-500/40 text-teal-400 hover:bg-teal-500/10"
+                    : certTier === "gold"
+                      ? "border-amber-500/40 text-amber-400 hover:bg-amber-500/10"
+                      : "border-slate-500/40 text-slate-300 hover:bg-slate-500/10"
                 )}
               >
                 {certLoading ? (

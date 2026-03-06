@@ -185,6 +185,42 @@ CREATE TABLE user_settings (
   value JSONB
 );
 
+-- TABLE 12: client_intake (SARGE_Client_Pipeline_Spec)
+CREATE TABLE IF NOT EXISTS client_intake (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at TIMESTAMPTZ DEFAULT now(),
+  ref_code TEXT UNIQUE,
+  form_data JSONB,
+  status TEXT DEFAULT 'new', -- new, building, preview_sent, approved, deployed
+  email TEXT,
+  project_name TEXT,
+  client_name TEXT,
+  client_email TEXT,
+  intake_submitted_at TIMESTAMPTZ,
+  build_started_at TIMESTAMPTZ,
+  preview_sent_at TIMESTAMPTZ,
+  approved_at TIMESTAMPTZ,
+  deployed_at TIMESTAMPTZ
+);
+
+CREATE INDEX idx_client_intake_ref ON client_intake(ref_code);
+CREATE INDEX idx_client_intake_status ON client_intake(status);
+
+-- TABLE 13: client_revisions (SARGE_Client_Pipeline_Spec)
+CREATE TABLE IF NOT EXISTS client_revisions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at TIMESTAMPTZ DEFAULT now(),
+  ref_code TEXT,
+  page TEXT,
+  description TEXT,
+  priority TEXT DEFAULT 'medium',
+  status TEXT DEFAULT 'new', -- new, in_progress, completed
+  revision_number INTEGER DEFAULT 1,
+  attachment_url TEXT
+);
+
+CREATE INDEX idx_client_revisions_ref ON client_revisions(ref_code);
+
 -- ============================================================
 -- RLS Policies — allow anon key full access (single-user app)
 -- ============================================================
@@ -199,6 +235,8 @@ ALTER TABLE forge_model_registry ENABLE ROW LEVEL SECURITY;
 ALTER TABLE forge_certificates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE builder_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE client_intake ENABLE ROW LEVEL SECURITY;
+ALTER TABLE client_revisions ENABLE ROW LEVEL SECURITY;
 
 -- Allow anon full CRUD on all tables (single-user local app)
 DO $$
@@ -208,7 +246,8 @@ BEGIN
   FOR tbl IN SELECT unnest(ARRAY[
     'conversations', 'messages', 'forge_trial_results', 'forge_hybrid_runs',
     'forge_build_history', 'forge_compiler_results', 'forge_billing',
-    'forge_model_registry', 'forge_certificates', 'builder_logs', 'user_settings'
+    'forge_model_registry', 'forge_certificates', 'builder_logs', 'user_settings',
+    'client_intake', 'client_revisions'
   ])
   LOOP
     EXECUTE format('CREATE POLICY "%s_anon_all" ON %I FOR ALL TO anon USING (true) WITH CHECK (true)', tbl, tbl);

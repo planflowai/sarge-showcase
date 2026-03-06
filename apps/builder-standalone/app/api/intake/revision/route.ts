@@ -6,7 +6,7 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 
 export async function POST(request: NextRequest) {
   try {
-    const { ref_code, page, description, priority } = await request.json();
+    const { ref_code, page, description, priority, attachment_url } = await request.json();
 
     if (!ref_code || !page || !description) {
       return NextResponse.json(
@@ -17,12 +17,22 @@ export async function POST(request: NextRequest) {
 
     if (supabaseUrl && supabaseKey) {
       const supabase = createClient(supabaseUrl, supabaseKey);
+
+      // Determine revision_number by counting existing revisions for this ref_code
+      const { count } = await supabase
+        .from("client_revisions")
+        .select("*", { count: "exact", head: true })
+        .eq("ref_code", ref_code);
+      const revisionNumber = (count || 0) + 1;
+
       const { error } = await supabase.from("client_revisions").insert({
         ref_code,
         page,
         description,
         priority: priority || "medium",
         status: "new",
+        revision_number: revisionNumber,
+        attachment_url: attachment_url || null,
       });
       if (error) {
         console.error("[intake/revision] Supabase error:", error.message);

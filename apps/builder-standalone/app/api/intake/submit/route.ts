@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
       formData.ref || "SARGE-" + Date.now().toString(36).toUpperCase();
     const email = formData.email || null;
 
-    // Write to Supabase
+    // Write to Supabase — columns aligned with SARGE_Client_Pipeline_Spec
     if (supabaseUrl && supabaseKey) {
       const supabase = createClient(supabaseUrl, supabaseKey);
       const { error } = await supabase.from("client_intake").insert({
@@ -21,6 +21,10 @@ export async function POST(request: NextRequest) {
         status: "new",
         ref_code: refCode,
         email,
+        project_name: formData.business_name || null,
+        client_name: formData.contact_name || formData.business_name || null,
+        client_email: formData.email || null,
+        intake_submitted_at: new Date().toISOString(),
       });
       if (error) {
         console.error("[intake/submit] Supabase error:", error.message);

@@ -4,7 +4,17 @@ Generated: 2026-03-05
 Branch: sargebuild-v1
 Tag: working-2026-03-02-deploy-fix (last tagged)
 
-## Latest Changes (Automated A-Z pipeline test — 11 steps, full audit report, diagnostics UI)
+## Latest Changes (Phase A — foundations verified, schema aligned, Platinum tier added)
+
+- **Intake submit aligned**: `/api/intake/submit` now writes `project_name`, `client_name`, `client_email`, `intake_submitted_at` columns per SARGE_Client_Pipeline_Spec. Pipeline lifecycle columns (`build_started_at`, `preview_sent_at`, `approved_at`, `deployed_at`) defined in schema for future phases.
+- **Revision route aligned**: `/api/intake/revision` now auto-calculates `revision_number` by counting existing revisions for the ref_code, and accepts `attachment_url`.
+- **Platinum certification tier (95+)**: Three tiers: Platinum (all >= 95, teal `#14B8A6`), Gold (all >= 90, amber), Silver (all >= 80, slate). Updated `getCertTier()` in CompliancePanel, badge/icon/download button styling, certificate HTML template accent colors, `CertificateRequest` type, validation logic, `CertificateRow` type in forgeSync.
+- **Supabase migration**: `migration.sql` now includes `client_intake` (12 columns) and `client_revisions` (9 columns) tables with RLS policies. Incremental `migration_phase_a.sql` provided for existing databases.
+- **Verified OK (no changes needed)**: `intakeToPrompt.ts` (23 industries, 11 page types, PII placeholders), `piiInjector.ts` (all placeholder variants handled).
+- **Modified files**: `app/api/intake/submit/route.ts`, `app/api/intake/revision/route.ts`, `CompliancePanel.tsx`, `certificate/route.ts`, `forgeSync.ts`, `supabase/migration.sql`.
+- **New files**: `supabase/migration_phase_a.sql`.
+
+## Previous Changes (Automated A-Z pipeline test — 11 steps, full audit report, diagnostics UI)
 
 - **Pipeline test route**: New `POST /api/pipeline-test` runs 11 end-to-end steps with dummy data: (1) Intake submission to Supabase, (2) Prompt assembly from intake, (3) Project creation, (4) Build execution via cheapest cloud model (DeepSeek V3 or Gemini Flash Lite), (5) Conversation history follow-up, (6) Edit mode verification, (7) Compiler audit, (8) Certificate check, (9) PII injection, (10) Supabase logging verification, (11) Revision submission. Each step PASS/FAIL independently. Returns JSON report with timestamps, costs, duration, step details.
 - **Diagnostics UI**: New `PipelineDiagnostics` component in Settings → Diagnostics section. "Run Pipeline Test" button with live progress bar (11 steps), summary card (green/red), step-by-step results with pass/fail icons and timing, "Copy Report" button for JSON export.

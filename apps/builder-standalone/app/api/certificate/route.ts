@@ -4,7 +4,7 @@ import puppeteer from "puppeteer";
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
 interface CertificateRequest {
-  tier: "gold" | "silver";
+  tier: "platinum" | "gold" | "silver";
   clientName: string;
   siteUrl: string;
   scores: {
@@ -22,11 +22,12 @@ interface CertificateRequest {
 // ─── Certificate HTML Template ──────────────────────────────────────────────────
 
 function buildCertificateHtml(data: CertificateRequest): string {
+  const isPlatinum = data.tier === "platinum";
   const isGold = data.tier === "gold";
-  const tierLabel = isGold ? "GOLD" : "SILVER";
-  const accentColor = isGold ? "#F59E0B" : "#94A3B8";
-  const accentGlow = isGold ? "rgba(245, 158, 11, 0.15)" : "rgba(148, 163, 184, 0.10)";
-  const borderAccent = isGold ? "#F59E0B" : "#64748B";
+  const tierLabel = isPlatinum ? "PLATINUM" : isGold ? "GOLD" : "SILVER";
+  const accentColor = isPlatinum ? "#14B8A6" : isGold ? "#F59E0B" : "#94A3B8";
+  const accentGlow = isPlatinum ? "rgba(20, 184, 166, 0.18)" : isGold ? "rgba(245, 158, 11, 0.15)" : "rgba(148, 163, 184, 0.10)";
+  const borderAccent = isPlatinum ? "#14B8A6" : isGold ? "#F59E0B" : "#64748B";
   const dateStr = new Date().toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
@@ -190,11 +191,19 @@ export async function POST(req: NextRequest) {
 
     // Validate tier matches scores
     const { performance, accessibility, seo, bestPractices } = body.scores;
+    const allAbove95 =
+      performance >= 95 && accessibility >= 95 && seo >= 95 && bestPractices >= 95;
     const allAbove90 =
       performance >= 90 && accessibility >= 90 && seo >= 90 && bestPractices >= 90;
     const allAbove80 =
       performance >= 80 && accessibility >= 80 && seo >= 80 && bestPractices >= 80;
 
+    if (body.tier === "platinum" && !allAbove95) {
+      return NextResponse.json(
+        { error: "Platinum tier requires all scores >= 95" },
+        { status: 400 }
+      );
+    }
     if (body.tier === "gold" && !allAbove90) {
       return NextResponse.json(
         { error: "Gold tier requires all scores >= 90" },
