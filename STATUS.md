@@ -4,7 +4,20 @@ Generated: 2026-03-05
 Branch: sargebuild-v1
 Tag: working-2026-03-02-deploy-fix (last tagged)
 
-## Latest Changes (Phase C — preview/approval page, revision enhancements, rollback page, intake hosting)
+## Latest Changes (Phase D — pipeline wiring, Build from Intake, approve/deploy/rollback connected, PlanFlowAI rebrand)
+
+- **Build from Intake button**: ProjectCommandCenter Client Hub panel now has "Build from Intake" button (orange, Hammer icon). Converts `form_data` to builder prompt via `intakeToPrompt()`, pre-fills chat, switches to build mode, updates Supabase status to `building`. Only shown when status is `new` or `reviewed`.
+- **Send Preview button**: "Send Preview to Client" button (indigo, Mail icon) appears when status is `building` and client email exists. Sends `preview_ready` email via `/api/email/send`, updates Supabase status to `preview` via approve route's `send_preview` action.
+- **Enhanced approve route**: `/api/intake/approve` now supports 3 actions — `start_build` (status→building), `send_preview` (status→preview), and default approve (status→deployed, triggers deploy to github/vercel/netlify/cloudflare via `/api/deploy` push, sends `site_live` email with live URLs and rollback link).
+- **Enhanced rollback route**: `/api/intake/rollback` now reverts status to `preview`, clears `deployed_at`, triggers redeploy of coming-soon page via `/api/deploy` push, sends `rollback_alert` email.
+- **Revision notification emails**: `/api/intake/revision` now sends dual emails — confirmation to client (`revision_received` template) and notification to `NOTIFICATION_EMAIL`. Fetches client info from Supabase for email addressing.
+- **Auto-approval cron**: `GET /api/cron/auto-approve` — queries Supabase for projects with `status='preview'` and `preview_sent_at` > 14 days. For each, calls `/api/intake/approve` to trigger full approve+deploy flow. Returns count and results.
+- **PlanFlowAI rebrand**: All client-facing pages rebranded from "SARGE Web Studio" to "PlanFlowAI". Logo marks S→P. Email templates header/footer/from/subject updated. Certificate route `S.A.R.G.E. Forge` → `PlanFlowAI`, `SARGE Forge Compiler` → `PlanFlowAI Compiler`, filename prefix → `planflowai-certificate`.
+- **New files**: `app/api/cron/auto-approve/route.ts`.
+- **Modified**: `ProjectCommandCenter.tsx` (Build from Intake + Send Preview), `approve/route.ts` (3-action support + deploy + email), `rollback/route.ts` (redeploy + revert), `revision/route.ts` (dual email notifications), `certificate/route.ts` (rebrand), `email/send/route.ts` (rebrand), all 4 client pages (rebrand), `(client)/layout.tsx` (rebrand).
+- **NOT modified**: builder pipeline internals, hybrid, trials, scoring, billing, Supabase schema, email template layouts, client page structures.
+
+## Previous Changes (Phase C — preview/approval page, revision enhancements, rollback page, intake hosting)
 
 - **Client route group**: New `(client)` route group in builder-standalone with bare layout (no Header/Foundry UI). All 4 client-facing pages use dark branded theme (#0B0E11 bg, #FF6700 accent, DM Sans font), fully mobile responsive.
 - **Intake hosting**: `/intake/[ref]` — serves intake form HTML via iframe with ref code pre-filled and locked. Intake form copied to `public/intake-form.html` for static serving.
