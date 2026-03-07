@@ -9,6 +9,7 @@ import {
   generateSharedCss,
   generateNavSnippet,
   guardianCheck,
+  postBuildValidation,
   pickModelForDifficulty,
   MIN_PAGE_SIZE,
   type BuildPageResult,
@@ -188,7 +189,19 @@ export async function POST(req: NextRequest) {
 
           // Save to disk (even partial pages — overwrite previous attempts)
           const final = results[results.length - 1];
+
+          // Post-build validation: catch hallucinated data before save
           if (final.html.length > 0) {
+            const validation = postBuildValidation(final.html, projectName, pages);
+            if (validation.fixes.length > 0) {
+              final.html = validation.html;
+              send({
+                event: "validation",
+                page: pageName,
+                fixes: validation.fixes,
+                navOk: validation.navOk,
+              });
+            }
             fs.writeFileSync(path.join(projectDir, filename), final.html);
           }
 

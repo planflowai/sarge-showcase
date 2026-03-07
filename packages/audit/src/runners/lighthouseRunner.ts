@@ -60,7 +60,7 @@ export async function runLighthouse(
         process.execPath, // node executable
         [workerPath, projectPath],
         {
-          timeout: 60_000, // 60s max
+          timeout: 120_000, // 120s max — large pages need more time
           env: { ...process.env },
           maxBuffer: 10 * 1024 * 1024, // 10MB
         },

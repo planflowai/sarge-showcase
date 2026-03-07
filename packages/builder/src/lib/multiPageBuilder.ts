@@ -176,6 +176,97 @@ export function generateBuildLog(
   return lines.join("\n");
 }
 
+// ── Post-build validation patterns ───────────────────────────────────
+
+/** Fake phone number patterns that models hallucinate */
+const FAKE_PHONE_PATTERNS = [
+  /\+?1?\s*[\-.]?\s*\(?555\)?\s*[\-.]?\s*\d{3}\s*[\-.]?\s*\d{4}/g,
+  /\(?555\)?\s*[\-.]?\s*\d{3}\s*[\-.]?\s*\d{4}/g,
+  /123[\-.]456[\-.]7890/g,
+  /800[\-.]555[\-.]0\d{3}/g,
+];
+
+/** Fake business names that models commonly hallucinate */
+const HALLUCINATED_NAMES = [
+  "InnovateWeb Solutions",
+  "Acme Corp",
+  "Acme Corporation",
+  "WebSolutions Pro",
+  "WebDev Solutions",
+  "TechStart Inc",
+  "Digital Solutions",
+  "Web Agency Pro",
+  "Creative Web Studio",
+];
+
+/** Fake email domains that models hallucinate */
+const FAKE_EMAIL_RE = /[\w.-]+@(?:example\.com|acmecorp\.com|websolutionspro\.com|webdevsolutions\.com|innovateweb\.com|techstart\.com|planflow\.ai)\b/gi;
+
+/**
+ * Post-build validation — catches hallucinated data BEFORE compiler.
+ * Auto-replaces fake data with {{placeholder}} tokens so PII injection can fill them later.
+ * Returns the cleaned HTML + a list of issues found/fixed.
+ */
+export function postBuildValidation(
+  html: string,
+  businessName: string,
+  pageNames: string[],
+): { html: string; fixes: string[]; navOk: boolean } {
+  const fixes: string[] = [];
+  let cleaned = html;
+
+  // 1. Replace hallucinated business names
+  for (const fake of HALLUCINATED_NAMES) {
+    if (cleaned.includes(fake)) {
+      const count = cleaned.split(fake).length - 1;
+      cleaned = cleaned.split(fake).join("{{BUSINESS_NAME}}");
+      fixes.push(`Replaced "${fake}" × ${count} → {{BUSINESS_NAME}}`);
+    }
+  }
+
+  // 2. Replace fake phone numbers (not already in placeholder)
+  for (const pattern of FAKE_PHONE_PATTERNS) {
+    // Reset lastIndex for global regex
+    pattern.lastIndex = 0;
+    let match;
+    const seen: string[] = [];
+    while ((match = pattern.exec(cleaned)) !== null) {
+      const raw = match[0];
+      // Skip if already a placeholder or duplicate
+      if (raw.includes("{{") || seen.includes(raw)) continue;
+      seen.push(raw);
+    }
+    for (const raw of seen) {
+      // In tel: hrefs use phone_tel placeholder
+      cleaned = cleaned.split(`tel:${raw}`).join("tel:{{phone_tel}}");
+      cleaned = cleaned.split(`tel:+${raw}`).join("tel:{{phone_tel}}");
+      // In display text use phone placeholder
+      cleaned = cleaned.split(raw).join("{{phone}}");
+      fixes.push(`Replaced phone "${raw}" → {{phone}}`);
+    }
+  }
+
+  // 3. Replace fake emails (keep real client email if present)
+  const fakeEmails = cleaned.match(FAKE_EMAIL_RE);
+  if (fakeEmails) {
+    const unique = fakeEmails.filter((e, i) => fakeEmails.indexOf(e) === i);
+    for (const email of unique) {
+      cleaned = cleaned.split(`mailto:${email}`).join("mailto:{{email}}");
+      cleaned = cleaned.split(email).join("{{email}}");
+      fixes.push(`Replaced email "${email}" → {{email}}`);
+    }
+  }
+
+  // 4. Check nav consistency — all pages should link to each other
+  const expectedLinks = pageNames.map((p) => {
+    const key = p.toLowerCase().replace(/\s+/g, "-");
+    return key === "home" ? "index.html" : `${key}.html`;
+  });
+  const navOk = expectedLinks.every((link) => cleaned.includes(`href="${link}"`));
+
+  return { html: cleaned, fixes, navOk };
+}
+
 /**
  * Quick guardian check — validates built HTML has required elements.
  */

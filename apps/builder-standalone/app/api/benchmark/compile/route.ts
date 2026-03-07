@@ -234,18 +234,22 @@ async function callGemini(apiKey: string, prompt: string): Promise<string | null
 
 export async function POST(request: NextRequest) {
   try {
-    const { html, fix, violations: clientViolations } = await request.json();
+    const { html, fix, violations: clientViolations, projectPath, filename } = await request.json();
 
     if (!html || typeof html !== "string") {
       return NextResponse.json({ error: "html is required" }, { status: 400 });
     }
 
-    const tempDir = join(tmpdir(), `sarge-compile-${Date.now()}`);
-    mkdirSync(tempDir, { recursive: true });
+    // If projectPath is provided, audit against the real project dir (external CSS/JS work).
+    // Otherwise fall back to isolated temp dir.
+    const useProjectDir = projectPath && existsSync(projectPath);
+    const tempDir = useProjectDir ? projectPath : join(tmpdir(), `sarge-compile-${Date.now()}`);
+    if (!useProjectDir) mkdirSync(tempDir, { recursive: true });
+    const htmlFilename = filename || "index.html";
 
     try {
-      // Write original HTML
-      writeFileSync(join(tempDir, "index.html"), html, "utf-8");
+      // Write HTML to the audit directory
+      writeFileSync(join(tempDir, htmlFilename), html, "utf-8");
 
       // Run full audit (WITH Lighthouse)
       const initialReport = await runAudit(tempDir);
@@ -307,7 +311,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Write fixed HTML and re-audit WITH Lighthouse
-        writeFileSync(join(tempDir, "index.html"), fixedHtml, "utf-8");
+        writeFileSync(join(tempDir, htmlFilename), fixedHtml, "utf-8");
         currentReport = await runAudit(tempDir);
         currentHtml = fixedHtml;
         currentScores = extractScores(currentReport);
@@ -337,9 +341,12 @@ export async function POST(request: NextRequest) {
       });
 
     } finally {
-      try {
-        if (existsSync(tempDir)) rmSync(tempDir, { recursive: true, force: true });
-      } catch {}
+      // Only clean up temp directories — never delete real project dirs
+      if (!useProjectDir) {
+        try {
+          if (existsSync(tempDir)) rmSync(tempDir, { recursive: true, force: true });
+        } catch {}
+      }
     }
   } catch (err: unknown) {
     if (err instanceof DOMException && err.name === "TimeoutError") {
