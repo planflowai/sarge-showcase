@@ -9,16 +9,22 @@ interface HelloPageOptions {
   clientName?: string;
   clientEmail?: string;
   domain?: string;
+  refCode?: string;
+  intakeFormUrl?: string;
 }
 
 export function generateHelloPage(opts: HelloPageOptions): string {
-  const { projectName, clientName, clientEmail, domain } = opts;
+  const { projectName, clientName, clientEmail, domain, refCode, intakeFormUrl } = opts;
   const displayDomain = domain || "yoursite.com";
   const contactLine = clientEmail
     ? `<a href="mailto:${esc(clientEmail)}" class="contact-link">${esc(clientEmail)}</a>`
     : "";
   const builtFor = clientName
     ? `<p class="built-for">A project for <strong>${esc(clientName)}</strong></p>`
+    : "";
+  const intakeUrl = intakeFormUrl || (refCode ? `/intake/${esc(refCode)}` : "");
+  const intakeButton = intakeUrl
+    ? `<a href="${intakeUrl}" class="intake-btn">Complete Your Intake Form &rarr;</a>`
     : "";
 
   return `<!DOCTYPE html>
@@ -168,6 +174,25 @@ export function generateHelloPage(opts: HelloPageOptions): string {
     }
     .contact-link:hover { color: #a78bfa; }
 
+    .intake-btn {
+      display: inline-block;
+      margin-bottom: 1.5rem;
+      padding: 0.875rem 2rem;
+      background: linear-gradient(135deg, #14B8A6, #8B5CF6);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 700;
+      text-decoration: none;
+      border-radius: 12px;
+      letter-spacing: 0.02em;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 20px rgba(20, 184, 166, 0.3);
+    }
+    .intake-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(139, 92, 246, 0.4);
+    }
+
     .footer {
       position: relative;
       z-index: 1;
@@ -183,6 +208,7 @@ export function generateHelloPage(opts: HelloPageOptions): string {
   </style>
 </head>
 <body>
+  ${intakeButton}
   <div class="card">
     <div class="logo-ring"><img src="/assets/logo.png" alt="PlanFlowAI"></div>
     <p class="powered-by">Powered by PlanFlowAI</p>

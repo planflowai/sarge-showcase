@@ -123,12 +123,13 @@ export async function POST(request: NextRequest) {
     // ── Step 1: Create project folder ──
     await fs.mkdir(projectPath, { recursive: true });
 
-    // ── Step 2: Generate coming soon page ──
+    // ── Step 2: Generate coming soon page with intake form button ──
     const html = generateHelloPage({
       projectName,
       clientName: (clientName as string) || undefined,
       clientEmail: (clientEmail as string) || undefined,
       domain: (clientDomain as string) || undefined,
+      refCode,
     });
     await fs.writeFile(path.join(projectPath, "index.html"), html, "utf-8");
 

@@ -18,6 +18,12 @@ export async function POST(request: NextRequest) {
       body.ref_code || body.ref || formData.ref_code || formData.ref ||
       "SARGE-" + Date.now().toString(36).toUpperCase();
 
+    // Extract display fields — handle both flat and step-based nested structures
+    const stepAbout = formData.step1_about || {};
+    const projectName = body.project_name || formData.business_name || stepAbout.business_name || null;
+    const clientName = body.client_name || formData.contact_name || stepAbout.full_name || formData.business_name || stepAbout.business_name || null;
+    const clientEmail = body.client_email || formData.email || stepAbout.email || null;
+
     // Write to Supabase — upsert: update existing row if ref_code exists, else insert
     if (supabaseUrl && supabaseKey) {
       const supabase = createClient(supabaseUrl, supabaseKey);
@@ -36,9 +42,9 @@ export async function POST(request: NextRequest) {
           .from("client_intake")
           .update({
             form_data: formData,
-            project_name: formData.business_name || null,
-            client_name: formData.contact_name || formData.business_name || null,
-            client_email: formData.email || null,
+            project_name: projectName,
+            client_name: clientName,
+            client_email: clientEmail,
             intake_submitted_at: new Date().toISOString(),
           })
           .eq("ref_code", refCode);
@@ -49,9 +55,9 @@ export async function POST(request: NextRequest) {
           form_data: formData,
           status: "new",
           ref_code: refCode,
-          project_name: formData.business_name || null,
-          client_name: formData.contact_name || formData.business_name || null,
-          client_email: formData.email || null,
+          project_name: projectName,
+          client_name: clientName,
+          client_email: clientEmail,
           intake_submitted_at: new Date().toISOString(),
         });
         error = insertErr;

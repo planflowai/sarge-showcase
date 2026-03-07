@@ -5,7 +5,7 @@ import {
   FolderOpen, Plus, FolderPlus, RefreshCw, X, Sparkles, Star,
   Rocket, Code2, Save, Loader2, History, FileEdit, FilePlus, FileX,
   Check, XCircle, ChevronDown, ChevronRight, BookOpen, Trash2,
-  LayoutTemplate, Grid3X3, Layers, Cpu, Puzzle,
+  LayoutTemplate, Grid3X3, Layers, Cpu, Puzzle, Hammer,
 } from "lucide-react";
 import { useBuilderStore, getLanguageFromPath } from "../stores/builderStore";
 import { useChangesStore, type ChangeEntry } from "../stores/changesStore";
@@ -21,6 +21,8 @@ import { Button } from "@/components/ui/button";
 import FileTree from "./FileTree";
 import { SkeletonFileTree } from "@/components/ui/skeleton";
 import { useProjectCommandStore } from "../stores/projectCommandStore";
+import { useBuilderChatStore } from "../stores/builderChatStore";
+import { useBuilderModeStore } from "../stores/builderModeStore";
 
 // Lazy-load heavy sidebar sections — prevents their stores from hydrating on mount
 const ComponentLibrarySection = lazy(() => import("./ComponentLibrarySection"));
@@ -207,6 +209,27 @@ export default function BuilderSidebar({
   const [selectedAiTemplate, setSelectedAiTemplate] = useState<(typeof AI_TEMPLATES)[0] | null>(null);
 
   // Projects Hub is now in ProjectCommandCenter (rendered by BuilderPage)
+
+  // ── Intake notification state ──
+  const [pendingIntakes, setPendingIntakes] = useState<any[]>([]);
+  const [expandedIntake, setExpandedIntake] = useState<string | null>(null);
+
+  // Poll Supabase for new intakes every 30s
+  useEffect(() => {
+    let mounted = true;
+    const fetchPending = async () => {
+      try {
+        const res = await fetch("/api/intake/pending");
+        if (res.ok) {
+          const data = await res.json();
+          if (mounted && Array.isArray(data.intakes)) setPendingIntakes(data.intakes);
+        }
+      } catch { /* silent */ }
+    };
+    fetchPending();
+    const interval = setInterval(fetchPending, 30000);
+    return () => { mounted = false; clearInterval(interval); };
+  }, []);
 
   // Inline toast system (replaces alert() calls)
   const [toasts, setToasts] = useState<{ id: string; msg: string; type: "success" | "error" | "info" | "warning" }[]>([]);
@@ -490,6 +513,82 @@ export default function BuilderSidebar({
                 </div>
               )}
             </div>
+
+            {/* Intake Queue — pending client submissions */}
+            {pendingIntakes.length > 0 && (
+              <div className="px-3 py-2 border-b border-orange-500/30 bg-orange-500/5">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-orange-500" />
+                  </span>
+                  <span className="text-sm font-bold text-white">{pendingIntakes.length} Pending Intake{pendingIntakes.length > 1 ? "s" : ""}</span>
+                </div>
+                <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                  {pendingIntakes.map((intake: any) => {
+                    const isExpanded = expandedIntake === intake.ref_code;
+                    const fd = intake.form_data?.form_data || intake.form_data || {};
+                    return (
+                      <div key={intake.ref_code} className="rounded-lg border border-orange-500/20 bg-zinc-800/80 overflow-hidden">
+                        <button
+                          onClick={() => setExpandedIntake(isExpanded ? null : intake.ref_code)}
+                          className="w-full flex items-center justify-between px-3 py-2.5 text-left"
+                        >
+                          <div className="min-w-0">
+                            <div className="text-sm font-bold text-white truncate">{intake.project_name || fd.business_name || "Unknown"}</div>
+                            <div className="text-xs font-semibold text-zinc-300">
+                              {intake.client_name || fd.contact_name || ""} &middot; {fd.industry || ""}
+                              {intake.intake_submitted_at && (
+                                <span className="ml-1 text-zinc-400">&middot; {new Date(intake.intake_submitted_at).toLocaleDateString()}</span>
+                              )}
+                            </div>
+                          </div>
+                          <ChevronRight className={cn("h-4 w-4 text-zinc-400 transition-transform flex-shrink-0", isExpanded && "rotate-90")} />
+                        </button>
+                        {isExpanded && (
+                          <div className="px-3 pb-3 border-t border-zinc-700 pt-2 space-y-2">
+                            {fd.pages && <div className="text-xs text-zinc-300"><span className="font-bold text-white">Pages:</span> {Array.isArray(fd.pages) ? fd.pages.join(", ") : fd.pages}</div>}
+                            {fd.features && <div className="text-xs text-zinc-300"><span className="font-bold text-white">Features:</span> {Array.isArray(fd.features) ? fd.features.join(", ") : fd.features}</div>}
+                            {(fd.style_preference || fd.style_vibe) && <div className="text-xs text-zinc-300"><span className="font-bold text-white">Style:</span> {fd.style_preference || fd.style_vibe}</div>}
+                            {fd.services && <div className="text-xs text-zinc-300"><span className="font-bold text-white">Services:</span> {Array.isArray(fd.services) ? fd.services.join(", ") : fd.services}</div>}
+                            {intake.client_email && <div className="text-xs text-zinc-300"><span className="font-bold text-white">Email:</span> {intake.client_email}</div>}
+                            <button
+                              onClick={async () => {
+                                try {
+                                  const res = await fetch("/api/intake/build", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ ref_code: intake.ref_code }),
+                                  });
+                                  const data = await res.json();
+                                  if (data.prompt) {
+                                    useBuilderChatStore.getState().setPrefilledInput(data.prompt);
+                                    useBuilderModeStore.getState().setMode("build");
+                                    setActivePopover(null);
+                                    showToast("Intake loaded — prompt ready. Hit Send to build.", "success");
+                                    // Mark as building
+                                    fetch("/api/intake/approve", {
+                                      method: "POST",
+                                      headers: { "Content-Type": "application/json" },
+                                      body: JSON.stringify({ ref_code: intake.ref_code, action: "start_build" }),
+                                    }).catch(() => {});
+                                    setPendingIntakes(prev => prev.filter(i => i.ref_code !== intake.ref_code));
+                                  }
+                                } catch { showToast("Failed to load intake", "error"); }
+                              }}
+                              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-teal-500 to-purple-600 hover:from-teal-400 hover:to-purple-500 text-white text-sm font-bold transition-all"
+                            >
+                              <Hammer className="h-4 w-4" />
+                              Build This Project
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-3">
@@ -914,12 +1013,13 @@ export default function BuilderSidebar({
           {TOOLBAR_ITEMS.map((item) => {
             const Icon = item.icon;
             const isActive = activePopover === item.id;
+            const intakeCount = item.id === "files" ? pendingIntakes.length : 0;
             return (
               <button
                 key={item.id}
                 onClick={(e) => handleToolbarClick(item.id, e)}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all border",
+                  "relative flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all border",
                   isActive
                     ? item.active
                     : cn("border-transparent", item.color, item.hover)
@@ -927,6 +1027,11 @@ export default function BuilderSidebar({
               >
                 <Icon className="h-5 w-5" />
                 <span>{item.label}</span>
+                {intakeCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 text-[10px] font-bold text-white px-1 animate-pulse">
+                    {intakeCount}
+                  </span>
+                )}
                 {/* File badge */}
                 {item.id === "files" && projectName && (
                   <span className="w-2.5 h-2.5 rounded-full bg-amber-400 flex-shrink-0" />
