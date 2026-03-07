@@ -1,21 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { intakeToPrompt } from "@sarge/builder/lib/intakeToPrompt";
+import { intakeToPrompt, flattenIntake, PAGE_DIFFICULTY, intakeToPagePrompt } from "@sarge/builder/lib/intakeToPrompt";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 
 /**
  * Build from Intake — assembles the builder prompt from a stored intake record.
- * Called by the "Build from Intake" button in the pipeline UI.
  *
  * POST /api/intake/build
- * Body: { ref_code: string }
- * Returns: { prompt: string, ref_code: string, pages: string[] }
+ * Body: { ref_code: string, page?: string }
+ *
+ * Without page: returns full prompt + page manifest with difficulties
+ * With page: returns per-page prompt for multi-page pipeline
  */
 export async function POST(req: NextRequest) {
   try {
-    const { ref_code } = await req.json();
+    const body = await req.json();
+    const ref_code = body.ref_code;
+    const targetPage = body.page; // optional — for per-page builds
+    const sharedCss = body.shared_css;
+    const navSnippet = body.nav_snippet;
 
     if (!ref_code) {
       return NextResponse.json({ error: "Missing ref_code" }, { status: 400 });
@@ -27,7 +32,6 @@ export async function POST(req: NextRequest) {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Fetch the intake row
     const { data: intake, error: fetchErr } = await supabase
       .from("client_intake")
       .select("*")
@@ -38,13 +42,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Intake not found" }, { status: 404 });
     }
 
-    // The form_data column stores the raw intake JSON — may be flat or nested
     const rawFormData = intake.form_data || intake;
-    const fd = rawFormData.form_data && typeof rawFormData.form_data === "object"
-      ? rawFormData.form_data
-      : rawFormData;
+    const flat = flattenIntake(rawFormData);
 
-    // Assemble prompt via intakeToPrompt (handles unwrapping internally too)
+    // Per-page prompt mode
+    if (targetPage) {
+      const pagePrompt = intakeToPagePrompt(rawFormData, targetPage, sharedCss, navSnippet);
+      const pageKey = targetPage.toLowerCase().replace(/\s+/g, "-");
+      return NextResponse.json({
+        prompt: pagePrompt,
+        ref_code,
+        page: targetPage,
+        difficulty: PAGE_DIFFICULTY[pageKey] || "medium",
+        prompt_length: pagePrompt.length,
+      });
+    }
+
+    // Full prompt mode — returns everything needed for multi-page orchestration
     const prompt = intakeToPrompt(rawFormData);
 
     if (!prompt || prompt.length < 100) {
@@ -54,16 +68,30 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const pages: string[] = Array.isArray(flat.pages) ? flat.pages : ["home"];
+    const pageManifest = pages.map((p: string) => {
+      const key = p.toLowerCase().replace(/\s+/g, "-");
+      return {
+        name: p,
+        key,
+        difficulty: PAGE_DIFFICULTY[key] || "medium",
+        filename: key === "home" ? "index.html" : `${key}.html`,
+      };
+    });
+
     return NextResponse.json({
       prompt,
       ref_code,
-      pages: fd.pages || [],
+      pages,
+      pageManifest,
+      flat,
       prompt_length: prompt.length,
     });
-  } catch (err: any) {
-    console.error("[intake/build] Error:", err);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[intake/build] Error:", msg);
     return NextResponse.json(
-      { error: err.message || "Build from intake failed" },
+      { error: msg || "Build from intake failed" },
       { status: 500 },
     );
   }

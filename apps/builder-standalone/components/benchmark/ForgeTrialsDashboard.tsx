@@ -557,40 +557,40 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
           </span>
           <div className="flex items-center gap-0.5 ml-2">
             <button
-              onClick={() => { if (!anyRunning) setActiveTab("local"); }}
-              disabled={anyRunning}
+              onClick={() => setActiveTab("local")}
               className={`flex items-center gap-1.5 px-3 py-1 rounded-l-lg text-xs font-bold transition-all border ${
                 activeTab === "local"
                   ? "bg-[#FF6700]/15 border-[#FF6700]/50 text-[#FFD700]"
                   : "bg-zinc-900 border-zinc-700 text-zinc-300 hover:text-zinc-300"
-              } disabled:cursor-not-allowed`}
+              }`}
             >
               <Cpu className="w-3 h-3" />
               Local
+              {running && activeTab !== "local" && <span className="ml-1 w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />}
             </button>
             <button
-              onClick={() => { if (!anyRunning) setActiveTab("cloud"); }}
-              disabled={anyRunning}
+              onClick={() => setActiveTab("cloud")}
               className={`flex items-center gap-1.5 px-3 py-1 text-xs font-bold transition-all border border-l-0 ${
                 activeTab === "cloud"
                   ? "bg-[#FF6700]/15 border-[#FF6700]/50 text-[#FFD700]"
                   : "bg-zinc-900 border-zinc-700 text-zinc-300 hover:text-zinc-300"
-              } disabled:cursor-not-allowed`}
+              }`}
             >
               <Cloud className="w-3 h-3" />
               Cloud
+              {cloudRunning && activeTab !== "cloud" && <span className="ml-1 w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />}
             </button>
             <button
-              onClick={() => { if (!anyRunning) setActiveTab("hybrid"); }}
-              disabled={anyRunning}
+              onClick={() => setActiveTab("hybrid")}
               className={`flex items-center gap-1.5 px-3 py-1 rounded-r-lg text-xs font-bold transition-all border border-l-0 ${
                 activeTab === "hybrid"
                   ? "bg-[#FF6700]/15 border-[#FF6700]/50 text-[#FFD700]"
                   : "bg-zinc-900 border-zinc-700 text-zinc-300 hover:text-zinc-300"
-              } disabled:cursor-not-allowed`}
+              }`}
             >
               <Layers className="w-3 h-3" />
               Hybrid
+              {hybridRunning && activeTab !== "hybrid" && <span className="ml-1 w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />}
             </button>
           </div>
           {/* Parallel toggle (cloud only) */}
