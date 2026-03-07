@@ -9,7 +9,8 @@ import {
   logForensicEvent,
 } from "@/lib/security/pathValidator";
 import type { ProjectMeta } from "@/lib/types/project";
-import { PACKAGES } from "@/lib/pricing-config";
+// pricing-config.ts is the fallback for the kickoff page UI only;
+// this route accepts package name + revisionRounds directly from the client
 
 const BUILDER_PROJECTS_DIR =
   process.env.BUILDER_PROJECTS_DIR ||
@@ -66,7 +67,8 @@ export async function POST(request: NextRequest) {
   }
 
   const {
-    package: packageId,
+    package: packageName,
+    revisionRounds,
     projectName,
     clientName,
     clientEmail,
@@ -74,6 +76,7 @@ export async function POST(request: NextRequest) {
     clientDomain,
   } = body as {
     package: string;
+    revisionRounds?: number;
     projectName: string;
     clientName?: string;
     clientEmail: string;
@@ -88,12 +91,11 @@ export async function POST(request: NextRequest) {
   if (!clientEmail?.trim()) {
     return NextResponse.json({ error: "Email is required" }, { status: 400 });
   }
-
-  // Validate package
-  const pkg = PACKAGES.find((p) => p.id === packageId);
-  if (!pkg) {
-    return NextResponse.json({ error: "Invalid package" }, { status: 400 });
+  if (!packageName?.trim()) {
+    return NextResponse.json({ error: "Package is required" }, { status: 400 });
   }
+
+  const maxRevisions = revisionRounds ?? 1;
 
   // Sanitize name → folder-safe slug
   const slug = projectName
@@ -149,7 +151,7 @@ export async function POST(request: NextRequest) {
         mailchimp: false,
       },
       deployUrls: { github: "", vercel: "", netlify: "", cloudflare: "" },
-      revisions: { round: 0, maxRounds: pkg.id === "premium" ? 3 : pkg.id === "standard" ? 2 : 1, items: [] },
+      revisions: { round: 0, maxRounds: maxRevisions, items: [] },
       template: "coming-soon",
     };
     await fs.writeFile(
@@ -187,8 +189,8 @@ export async function POST(request: NextRequest) {
       const supabase = createClient(supabaseUrl, supabaseKey);
       const { error: dbError } = await supabase.from("client_intake").insert({
         form_data: {
-          package: pkg.id,
-          package_name: pkg.name,
+          package: packageName,
+          package_name: packageName,
           business_name: projectName,
           contact_name: clientName || "",
           email: clientEmail,

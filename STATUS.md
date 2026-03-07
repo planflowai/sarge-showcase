@@ -4,6 +4,35 @@ Generated: 2026-03-06
 Branch: sargebuild-v1
 Tag: working-2026-03-02-deploy-fix (last tagged)
 
+## Pricing Admin (2026-03-06) — Fully configurable packages from Settings, stored in Supabase
+
+### What Was Built
+
+| # | Component | Description |
+|---|-----------|-------------|
+| 1 | `supabase/migration_pricing.sql` | New tables: `pricing_packages` (17 columns) + `pricing_trust_items` (8 columns), RLS policies, indexes, seed data (3 packages + 6 trust items) |
+| 2 | `app/api/pricing/route.ts` | Full CRUD — GET (public, active only), POST (admin, all rows), PUT (upsert), DELETE (by id+table) |
+| 3 | `components/settings/SettingsPricing.tsx` | Settings admin panel — editable package cards (expand/collapse, all fields), feature list with add/remove/toggle, color pickers, SVG icon editor with live preview, featured/active toggles, reorder arrows, trust bar editor, delete with confirmation, "Save All" to Supabase |
+| 4 | Settings page wiring | New "Packages" nav item (DollarSign icon), Section type + NAV_ITEMS + dynamic import + render |
+| 5 | `/kickoff` page updated | Fetches packages + trust items from `/api/pricing` on load. Falls back to `pricing-config.ts` if Supabase unavailable or empty. Now uses `PackageData` type (snake_case fields matching Supabase schema). Shows "Most Popular" badge for `is_featured` packages. Shows `price_label` under price. Button text from `button_label` column. |
+| 6 | `/api/project/kickoff` updated | Accepts `package` (name string) + `revisionRounds` (number) directly from client instead of looking up from config. No dependency on `pricing-config.ts` — fully data-driven. |
+
+### Supabase Tables
+
+**pricing_packages**: id, sort_order, name, tagline, price_min, price_max, price_label, features (JSONB), button_label, color_primary, color_bg, icon_svg, is_featured, is_active, revision_rounds, created_at, updated_at
+
+**pricing_trust_items**: id, sort_order, label, icon_svg, color, is_active, created_at, updated_at
+
+### Data Flow
+```
+Settings (admin) → PUT /api/pricing → Supabase
+/kickoff (client) → GET /api/pricing → Supabase → render
+                                    ↓ (empty/error)
+                           pricing-config.ts fallback
+```
+
+---
+
 ## Project Kickoff Page (2026-03-06) — Package selection + pipeline wiring
 
 ### What Was Built

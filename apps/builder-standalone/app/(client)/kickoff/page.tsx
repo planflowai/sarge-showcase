@@ -1,7 +1,36 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { PACKAGES, TRUST_ITEMS, type PricingPackage } from "@/lib/pricing-config";
+import { useState, useCallback, useEffect } from "react";
+import { PACKAGES as FALLBACK_PACKAGES, TRUST_ITEMS as FALLBACK_TRUST } from "@/lib/pricing-config";
+
+/* ─── Types (matches Supabase schema) ─── */
+
+interface PricingFeature {
+  text: string;
+  included: boolean;
+}
+
+interface PackageData {
+  id: string;
+  name: string;
+  tagline: string;
+  price_min: number;
+  price_max: number;
+  price_label: string;
+  features: PricingFeature[];
+  button_label: string;
+  color_primary: string;
+  color_bg: string;
+  icon_svg: string;
+  is_featured: boolean;
+  revision_rounds: number;
+}
+
+interface TrustData {
+  icon_svg: string;
+  label: string;
+  color: string;
+}
 
 /* ─── Theme ─── */
 const themes = {
@@ -41,10 +70,13 @@ const themes = {
 
 export default function KickoffPage() {
   const [mode, setMode] = useState<"dark" | "light">("dark");
-  const [selected, setSelected] = useState<PricingPackage | null>(null);
+  const [packages, setPackages] = useState<PackageData[]>([]);
+  const [trustItems, setTrustItems] = useState<TrustData[]>([]);
+  const [selected, setSelected] = useState<PackageData | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState<{ refCode: string } | null>(null);
   const [error, setError] = useState("");
+  const [loaded, setLoaded] = useState(false);
 
   // Form fields
   const [projectName, setProjectName] = useState("");
@@ -52,6 +84,73 @@ export default function KickoffPage() {
   const [clientEmail, setClientEmail] = useState("");
   const [clientPhone, setClientPhone] = useState("");
   const [clientDomain, setClientDomain] = useState("");
+
+  // Fetch packages from Supabase, fall back to pricing-config.ts
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/pricing");
+        const data = await res.json();
+        if (data.packages?.length > 0) {
+          setPackages(data.packages);
+        } else {
+          // Fallback: convert pricing-config.ts format to PackageData
+          setPackages(FALLBACK_PACKAGES.map((p) => ({
+            id: p.id,
+            name: p.name,
+            tagline: p.tagline,
+            price_min: p.priceMin,
+            price_max: p.priceMax,
+            price_label: "One-time",
+            features: p.features,
+            button_label: `Select ${p.name}`,
+            color_primary: p.buttonColor,
+            color_bg: `${p.buttonColor}15`,
+            icon_svg: p.iconSvg,
+            is_featured: false,
+            revision_rounds: p.id === "premium" ? 3 : p.id === "standard" ? 2 : 1,
+          })));
+        }
+        if (data.trustItems?.length > 0) {
+          setTrustItems(data.trustItems.map((t: TrustData) => ({
+            icon_svg: t.icon_svg,
+            label: t.label,
+            color: t.color,
+          })));
+        } else {
+          setTrustItems(FALLBACK_TRUST.map((t) => ({
+            icon_svg: t.icon,
+            label: t.text,
+            color: "#FF6700",
+          })));
+        }
+      } catch {
+        // Supabase unavailable — use fallback
+        setPackages(FALLBACK_PACKAGES.map((p) => ({
+          id: p.id,
+          name: p.name,
+          tagline: p.tagline,
+          price_min: p.priceMin,
+          price_max: p.priceMax,
+          price_label: "One-time",
+          features: p.features,
+          button_label: `Select ${p.name}`,
+          color_primary: p.buttonColor,
+          color_bg: `${p.buttonColor}15`,
+          icon_svg: p.iconSvg,
+          is_featured: false,
+          revision_rounds: p.id === "premium" ? 3 : p.id === "standard" ? 2 : 1,
+        })));
+        setTrustItems(FALLBACK_TRUST.map((t) => ({
+          icon_svg: t.icon,
+          label: t.text,
+          color: "#FF6700",
+        })));
+      } finally {
+        setLoaded(true);
+      }
+    })();
+  }, []);
 
   const t = themes[mode];
 
@@ -68,7 +167,8 @@ export default function KickoffPage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            package: selected.id,
+            package: selected.name,
+            revisionRounds: selected.revision_rounds,
             projectName: projectName.trim(),
             clientName: clientName.trim(),
             clientEmail: clientEmail.trim(),
@@ -103,6 +203,17 @@ export default function KickoffPage() {
       setClientDomain("");
     }
   };
+
+  // Show nothing until data is loaded
+  if (!loaded) {
+    return (
+      <html lang="en">
+        <body style={{ background: "#0B0E11", display: "flex", alignItems: "center", justifyContent: "center", height: "100vh" }}>
+          <div style={{ color: "#9BA3AF", fontSize: 14, fontFamily: "system-ui" }}>Loading...</div>
+        </body>
+      </html>
+    );
+  }
 
   return (
     <html lang="en">
@@ -261,9 +372,9 @@ export default function KickoffPage() {
             flexWrap: "wrap",
           }}
         >
-          {PACKAGES.map((pkg, i) => (
+          {packages.map((pkg, i) => (
             <div
-              key={pkg.id}
+              key={pkg.id || pkg.name}
               className="card-hover"
               style={{
                 width: 320,
@@ -287,9 +398,31 @@ export default function KickoffPage() {
                   left: 0,
                   right: 0,
                   height: 3,
-                  background: `linear-gradient(90deg, ${pkg.buttonColor}, ${pkg.buttonColor}88)`,
+                  background: `linear-gradient(90deg, ${pkg.color_primary}, ${pkg.color_primary}88)`,
                 }}
               />
+
+              {/* Featured badge */}
+              {pkg.is_featured && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 12,
+                    right: 12,
+                    padding: "3px 10px",
+                    borderRadius: 6,
+                    background: `${pkg.color_primary}20`,
+                    border: `1px solid ${pkg.color_primary}40`,
+                    fontSize: 10,
+                    fontWeight: 700,
+                    color: pkg.color_primary,
+                    textTransform: "uppercase",
+                    letterSpacing: 0.5,
+                  }}
+                >
+                  Most Popular
+                </div>
+              )}
 
               {/* Icon */}
               <div
@@ -297,15 +430,15 @@ export default function KickoffPage() {
                   width: 64,
                   height: 64,
                   borderRadius: 16,
-                  background: `${pkg.buttonColor}15`,
+                  background: `${pkg.color_primary}15`,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   marginBottom: 20,
-                  color: pkg.buttonColor,
+                  color: pkg.color_primary,
                 }}
                 dangerouslySetInnerHTML={{
-                  __html: pkg.iconSvg.replace(
+                  __html: pkg.icon_svg.replace(
                     "<svg",
                     '<svg width="32" height="32"',
                   ),
@@ -340,7 +473,7 @@ export default function KickoffPage() {
                 <span
                   style={{ fontSize: 36, fontWeight: 800, color: t.text }}
                 >
-                  ${pkg.priceMin.toLocaleString()}
+                  ${pkg.price_min.toLocaleString()}
                 </span>
                 <span
                   style={{
@@ -349,8 +482,13 @@ export default function KickoffPage() {
                     fontWeight: 500,
                   }}
                 >
-                  {" "}&ndash; ${pkg.priceMax.toLocaleString()}
+                  {" "}&ndash; ${pkg.price_max.toLocaleString()}
                 </span>
+                {pkg.price_label && (
+                  <div style={{ fontSize: 11, color: t.textDim, marginTop: 4 }}>
+                    {pkg.price_label}
+                  </div>
+                )}
               </div>
 
               {/* Features */}
@@ -409,7 +547,7 @@ export default function KickoffPage() {
                 style={{
                   width: "100%",
                   padding: "16px 24px",
-                  background: pkg.buttonColor,
+                  background: pkg.color_primary,
                   color: "#fff",
                   border: "none",
                   borderRadius: 12,
@@ -418,11 +556,11 @@ export default function KickoffPage() {
                   cursor: "pointer",
                   fontFamily: "inherit",
                   letterSpacing: 0.3,
-                  boxShadow: `0 4px 16px ${pkg.buttonColor}40`,
+                  boxShadow: `0 4px 16px ${pkg.color_primary}40`,
                   marginTop: "auto",
                 }}
               >
-                Select {pkg.name}
+                {pkg.button_label || `Select ${pkg.name}`}
               </button>
             </div>
           ))}
@@ -447,9 +585,9 @@ export default function KickoffPage() {
               margin: "0 auto",
             }}
           >
-            {TRUST_ITEMS.map((item) => (
+            {trustItems.map((item) => (
               <div
-                key={item.text}
+                key={item.label}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -459,8 +597,8 @@ export default function KickoffPage() {
                   color: t.textMuted,
                 }}
               >
-                <span style={{ color: "#FF6700", fontSize: 14 }}>{item.icon}</span>
-                {item.text}
+                <span style={{ color: item.color || "#FF6700", fontSize: 14 }}>{item.icon_svg}</span>
+                {item.label}
               </div>
             ))}
           </div>
@@ -607,14 +745,14 @@ export default function KickoffPage() {
                         display: "inline-block",
                         padding: "6px 16px",
                         borderRadius: 8,
-                        background: `${selected.buttonColor}18`,
-                        border: `1px solid ${selected.buttonColor}40`,
+                        background: `${selected.color_primary}18`,
+                        border: `1px solid ${selected.color_primary}40`,
                         fontSize: 13,
                         fontWeight: 600,
-                        color: selected.buttonColor,
+                        color: selected.color_primary,
                       }}
                     >
-                      {selected.name} &mdash; ${selected.priceMin.toLocaleString()}&ndash;${selected.priceMax.toLocaleString()}
+                      {selected.name} &mdash; ${selected.price_min.toLocaleString()}&ndash;${selected.price_max.toLocaleString()}
                     </div>
                   </div>
 
@@ -817,8 +955,8 @@ export default function KickoffPage() {
                       padding: "18px 24px",
                       marginTop: 24,
                       background: submitting
-                        ? `${selected.buttonColor}80`
-                        : selected.buttonColor,
+                        ? `${selected.color_primary}80`
+                        : selected.color_primary,
                       color: "#fff",
                       border: "none",
                       borderRadius: 12,
@@ -827,7 +965,7 @@ export default function KickoffPage() {
                       cursor: submitting ? "wait" : "pointer",
                       fontFamily: "inherit",
                       letterSpacing: 0.3,
-                      boxShadow: `0 4px 16px ${selected.buttonColor}40`,
+                      boxShadow: `0 4px 16px ${selected.color_primary}40`,
                       transition: "background 0.2s",
                     }}
                   >
