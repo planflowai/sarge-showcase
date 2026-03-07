@@ -36,9 +36,12 @@ export interface BuildProgress {
   result?: BuildPageResult;
 }
 
+/** Minimum page size (bytes) to count as a successful build */
+export const MIN_PAGE_SIZE = 5120; // 5KB
+
 /** Default model fallbacks when no trial data is available */
 export const DEFAULT_MODELS: Record<string, { provider: string; model: string }> = {
-  easy: { provider: "openrouter", model: "deepseek/deepseek-chat" },
+  easy: { provider: "google", model: "gemini-2.5-flash" },
   medium: { provider: "google", model: "gemini-2.5-flash" },
   hard: { provider: "openai", model: "gpt-4.1" },
 };

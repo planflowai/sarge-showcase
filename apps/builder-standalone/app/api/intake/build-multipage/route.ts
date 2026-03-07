@@ -10,6 +10,7 @@ import {
   generateNavSnippet,
   guardianCheck,
   pickModelForDifficulty,
+  MIN_PAGE_SIZE,
   type BuildPageResult,
 } from "@sarge/builder/lib/multiPageBuilder";
 import * as fs from "fs";
@@ -96,6 +97,9 @@ export async function POST(req: NextRequest) {
         const navSnippet = generateNavSnippet(pages);
         send({ event: "page_complete", phase: "nav", filename: "nav-snippet.html", size: navSnippet.length });
 
+        // Retry escalation: if a page fails or is too small, retry with next tier
+        const ESCALATION: Record<string, "medium" | "hard"> = { easy: "medium", medium: "hard" };
+
         // Step 3: Build each page
         const results: BuildPageResult[] = [];
         const total = pages.length;
@@ -131,155 +135,101 @@ export async function POST(req: NextRequest) {
             reason,
           });
 
-          const startTime = Date.now();
+          const result = await buildOnePage(
+            rawFormData, pageName, pageKey, filename, difficulty,
+            provider, model, reason, sharedCss, navSnippet, send,
+          );
 
-          try {
-            // Generate per-page prompt
-            const pagePrompt = intakeToPagePrompt(rawFormData, pageName, sharedCss, navSnippet);
+          // Check size threshold — retry with escalated model if too small
+          if (result.status === "complete" && result.html.length < MIN_PAGE_SIZE && ESCALATION[difficulty as string]) {
+            const nextTier = ESCALATION[difficulty as string];
+            const escalated = pickModelForDifficulty(nextTier);
+            send({
+              event: "progress",
+              phase: "page",
+              message: `${pageName} too small (${result.html.length} bytes < ${MIN_PAGE_SIZE}). Retrying with ${escalated.model}...`,
+              index: i + 1,
+              total,
+              page: pageName,
+              difficulty: nextTier,
+              model: escalated.model,
+              provider: escalated.provider,
+              reason: `Retry — original ${result.html.length} bytes < ${MIN_PAGE_SIZE} threshold`,
+            });
 
-            // Call the streaming API to build this page
-            const buildRes = await fetch(
-              `http://localhost:${process.env.PORT || 3101}/api/test/stream`,
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  provider,
-                  model,
-                  prompt: pagePrompt,
-                  systemPrompt: `You are a web developer building the ${pageName} page for a client website. Output ONLY the complete HTML file. No explanations, no markdown. Start with <!DOCTYPE html> and end with </html>. Include all CSS in <style> tags and all JS in <script> tags. The page must be fully self-contained and responsive.`,
-                  source: "multipage-builder",
-                  maxOutputTokens: 8192,
-                }),
-                signal: AbortSignal.timeout(120000),
-              },
+            const retry = await buildOnePage(
+              rawFormData, pageName, pageKey, filename, nextTier,
+              escalated.provider, escalated.model, `Retry escalation from ${difficulty} to ${nextTier}`,
+              sharedCss, navSnippet, send,
             );
-
-            if (!buildRes.ok || !buildRes.body) {
-              throw new Error(`Build API returned ${buildRes.status}`);
+            retry.status = retry.html.length >= MIN_PAGE_SIZE && guardianCheck(retry.html, pageName).pass ? "complete" : "failed";
+            if (retry.status === "failed") {
+              retry.error = retry.html.length < MIN_PAGE_SIZE
+                ? `Page too small after retry (${retry.html.length} bytes)`
+                : `Guardian check failed after retry`;
             }
-
-            // Read the streaming response and collect the HTML
-            let html = "";
-            let tokenInput = 0;
-            let tokenOutput = 0;
-            const reader = buildRes.body.getReader();
-            const decoder = new TextDecoder();
-
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) break;
-              const chunk = decoder.decode(value, { stream: true });
-              for (const line of chunk.split("\n")) {
-                if (!line.trim()) continue;
-                try {
-                  const data = JSON.parse(line);
-                  if (data.token) html += data.token;
-                  if (data.content) html += data.content;
-                  if (data.message?.content) html += data.message.content;
-                  if (data.usage) {
-                    tokenInput = data.usage.input_tokens || data.usage.prompt_tokens || 0;
-                    tokenOutput = data.usage.output_tokens || data.usage.completion_tokens || 0;
-                  }
-                  if (data.full_content) html = data.full_content;
-                } catch {
-                  // Skip unparseable lines
-                }
+            results.push(retry);
+          } else if (result.status === "complete" && result.html.length < MIN_PAGE_SIZE) {
+            // Already at hard tier, can't escalate — mark failed
+            result.status = "failed";
+            result.error = `Page too small (${result.html.length} bytes < ${MIN_PAGE_SIZE} threshold)`;
+            results.push(result);
+          } else {
+            // Check guardian — if fail, mark failed
+            if (result.status === "complete") {
+              const guard = guardianCheck(result.html, pageName);
+              if (!guard.pass) {
+                result.status = "failed";
+                result.error = `Guardian failed: ${guard.issues.join(", ")}`;
               }
             }
-
-            const durationMs = Date.now() - startTime;
-
-            // Extract just the HTML from the response (strip markdown fences if present)
-            html = extractHtml(html);
-
-            // Save to disk IMMEDIATELY
-            fs.writeFileSync(path.join(projectDir, filename), html);
-
-            const result: BuildPageResult = {
-              page: pageName,
-              filename,
-              difficulty,
-              model,
-              provider,
-              html,
-              tokens: { input: tokenInput, output: tokenOutput },
-              durationMs,
-              status: "complete",
-            };
-
-            // Guardian check
-            const guard = guardianCheck(html, pageName);
-            send({
-              event: "guardian",
-              page: pageName,
-              pass: guard.pass,
-              issues: guard.issues,
-            });
-
             results.push(result);
-            send({
-              event: "page_complete",
-              phase: "page",
-              page: pageName,
-              filename,
-              difficulty,
-              model,
-              provider,
-              reason,
-              tokens: result.tokens,
-              durationMs,
-              size: html.length,
-              guardianPass: guard.pass,
-              index: i + 1,
-              total,
-            });
-          } catch (err: unknown) {
-            const errMsg = err instanceof Error ? err.message : String(err);
-            const durationMs = Date.now() - startTime;
-
-            results.push({
-              page: pageName,
-              filename,
-              difficulty,
-              model,
-              provider,
-              html: "",
-              tokens: { input: 0, output: 0 },
-              durationMs,
-              status: "failed",
-              error: errMsg,
-            });
-
-            send({
-              event: "page_complete",
-              phase: "page",
-              page: pageName,
-              filename,
-              status: "failed",
-              error: errMsg,
-              index: i + 1,
-              total,
-            });
           }
+
+          // Save to disk (even partial pages — overwrite previous attempts)
+          const final = results[results.length - 1];
+          if (final.html.length > 0) {
+            fs.writeFileSync(path.join(projectDir, filename), final.html);
+          }
+
+          send({
+            event: "page_complete",
+            phase: "page",
+            page: pageName,
+            filename,
+            difficulty: final.difficulty,
+            model: final.model,
+            provider: final.provider,
+            reason,
+            tokens: final.tokens,
+            durationMs: final.durationMs,
+            size: final.html.length,
+            guardianPass: final.status === "complete",
+            status: final.status,
+            index: i + 1,
+            total,
+          });
         }
 
         // Step 4: Generate BUILD_LOG.md
+        const passed = results.filter((r) => r.status === "complete" && r.html.length >= MIN_PAGE_SIZE);
+        const failed = results.filter((r) => r.status !== "complete" || r.html.length < MIN_PAGE_SIZE);
         const now = new Date().toISOString().replace("T", " ").slice(0, 19);
         const logLines = [
           `# Build Log — ${projectName}`,
           `Ref: ${refCode} | Built: ${now}`,
           "",
           `## Summary`,
-          `Pages: ${results.length} | Complete: ${results.filter((r) => r.status === "complete").length} | Failed: ${results.filter((r) => r.status === "failed").length}`,
+          `Pages: ${results.length} | Complete: ${passed.length} | Failed: ${failed.length} | Min size: ${MIN_PAGE_SIZE} bytes`,
           "",
         ];
 
         for (const r of results) {
+          const ok = r.status === "complete" && r.html.length >= MIN_PAGE_SIZE;
           logLines.push(`## ${r.filename}${r.page !== r.filename ? ` (${r.page})` : ""}`);
           logLines.push(`Model: ${r.model} | Provider: ${r.provider}`);
           logLines.push(`Tokens: ${r.tokens.input}/${r.tokens.output} | Time: ${(r.durationMs / 1000).toFixed(1)}s`);
-          logLines.push(`Difficulty: ${r.difficulty} | Status: ${r.status.toUpperCase()}`);
+          logLines.push(`Size: ${r.html.length} bytes | Difficulty: ${r.difficulty} | Status: ${ok ? "COMPLETE" : "FAILED"}`);
           if (r.error) logLines.push(`Error: ${r.error}`);
           logLines.push("");
         }
@@ -288,10 +238,11 @@ export async function POST(req: NextRequest) {
         fs.writeFileSync(path.join(projectDir, "BUILD_LOG.md"), buildLog);
         send({ event: "build_log", content: buildLog, projectDir });
 
-        // Update Supabase status
+        // Update Supabase status — only mark "built" if all pages pass
+        const allPassed = passed.length === results.length;
         await supabase
           .from("client_intake")
-          .update({ status: "built" })
+          .update({ status: allPassed ? "built" : "partial" })
           .eq("ref_code", refCode)
           .then(() => {});
 
@@ -300,9 +251,10 @@ export async function POST(req: NextRequest) {
           projectName,
           refCode,
           projectDir,
-          pagesBuilt: results.filter((r) => r.status === "complete").length,
-          pagesFailed: results.filter((r) => r.status === "failed").length,
+          pagesBuilt: passed.length,
+          pagesFailed: failed.length,
           totalPages: results.length,
+          allPassed,
         });
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
@@ -320,6 +272,127 @@ export async function POST(req: NextRequest) {
       Connection: "keep-alive",
     },
   });
+}
+
+/**
+ * Build a single page — calls /api/test/stream, collects HTML, saves to disk, runs guardian.
+ */
+async function buildOnePage(
+  rawFormData: any,
+  pageName: string,
+  pageKey: string,
+  filename: string,
+  difficulty: "easy" | "medium" | "hard",
+  provider: string,
+  model: string,
+  reason: string,
+  sharedCss: string,
+  navSnippet: string,
+  send: (data: any) => void,
+): Promise<BuildPageResult> {
+  const startTime = Date.now();
+
+  try {
+    const pagePrompt = intakeToPagePrompt(rawFormData, pageName, sharedCss, navSnippet);
+
+    const buildRes = await fetch(
+      `http://localhost:${process.env.PORT || 3101}/api/test/stream`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider,
+          model,
+          prompt: pagePrompt,
+          systemPrompt: `You are a web developer building the "${pageName}" page for a client website.
+
+OUTPUT RULES:
+- Output ONLY the complete HTML file — no explanations, no markdown fences.
+- Start with <!DOCTYPE html> and end with </html>.
+- Include ALL CSS in <style> tags and ALL JavaScript in <script> tags.
+- The page MUST be fully self-contained, responsive, and production-quality.
+- Use the shared navigation HTML provided in the prompt — include it exactly as given.
+- The page must be substantial — at least 200 lines of HTML with real content sections.
+- Use PII placeholders: {{BUSINESS_NAME}}, {{phone}}, {{email}}, {{address}}, {{city}}, {{state}}, {{client_name}}.`,
+          source: "multipage-builder",
+          maxOutputTokens: 16384,
+        }),
+        signal: AbortSignal.timeout(180000),
+      },
+    );
+
+    if (!buildRes.ok || !buildRes.body) {
+      throw new Error(`Build API returned ${buildRes.status}`);
+    }
+
+    let html = "";
+    let tokenInput = 0;
+    let tokenOutput = 0;
+    const reader = buildRes.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk = decoder.decode(value, { stream: true });
+      for (const line of chunk.split("\n")) {
+        if (!line.trim()) continue;
+        try {
+          const data = JSON.parse(line);
+          if (data.token) html += data.token;
+          if (data.content) html += data.content;
+          if (data.message?.content) html += data.message.content;
+          if (data.usage) {
+            tokenInput = data.usage.input_tokens || data.usage.prompt_tokens || 0;
+            tokenOutput = data.usage.output_tokens || data.usage.completion_tokens || 0;
+          }
+          if (data.full_content) html = data.full_content;
+        } catch {
+          // Skip unparseable lines
+        }
+      }
+    }
+
+    const durationMs = Date.now() - startTime;
+    html = extractHtml(html);
+
+    // Guardian check
+    const guard = guardianCheck(html, pageName);
+    send({
+      event: "guardian",
+      page: pageName,
+      pass: guard.pass,
+      issues: guard.issues,
+      size: html.length,
+    });
+
+    return {
+      page: pageName,
+      filename,
+      difficulty,
+      model,
+      provider,
+      html,
+      tokens: { input: tokenInput, output: tokenOutput },
+      durationMs,
+      status: "complete",
+    };
+  } catch (err: unknown) {
+    const errMsg = err instanceof Error ? err.message : String(err);
+    const durationMs = Date.now() - startTime;
+    return {
+      page: pageName,
+      filename,
+      difficulty,
+      model,
+      provider,
+      html: "",
+      tokens: { input: 0, output: 0 },
+      durationMs,
+      status: "failed",
+      error: errMsg,
+    };
+  }
 }
 
 /** Extract HTML from response — strips markdown code fences if present */
