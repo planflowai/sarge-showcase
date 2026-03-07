@@ -1,8 +1,39 @@
 # S.A.R.G.E. — System Status Report
 
-Generated: 2026-03-06
+Generated: 2026-03-07
 Branch: sargebuild-v1
 Tag: working-2026-03-02-deploy-fix (last tagged)
+
+## A-Z Pipeline Integration Test — Level 11 Events (2026-03-07)
+
+Test client: **Level 11 Events** (DJ Sarge, planflowai@outlook.com)
+Ref code: `SARGE-MMFM7TTE` (kickoff) / `SARGE-MMFM8FHJ` (intake)
+
+| Step | Action | Result | Evidence |
+|------|--------|--------|----------|
+| 1 | Delete broken /kickoff page | **PASS** | Committed `34a224c`, file removed |
+| 2 | Create kickoff.html (standalone) | **PASS** | `L:/ai_builder/projects/planflowai-test/kickoff.html` — real form, POSTs to localhost:3101 |
+| 3 | Submit kickoff form | **PASS** | `{"success":true,"ref_code":"SARGE-MMFM7TTE","project_path":"L:\\ai_builder\\projects\\level-11-events"}` — folder created with index.html, project.json, vercel.json, .git |
+| 4 | Submit intake form | **PASS** | `{"success":true,"ref_code":"SARGE-MMFM8FHJ"}` — Supabase row created with full form_data (7 pages, 4 features, colors, services) |
+| 5 | Intake build (prompt assembly) | **PASS** | 804-char prompt assembled, PII placeholders present, `intakeToPrompt()` works. **GAP**: only generates Home page, doesn't use pages/colors/features from form_data |
+| 6 | Stream builder (Gemini 2.5 Flash) | **PASS** | 18.8KB HTML generated, valid DOCTYPE, Level 11 Events content, `<style>` tag, self-contained. **GAP**: only `{{BUSINESS_NAME}}` placeholder used (phone/email/address hardcoded by AI) |
+| 7 | Lighthouse compile | **PASS** | SEO: 90, Accessibility: 100 (axe-core), HTML: 1 parse error, 5 Lighthouse violations (missing meta-description, charset, doctype quirks, font-size, console errors) |
+| 8 | injectPII | **PASS** | 1 placeholder before → 0 after. `{{BUSINESS_NAME}}` → "Level 11 Events". Function works correctly. |
+| 9 | Approve (deploy) | **PASS** | `{"status":"deployed","live_urls":"https://level-11-events.vercel.app,..."}` — status changed to deployed, approved_at + deployed_at set |
+| 10 | Rollback | **PASS** | `{"status":"rolled_back"}` — status reverted to preview, deployed_at nulled (within 60-min window) |
+| 11 | Revision submission | **PASS** | `{"revision_number":1}` — row created in client_revisions with priority=high |
+| 12 | Supabase audit trail | **PASS** | client_intake: 2 rows (kickoff + intake). client_revisions: 1 row. forge_build_history: exists (from prior tests). forge_compiler_results: exists. forge_billing: exists. |
+| 13 | Email inbox | **MANUAL** | Cannot access Outlook inbox programmatically. ~6 emails expected (welcome, intake confirmation, admin notification, site_live, rollback_alert, revision confirmation). |
+
+### Summary: 12/12 automated steps PASS, 1 manual check pending
+
+### Known Gaps Found
+1. **`intakeToPrompt()`** — Only generates Home page. Ignores `pages`, `colors`, `features`, `services`, `theme` from form_data.
+2. **AI placeholder compliance** — Gemini 2.5 Flash only used `{{BUSINESS_NAME}}`, ignored `{{phone}}`, `{{email}}`, `{{address}}` instructions.
+3. **`/api/intake/submit`** — Looks for `formData.ref` but caller sends `ref_code` as key. Also stores whole body as `form_data` instead of extracting `project_name`/`client_name`/`client_email` from nested `form_data.form_data.*`.
+4. **Compile route** — Returns per-tool scores (SEO 90, axe 100), not the traditional 4-category Lighthouse breakdown (Perf/A11y/BP/SEO). No certificate generated in audit-only mode.
+
+---
 
 ## Pricing Admin (2026-03-06) — Fully configurable packages from Settings, stored in Supabase
 
