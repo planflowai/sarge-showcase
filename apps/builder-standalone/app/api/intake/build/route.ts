@@ -38,11 +38,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Intake not found" }, { status: 404 });
     }
 
-    // The form_data column stores the raw intake JSON
-    const formData = intake.form_data || intake;
+    // The form_data column stores the raw intake JSON — may be flat or nested
+    const rawFormData = intake.form_data || intake;
+    const fd = rawFormData.form_data && typeof rawFormData.form_data === "object"
+      ? rawFormData.form_data
+      : rawFormData;
 
-    // Assemble prompt via intakeToPrompt
-    const prompt = intakeToPrompt(formData);
+    // Assemble prompt via intakeToPrompt (handles unwrapping internally too)
+    const prompt = intakeToPrompt(rawFormData);
 
     if (!prompt || prompt.length < 100) {
       return NextResponse.json(
@@ -54,7 +57,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       prompt,
       ref_code,
-      pages: formData.pages || [],
+      pages: fd.pages || [],
       prompt_length: prompt.length,
     });
   } catch (err: any) {

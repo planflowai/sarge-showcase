@@ -6,24 +6,57 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 
 export async function POST(request: NextRequest) {
   try {
-    const formData = await request.json();
+    const body = await request.json();
 
-    // Generate ref code if not provided
+    // Support both flat and nested form_data structures
+    const formData = body.form_data && typeof body.form_data === "object"
+      ? body.form_data
+      : body;
+
+    // Accept ref_code OR ref — both work
     const refCode =
-      formData.ref || "SARGE-" + Date.now().toString(36).toUpperCase();
+      body.ref_code || body.ref || formData.ref_code || formData.ref ||
+      "SARGE-" + Date.now().toString(36).toUpperCase();
 
-    // Write to Supabase — columns aligned with actual table schema
+    // Write to Supabase — upsert: update existing row if ref_code exists, else insert
     if (supabaseUrl && supabaseKey) {
       const supabase = createClient(supabaseUrl, supabaseKey);
-      const { error } = await supabase.from("client_intake").insert({
-        form_data: formData,
-        status: "new",
-        ref_code: refCode,
-        project_name: formData.business_name || null,
-        client_name: formData.contact_name || formData.business_name || null,
-        client_email: formData.email || null,
-        intake_submitted_at: new Date().toISOString(),
-      });
+
+      // Check if a row with this ref_code already exists (e.g. from kickoff)
+      const { data: existing } = await supabase
+        .from("client_intake")
+        .select("id")
+        .eq("ref_code", refCode)
+        .maybeSingle();
+
+      let error: any;
+      if (existing) {
+        // Update the existing kickoff row with full intake form data
+        const { error: updateErr } = await supabase
+          .from("client_intake")
+          .update({
+            form_data: formData,
+            project_name: formData.business_name || null,
+            client_name: formData.contact_name || formData.business_name || null,
+            client_email: formData.email || null,
+            intake_submitted_at: new Date().toISOString(),
+          })
+          .eq("ref_code", refCode);
+        error = updateErr;
+      } else {
+        // No existing row — insert new
+        const { error: insertErr } = await supabase.from("client_intake").insert({
+          form_data: formData,
+          status: "new",
+          ref_code: refCode,
+          project_name: formData.business_name || null,
+          client_name: formData.contact_name || formData.business_name || null,
+          client_email: formData.email || null,
+          intake_submitted_at: new Date().toISOString(),
+        });
+        error = insertErr;
+      }
+
       if (error) {
         console.error("[intake/submit] Supabase error:", error.message);
       }

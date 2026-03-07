@@ -214,6 +214,17 @@ Instead, build a SINGLE-PAGE APP (SPA) where:
 
 This way, all content is in ONE file and navigation works immediately in the preview.
 
+PII PLACEHOLDER RULES (NON-NEGOTIABLE):
+You MUST use these EXACT placeholder tokens in ALL generated HTML:
+- {{BUSINESS_NAME}} for the business/company name
+- {{client_name}} for the owner/contact name
+- {{phone}} for phone numbers
+- {{email}} for email addresses
+- {{address}} for street address
+- {{city}} for city name
+- {{state}} for state
+NEVER hardcode real phone numbers, email addresses, or physical addresses. These placeholders are replaced post-build.
+
 Format for EACH file:
 FILE: path/to/file.ext
 \`\`\`language

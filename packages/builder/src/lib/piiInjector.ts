@@ -10,13 +10,19 @@ export interface PIIData {
   email?: string;
   address?: string;
   name?: string;
+  city?: string;
+  state?: string;
+  clientName?: string;
 }
 
 const PLACEHOLDER_MAP: Record<keyof PIIData, string[]> = {
   phone: ["{{phone}}", "{{PHONE}}"],
   email: ["{{email}}", "{{EMAIL}}"],
   address: ["{{address}}", "{{ADDRESS}}"],
-  name: ["{{name}}", "{{NAME}}", "{{BUSINESS_NAME}}"],
+  name: ["{{name}}", "{{NAME}}", "{{BUSINESS_NAME}}", "{{business_name}}"],
+  city: ["{{city}}", "{{CITY}}"],
+  state: ["{{state}}", "{{STATE}}"],
+  clientName: ["{{client_name}}", "{{CLIENT_NAME}}"],
 };
 
 /**

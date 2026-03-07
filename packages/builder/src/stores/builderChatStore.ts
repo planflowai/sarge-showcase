@@ -70,7 +70,18 @@ ADDITIONAL RULES:
 - NEVER reference external files like ./main.js or ./style.css
 - When modifying code: change ONLY what was asked, preserve everything else
 - Do NOT dump extra commentary after the code block
-- Build fully responsive, full-width layouts. Never constrain the page to a narrow container. Use 100vw or full viewport width. Ensure mobile responsiveness with proper breakpoints.`;
+- Build fully responsive, full-width layouts. Never constrain the page to a narrow container. Use 100vw or full viewport width. Ensure mobile responsiveness with proper breakpoints.
+
+PII PLACEHOLDER RULES (NON-NEGOTIABLE):
+You MUST use these EXACT placeholder tokens in ALL generated HTML:
+- {{BUSINESS_NAME}} for the business/company name
+- {{client_name}} for the owner/contact name
+- {{phone}} for phone numbers
+- {{email}} for email addresses
+- {{address}} for street address
+- {{city}} for city name
+- {{state}} for state
+NEVER hardcode real phone numbers, email addresses, or physical addresses. These placeholders are replaced post-build.`;
 
 export interface BuilderMessage {
   id: string;

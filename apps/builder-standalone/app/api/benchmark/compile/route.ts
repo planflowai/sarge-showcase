@@ -82,11 +82,31 @@ function extractScores(report: any): {
   seo: number | null;
   bestPractices: number | null;
 } {
+  // Try top-level scores first
+  if (report?.scores) {
+    return {
+      performance: report.scores.performance ?? null,
+      accessibility: report.scores.accessibility ?? null,
+      seo: report.scores.seo ?? null,
+      bestPractices: report.scores.bestPractices ?? null,
+    };
+  }
+
+  // Extract from results array (per-tool breakdown from @sarge/audit)
+  const results: any[] = report?.results || [];
+  const lh = results.find((r: any) => r.tool === "lighthouse");
+  const axe = results.find((r: any) => r.tool === "axe-core");
+
+  // Lighthouse returns a single "score" for SEO category + may have sub-scores
+  const lhScore = lh?.score ?? null;
+  const lhScores = lh?.scores;
+  const axeScore = axe?.score ?? null;
+
   return {
-    performance: report?.scores?.performance ?? report?.performance?.score ?? null,
-    accessibility: report?.scores?.accessibility ?? report?.accessibility?.score ?? null,
-    seo: report?.scores?.seo ?? report?.seo?.score ?? null,
-    bestPractices: report?.scores?.bestPractices ?? report?.bestPractices?.score ?? null,
+    performance: lhScores?.performance ?? null,
+    accessibility: lhScores?.accessibility ?? axeScore ?? null,
+    seo: lhScores?.seo ?? lhScore ?? null,
+    bestPractices: lhScores?.bestPractices ?? null,
   };
 }
 
@@ -193,7 +213,7 @@ async function callGemini(apiKey: string, prompt: string): Promise<string | null
         body: JSON.stringify({
           contents: [{ role: "user", parts: [{ text: prompt }] }],
         }),
-        signal: AbortSignal.timeout(60000),
+        signal: AbortSignal.timeout(180000),
       }
     );
 
@@ -230,9 +250,16 @@ export async function POST(request: NextRequest) {
       // Run full audit (WITH Lighthouse)
       const initialReport = await runAudit(tempDir);
 
-      // If not in fix mode, just return the report
+      // If not in fix mode, return the report WITH normalized scores
       if (!fix) {
-        return NextResponse.json(initialReport);
+        const scores = extractScores(initialReport);
+        const violations = collectViolations(initialReport);
+        return NextResponse.json({
+          ...initialReport,
+          scores,
+          violations,
+          violationCount: violations.length,
+        });
       }
 
       // ── Fix mode: up to 3 passes targeting 95+ ──────────────────────
@@ -297,12 +324,16 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      const beforeScores = extractScores(initialReport);
+      const afterScores = extractScores(currentReport);
       return NextResponse.json({
         beforeReport: initialReport,
         afterReport: currentReport,
         fixedHtml: currentHtml !== html ? currentHtml : null,
         passes: passCount,
         passLog,
+        scores: afterScores,
+        beforeScores,
       });
 
     } finally {

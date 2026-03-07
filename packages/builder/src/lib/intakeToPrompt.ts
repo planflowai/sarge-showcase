@@ -57,6 +57,11 @@ const FEATURE_INSTRUCTIONS: Record<string, string> = {
 };
 
 export function intakeToPrompt(formData: any): string {
+  // If form_data is nested (from intake/submit), unwrap it
+  const fd = formData.form_data && typeof formData.form_data === "object"
+    ? formData.form_data
+    : formData;
+
   const lines: string[] = [];
 
   // Header
@@ -64,116 +69,131 @@ export function intakeToPrompt(formData: any): string {
 
   // Business info with PII placeholders
   lines.push(`## Business Information`);
-  lines.push(`- **Business Name**: ${formData.business_name || "{{BUSINESS_NAME}}"}`);
-  lines.push(`- **Industry**: ${formData.industry || "General"}`);
-  lines.push(`- **Location**: {{address}}`);
+  lines.push(`- **Business Name**: {{BUSINESS_NAME}}`);
+  lines.push(`- **Industry**: ${fd.industry || "General"}`);
+  lines.push(`- **Location**: {{address}}, {{city}}, {{state}}`);
   lines.push(`- **Phone**: {{phone}}`);
   lines.push(`- **Email**: {{email}}`);
-  if (formData.hours) lines.push(`- **Hours**: ${formData.hours}`);
-  if (formData.service_area) lines.push(`- **Service Area**: ${formData.service_area}`);
+  if (fd.hours) lines.push(`- **Hours**: ${fd.hours}`);
+  if (fd.service_area) lines.push(`- **Service Area**: ${fd.service_area}`);
+  if (fd.domain) lines.push(`- **Domain**: ${fd.domain}`);
   lines.push("");
 
   // Business description
-  if (formData.business_description) {
+  if (fd.business_description) {
     lines.push(`## About the Business`);
-    lines.push(formData.business_description);
+    lines.push(fd.business_description);
     lines.push("");
   }
 
   // USP
-  if (formData.usp) {
+  if (fd.usp) {
     lines.push(`## Unique Selling Proposition`);
-    lines.push(formData.usp);
+    lines.push(fd.usp);
     lines.push("");
   }
 
   // Target audience
-  if (formData.target_audience) {
+  if (fd.target_audience) {
     lines.push(`## Target Audience`);
-    lines.push(formData.target_audience);
+    lines.push(fd.target_audience);
     lines.push("");
   }
 
   // Style direction
-  const industry = formData.industry || "other";
-  const styleKeywords = INDUSTRY_STYLES[industry] || INDUSTRY_STYLES.other;
+  const industryKey = (fd.industry || "other").toLowerCase();
+  const styleKeywords = INDUSTRY_STYLES[industryKey] || INDUSTRY_STYLES.other;
   lines.push(`## Design Direction`);
   lines.push(`- **Industry style**: ${styleKeywords}`);
-  if (formData.style_vibe) {
-    const vibes = Array.isArray(formData.style_vibe)
-      ? formData.style_vibe.join(", ")
-      : formData.style_vibe;
+
+  // Style vibe — accept style_vibe OR style_preference
+  const vibe = fd.style_vibe || fd.style_preference;
+  if (vibe) {
+    const vibes = Array.isArray(vibe) ? vibe.join(", ") : vibe;
     lines.push(`- **Vibe**: ${vibes}`);
   }
-  if (formData.color_primary) lines.push(`- **Primary color**: ${formData.color_primary}`);
-  if (formData.color_secondary) lines.push(`- **Secondary color**: ${formData.color_secondary}`);
-  if (formData.color_accent) lines.push(`- **Accent color**: ${formData.color_accent}`);
-  if (formData.theme) {
-    const theme = Array.isArray(formData.theme) ? formData.theme[0] : formData.theme;
+
+  // Colors — accept flat fields OR nested colors object
+  const colorPrimary = fd.color_primary || fd.colors?.primary;
+  const colorSecondary = fd.color_secondary || fd.colors?.secondary;
+  const colorAccent = fd.color_accent || fd.colors?.accent;
+  if (colorPrimary) lines.push(`- **Primary color**: ${colorPrimary}`);
+  if (colorSecondary) lines.push(`- **Secondary color**: ${colorSecondary}`);
+  if (colorAccent) lines.push(`- **Accent color**: ${colorAccent}`);
+
+  if (fd.theme) {
+    const theme = Array.isArray(fd.theme) ? fd.theme[0] : fd.theme;
     lines.push(`- **Theme**: ${theme}`);
   }
-  if (formData.design_notes) lines.push(`- **Design notes**: ${formData.design_notes}`);
+  if (fd.design_notes) lines.push(`- **Design notes**: ${fd.design_notes}`);
   lines.push("");
 
-  // Primary CTA
-  if (formData.primary_cta) {
-    const ctas = Array.isArray(formData.primary_cta)
-      ? formData.primary_cta.join(", ")
-      : formData.primary_cta;
+  // Primary CTA — accept primary_cta OR cta
+  const cta = fd.primary_cta || fd.cta;
+  if (cta) {
+    const ctas = Array.isArray(cta) ? cta.join(", ") : cta;
     lines.push(`## Primary Call-to-Action: ${ctas}`);
     lines.push("");
   }
 
   // Pages to build
-  const pages: string[] = Array.isArray(formData.pages) ? formData.pages : ["home"];
+  const pages: string[] = Array.isArray(fd.pages) ? fd.pages : ["Home"];
   lines.push(`## Pages to Build`);
+  lines.push(`Build ALL ${pages.length} pages as sections in a single-page app:\n`);
   for (const page of pages) {
-    const req = PAGE_REQUIREMENTS[page] || "Standard page layout";
+    const pageKey = page.toLowerCase();
+    const req = PAGE_REQUIREMENTS[pageKey] || `Standard ${page} page layout`;
     lines.push(`### ${page.charAt(0).toUpperCase() + page.slice(1)}`);
     lines.push(req);
     lines.push("");
   }
-  if (formData.custom_pages) {
-    lines.push(`### Custom Pages: ${formData.custom_pages}`);
+  if (fd.custom_pages) {
+    lines.push(`### Custom Pages: ${fd.custom_pages}`);
     lines.push("");
   }
 
-  // About text / services / team / testimonials
-  if (formData.about_text) {
+  // About text
+  if (fd.about_text) {
     lines.push(`## About Page Content`);
-    lines.push(formData.about_text);
+    lines.push(fd.about_text);
     lines.push("");
   }
 
-  // Services
-  if (formData.service_name && Array.isArray(formData.service_name)) {
+  // Services — accept service_name[] array OR services[] string array
+  if (fd.service_name && Array.isArray(fd.service_name)) {
     lines.push(`## Services`);
-    for (let i = 0; i < formData.service_name.length; i++) {
-      const name = formData.service_name[i];
-      const desc = formData.service_desc?.[i] || "";
+    for (let i = 0; i < fd.service_name.length; i++) {
+      const name = fd.service_name[i];
+      const desc = fd.service_desc?.[i] || "";
       if (name) lines.push(`- **${name}**: ${desc}`);
+    }
+    lines.push("");
+  } else if (fd.services && Array.isArray(fd.services)) {
+    lines.push(`## Services`);
+    for (const svc of fd.services) {
+      lines.push(`- **${svc}**`);
     }
     lines.push("");
   }
 
   // Team
-  if (formData.team_name && Array.isArray(formData.team_name)) {
+  if (fd.team_name && Array.isArray(fd.team_name)) {
     lines.push(`## Team Members`);
-    for (let i = 0; i < formData.team_name.length; i++) {
-      const name = formData.team_name[i];
-      const role = formData.team_role?.[i] || "";
-      const bio = formData.team_bio?.[i] || "";
+    for (let i = 0; i < fd.team_name.length; i++) {
+      const name = fd.team_name[i];
+      const role = fd.team_role?.[i] || "";
+      const bio = fd.team_bio?.[i] || "";
       if (name) lines.push(`- **${name}** — ${role}. ${bio}`);
     }
     lines.push("");
   }
 
   // Testimonials
-  if (formData.testimonial_quote && Array.isArray(formData.testimonial_quote)) {
+  if (fd.testimonial_quote && Array.isArray(fd.testimonial_quote)) {
     lines.push(`## Testimonials`);
-    for (let i = 0; i < formData.testimonial_quote.length; i++) {
-      const quote = formData.testimonial_quote[i];
-      const tName = formData.testimonial_name?.[i] || "";
+    for (let i = 0; i < fd.testimonial_quote.length; i++) {
+      const quote = fd.testimonial_quote[i];
+      const tName = fd.testimonial_name?.[i] || "";
       if (quote) lines.push(`- "${quote}" — ${tName}`);
     }
     lines.push("");
@@ -181,7 +201,7 @@ export function intakeToPrompt(formData: any): string {
 
   // Social links
   const socials = ["facebook", "instagram", "linkedin", "youtube", "tiktok", "google"]
-    .map((s) => ({ platform: s, url: formData[`social_${s}`] }))
+    .map((s) => ({ platform: s, url: fd[`social_${s}`] }))
     .filter((s) => s.url);
   if (socials.length > 0) {
     lines.push(`## Social Media Links`);
@@ -192,34 +212,47 @@ export function intakeToPrompt(formData: any): string {
   }
 
   // Booking link
-  if (formData.booking_link) {
-    lines.push(`## Booking: ${formData.booking_link}`);
+  if (fd.booking_link) {
+    lines.push(`## Booking: ${fd.booking_link}`);
     lines.push("");
   }
 
   // Features / post-build toggles
-  const features: string[] = Array.isArray(formData.features) ? formData.features : [];
+  const features: string[] = Array.isArray(fd.features) ? fd.features : [];
   if (features.length > 0) {
     lines.push(`## Required Features`);
     for (const f of features) {
-      const instruction = FEATURE_INSTRUCTIONS[f] || `Enable ${f}`;
+      const fKey = f.toLowerCase().replace(/\s+/g, "_");
+      const instruction = FEATURE_INSTRUCTIONS[fKey] || `Enable ${f}`;
       lines.push(`- **${f}**: ${instruction}`);
     }
     lines.push("");
   }
 
   // Reference sites
-  if (formData.reference_sites) {
-    lines.push(`## Reference Sites for Inspiration: ${formData.reference_sites}`);
+  if (fd.reference_sites) {
+    lines.push(`## Reference Sites for Inspiration: ${fd.reference_sites}`);
     lines.push("");
   }
 
-  // Footer instruction
-  lines.push(`## Important`);
-  lines.push(`- Use PII placeholders: {{phone}}, {{email}}, {{address}}, {{name}} — real values will be injected after build.`);
+  // Footer instruction — NON-NEGOTIABLE PII placeholder enforcement
+  lines.push(`## CRITICAL — PII Placeholder Rules (NON-NEGOTIABLE)`);
+  lines.push(`You MUST use these EXACT placeholder tokens in the HTML wherever client data would appear:`);
+  lines.push(`- {{BUSINESS_NAME}} — for the business/company name`);
+  lines.push(`- {{phone}} — for phone numbers`);
+  lines.push(`- {{email}} — for email addresses`);
+  lines.push(`- {{address}} — for street address`);
+  lines.push(`- {{city}} — for city name`);
+  lines.push(`- {{state}} — for state`);
+  lines.push(`- {{client_name}} — for the owner/contact name`);
+  lines.push(`NEVER use real client data. NEVER hardcode phone numbers, emails, or addresses.`);
+  lines.push(`These placeholders will be replaced with real values after the build.`);
+  lines.push(``);
+  lines.push(`## Build Requirements`);
   lines.push(`- Build a single self-contained HTML file with all CSS in <style> and all JS in <script>.`);
   lines.push(`- Make it fully responsive. Mobile-first design.`);
-  lines.push(`- Use real stock photos from the image URLs provided in the system prompt.`);
+  lines.push(`- Use real stock photos from Unsplash or placeholder images.`);
+  lines.push(`- All navigation must use JavaScript show/hide sections (SPA pattern), NOT separate files.`);
 
   return lines.join("\n");
 }

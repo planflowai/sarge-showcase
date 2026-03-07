@@ -375,8 +375,10 @@ async function runDeployPipeline(
     await runCmd('git commit -m "Update deploy URLs in project.json"', projectPath).catch(() => {});
     await runCmd("git push origin", projectPath).catch(() => {});
 
-    // Send welcome email
+    // Send welcome email — intake form link points to builder-standalone, NOT deploy URL
     const comingSoonUrl = vercelUrl || netlifyUrl || cloudflareUrl || githubUrl;
+    const builderOrigin = new URL(requestUrl).origin;
+    const intakeFormUrl = `${builderOrigin}/intake/${encodeURIComponent(refCode)}`;
     try {
       const emailEndpoint = new URL("/api/email/send", requestUrl).toString();
       await fetch(emailEndpoint, {
@@ -389,9 +391,7 @@ async function runDeployPipeline(
             client_name: clientName,
             project_name: projectName,
             coming_soon_url: comingSoonUrl,
-            intake_form_url: comingSoonUrl
-              ? `${comingSoonUrl.replace(/\/$/, "")}/intake?ref=${refCode}`
-              : "",
+            intake_form_url: intakeFormUrl,
             ref_code: refCode,
             your_phone: "",
           },

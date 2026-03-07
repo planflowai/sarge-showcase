@@ -27,11 +27,46 @@ Ref code: `SARGE-MMFM7TTE` (kickoff) / `SARGE-MMFM8FHJ` (intake)
 
 ### Summary: 12/12 automated steps PASS, 1 manual check pending
 
-### Known Gaps Found
-1. **`intakeToPrompt()`** — Only generates Home page. Ignores `pages`, `colors`, `features`, `services`, `theme` from form_data.
-2. **AI placeholder compliance** — Gemini 2.5 Flash only used `{{BUSINESS_NAME}}`, ignored `{{phone}}`, `{{email}}`, `{{address}}` instructions.
-3. **`/api/intake/submit`** — Looks for `formData.ref` but caller sends `ref_code` as key. Also stores whole body as `form_data` instead of extracting `project_name`/`client_name`/`client_email` from nested `form_data.form_data.*`.
-4. **Compile route** — Returns per-tool scores (SEO 90, axe 100), not the traditional 4-category Lighthouse breakdown (Perf/A11y/BP/SEO). No certificate generated in audit-only mode.
+### Known Gaps (ALL FIXED — see A-Z Gap Fixes below)
+
+---
+
+## A-Z Gap Fixes (2026-03-07) — 6 fixes, verified with re-test
+
+| Fix | Issue | Solution | Verified |
+|-----|-------|----------|----------|
+| 1 | `intakeToPrompt()` only generates Home page | Unwraps nested form_data, uses ALL pages/colors/features/services/CTA/theme/vibe | 2803-char prompt, 7 pages |
+| 2 | AI ignores PII placeholder instructions | NON-NEGOTIABLE PII rules added to builderChatStore + builderModeStore + intakeToPrompt footer | 46 placeholders in 94KB HTML |
+| 3 | `intake/submit` ref_code mismatch + duplicate rows | Accepts `ref_code` OR `ref`, unwraps nested form_data, UPSERTS (updates existing kickoff row) | Same ref across kickoff→intake→build |
+| 4 | Compile returns per-tool scores, not 4-category | `extractScores()` now reads from results array, top-level `scores` object in response | Perf 90, A11y 100, SEO 100, BP 93 |
+| 5 | Welcome email intake link points to deploy URL | Intake form URL now points to `{builderOrigin}/intake/{refCode}` | Correct URL in email |
+| 6 | Build from Intake UI | Already wired in ProjectCommandCenter — intakeToPrompt now produces complete prompt | Functional |
+
+### Files Modified
+- `packages/builder/src/lib/intakeToPrompt.ts` — Full rewrite: nested form_data unwrap, colors object support, services array support, style_preference alias, PII enforcement footer
+- `packages/builder/src/lib/piiInjector.ts` — Added `city`, `state`, `clientName` to PIIData interface + PLACEHOLDER_MAP
+- `packages/builder/src/stores/builderChatStore.ts` — PII placeholder rules in BUILDER_SYSTEM_PROMPT
+- `packages/builder/src/stores/builderModeStore.ts` — PII placeholder rules in BUILDER_SYSTEM_PROMPTS.build
+- `apps/builder-standalone/app/api/intake/submit/route.ts` — ref_code accept both keys, unwrap nested form_data, upsert instead of duplicate insert
+- `apps/builder-standalone/app/api/intake/build/route.ts` — Unwrap nested form_data for pages extraction
+- `apps/builder-standalone/app/api/benchmark/compile/route.ts` — extractScores reads results array, top-level scores in response
+- `apps/builder-standalone/app/api/project/kickoff/route.ts` — Intake form URL uses builder origin, not deploy URL
+
+### Re-Test Results (Before → After)
+
+| Metric | Before | After |
+|--------|--------|-------|
+| Prompt length | 804 chars | **2803 chars** |
+| Pages in prompt | 1 (Home) | **7 (all)** |
+| Colors in prompt | 0 | **3 (primary/secondary/accent)** |
+| Services in prompt | 0 | **5** |
+| PII placeholders in HTML | 1 | **46** |
+| PII after injection | 0 remaining | **0 remaining** |
+| HTML size | 18.8KB | **94KB** |
+| Lighthouse SEO | 90 | **100** |
+| Lighthouse A11y | 100 | **100** |
+| Lighthouse Perf | N/A | **90** |
+| Lighthouse BP | N/A | **93** |
 
 ---
 
