@@ -12,16 +12,16 @@ export function SettingsLogicEditor() {
     <div className="space-y-8">
       {/* DEBATE LOGIC TEMPLATES */}
       <section>
-        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">
+        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-100 dark:text-white">
           Debate Logic Templates
         </h2>
-        <p className="text-xs text-zinc-300 dark:text-zinc-400 mb-4">
+        <p className="text-xs text-zinc-300 dark:text-zinc-100 mb-4">
           These templates control how AI agents debate. Variables like {`{{question}}`} are replaced at runtime.
         </p>
 
         <div className="space-y-4">
           <div className={cardCls}>
-            <label className="block text-xs font-semibold text-zinc-400 dark:text-zinc-300 mb-2">
+            <label className="block text-xs font-semibold text-zinc-100 dark:text-white mb-2">
               D1 Prompt (First Response)
             </label>
             <textarea
@@ -34,7 +34,7 @@ export function SettingsLogicEditor() {
           </div>
 
           <div className={cardCls}>
-            <label className="block text-xs font-semibold text-zinc-400 dark:text-zinc-300 mb-2">
+            <label className="block text-xs font-semibold text-zinc-100 dark:text-white mb-2">
               D1 Prompt with Context (Subsequent Rounds)
             </label>
             <textarea
@@ -47,7 +47,7 @@ export function SettingsLogicEditor() {
           </div>
 
           <div className={cardCls}>
-            <label className="block text-xs font-semibold text-zinc-400 dark:text-zinc-300 mb-2">
+            <label className="block text-xs font-semibold text-zinc-100 dark:text-white mb-2">
               D2 Prompt (Cross-Verification)
             </label>
             <textarea
@@ -59,7 +59,7 @@ export function SettingsLogicEditor() {
           </div>
 
           <div className={cardCls}>
-            <label className="block text-xs font-semibold text-zinc-400 dark:text-zinc-300 mb-2">
+            <label className="block text-xs font-semibold text-zinc-100 dark:text-white mb-2">
               D3 Prompt (Final Review)
             </label>
             <textarea
@@ -71,7 +71,7 @@ export function SettingsLogicEditor() {
           </div>
 
           <div className={cardCls}>
-            <label className="block text-xs font-semibold text-zinc-400 dark:text-zinc-300 mb-2">
+            <label className="block text-xs font-semibold text-zinc-100 dark:text-white mb-2">
               Poison Injection Template
             </label>
             <textarea
@@ -84,7 +84,7 @@ export function SettingsLogicEditor() {
           </div>
 
           <div className={cardCls}>
-            <label className="block text-xs font-semibold text-zinc-400 dark:text-zinc-300 mb-2">
+            <label className="block text-xs font-semibold text-zinc-100 dark:text-white mb-2">
               Challenge Keywords (comma-separated)
             </label>
             <input
@@ -97,7 +97,7 @@ export function SettingsLogicEditor() {
           </div>
 
           <div className={cardCls}>
-            <label className="block text-xs font-semibold text-zinc-400 dark:text-zinc-300 mb-2">
+            <label className="block text-xs font-semibold text-zinc-100 dark:text-white mb-2">
               Flag Keywords (comma-separated)
             </label>
             <input
@@ -110,7 +110,7 @@ export function SettingsLogicEditor() {
           </div>
 
           <div className={cardCls}>
-            <label className="block text-xs font-semibold text-zinc-400 dark:text-zinc-300 mb-2">
+            <label className="block text-xs font-semibold text-zinc-100 dark:text-white mb-2">
               Caught Keywords (comma-separated)
             </label>
             <input
@@ -126,10 +126,10 @@ export function SettingsLogicEditor() {
 
       {/* REVIEW ANALYSIS PROMPTS */}
       <section>
-        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-300">
+        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-zinc-100 dark:text-white">
           Review Analysis Prompts
         </h2>
-        <p className="text-xs text-zinc-300 dark:text-zinc-400 mb-4">
+        <p className="text-xs text-zinc-300 dark:text-zinc-100 mb-4">
           These prompts guide the AI when analyzing batch test results in the Review screen.
           Customize them to change how the AI understands and explains poison pill detection.
         </p>
@@ -140,7 +140,7 @@ export function SettingsLogicEditor() {
               <FileText className="h-4 w-4 text-indigo-500" />
               <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Base System Prompt</h3>
             </div>
-            <p className="text-xs text-zinc-300 dark:text-zinc-400 mb-3">
+            <p className="text-xs text-zinc-300 dark:text-zinc-100 mb-3">
               Core explanation of the poison pill detection system. Used in all AI analysis.
             </p>
             <textarea
@@ -174,7 +174,7 @@ Analyze test results to determine if the poison detection system works.`}
               <Shield className="h-4 w-4 text-emerald-500" />
               <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">A. Verdict Analysis</h3>
             </div>
-            <p className="text-xs text-zinc-300 dark:text-zinc-400 mb-3">Guides AI to determine: &quot;Did it work?&quot;</p>
+            <p className="text-xs text-zinc-300 dark:text-zinc-100 mb-3">Guides AI to determine: &quot;Did it work?&quot;</p>
             <textarea
               readOnly
               value={`VERDICT CRITERIA:
@@ -195,7 +195,7 @@ Provide:
               <Database className="h-4 w-4 text-violet-500" />
               <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">B. Evidence Analysis</h3>
             </div>
-            <p className="text-xs text-zinc-300 dark:text-zinc-400 mb-3">Guides AI to prove the system works with data</p>
+            <p className="text-xs text-zinc-300 dark:text-zinc-100 mb-3">Guides AI to prove the system works with data</p>
             <textarea
               readOnly
               value={`Focus on PROOF:
@@ -215,7 +215,7 @@ Be data-driven. Show the numbers.`}
               <MessageSquare className="h-4 w-4 text-amber-500" />
               <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">C. Lifecycle Analysis</h3>
             </div>
-            <p className="text-xs text-zinc-300 dark:text-zinc-400 mb-3">Guides AI to tell the complete story of each test</p>
+            <p className="text-xs text-zinc-300 dark:text-zinc-100 mb-3">Guides AI to tell the complete story of each test</p>
             <textarea
               readOnly
               value={`For each test, trace:
@@ -236,7 +236,7 @@ Tell the story step-by-step.`}
               <ChevronRight className="h-4 w-4 text-red-500" />
               <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Conversation Shift Analysis</h3>
             </div>
-            <p className="text-xs text-zinc-300 dark:text-zinc-400 mb-3">Tracks how poison changed the conversation flow</p>
+            <p className="text-xs text-zinc-300 dark:text-zinc-100 mb-3">Tracks how poison changed the conversation flow</p>
             <textarea
               readOnly
               value={`Track conversation drift:
@@ -254,7 +254,7 @@ Tell the story step-by-step.`}
               <ShieldCheck className="h-4 w-4 text-cyan-500" />
               <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Kill Mechanism Analysis</h3>
             </div>
-            <p className="text-xs text-zinc-300 dark:text-zinc-400 mb-3">Explains HOW protective prompts stopped the poison</p>
+            <p className="text-xs text-zinc-300 dark:text-zinc-100 mb-3">Explains HOW protective prompts stopped the poison</p>
             <textarea
               readOnly
               value={`Identify:

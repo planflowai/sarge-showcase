@@ -211,11 +211,11 @@ export function RollCall() {
         <table className="w-full text-sm">
           <thead className="bg-zinc-100 dark:bg-zinc-800">
             <tr>
-              <th className="px-4 py-3 text-left text-sm text-zinc-500 dark:text-zinc-400 font-semibold">Status</th>
-              <th className="px-4 py-3 text-left text-sm text-zinc-500 dark:text-zinc-400 font-semibold">Requested</th>
-              <th className="px-4 py-3 text-left text-sm text-zinc-500 dark:text-zinc-400 font-semibold">Response</th>
-              <th className="px-4 py-3 text-left text-sm text-zinc-500 dark:text-zinc-400 font-semibold">Latency</th>
-              <th className="px-4 py-3 text-left text-sm text-zinc-500 dark:text-zinc-400 font-semibold">Action</th>
+              <th className="px-4 py-3 text-left text-sm text-zinc-200 dark:text-zinc-100 font-semibold">Status</th>
+              <th className="px-4 py-3 text-left text-sm text-zinc-200 dark:text-zinc-100 font-semibold">Requested</th>
+              <th className="px-4 py-3 text-left text-sm text-zinc-200 dark:text-zinc-100 font-semibold">Response</th>
+              <th className="px-4 py-3 text-left text-sm text-zinc-200 dark:text-zinc-100 font-semibold">Latency</th>
+              <th className="px-4 py-3 text-left text-sm text-zinc-200 dark:text-zinc-100 font-semibold">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-200 dark:divide-zinc-700">
@@ -254,7 +254,7 @@ export function RollCall() {
                       <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
                     )}
                   </td>
-                  <td className="px-4 py-3 font-mono text-sm text-zinc-600 dark:text-zinc-300">
+                  <td className="px-4 py-3 font-mono text-sm text-zinc-200 dark:text-white">
                     {r.requested}
                   </td>
                   <td className="px-4 py-3 text-sm max-w-md">
@@ -271,14 +271,14 @@ export function RollCall() {
                       {isLong && (
                         <button
                           onClick={() => toggleExpand(rowKey)}
-                          className="flex-shrink-0 text-zinc-400 hover:text-zinc-200 mt-0.5"
+                          className="flex-shrink-0 text-zinc-100 hover:text-zinc-200 mt-0.5"
                         >
                           {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                         </button>
                       )}
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-sm text-zinc-500 dark:text-zinc-400">
+                  <td className="px-4 py-3 text-sm text-zinc-200 dark:text-zinc-100">
                     {r.latencyMs}ms
                   </td>
                   <td className="px-4 py-3">
@@ -369,7 +369,7 @@ export function RollCall() {
         </div>
       </div>
 
-      <p className="text-sm text-zinc-500 dark:text-zinc-400">
+      <p className="text-sm text-zinc-200 dark:text-zinc-100">
         Tests each model directly (NO fallback) and reports what model actually responds.
         This helps verify that your selected model is actually being used.
       </p>
@@ -426,7 +426,7 @@ export function RollCall() {
             )}
           </div>
           {localResults.length === 0 && !testing && (
-            <p className="text-xs text-zinc-300 dark:text-zinc-400 italic">
+            <p className="text-xs text-zinc-300 dark:text-zinc-100 italic">
               No Ollama models found. Make sure Ollama is running.
             </p>
           )}
@@ -435,7 +435,7 @@ export function RollCall() {
       )}
 
       {hasResults && (
-        <div className="flex flex-wrap gap-5 text-sm text-zinc-400 dark:text-zinc-400 pt-3 border-t border-zinc-200 dark:border-zinc-700">
+        <div className="flex flex-wrap gap-5 text-sm text-zinc-100 dark:text-zinc-100 pt-3 border-t border-zinc-200 dark:border-zinc-700">
           <span className="flex items-center gap-1.5">
             <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
             Model responded correctly

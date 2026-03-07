@@ -113,8 +113,8 @@ export function ModelRegistry() {
         <span className="flex-1 truncate text-zinc-800 dark:text-zinc-200 font-medium" title={m.name}>
           {m.name.replace(':latest', '')}
         </span>
-        {size && <span className="text-zinc-400 text-xs font-mono w-10 text-right">{size}</span>}
-        <span className={`text-xs font-bold w-12 text-center ${STRENGTH_COLOR[m.strength] || 'text-zinc-400'}`}>
+        {size && <span className="text-zinc-100 text-xs font-mono w-10 text-right">{size}</span>}
+        <span className={`text-xs font-bold w-12 text-center ${STRENGTH_COLOR[m.strength] || 'text-zinc-100'}`}>
           {STRENGTH_LABEL[m.strength] || '—'}
         </span>
         <div className="flex gap-1">
@@ -126,7 +126,7 @@ export function ModelRegistry() {
                   ? key === 'judge'
                     ? 'bg-amber-500/20 text-amber-400 border-amber-500/40'
                     : 'bg-blue-500/20 text-blue-400 border-blue-500/40'
-                  : 'bg-zinc-800/50 text-zinc-500 border-transparent hover:border-zinc-600'
+                  : 'bg-zinc-800/50 text-zinc-200 border-transparent hover:border-zinc-600'
               }`}>
               {label}
             </button>
@@ -144,7 +144,7 @@ export function ModelRegistry() {
       {/* Header */}
       <div className="flex items-center gap-3 flex-wrap">
         <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">Model Registry</h2>
-        <span className="text-sm text-zinc-400">|</span>
+        <span className="text-sm text-zinc-100">|</span>
         <span className="text-sm text-zinc-300">{total} models</span>
         <span className="text-sm text-green-600 dark:text-green-400">{ready} ready</span>
         {unclassified > 0 && <span className="text-sm text-yellow-600 dark:text-yellow-400">{unclassified} unclassified</span>}
@@ -166,13 +166,13 @@ export function ModelRegistry() {
       </div>
 
       {lastScanTimestamp && (
-        <div className="text-xs text-zinc-500">Last scan: {new Date(lastScanTimestamp).toLocaleString()} — data saved to browser, survives reload</div>
+        <div className="text-xs text-zinc-200">Last scan: {new Date(lastScanTimestamp).toLocaleString()} — data saved to browser, survives reload</div>
       )}
 
       {error && <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-sm">{error}</div>}
 
       {total === 0 ? (
-        <div className="p-8 text-center text-zinc-400 text-sm">No models in registry. Click <strong>Scan</strong> to discover local models.</div>
+        <div className="p-8 text-center text-zinc-100 text-sm">No models in registry. Click <strong>Scan</strong> to discover local models.</div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
           {CATEGORIES.map(cat => {
@@ -190,12 +190,12 @@ export function ModelRegistry() {
                   onClick={() => toggleCat(cat.key)}
                   className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 rounded-t-lg"
                 >
-                  <span className={`text-sm font-bold ${isSarge ? 'text-green-700 dark:text-green-400' : 'text-zinc-700 dark:text-zinc-300'}`}>
+                  <span className={`text-sm font-bold ${isSarge ? 'text-green-700 dark:text-green-400' : 'text-zinc-700 dark:text-white'}`}>
                     {cat.label}
                   </span>
-                  <span className="text-xs text-zinc-400">{cat.desc}</span>
-                  <span className="text-sm text-zinc-400 ml-auto">({models.length})</span>
-                  <span className="text-sm text-zinc-400">{isCollapsed ? '▸' : '▾'}</span>
+                  <span className="text-xs text-zinc-100">{cat.desc}</span>
+                  <span className="text-sm text-zinc-100 ml-auto">({models.length})</span>
+                  <span className="text-sm text-zinc-100">{isCollapsed ? '▸' : '▾'}</span>
                 </div>
                 {!isCollapsed && (
                   <div className="border-t border-zinc-200 dark:border-zinc-700 divide-y divide-zinc-100 dark:divide-zinc-800">

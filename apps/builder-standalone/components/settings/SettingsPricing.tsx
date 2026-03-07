@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import {
-  Plus, Trash2, GripVertical, ChevronDown, ChevronRight,
+  Plus, Trash2, ChevronDown, ChevronRight,
   Loader2, Save, Eye, EyeOff, Star, StarOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -70,6 +70,9 @@ const NEW_TRUST: TrustItem = {
   is_active: true,
 };
 
+/* ─── Shared label class ─── */
+const LBL = "text-xs font-bold text-white uppercase tracking-wide block mb-1";
+
 /* ─── Component ─── */
 
 export function SettingsPricing() {
@@ -86,7 +89,7 @@ export function SettingsPricing() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/pricing", { method: "POST" }); // POST = admin list (all rows)
+      const res = await fetch("/api/pricing", { method: "POST" });
       const data = await res.json();
       if (data.packages?.length > 0) {
         setPackages(data.packages);
@@ -103,14 +106,12 @@ export function SettingsPricing() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  // Mark dirty on any edit
   const edit = useCallback(<T,>(setter: React.Dispatch<React.SetStateAction<T[]>>, fn: (prev: T[]) => T[]) => {
     setter(fn);
     setDirty(true);
     setStatus(null);
   }, []);
 
-  // Update a package field
   const updatePkg = useCallback((idx: number, field: keyof PricingPackage, value: unknown) => {
     edit(setPackages, (prev) => {
       const next = [...prev];
@@ -119,7 +120,6 @@ export function SettingsPricing() {
     });
   }, [edit]);
 
-  // Update a trust item field
   const updateTrust = useCallback((idx: number, field: keyof TrustItem, value: unknown) => {
     edit(setTrustItems, (prev) => {
       const next = [...prev];
@@ -128,7 +128,6 @@ export function SettingsPricing() {
     });
   }, [edit]);
 
-  // Feature editing
   const updateFeature = useCallback((pkgIdx: number, featIdx: number, field: keyof PricingFeature, value: unknown) => {
     edit(setPackages, (prev) => {
       const next = [...prev];
@@ -156,12 +155,10 @@ export function SettingsPricing() {
     });
   }, [edit]);
 
-  // Save all
   const saveAll = useCallback(async () => {
     setSaving(true);
     setStatus(null);
     try {
-      // Normalize sort_order
       const orderedPkgs = packages.map((p, i) => ({ ...p, sort_order: i }));
       const orderedTrust = trustItems.map((t, i) => ({ ...t, sort_order: i }));
 
@@ -175,7 +172,6 @@ export function SettingsPricing() {
 
       setDirty(false);
       setStatus({ type: "success", msg: "Saved to Supabase" });
-      // Reload to get server-generated IDs for new items
       await loadData();
     } catch (err: unknown) {
       setStatus({ type: "error", msg: err instanceof Error ? err.message : "Save failed" });
@@ -184,17 +180,13 @@ export function SettingsPricing() {
     }
   }, [packages, trustItems, loadData]);
 
-  // Delete with confirmation
   const handleDelete = useCallback(async (type: "pkg" | "trust", idx: number) => {
     const item = type === "pkg" ? packages[idx] : trustItems[idx];
     if (item?.id) {
-      // Delete from Supabase
       const table = type === "pkg" ? "pricing_packages" : "pricing_trust_items";
       try {
         await fetch(`/api/pricing?table=${table}&id=${item.id}`, { method: "DELETE" });
-      } catch {
-        // Continue — remove from local state anyway
-      }
+      } catch { /* continue */ }
     }
     if (type === "pkg") {
       edit(setPackages, (prev) => prev.filter((_, i) => i !== idx));
@@ -204,7 +196,6 @@ export function SettingsPricing() {
     setDeleteConfirm(null);
   }, [packages, trustItems, edit]);
 
-  // Move package up/down
   const movePkg = useCallback((idx: number, dir: -1 | 1) => {
     edit(setPackages, (prev) => {
       const next = [...prev];
@@ -227,8 +218,9 @@ export function SettingsPricing() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12 gap-2 text-zinc-400">
-        <Loader2 className="w-4 h-4 animate-spin" /> Loading pricing data...
+      <div className="flex items-center justify-center py-12 gap-3 text-white">
+        <Loader2 className="w-5 h-5 animate-spin" />
+        <span className="text-base font-semibold">Loading pricing data...</span>
       </div>
     );
   }
@@ -238,14 +230,14 @@ export function SettingsPricing() {
       {/* ─── Header ─── */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-bold text-zinc-100">Package & Pricing Admin</h2>
-          <p className="text-xs text-zinc-400 mt-0.5">
+          <h2 className="text-2xl font-bold text-white">Package & Pricing Admin</h2>
+          <p className="text-sm font-semibold text-zinc-200 mt-1">
             Edit packages and trust bar items. Changes update the /kickoff page live.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {status && (
-            <span className={`text-xs font-medium ${status.type === "success" ? "text-emerald-400" : "text-red-400"}`}>
+            <span className={`text-sm font-bold ${status.type === "success" ? "text-emerald-400" : "text-red-400"}`}>
               {status.msg}
             </span>
           )}
@@ -253,9 +245,9 @@ export function SettingsPricing() {
             size="sm"
             onClick={saveAll}
             disabled={saving || !dirty}
-            className={`gap-1.5 ${dirty ? "bg-indigo-600 hover:bg-indigo-500 text-white" : "bg-zinc-700 text-zinc-400"}`}
+            className={`gap-1.5 text-sm font-bold ${dirty ? "bg-indigo-600 hover:bg-indigo-500 text-white" : "bg-zinc-700 text-zinc-300"}`}
           >
-            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save All
           </Button>
         </div>
@@ -264,17 +256,17 @@ export function SettingsPricing() {
       {/* ─── Packages ─── */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-zinc-200">Packages ({packages.length})</h3>
+          <h3 className="text-lg font-bold text-white">Packages ({packages.length})</h3>
           <Button
             size="sm"
             variant="outline"
-            className="gap-1 text-xs border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+            className="gap-1.5 text-sm font-bold border-zinc-600 text-white hover:bg-zinc-700"
             onClick={() => {
               edit(setPackages, (prev) => [...prev, { ...NEW_PACKAGE, sort_order: prev.length }]);
               setExpandedPkg(packages.length);
             }}
           >
-            <Plus className="w-3 h-3" /> Add Package
+            <Plus className="w-4 h-4" /> Add Package
           </Button>
         </div>
 
@@ -287,111 +279,107 @@ export function SettingsPricing() {
                 className="flex items-center gap-3 cursor-pointer select-none"
                 onClick={() => setExpandedPkg(isExpanded ? null : idx)}
               >
-                {/* Color dot */}
-                <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: pkg.color_primary }} />
+                <div className="w-4 h-4 rounded-full flex-shrink-0" style={{ background: pkg.color_primary }} />
 
-                {/* Name + price */}
                 <div className="flex-1 min-w-0">
-                  <span className="text-sm font-semibold text-zinc-100">{pkg.name || "Untitled"}</span>
-                  <span className="text-xs text-zinc-400 ml-2">
+                  <span className="text-xl font-bold text-white">{pkg.name || "Untitled"}</span>
+                  <span className="text-base font-bold text-zinc-200 ml-3">
                     ${pkg.price_min.toLocaleString()}&ndash;${pkg.price_max.toLocaleString()}
                   </span>
                 </div>
 
-                {/* Badges */}
                 {pkg.is_featured && (
-                  <span className="text-[10px] font-bold text-amber-400 border border-amber-400/30 rounded px-1.5 py-0.5">FEATURED</span>
+                  <span className="text-xs font-bold text-amber-400 border border-amber-400/50 rounded px-2 py-1">FEATURED</span>
                 )}
                 {!pkg.is_active && (
-                  <span className="text-[10px] font-bold text-zinc-500 border border-zinc-600 rounded px-1.5 py-0.5">HIDDEN</span>
+                  <span className="text-xs font-bold text-red-300 border border-red-400/50 rounded px-2 py-1">HIDDEN</span>
                 )}
 
-                {/* Reorder */}
                 <button onClick={(e) => { e.stopPropagation(); movePkg(idx, -1); }} disabled={idx === 0}
-                  className="text-zinc-500 hover:text-zinc-300 disabled:opacity-20 text-xs px-1">▲</button>
+                  className="text-white hover:text-indigo-400 disabled:opacity-20 text-sm font-bold px-1">&#9650;</button>
                 <button onClick={(e) => { e.stopPropagation(); movePkg(idx, 1); }} disabled={idx === packages.length - 1}
-                  className="text-zinc-500 hover:text-zinc-300 disabled:opacity-20 text-xs px-1">▼</button>
+                  className="text-white hover:text-indigo-400 disabled:opacity-20 text-sm font-bold px-1">&#9660;</button>
 
-                {isExpanded ? <ChevronDown className="w-4 h-4 text-zinc-500" /> : <ChevronRight className="w-4 h-4 text-zinc-500" />}
+                {isExpanded ? <ChevronDown className="w-5 h-5 text-white" /> : <ChevronRight className="w-5 h-5 text-white" />}
               </div>
 
               {/* Expanded editor */}
               {isExpanded && (
-                <div className="mt-4 space-y-4 border-t border-zinc-700 pt-4">
+                <div className="mt-4 space-y-5 border-t border-zinc-600 pt-4">
                   {/* Row 1: Name + Tagline */}
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide block mb-1">Name</label>
+                      <label className={LBL}>Name</label>
                       <Input className={inputCls} value={pkg.name} onChange={(e) => updatePkg(idx, "name", e.target.value)} />
                     </div>
                     <div>
-                      <label className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide block mb-1">Tagline</label>
+                      <label className={LBL}>Tagline</label>
                       <Input className={inputCls} value={pkg.tagline} onChange={(e) => updatePkg(idx, "tagline", e.target.value)} />
                     </div>
                   </div>
 
                   {/* Row 2: Price min/max/label + button label */}
-                  <div className="grid grid-cols-4 gap-3">
+                  <div className="grid grid-cols-4 gap-4">
                     <div>
-                      <label className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide block mb-1">Price Min ($)</label>
+                      <label className={LBL}>Price Min ($)</label>
                       <Input className={inputCls} type="number" value={pkg.price_min}
                         onChange={(e) => updatePkg(idx, "price_min", parseInt(e.target.value) || 0)} />
                     </div>
                     <div>
-                      <label className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide block mb-1">Price Max ($)</label>
+                      <label className={LBL}>Price Max ($)</label>
                       <Input className={inputCls} type="number" value={pkg.price_max}
                         onChange={(e) => updatePkg(idx, "price_max", parseInt(e.target.value) || 0)} />
                     </div>
                     <div>
-                      <label className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide block mb-1">Price Label</label>
+                      <label className={LBL}>Price Label</label>
                       <Input className={inputCls} value={pkg.price_label} onChange={(e) => updatePkg(idx, "price_label", e.target.value)} />
                     </div>
                     <div>
-                      <label className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide block mb-1">Button Label</label>
+                      <label className={LBL}>Button Label</label>
                       <Input className={inputCls} value={pkg.button_label} onChange={(e) => updatePkg(idx, "button_label", e.target.value)} />
                     </div>
                   </div>
 
                   {/* Row 3: Colors + Revision rounds */}
-                  <div className="grid grid-cols-4 gap-3">
+                  <div className="grid grid-cols-4 gap-4">
                     <div>
-                      <label className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide block mb-1">Primary Color</label>
+                      <label className={LBL}>Primary Color</label>
                       <div className="flex items-center gap-2">
                         <input type="color" value={pkg.color_primary}
                           onChange={(e) => updatePkg(idx, "color_primary", e.target.value)}
-                          className="w-8 h-8 rounded cursor-pointer border border-zinc-700 bg-transparent" />
+                          className="w-8 h-8 rounded cursor-pointer border border-zinc-600 bg-transparent" />
                         <Input className={inputCls + " flex-1"} value={pkg.color_primary}
                           onChange={(e) => updatePkg(idx, "color_primary", e.target.value)} />
                       </div>
                     </div>
                     <div>
-                      <label className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide block mb-1">Background Color</label>
+                      <label className={LBL}>Background Color</label>
                       <div className="flex items-center gap-2">
                         <input type="color" value={pkg.color_bg.replace(/[0-9a-f]{2}$/i, "")}
                           onChange={(e) => updatePkg(idx, "color_bg", e.target.value + "15")}
-                          className="w-8 h-8 rounded cursor-pointer border border-zinc-700 bg-transparent" />
+                          className="w-8 h-8 rounded cursor-pointer border border-zinc-600 bg-transparent" />
                         <Input className={inputCls + " flex-1"} value={pkg.color_bg}
                           onChange={(e) => updatePkg(idx, "color_bg", e.target.value)} />
                       </div>
                     </div>
                     <div>
-                      <label className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide block mb-1">Revision Rounds</label>
+                      <label className={LBL}>Revision Rounds</label>
                       <Input className={inputCls} type="number" min={0} max={10} value={pkg.revision_rounds}
                         onChange={(e) => updatePkg(idx, "revision_rounds", parseInt(e.target.value) || 0)} />
                     </div>
                     <div className="flex items-end gap-3 pb-1">
                       <button
                         onClick={() => updatePkg(idx, "is_featured", !pkg.is_featured)}
-                        className={`flex items-center gap-1 text-xs font-medium px-2 py-1.5 rounded ${pkg.is_featured ? "text-amber-400 bg-amber-400/10" : "text-zinc-500 hover:text-zinc-300"}`}
+                        className={`flex items-center gap-1.5 text-sm font-bold px-3 py-2 rounded ${pkg.is_featured ? "text-amber-400 bg-amber-400/15" : "text-zinc-200 hover:text-white bg-zinc-700"}`}
                       >
-                        {pkg.is_featured ? <Star className="w-3.5 h-3.5" /> : <StarOff className="w-3.5 h-3.5" />}
+                        {pkg.is_featured ? <Star className="w-4 h-4" /> : <StarOff className="w-4 h-4" />}
                         Featured
                       </button>
                       <button
                         onClick={() => updatePkg(idx, "is_active", !pkg.is_active)}
-                        className={`flex items-center gap-1 text-xs font-medium px-2 py-1.5 rounded ${pkg.is_active ? "text-emerald-400 bg-emerald-400/10" : "text-zinc-500 hover:text-zinc-300"}`}
+                        className={`flex items-center gap-1.5 text-sm font-bold px-3 py-2 rounded ${pkg.is_active ? "text-emerald-400 bg-emerald-400/15" : "text-zinc-200 hover:text-white bg-zinc-700"}`}
                       >
-                        {pkg.is_active ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                        {pkg.is_active ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                         Active
                       </button>
                     </div>
@@ -399,21 +387,18 @@ export function SettingsPricing() {
 
                   {/* Icon SVG */}
                   <div>
-                    <label className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide block mb-1">
-                      Icon SVG
-                    </label>
+                    <label className={LBL}>Icon SVG</label>
                     <div className="flex gap-3">
                       <textarea
                         value={pkg.icon_svg}
                         onChange={(e) => updatePkg(idx, "icon_svg", e.target.value)}
                         rows={3}
-                        className="flex-1 rounded border border-zinc-700 bg-zinc-800 px-3 py-2 text-xs text-zinc-200 font-mono focus:border-indigo-500 focus:outline-none resize-none"
+                        className="flex-1 rounded border border-zinc-600 bg-zinc-800 px-3 py-2 text-sm text-white font-mono focus:border-indigo-500 focus:outline-none resize-none"
                         placeholder='<svg viewBox="0 0 48 48" ...>...</svg>'
                       />
-                      {/* SVG Preview */}
                       {pkg.icon_svg && (
                         <div
-                          className="w-16 h-16 rounded-lg border border-zinc-700 flex items-center justify-center flex-shrink-0"
+                          className="w-16 h-16 rounded-lg border border-zinc-600 flex items-center justify-center flex-shrink-0"
                           style={{ color: pkg.color_primary }}
                           dangerouslySetInnerHTML={{
                             __html: pkg.icon_svg.replace("<svg", '<svg width="32" height="32"'),
@@ -426,40 +411,40 @@ export function SettingsPricing() {
                   {/* Features */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <label className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide">
+                      <label className={LBL + " mb-0"}>
                         Features ({pkg.features.length})
                       </label>
                       <button
                         onClick={() => addFeature(idx)}
-                        className="text-[11px] text-indigo-400 hover:text-indigo-300 font-medium flex items-center gap-0.5"
+                        className="text-sm text-indigo-400 hover:text-indigo-300 font-bold flex items-center gap-1"
                       >
-                        <Plus className="w-3 h-3" /> Add
+                        <Plus className="w-4 h-4" /> Add Feature
                       </button>
                     </div>
-                    <div className="space-y-1.5">
+                    <div className="space-y-2">
                       {pkg.features.map((feat, fi) => (
                         <div key={fi} className="flex items-center gap-2">
                           <button
                             onClick={() => updateFeature(idx, fi, "included", !feat.included)}
-                            className={`w-6 h-6 rounded flex items-center justify-center text-xs font-bold flex-shrink-0 transition-colors ${
+                            className={`w-7 h-7 rounded flex items-center justify-center text-sm font-bold flex-shrink-0 transition-colors ${
                               feat.included
                                 ? "bg-emerald-500/20 text-emerald-400"
-                                : "bg-zinc-700 text-zinc-500"
+                                : "bg-zinc-700 text-zinc-300"
                             }`}
                           >
-                            {feat.included ? "✓" : "✕"}
+                            {feat.included ? "\u2713" : "\u2715"}
                           </button>
                           <Input
-                            className={inputCls + " flex-1 text-xs h-8"}
+                            className={inputCls + " flex-1"}
                             value={feat.text}
                             onChange={(e) => updateFeature(idx, fi, "text", e.target.value)}
                             placeholder="Feature description"
                           />
                           <button
                             onClick={() => removeFeature(idx, fi)}
-                            className="text-zinc-600 hover:text-red-400 transition-colors"
+                            className="text-zinc-300 hover:text-red-400 transition-colors"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       ))}
@@ -467,23 +452,23 @@ export function SettingsPricing() {
                   </div>
 
                   {/* Delete package */}
-                  <div className="flex justify-end pt-2 border-t border-zinc-700/50">
+                  <div className="flex justify-end pt-3 border-t border-zinc-600">
                     {deleteConfirm?.type === "pkg" && deleteConfirm.idx === idx ? (
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-red-400">Delete &ldquo;{pkg.name}&rdquo;?</span>
-                        <Button size="sm" variant="destructive" className="text-xs h-7" onClick={() => handleDelete("pkg", idx)}>
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-bold text-red-400">Delete &ldquo;{pkg.name}&rdquo;?</span>
+                        <Button size="sm" variant="destructive" className="text-sm font-bold h-8" onClick={() => handleDelete("pkg", idx)}>
                           Confirm
                         </Button>
-                        <Button size="sm" variant="outline" className="text-xs h-7 border-zinc-700" onClick={() => setDeleteConfirm(null)}>
+                        <Button size="sm" variant="outline" className="text-sm font-bold h-8 border-zinc-600 text-white" onClick={() => setDeleteConfirm(null)}>
                           Cancel
                         </Button>
                       </div>
                     ) : (
                       <button
                         onClick={() => setDeleteConfirm({ type: "pkg", idx })}
-                        className="text-xs text-zinc-500 hover:text-red-400 flex items-center gap-1"
+                        className="text-sm font-semibold text-zinc-300 hover:text-red-400 flex items-center gap-1.5"
                       >
-                        <Trash2 className="w-3 h-3" /> Delete Package
+                        <Trash2 className="w-4 h-4" /> Delete Package
                       </button>
                     )}
                   </div>
@@ -494,7 +479,7 @@ export function SettingsPricing() {
         })}
 
         {packages.length === 0 && (
-          <div className="text-center text-xs text-zinc-500 py-6">
+          <div className="text-center text-base font-semibold text-zinc-200 py-8">
             No packages. Click &ldquo;Add Package&rdquo; to create one, or run the migration SQL to seed defaults.
           </div>
         )}
@@ -503,14 +488,14 @@ export function SettingsPricing() {
       {/* ─── Trust Bar ─── */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-zinc-200">Trust Bar Items ({trustItems.length})</h3>
+          <h3 className="text-lg font-bold text-white">Trust Bar Items ({trustItems.length})</h3>
           <Button
             size="sm"
             variant="outline"
-            className="gap-1 text-xs border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+            className="gap-1.5 text-sm font-bold border-zinc-600 text-white hover:bg-zinc-700"
             onClick={() => edit(setTrustItems, (prev) => [...prev, { ...NEW_TRUST, sort_order: prev.length }])}
           >
-            <Plus className="w-3 h-3" /> Add Item
+            <Plus className="w-4 h-4" /> Add Item
           </Button>
         </div>
 
@@ -520,48 +505,48 @@ export function SettingsPricing() {
               {/* Reorder */}
               <div className="flex flex-col gap-0.5">
                 <button onClick={() => moveTrust(idx, -1)} disabled={idx === 0}
-                  className="text-zinc-500 hover:text-zinc-300 disabled:opacity-20 text-[10px]">▲</button>
+                  className="text-white hover:text-indigo-400 disabled:opacity-20 text-sm font-bold">&#9650;</button>
                 <button onClick={() => moveTrust(idx, 1)} disabled={idx === trustItems.length - 1}
-                  className="text-zinc-500 hover:text-zinc-300 disabled:opacity-20 text-[10px]">▼</button>
+                  className="text-white hover:text-indigo-400 disabled:opacity-20 text-sm font-bold">&#9660;</button>
               </div>
 
               {/* Color */}
               <input type="color" value={item.color}
                 onChange={(e) => updateTrust(idx, "color", e.target.value)}
-                className="w-6 h-6 rounded cursor-pointer border border-zinc-700 bg-transparent flex-shrink-0" />
+                className="w-7 h-7 rounded cursor-pointer border border-zinc-600 bg-transparent flex-shrink-0" />
 
               {/* Icon */}
-              <Input className={inputCls + " w-16 text-xs text-center h-8"} value={item.icon_svg}
+              <Input className={inputCls + " w-20 text-center"} value={item.icon_svg}
                 onChange={(e) => updateTrust(idx, "icon_svg", e.target.value)} />
 
               {/* Label */}
-              <Input className={inputCls + " flex-1 text-xs h-8"} value={item.label}
+              <Input className={inputCls + " flex-1"} value={item.label}
                 onChange={(e) => updateTrust(idx, "label", e.target.value)} placeholder="Trust bar text" />
 
               {/* Active toggle */}
               <button
                 onClick={() => updateTrust(idx, "is_active", !item.is_active)}
-                className={`text-xs px-2 py-1 rounded ${item.is_active ? "text-emerald-400 bg-emerald-400/10" : "text-zinc-500"}`}
+                className={`text-sm font-bold px-3 py-1.5 rounded ${item.is_active ? "text-emerald-400 bg-emerald-400/15" : "text-zinc-300 bg-zinc-700"}`}
               >
-                {item.is_active ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                {item.is_active ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
               </button>
 
               {/* Delete */}
               {deleteConfirm?.type === "trust" && deleteConfirm.idx === idx ? (
                 <div className="flex items-center gap-1">
-                  <Button size="sm" variant="destructive" className="text-[10px] h-6 px-2" onClick={() => handleDelete("trust", idx)}>Yes</Button>
-                  <Button size="sm" variant="outline" className="text-[10px] h-6 px-2 border-zinc-700" onClick={() => setDeleteConfirm(null)}>No</Button>
+                  <Button size="sm" variant="destructive" className="text-xs font-bold h-7 px-2" onClick={() => handleDelete("trust", idx)}>Yes</Button>
+                  <Button size="sm" variant="outline" className="text-xs font-bold h-7 px-2 border-zinc-600 text-white" onClick={() => setDeleteConfirm(null)}>No</Button>
                 </div>
               ) : (
-                <button onClick={() => setDeleteConfirm({ type: "trust", idx })} className="text-zinc-600 hover:text-red-400">
-                  <Trash2 className="w-3.5 h-3.5" />
+                <button onClick={() => setDeleteConfirm({ type: "trust", idx })} className="text-zinc-300 hover:text-red-400">
+                  <Trash2 className="w-4 h-4" />
                 </button>
               )}
             </div>
           ))}
 
           {trustItems.length === 0 && (
-            <div className="text-center text-xs text-zinc-500 py-4">
+            <div className="text-center text-base font-semibold text-zinc-200 py-6">
               No trust bar items. Click &ldquo;Add Item&rdquo; to create one.
             </div>
           )}
@@ -569,12 +554,12 @@ export function SettingsPricing() {
       </div>
 
       {/* ─── Migration Info ─── */}
-      <div className="rounded-lg border border-zinc-700/50 bg-zinc-900/50 p-3">
-        <p className="text-[11px] text-zinc-500 leading-relaxed">
-          <strong className="text-zinc-400">First-time setup:</strong> Run{" "}
-          <code className="text-indigo-400 bg-zinc-800 px-1 rounded text-[10px]">supabase/migration_pricing.sql</code>{" "}
+      <div className="rounded-lg border border-zinc-600 bg-zinc-800 p-4">
+        <p className="text-sm font-semibold text-white leading-relaxed">
+          <strong className="text-indigo-400">First-time setup:</strong> Run{" "}
+          <code className="text-indigo-300 bg-zinc-700 px-1.5 py-0.5 rounded text-sm font-bold">supabase/migration_pricing.sql</code>{" "}
           in the Supabase SQL Editor to create tables and seed default data. The /kickoff page falls back to{" "}
-          <code className="text-indigo-400 bg-zinc-800 px-1 rounded text-[10px]">lib/pricing-config.ts</code>{" "}
+          <code className="text-indigo-300 bg-zinc-700 px-1.5 py-0.5 rounded text-sm font-bold">lib/pricing-config.ts</code>{" "}
           if Supabase has no rows.
         </p>
       </div>

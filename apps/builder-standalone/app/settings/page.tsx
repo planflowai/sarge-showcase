@@ -37,27 +37,27 @@ import { ModelRegistry } from "@/components/settings/ModelRegistry";
 import { inputCls, textareaCls, cardCls, dashedCardCls } from "@/components/settings/settingsStyles";
 const SettingsOrchestration = dynamic(
   () => import("@/components/settings/SettingsOrchestration"),
-  { loading: () => <div className="animate-pulse text-xs text-zinc-400 py-8 text-center">Loading orchestration settings…</div> }
+  { loading: () => <div className="animate-pulse text-sm font-semibold text-white py-8 text-center">Loading orchestration settings…</div> }
 );
 const SettingsTradingAPIs = dynamic(
   () => import("@/components/settings/SettingsTradingAPIs").then((m) => ({ default: m.SettingsTradingAPIs })),
-  { loading: () => <div className="animate-pulse text-xs text-zinc-400 py-8 text-center">Loading trading settings…</div> }
+  { loading: () => <div className="animate-pulse text-sm font-semibold text-white py-8 text-center">Loading trading settings…</div> }
 );
 const SettingsLogicEditor = dynamic(
   () => import("@/components/settings/SettingsLogicEditor").then((m) => ({ default: m.SettingsLogicEditor })),
-  { loading: () => <div className="animate-pulse text-xs text-zinc-400 py-8 text-center">Loading logic editor…</div> }
+  { loading: () => <div className="animate-pulse text-sm font-semibold text-white py-8 text-center">Loading logic editor…</div> }
 );
 const SettingsKnowledge = dynamic(
   () => import("@/components/settings/SettingsKnowledge").then((m) => ({ default: m.SettingsKnowledge })),
-  { loading: () => <div className="animate-pulse text-xs text-zinc-400 py-8 text-center">Loading knowledge vault…</div> }
+  { loading: () => <div className="animate-pulse text-sm font-semibold text-white py-8 text-center">Loading knowledge vault…</div> }
 );
 const PipelineDiagnostics = dynamic(
   () => import("@/components/settings/PipelineDiagnostics").then((m) => ({ default: m.PipelineDiagnostics })),
-  { loading: () => <div className="animate-pulse text-xs text-zinc-400 py-8 text-center">Loading diagnostics…</div> }
+  { loading: () => <div className="animate-pulse text-sm font-semibold text-white py-8 text-center">Loading diagnostics…</div> }
 );
 const SettingsPricing = dynamic(
   () => import("@/components/settings/SettingsPricing").then((m) => ({ default: m.SettingsPricing })),
-  { loading: () => <div className="animate-pulse text-xs text-zinc-400 py-8 text-center">Loading pricing admin…</div> }
+  { loading: () => <div className="animate-pulse text-sm font-semibold text-white py-8 text-center">Loading pricing admin…</div> }
 );
 import { RollCall } from "@/components/settings/RollCall";
 import { ModelRoleTags } from "@/components/settings/ModelRoleTags";
@@ -122,7 +122,7 @@ function ThreadGuardianSettings() {
     <div className="space-y-8">
       <div>
         <h2 className="mb-1 text-base font-bold uppercase tracking-wider text-white">Thread Guardian</h2>
-        <p className="mb-4 text-xs font-medium text-zinc-300 dark:text-zinc-300">
+        <p className="mb-4 text-xs font-medium text-zinc-100dark:text-white">
           Background conversation maintenance system. Monitors threads for facts, contradictions, hallucinations, and topic drift.
         </p>
       </div>
@@ -136,7 +136,7 @@ function ThreadGuardianSettings() {
           <div className="flex items-center justify-between">
             <div>
               <div className="text-sm font-medium text-zinc-900 dark:text-white">Enable Thread Guardian</div>
-              <div className="text-xs text-zinc-300 dark:text-zinc-400 mt-0.5">
+              <div className="text-xs text-zinc-100dark:text-zinc-100 mt-0.5">
                 Runs background analysis on Chat, Builder, and Architect conversations
               </div>
             </div>
@@ -159,24 +159,24 @@ function ThreadGuardianSettings() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div className={cardCls}>
             <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{stats.totalFacts}</div>
-            <div className="text-xs text-zinc-300 dark:text-zinc-400">Facts Indexed</div>
+            <div className="text-xs text-zinc-100dark:text-zinc-100">Facts Indexed</div>
           </div>
           <div className={cardCls}>
             <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">{stats.totalContradictions}</div>
-            <div className="text-xs text-zinc-300 dark:text-zinc-400">Contradictions</div>
+            <div className="text-xs text-zinc-100dark:text-zinc-100">Contradictions</div>
           </div>
           <div className={cardCls}>
             <div className="text-2xl font-bold text-red-600 dark:text-red-400">{stats.totalHallucinations}</div>
-            <div className="text-xs text-zinc-300 dark:text-zinc-400">Hallucinations</div>
+            <div className="text-xs text-zinc-100dark:text-zinc-100">Hallucinations</div>
           </div>
           <div className={cardCls}>
             <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{stats.totalSavePoints}</div>
-            <div className="text-xs text-zinc-300 dark:text-zinc-400">Save Points</div>
+            <div className="text-xs text-zinc-100dark:text-zinc-100">Save Points</div>
           </div>
         </div>
-        <div className="mt-3 flex items-center gap-2 text-xs text-zinc-300 dark:text-zinc-400">
+        <div className="mt-3 flex items-center gap-2 text-xs text-zinc-100dark:text-zinc-100">
           <span>Active on {stats.activeConversations} conversation{stats.activeConversations !== 1 ? "s" : ""}</span>
-          <span className="text-zinc-300 dark:text-zinc-400">&bull;</span>
+          <span className="text-zinc-100dark:text-zinc-100">&bull;</span>
           <span>{stats.totalTier1Runs + stats.totalTier2Runs + stats.totalTier3Runs} total runs across all tiers</span>
         </div>
       </section>
@@ -188,18 +188,18 @@ function ThreadGuardianSettings() {
             <Zap className="h-4 w-4 text-emerald-500" />
             Tier 1 — Fast Indexing
           </h3>
-          <Button variant="ghost" size="sm" onClick={() => resetTierToDefaults(1)} className="text-xs text-zinc-300 hover:text-zinc-700 dark:hover:text-zinc-300">
+          <Button variant="ghost" size="sm" onClick={() => resetTierToDefaults(1)} className="text-xs text-zinc-100hover:text-zinc-700 dark:hover:text-zinc-300">
             Reset to Defaults
           </Button>
         </div>
         <div className={cardCls}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-zinc-300 dark:text-zinc-400 mb-1">Model</label>
+              <label className="block text-xs font-medium text-zinc-100dark:text-zinc-100 mb-1">Model</label>
               <Input value={tier1Config.model} onChange={(e) => handleTierConfigChange(1, "model", e.target.value)} placeholder="phi3:mini" className={`text-sm ${inputCls}`} />
             </div>
             <div>
-              <label className="block text-xs font-medium text-zinc-300 dark:text-zinc-400 mb-1">Provider</label>
+              <label className="block text-xs font-medium text-zinc-100dark:text-zinc-100 mb-1">Provider</label>
               <select value={tier1Config.provider} onChange={(e) => handleTierConfigChange(1, "provider", e.target.value)} className={`w-full rounded border px-2 py-1.5 text-sm ${inputCls}`}>
                 <option value="ollama">Ollama (Local)</option>
                 <option value="anthropic">Anthropic</option>
@@ -209,15 +209,15 @@ function ThreadGuardianSettings() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-zinc-300 dark:text-zinc-400 mb-1">Interval (minutes)</label>
+              <label className="block text-xs font-medium text-zinc-100dark:text-zinc-100 mb-1">Interval (minutes)</label>
               <Input type="number" value={Math.round(tier1Config.intervalMs / 60000)} onChange={(e) => handleTierConfigChange(1, "intervalMs", (parseInt(e.target.value) || 2) * 60000)} min={1} max={30} className={`text-sm ${inputCls}`} />
             </div>
             <div>
-              <label className="block text-xs font-medium text-zinc-300 dark:text-zinc-400 mb-1">Token Capacity</label>
+              <label className="block text-xs font-medium text-zinc-100dark:text-zinc-100 mb-1">Token Capacity</label>
               <Input type="number" value={tier1Config.maxTokenCapacity} onChange={(e) => handleTierConfigChange(1, "maxTokenCapacity", parseInt(e.target.value) || 4000)} min={1000} max={32000} step={1000} className={`text-sm ${inputCls}`} />
             </div>
           </div>
-          <p className="mt-3 text-xs text-zinc-300 dark:text-zinc-400">
+          <p className="mt-3 text-xs text-zinc-100dark:text-zinc-100">
             Fast, cheap model for basic fact extraction. Runs every {Math.round(tier1Config.intervalMs / 60000)} minutes.
           </p>
         </div>
@@ -230,18 +230,18 @@ function ThreadGuardianSettings() {
             <Cpu className="h-4 w-4 text-amber-500" />
             Tier 2 — Deep Analysis
           </h3>
-          <Button variant="ghost" size="sm" onClick={() => resetTierToDefaults(2)} className="text-xs text-zinc-300 hover:text-zinc-700 dark:hover:text-zinc-300">
+          <Button variant="ghost" size="sm" onClick={() => resetTierToDefaults(2)} className="text-xs text-zinc-100hover:text-zinc-700 dark:hover:text-zinc-300">
             Reset to Defaults
           </Button>
         </div>
         <div className={cardCls}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-zinc-300 dark:text-zinc-400 mb-1">Model</label>
+              <label className="block text-xs font-medium text-zinc-100dark:text-zinc-100 mb-1">Model</label>
               <Input value={tier2Config.model} onChange={(e) => handleTierConfigChange(2, "model", e.target.value)} placeholder="phi4:latest" className={`text-sm ${inputCls}`} />
             </div>
             <div>
-              <label className="block text-xs font-medium text-zinc-300 dark:text-zinc-400 mb-1">Provider</label>
+              <label className="block text-xs font-medium text-zinc-100dark:text-zinc-100 mb-1">Provider</label>
               <select value={tier2Config.provider} onChange={(e) => handleTierConfigChange(2, "provider", e.target.value)} className={`w-full rounded border px-2 py-1.5 text-sm ${inputCls}`}>
                 <option value="ollama">Ollama (Local)</option>
                 <option value="anthropic">Anthropic</option>
@@ -251,15 +251,15 @@ function ThreadGuardianSettings() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-zinc-300 dark:text-zinc-400 mb-1">Interval (minutes)</label>
+              <label className="block text-xs font-medium text-zinc-100dark:text-zinc-100 mb-1">Interval (minutes)</label>
               <Input type="number" value={Math.round(tier2Config.intervalMs / 60000)} onChange={(e) => handleTierConfigChange(2, "intervalMs", (parseInt(e.target.value) || 10) * 60000)} min={5} max={60} className={`text-sm ${inputCls}`} />
             </div>
             <div>
-              <label className="block text-xs font-medium text-zinc-300 dark:text-zinc-400 mb-1">Token Capacity</label>
+              <label className="block text-xs font-medium text-zinc-100dark:text-zinc-100 mb-1">Token Capacity</label>
               <Input type="number" value={tier2Config.maxTokenCapacity} onChange={(e) => handleTierConfigChange(2, "maxTokenCapacity", parseInt(e.target.value) || 8000)} min={2000} max={64000} step={1000} className={`text-sm ${inputCls}`} />
             </div>
           </div>
-          <p className="mt-3 text-xs text-zinc-300 dark:text-zinc-400">
+          <p className="mt-3 text-xs text-zinc-100dark:text-zinc-100">
             Smarter model for contradiction detection and hallucination flagging. Runs every {Math.round(tier2Config.intervalMs / 60000)} minutes.
           </p>
         </div>
@@ -272,18 +272,18 @@ function ThreadGuardianSettings() {
             <ShieldCheck className="h-4 w-4 text-violet-500" />
             Tier 3 — Save Points
           </h3>
-          <Button variant="ghost" size="sm" onClick={() => resetTierToDefaults(3)} className="text-xs text-zinc-300 hover:text-zinc-700 dark:hover:text-zinc-300">
+          <Button variant="ghost" size="sm" onClick={() => resetTierToDefaults(3)} className="text-xs text-zinc-100hover:text-zinc-700 dark:hover:text-zinc-300">
             Reset to Defaults
           </Button>
         </div>
         <div className={cardCls}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-zinc-300 dark:text-zinc-400 mb-1">Model</label>
+              <label className="block text-xs font-medium text-zinc-100dark:text-zinc-100 mb-1">Model</label>
               <Input value={tier3Config.model} onChange={(e) => handleTierConfigChange(3, "model", e.target.value)} placeholder="claude-sonnet-4-20250514" className={`text-sm ${inputCls}`} />
             </div>
             <div>
-              <label className="block text-xs font-medium text-zinc-300 dark:text-zinc-400 mb-1">Provider</label>
+              <label className="block text-xs font-medium text-zinc-100dark:text-zinc-100 mb-1">Provider</label>
               <select value={tier3Config.provider} onChange={(e) => handleTierConfigChange(3, "provider", e.target.value)} className={`w-full rounded border px-2 py-1.5 text-sm ${inputCls}`}>
                 <option value="anthropic">Anthropic</option>
                 <option value="openai">OpenAI</option>
@@ -293,15 +293,15 @@ function ThreadGuardianSettings() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-zinc-300 dark:text-zinc-400 mb-1">Interval (hours)</label>
+              <label className="block text-xs font-medium text-zinc-100dark:text-zinc-100 mb-1">Interval (hours)</label>
               <Input type="number" value={Math.round(tier3Config.intervalMs / 3600000)} onChange={(e) => handleTierConfigChange(3, "intervalMs", (parseFloat(e.target.value) || 4) * 3600000)} min={1} max={24} step={0.5} className={`text-sm ${inputCls}`} />
             </div>
             <div>
-              <label className="block text-xs font-medium text-zinc-300 dark:text-zinc-400 mb-1">Token Capacity</label>
+              <label className="block text-xs font-medium text-zinc-100dark:text-zinc-100 mb-1">Token Capacity</label>
               <Input type="number" value={tier3Config.maxTokenCapacity} onChange={(e) => handleTierConfigChange(3, "maxTokenCapacity", parseInt(e.target.value) || 32000)} min={8000} max={200000} step={1000} className={`text-sm ${inputCls}`} />
             </div>
           </div>
-          <p className="mt-3 text-xs text-zinc-300 dark:text-zinc-400">
+          <p className="mt-3 text-xs text-zinc-100dark:text-zinc-100">
             Frontier model for comprehensive save points. Creates restoration checkpoints every {Math.round(tier3Config.intervalMs / 3600000)} hours.
           </p>
         </div>
@@ -314,7 +314,7 @@ function ThreadGuardianSettings() {
           Scope
         </h3>
         <div className={cardCls}>
-          <p className="text-xs text-zinc-300 dark:text-zinc-400 mb-3">
+          <p className="text-xs text-zinc-100dark:text-zinc-100 mb-3">
             Thread Guardian runs ONLY on conversational modes. It never runs on controlled environments like Debate, Test, Batch, Forensic, or Diagnostics.
           </p>
           <div className="flex flex-wrap gap-2">
@@ -327,7 +327,7 @@ function ThreadGuardianSettings() {
           <div className="mt-3 pt-3 border-t border-zinc-200 dark:border-zinc-700">
             <div className="flex flex-wrap gap-2">
               {scope.excludedModes.map((mode) => (
-                <span key={mode} className="px-2.5 py-1 rounded-full text-xs font-medium bg-zinc-200 dark:bg-zinc-700 text-zinc-300 dark:text-zinc-400">
+                <span key={mode} className="px-2.5 py-1 rounded-full text-xs font-medium bg-zinc-200 dark:bg-zinc-700 text-zinc-100dark:text-zinc-100">
                   {mode} (excluded)
                 </span>
               ))}
@@ -348,7 +348,7 @@ function ThreadGuardianSettings() {
               <p className="text-sm text-red-600 dark:text-red-400">
                 Are you sure? This will delete ALL guardian data across all conversations:
               </p>
-              <ul className="text-xs text-zinc-300 dark:text-zinc-400 list-disc ml-4 space-y-1">
+              <ul className="text-xs text-zinc-100dark:text-zinc-100 list-disc ml-4 space-y-1">
                 <li>All indexed facts</li>
                 <li>All detected contradictions</li>
                 <li>All flagged hallucinations</li>
@@ -366,7 +366,7 @@ function ThreadGuardianSettings() {
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-sm font-medium text-zinc-900 dark:text-white">Clear All Guardian Data</div>
-                <div className="text-xs text-zinc-300 dark:text-zinc-400 mt-0.5">
+                <div className="text-xs text-zinc-100dark:text-zinc-100 mt-0.5">
                   Permanently delete all facts, contradictions, hallucinations, and save points
                 </div>
               </div>
@@ -640,7 +640,7 @@ export default function SettingsPage() {
         <div className="mb-6 flex items-center gap-3">
           <Link
             href="/"
-            className="inline-flex items-center justify-center h-10 w-10 rounded-md text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors"
+            className="inline-flex items-center justify-center h-10 w-10 rounded-md text-zinc-100hover:bg-zinc-800 hover:text-white transition-colors"
           >
             <ArrowLeft className="h-6 w-6" />
           </Link>
@@ -654,7 +654,7 @@ export default function SettingsPage() {
               className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-base transition-colors ${
                 section === id
                   ? "bg-indigo-600/20 text-indigo-400 font-bold"
-                  : "text-zinc-300 hover:bg-zinc-800 hover:text-white font-medium"
+                  : "text-zinc-100hover:bg-zinc-800 hover:text-white font-medium"
               }`}
             >
               <Icon className="h-5 w-5 flex-shrink-0" />
@@ -692,7 +692,7 @@ export default function SettingsPage() {
             </div>
 
             {!envChecked && !checkingEnv && (
-              <p className="text-sm text-zinc-400">Scan your .env to see which services are configured and connected.</p>
+              <p className="text-sm text-zinc-200">Scan your .env to see which services are configured and connected.</p>
             )}
 
             {/* ── Summary bar ── */}
@@ -706,9 +706,9 @@ export default function SettingsPage() {
                 <div className="flex items-center gap-6 text-sm py-3 px-4 rounded-lg bg-zinc-800/50 border border-zinc-700">
                   <span className="text-white font-bold">{all.length} services</span>
                   <span className="text-emerald-400 font-bold flex items-center gap-1.5"><CheckCircle className="h-4 w-4" />{connected} connected</span>
-                  <span className="text-zinc-300 font-medium flex items-center gap-1.5"><CircleDot className="h-4 w-4 text-zinc-400" />{configured - connected - failed} configured</span>
+                  <span className="text-zinc-100font-medium flex items-center gap-1.5"><CircleDot className="h-4 w-4 text-zinc-200" />{configured - connected - failed} configured</span>
                   {failed > 0 && <span className="text-red-400 font-bold flex items-center gap-1.5"><XCircle className="h-4 w-4" />{failed} failed</span>}
-                  <span className="text-zinc-500 flex items-center gap-1.5"><WifiOff className="h-4 w-4" />{unconfigured} not set</span>
+                  <span className="text-zinc-200 flex items-center gap-1.5"><WifiOff className="h-4 w-4" />{unconfigured} not set</span>
                 </div>
               );
             })()}
@@ -730,7 +730,7 @@ export default function SettingsPage() {
                 <div className="space-y-4">
                   {categoryOrder.filter(cat => envCategories[cat]?.length).map(cat => {
                     const services = envCategories[cat];
-                    const meta = CATEGORY_META[cat] || { icon: Settings, color: "text-zinc-400" };
+                    const meta = CATEGORY_META[cat] || { icon: Settings, color: "text-zinc-200" };
                     const CatIcon = meta.icon;
                     const connCount = services.filter(s => s.connected).length;
                     const confCount = services.filter(s => s.configured).length;
@@ -739,7 +739,7 @@ export default function SettingsPage() {
                         <div className="flex items-center gap-3 px-4 py-3 bg-zinc-800/70">
                           <CatIcon className={`h-5 w-5 ${meta.color}`} />
                           <h3 className="text-base font-bold text-white uppercase tracking-wider flex-1">{cat}</h3>
-                          <span className="text-sm text-zinc-400">{confCount}/{services.length} configured{connCount > 0 ? ` · ${connCount} live` : ""}</span>
+                          <span className="text-sm text-zinc-200">{confCount}/{services.length} configured{connCount > 0 ? ` · ${connCount} live` : ""}</span>
                         </div>
                         <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-px bg-zinc-700/30">
                           {services.map(svc => (
@@ -756,12 +756,12 @@ export default function SettingsPage() {
                                   svc.connected === false ? (
                                     <XCircle className="h-4 w-4 text-red-400 flex-shrink-0" />
                                   ) : (
-                                    <CircleDot className="h-4 w-4 text-zinc-400 flex-shrink-0" />
+                                    <CircleDot className="h-4 w-4 text-zinc-200 flex-shrink-0" />
                                   )
                                 ) : (
-                                  <WifiOff className="h-4 w-4 text-zinc-600 flex-shrink-0" />
+                                  <WifiOff className="h-4 w-4 text-zinc-200 flex-shrink-0" />
                                 )}
-                                <span className={`text-sm font-bold truncate ${svc.configured ? "text-white" : "text-zinc-500"}`}>{svc.name}</span>
+                                <span className={`text-sm font-bold truncate ${svc.configured ? "text-white" : "text-zinc-200"}`}>{svc.name}</span>
                               </div>
                               <div className="text-xs pl-6">
                                 {svc.connected ? (
@@ -769,9 +769,9 @@ export default function SettingsPage() {
                                 ) : svc.configured && svc.connected === false ? (
                                   <span className="text-red-400">{svc.error || "Failed"}</span>
                                 ) : svc.configured ? (
-                                  <span className="text-zinc-400">Set</span>
+                                  <span className="text-zinc-200">Set</span>
                                 ) : (
-                                  <span className="text-zinc-600">Not set</span>
+                                  <span className="text-zinc-200">Not set</span>
                                 )}
                               </div>
                             </div>
@@ -790,7 +790,7 @@ export default function SettingsPage() {
           <div className="space-y-4">
             <div>
               <h2 className="mb-1 text-base font-bold uppercase tracking-wider text-white">Models</h2>
-              <p className="mb-4 text-sm text-zinc-400">
+              <p className="mb-4 text-sm text-zinc-200">
                 Add or remove models per provider. Click <Hammer className="inline h-4 w-4 text-indigo-500" /> to tag a model for the Builder. Click <Pencil className="inline h-4 w-4" /> to set a nickname.
               </p>
             </div>
@@ -799,7 +799,7 @@ export default function SettingsPage() {
             {!showAddProvider ? (
               <button
                 onClick={() => setShowAddProvider(true)}
-                className="flex items-center gap-2 w-full rounded-lg border-2 border-dashed border-zinc-600 dark:border-zinc-700 px-4 py-3 text-sm font-medium text-zinc-300 hover:text-[#FF6700] hover:border-[#FF6700]/50 transition-colors"
+                className="flex items-center gap-2 w-full rounded-lg border-2 border-dashed border-zinc-600 dark:border-zinc-700 px-4 py-3 text-sm font-medium text-zinc-100hover:text-[#FF6700] hover:border-[#FF6700]/50 transition-colors"
               >
                 <Plus className="h-4 w-4" /> Add Provider
               </button>
@@ -807,7 +807,7 @@ export default function SettingsPage() {
               <div className="rounded-lg border border-[#FF6700]/30 bg-zinc-800/50 p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-bold text-white">Add Custom Provider</h3>
-                  <button onClick={() => { setShowAddProvider(false); setSelectedKnownProvider(""); setNewProviderName(""); setNewProviderBaseUrl(""); setNewProviderEnvKey(""); }} className="text-zinc-300 hover:text-zinc-300">
+                  <button onClick={() => { setShowAddProvider(false); setSelectedKnownProvider(""); setNewProviderName(""); setNewProviderBaseUrl(""); setNewProviderEnvKey(""); }} className="text-zinc-100hover:text-zinc-300">
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </div>
@@ -827,7 +827,7 @@ export default function SettingsPage() {
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
                         selectedKnownProvider === kp.id
                           ? "bg-[#FF6700]/15 border-[#FF6700]/40 text-[#FFD700]"
-                          : "bg-zinc-900 border-zinc-700 text-zinc-400 hover:border-zinc-500"
+                          : "bg-zinc-900 border-zinc-700 text-zinc-200 hover:border-zinc-500"
                       }`}
                     >
                       <span className="h-2 w-2 rounded-full" style={{ backgroundColor: kp.color }} />
@@ -885,15 +885,15 @@ export default function SettingsPage() {
                     <span className="h-2.5 w-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: cp.color }} />
                     <span className="flex-1 text-base font-bold text-zinc-900 dark:text-white">{cp.name}</span>
                     <span className="text-xs text-emerald-500 uppercase px-1.5 py-0.5 rounded bg-emerald-500/10 mr-2 font-bold">custom</span>
-                    <span className="text-sm font-medium text-zinc-400 dark:text-zinc-300">{cpModels.length} model{cpModels.length !== 1 ? "s" : ""}</span>
+                    <span className="text-sm font-medium text-zinc-200 dark:text-white">{cpModels.length} model{cpModels.length !== 1 ? "s" : ""}</span>
                     {isExpanded ? <ChevronDown className="h-4 w-4 text-zinc-300" /> : <ChevronRight className="h-4 w-4 text-zinc-300" />}
                   </button>
                   {isExpanded && (
                     <div className="border-t border-zinc-300 dark:border-zinc-700 px-4 py-3 space-y-3">
                       <div className="flex items-center justify-between">
-                        <div className="text-xs text-zinc-300 space-y-0.5">
-                          <div>Base URL: <span className="text-zinc-400 font-mono">{cp.baseUrl}</span></div>
-                          <div>API Key: <span className="text-zinc-400 font-mono">{cp.envKeyName}</span></div>
+                        <div className="text-xs text-zinc-100space-y-0.5">
+                          <div>Base URL: <span className="text-zinc-200 font-mono">{cp.baseUrl}</span></div>
+                          <div>API Key: <span className="text-zinc-200 font-mono">{cp.envKeyName}</span></div>
                         </div>
                         <div className="flex items-center gap-2">
                           <button
@@ -902,7 +902,7 @@ export default function SettingsPage() {
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all disabled:opacity-40 ${
                               fetchedModels[cp.id]?.length
                                 ? "bg-indigo-500/15 border-indigo-500/40 text-indigo-400"
-                                : "bg-zinc-800 border-zinc-600 text-zinc-300 hover:border-indigo-500/50 hover:text-indigo-400"
+                                : "bg-zinc-800 border-zinc-600 text-zinc-100hover:border-indigo-500/50 hover:text-indigo-400"
                             }`}
                           >
                             {fetchingModels === cp.id ? (
@@ -921,7 +921,7 @@ export default function SettingsPage() {
                                 ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-400"
                                 : testResults[cp.id] === "fail"
                                 ? "bg-red-500/15 border-red-500/40 text-red-400"
-                                : "bg-zinc-800 border-zinc-600 text-zinc-300 hover:border-[#FF6700]/50 hover:text-[#FFD700]"
+                                : "bg-zinc-800 border-zinc-600 text-zinc-100hover:border-[#FF6700]/50 hover:text-[#FFD700]"
                             }`}
                           >
                             {testingProvider === cp.id ? (
@@ -943,7 +943,7 @@ export default function SettingsPage() {
                               {nicknames[m.id] ? (
                                 <div className="flex flex-col">
                                   <span className="font-medium text-zinc-900 dark:text-white truncate text-base">{nicknames[m.id]}</span>
-                                  <span className="text-sm text-zinc-400 dark:text-zinc-300 truncate">{m.name}</span>
+                                  <span className="text-sm text-zinc-200 dark:text-white truncate">{m.name}</span>
                                 </div>
                               ) : (
                                 <span className="text-zinc-800 dark:text-zinc-200 truncate block text-base font-medium">{m.name}</span>
@@ -951,10 +951,10 @@ export default function SettingsPage() {
                               <ModelRoleTags modelId={m.id} />
                             </div>
                             <div className="flex items-center gap-2 flex-shrink-0">
-                              <button onClick={() => setBuilderFlag(m.id, !isBuilderModel(m.id, cp.id))} className={`transition-colors ${isBuilderModel(m.id, cp.id) ? 'text-indigo-500' : 'text-zinc-400 hover:text-indigo-400'}`} title={isBuilderModel(m.id, cp.id) ? "Remove from Builder" : "Add to Builder"}>
+                              <button onClick={() => setBuilderFlag(m.id, !isBuilderModel(m.id, cp.id))} className={`transition-colors ${isBuilderModel(m.id, cp.id) ? 'text-indigo-500' : 'text-zinc-200 hover:text-indigo-400'}`} title={isBuilderModel(m.id, cp.id) ? "Remove from Builder" : "Add to Builder"}>
                                 <Hammer className="h-4 w-4" />
                               </button>
-                              <button onClick={() => { removeModel(cp.id, m.id); removeModelFromProvider(cp.id, m.id); }} className="text-zinc-300 hover:text-red-400">
+                              <button onClick={() => { removeModel(cp.id, m.id); removeModelFromProvider(cp.id, m.id); }} className="text-zinc-100hover:text-red-400">
                                 <Trash2 className="h-4 w-4" />
                               </button>
                             </div>
@@ -997,7 +997,7 @@ export default function SettingsPage() {
                                   key={m.id}
                                   className={`flex items-center gap-2 rounded border px-3 py-2 text-sm ${
                                     alreadyAdded
-                                      ? "border-emerald-500/30 bg-emerald-500/5 text-zinc-400"
+                                      ? "border-emerald-500/30 bg-emerald-500/5 text-zinc-200"
                                       : "border-indigo-500/20 bg-indigo-500/5 hover:border-indigo-500/40 cursor-pointer text-white"
                                   }`}
                                   onClick={() => {
@@ -1007,7 +1007,7 @@ export default function SettingsPage() {
                                   }}
                                 >
                                   <span className="flex-1 truncate font-mono text-sm font-bold">{m.id}</span>
-                                  {m.owned_by && <span className="text-xs text-zinc-400 flex-shrink-0">{m.owned_by}</span>}
+                                  {m.owned_by && <span className="text-xs text-zinc-200 flex-shrink-0">{m.owned_by}</span>}
                                   {alreadyAdded ? (
                                     <span className="text-xs text-emerald-500 font-bold flex-shrink-0">added</span>
                                   ) : (
@@ -1065,20 +1065,20 @@ export default function SettingsPage() {
                   >
                     <span className="h-2.5 w-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: p.color }} />
                     <span className="flex-1 text-base font-bold text-zinc-900 dark:text-white">{p.name}</span>
-                    <span className="text-sm font-medium text-zinc-400 dark:text-zinc-300">{modelCount}</span>
+                    <span className="text-sm font-medium text-zinc-200 dark:text-white">{modelCount}</span>
                     {isExpanded ? <ChevronDown className="h-4 w-4 text-zinc-300" /> : <ChevronRight className="h-4 w-4 text-zinc-300" />}
                   </button>
 
                   {isExpanded && (
                     <div className="border-t border-zinc-300 dark:border-zinc-700 px-4 py-3 space-y-3">
                       {isOllama && ollamaLoading && (
-                        <div className="flex items-center gap-2 text-xs font-medium text-zinc-300 dark:text-zinc-300 py-2">
+                        <div className="flex items-center gap-2 text-xs font-medium text-zinc-100dark:text-white py-2">
                           <Loader2 className="h-3.5 w-3.5 animate-spin" /> Fetching models from Ollama...
                         </div>
                       )}
                       {isOllama && ollamaError && <p className="text-xs text-red-400 py-1">{ollamaError}</p>}
                       {isLMStudio && lmstudioLoading && (
-                        <div className="flex items-center gap-2 text-xs font-medium text-zinc-300 dark:text-zinc-300 py-2">
+                        <div className="flex items-center gap-2 text-xs font-medium text-zinc-100dark:text-white py-2">
                           <Loader2 className="h-3.5 w-3.5 animate-spin" /> Fetching models from LM Studio...
                         </div>
                       )}
@@ -1108,7 +1108,7 @@ export default function SettingsPage() {
                                   {nicknames[m.id] ? (
                                     <div className="flex flex-col">
                                       <span className="font-medium text-zinc-900 dark:text-white truncate text-base">{nicknames[m.id]}</span>
-                                      <span className="text-sm text-zinc-400 dark:text-zinc-300 truncate">{m.name}</span>
+                                      <span className="text-sm text-zinc-200 dark:text-white truncate">{m.name}</span>
                                     </div>
                                   ) : (
                                     <span className="text-zinc-800 dark:text-zinc-200 truncate block text-base font-medium">{m.name}</span>
@@ -1129,7 +1129,7 @@ export default function SettingsPage() {
                                             ? "text-emerald-400 border-emerald-500/40 bg-emerald-500/10"
                                             : result?.status === "fail"
                                             ? "text-red-400 border-red-500/40 bg-red-500/10"
-                                            : "text-zinc-400 border-zinc-600 hover:text-sky-400 hover:border-sky-500/40"
+                                            : "text-zinc-200 border-zinc-600 hover:text-sky-400 hover:border-sky-500/40"
                                         }`}
                                         title={result?.error || (result?.status === "ok" ? "Connected" : "Test model connection")}
                                       >
@@ -1138,20 +1138,20 @@ export default function SettingsPage() {
                                       </button>
                                     );
                                   })()}
-                                  <button onClick={() => setBuilderFlag(m.id, !isBuilderModel(m.id, p.id))} className={`flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-md border transition-colors ${isBuilderModel(m.id, p.id) ? 'text-indigo-400 border-indigo-500/40 bg-indigo-500/10' : 'text-zinc-500 border-zinc-600 hover:text-indigo-400 hover:border-indigo-500/40'}`}>
+                                  <button onClick={() => setBuilderFlag(m.id, !isBuilderModel(m.id, p.id))} className={`flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-md border transition-colors ${isBuilderModel(m.id, p.id) ? 'text-indigo-400 border-indigo-500/40 bg-indigo-500/10' : 'text-zinc-200 border-zinc-600 hover:text-indigo-400 hover:border-indigo-500/40'}`}>
                                     <Hammer className="h-4 w-4" />
                                     <span>Builder</span>
                                   </button>
-                                  <button onClick={() => { setEditingNickname(m.id); setNicknameValue(nicknames[m.id] || ""); }} className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-md border border-zinc-600 text-zinc-500 hover:text-indigo-400 hover:border-indigo-500/40 transition-colors">
+                                  <button onClick={() => { setEditingNickname(m.id); setNicknameValue(nicknames[m.id] || ""); }} className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-md border border-zinc-600 text-zinc-200 hover:text-indigo-400 hover:border-indigo-500/40 transition-colors">
                                     <Pencil className="h-4 w-4" />
                                     <span>Rename</span>
                                   </button>
                                   {m.isBuiltIn ? (
-                                    <span className="text-sm text-zinc-400 dark:text-zinc-300 uppercase px-3 py-1.5 rounded-md bg-zinc-200 dark:bg-zinc-700/50 font-semibold">built-in</span>
+                                    <span className="text-sm text-zinc-200 dark:text-white uppercase px-3 py-1.5 rounded-md bg-zinc-200 dark:bg-zinc-700/50 font-semibold">built-in</span>
                                   ) : isLocalProvider ? (
                                     <span className="text-sm text-emerald-500 uppercase px-3 py-1.5 rounded-md bg-emerald-500/10 font-semibold">local</span>
                                   ) : (
-                                    <button onClick={() => removeModel(p.id, m.id)} className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-md border border-zinc-600 text-zinc-500 hover:text-red-400 hover:border-red-500/40 transition-colors">
+                                    <button onClick={() => removeModel(p.id, m.id)} className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-md border border-zinc-600 text-zinc-200 hover:text-red-400 hover:border-red-500/40 transition-colors">
                                       <Trash2 className="h-4 w-4" />
                                       <span>Delete</span>
                                     </button>
@@ -1188,7 +1188,7 @@ export default function SettingsPage() {
           <div className="space-y-6">
             <div>
               <h2 className="mb-1 text-base font-bold uppercase tracking-wider text-white">Custom Roles</h2>
-              <p className="mb-4 text-sm text-zinc-400">Create roles with custom system prompts. Assign them to any LLM slot in debates.</p>
+              <p className="mb-4 text-sm text-zinc-200">Create roles with custom system prompts. Assign them to any LLM slot in debates.</p>
             </div>
             <div className="space-y-2">
               {roles.map((role) => (
@@ -1210,21 +1210,21 @@ export default function SettingsPage() {
                           <span className="text-sm font-semibold text-zinc-900 dark:text-white">{role.name}</span>
                         </div>
                         <div className="flex gap-1">
-                          <Button variant="ghost" size="sm" onClick={() => { setEditingRoleId(role.id); setEditRoleName(role.name); setEditRolePrompt(role.systemPrompt); }} className="h-6 w-6 p-0 text-zinc-300 hover:text-zinc-700 dark:hover:text-zinc-300"><Pencil className="h-3 w-3" /></Button>
+                          <Button variant="ghost" size="sm" onClick={() => { setEditingRoleId(role.id); setEditRoleName(role.name); setEditRolePrompt(role.systemPrompt); }} className="h-6 w-6 p-0 text-zinc-100hover:text-zinc-700 dark:hover:text-zinc-300"><Pencil className="h-3 w-3" /></Button>
                           {!role.isDefault && (
-                            <Button variant="ghost" size="sm" onClick={() => deleteRole(role.id)} className="h-6 w-6 p-0 text-zinc-300 hover:text-red-400"><Trash2 className="h-3 w-3" /></Button>
+                            <Button variant="ghost" size="sm" onClick={() => deleteRole(role.id)} className="h-6 w-6 p-0 text-zinc-100hover:text-red-400"><Trash2 className="h-3 w-3" /></Button>
                           )}
                         </div>
                       </div>
-                      <p className="text-xs font-medium text-zinc-300 dark:text-zinc-400 whitespace-pre-wrap line-clamp-3">{role.systemPrompt}</p>
-                      {role.isDefault && <span className="mt-1 inline-block text-xs text-zinc-400 dark:text-zinc-300 uppercase">Default — cannot delete</span>}
+                      <p className="text-xs font-medium text-zinc-100dark:text-zinc-100 whitespace-pre-wrap line-clamp-3">{role.systemPrompt}</p>
+                      {role.isDefault && <span className="mt-1 inline-block text-xs text-zinc-200 dark:text-white uppercase">Default — cannot delete</span>}
                     </>
                   )}
                 </div>
               ))}
             </div>
             <div className={dashedCardCls}>
-              <h3 className="mb-3 text-sm font-medium text-zinc-400 dark:text-zinc-300">New Role</h3>
+              <h3 className="mb-3 text-sm font-medium text-zinc-200 dark:text-white">New Role</h3>
               <Input placeholder="Role name" value={newRoleName} onChange={(e) => setNewRoleName(e.target.value)} className={`mb-2 ${inputCls}`} />
               <textarea placeholder="System prompt" value={newRolePrompt} onChange={(e) => setNewRolePrompt(e.target.value)} rows={6} className={textareaCls} />
               <Button onClick={() => { if (newRoleName.trim() && newRolePrompt.trim()) { addRole(newRoleName.trim(), newRolePrompt.trim()); setNewRoleName(""); setNewRolePrompt(""); } }} disabled={!newRoleName.trim() || !newRolePrompt.trim()} size="sm" className="mt-2 w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40"><Plus className="h-3 w-3 mr-1" /> Add Role</Button>
@@ -1236,9 +1236,9 @@ export default function SettingsPage() {
           <div className="space-y-6">
             <div>
               <h2 className="mb-1 text-base font-bold uppercase tracking-wider text-white">Saved Prompts</h2>
-              <p className="mb-4 text-sm text-zinc-400">Create reusable prompt templates.</p>
+              <p className="mb-4 text-sm text-zinc-200">Create reusable prompt templates.</p>
             </div>
-            {prompts.length === 0 && <p className="text-sm text-zinc-400 dark:text-zinc-300">No saved prompts yet.</p>}
+            {prompts.length === 0 && <p className="text-sm text-zinc-200 dark:text-white">No saved prompts yet.</p>}
             <div className="space-y-2">
               {prompts.map((prompt) => (
                 <div key={prompt.id} className={cardCls}>
@@ -1256,18 +1256,18 @@ export default function SettingsPage() {
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-sm font-semibold text-zinc-900 dark:text-white">{prompt.name}</span>
                         <div className="flex gap-1">
-                          <Button variant="ghost" size="sm" onClick={() => { setEditingPromptId(prompt.id); setEditPromptName(prompt.name); setEditPromptContent(prompt.content); }} className="h-6 w-6 p-0 text-zinc-300 hover:text-zinc-700 dark:hover:text-zinc-300"><Pencil className="h-3 w-3" /></Button>
-                          <Button variant="ghost" size="sm" onClick={() => deletePrompt(prompt.id)} className="h-6 w-6 p-0 text-zinc-300 hover:text-red-400"><Trash2 className="h-3 w-3" /></Button>
+                          <Button variant="ghost" size="sm" onClick={() => { setEditingPromptId(prompt.id); setEditPromptName(prompt.name); setEditPromptContent(prompt.content); }} className="h-6 w-6 p-0 text-zinc-100hover:text-zinc-700 dark:hover:text-zinc-300"><Pencil className="h-3 w-3" /></Button>
+                          <Button variant="ghost" size="sm" onClick={() => deletePrompt(prompt.id)} className="h-6 w-6 p-0 text-zinc-100hover:text-red-400"><Trash2 className="h-3 w-3" /></Button>
                         </div>
                       </div>
-                      <p className="text-xs font-medium text-zinc-300 dark:text-zinc-400 whitespace-pre-wrap line-clamp-3">{prompt.content}</p>
+                      <p className="text-xs font-medium text-zinc-100dark:text-zinc-100 whitespace-pre-wrap line-clamp-3">{prompt.content}</p>
                     </>
                   )}
                 </div>
               ))}
             </div>
             <div className={dashedCardCls}>
-              <h3 className="mb-3 text-sm font-medium text-zinc-400 dark:text-zinc-300">New Prompt</h3>
+              <h3 className="mb-3 text-sm font-medium text-zinc-200 dark:text-white">New Prompt</h3>
               <Input placeholder="Prompt name" value={newPromptName} onChange={(e) => setNewPromptName(e.target.value)} className={`mb-2 ${inputCls}`} />
               <textarea placeholder="Prompt template content..." value={newPromptContent} onChange={(e) => setNewPromptContent(e.target.value)} rows={6} className={textareaCls} />
               <Button onClick={() => { if (newPromptName.trim() && newPromptContent.trim()) { addPrompt(newPromptName.trim(), newPromptContent.trim()); setNewPromptName(""); setNewPromptContent(""); } }} disabled={!newPromptName.trim() || !newPromptContent.trim()} size="sm" className="mt-2 w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40"><Plus className="h-3 w-3 mr-1" /> Add Prompt</Button>

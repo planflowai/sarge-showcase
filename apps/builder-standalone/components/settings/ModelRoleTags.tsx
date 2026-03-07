@@ -34,7 +34,7 @@ export function ModelRoleTags({ modelId }: { modelId: string }) {
             className={`text-xs font-medium px-2 py-0.5 rounded-md transition-all border ${
               active
                 ? style.active
-                : "bg-zinc-800/50 text-zinc-500 border-transparent hover:border-zinc-600 hover:text-zinc-300"
+                : "bg-zinc-800/50 text-zinc-200 border-transparent hover:border-zinc-600 hover:text-zinc-300"
             }`}
             title={`${active ? "Remove" : "Add"} ${role} role`}
           >

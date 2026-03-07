@@ -201,7 +201,7 @@ export function PipelineDiagnostics() {
           <Activity className="h-6 w-6 text-violet-400" />
           <div>
             <h2 className="text-xl font-bold text-white">Pipeline Diagnostics</h2>
-            <p className="text-sm text-zinc-400 mt-0.5">
+            <p className="text-sm text-zinc-100 mt-0.5">
               16 real tests using dummy data. Every step makes a live API call.
             </p>
           </div>
@@ -250,7 +250,7 @@ export function PipelineDiagnostics() {
             </div>
           </div>
           {currentStep <= TOTAL_STEPS && STEP_INFO[currentStep - 1] && (
-            <span className="text-sm text-zinc-400 flex-shrink-0">
+            <span className="text-sm text-zinc-100 flex-shrink-0">
               Running: {STEP_INFO[currentStep - 1].name}
             </span>
           )}
@@ -281,10 +281,10 @@ export function PipelineDiagnostics() {
               <p className={`text-lg font-bold ${report.failed === 0 ? "text-emerald-400" : "text-red-400"}`}>
                 {report.failed === 0 ? "All Systems Operational" : `${report.failed} Step${report.failed !== 1 ? "s" : ""} Failed`}
               </p>
-              <div className="flex items-center gap-4 mt-1 text-sm text-zinc-400">
+              <div className="flex items-center gap-4 mt-1 text-sm text-zinc-100">
                 <span className="text-emerald-400 font-semibold">{report.passed} passed</span>
                 {report.failed > 0 && <span className="text-red-400 font-semibold">{report.failed} failed</span>}
-                {report.skipped > 0 && <span className="text-zinc-500">{report.skipped} skipped</span>}
+                {report.skipped > 0 && <span className="text-zinc-200">{report.skipped} skipped</span>}
                 <span>·</span>
                 <span>{report.duration_seconds}s</span>
                 <span>·</span>
@@ -360,7 +360,7 @@ export function PipelineDiagnostics() {
                               ) : result.status === "FAIL" ? (
                                 <XCircle className="h-5 w-5 text-red-400" />
                               ) : (
-                                <MinusCircle className="h-5 w-5 text-zinc-500" />
+                                <MinusCircle className="h-5 w-5 text-zinc-200" />
                               )
                             ) : (
                               <div className="h-5 w-5 rounded-full border-2 border-zinc-600" />
@@ -371,14 +371,14 @@ export function PipelineDiagnostics() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
                               <span className="text-sm font-bold text-white">{info.name}</span>
-                              <span className="text-sm text-zinc-500">—</span>
-                              <span className="text-sm text-zinc-400">{info.description}</span>
+                              <span className="text-sm text-zinc-200">—</span>
+                              <span className="text-sm text-zinc-100">{info.description}</span>
                             </div>
                           </div>
 
                           {/* Duration */}
                           {result?.duration_ms !== undefined && (
-                            <span className="text-sm text-zinc-500 font-mono flex-shrink-0 w-16 text-right">
+                            <span className="text-sm text-zinc-200 font-mono flex-shrink-0 w-16 text-right">
                               {result.duration_ms < 1000
                                 ? `${result.duration_ms}ms`
                                 : `${(result.duration_ms / 1000).toFixed(1)}s`}
@@ -387,7 +387,7 @@ export function PipelineDiagnostics() {
 
                           {/* Expand chevron */}
                           {result && (
-                            <div className="flex-shrink-0 text-zinc-500">
+                            <div className="flex-shrink-0 text-zinc-200">
                               {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                             </div>
                           )}
@@ -397,14 +397,14 @@ export function PipelineDiagnostics() {
                         {result && isExpanded && (
                           <div className="mt-3 ml-9 rounded-lg border border-zinc-700 bg-zinc-800/50 p-3 space-y-2">
                             <div className="flex items-center gap-2 text-xs">
-                              <span className="text-zinc-500 font-semibold uppercase">Proves:</span>
-                              <span className="text-zinc-300">{info.proves}</span>
+                              <span className="text-zinc-200 font-semibold uppercase">Proves:</span>
+                              <span className="text-white">{info.proves}</span>
                             </div>
                             <div className="flex items-start gap-2 text-xs">
-                              <span className="text-zinc-500 font-semibold uppercase flex-shrink-0">Result:</span>
+                              <span className="text-zinc-200 font-semibold uppercase flex-shrink-0">Result:</span>
                               <span className={`${
                                 result.status === "PASS" ? "text-emerald-400" :
-                                result.status === "FAIL" ? "text-red-400" : "text-zinc-400"
+                                result.status === "FAIL" ? "text-red-400" : "text-zinc-100"
                               } break-words whitespace-pre-wrap`}>
                                 {result.details}
                               </span>
