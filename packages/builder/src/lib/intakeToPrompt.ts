@@ -483,6 +483,10 @@ export function intakeToPagePrompt(
   lines.push(`- Single self-contained HTML file with all CSS in <style> and all JS in <script>.`);
   lines.push(`- Fully responsive, mobile-first.`);
   lines.push(`- Use Unsplash stock photos or placeholder images.`);
+  lines.push(`- Each page must fit in 2-3 viewport heights maximum at 1920x1080 (under 4000px total height).`);
+  lines.push(`- Do NOT create infinitely scrolling pages. Use tabs, accordions, expandable sections, and sub-navigation instead of stacking everything vertically.`);
+  lines.push(`- Content-heavy sections should be collapsible by default.`);
+  lines.push(`- No page should exceed 4000px total height.`);
 
   return lines.join("\n");
 }

@@ -9,10 +9,12 @@ import {
   generateSharedCss,
   generateNavSnippet,
   guardianCheck,
-  postBuildValidation,
+  checkNavConsistency,
+  formatGuardianFindings,
   pickModelForDifficulty,
   MIN_PAGE_SIZE,
   type BuildPageResult,
+  type GuardianFinding,
 } from "@sarge/builder/lib/multiPageBuilder";
 import * as fs from "fs";
 import * as path from "path";
@@ -103,6 +105,7 @@ export async function POST(req: NextRequest) {
 
         // Step 3: Build each page
         const results: BuildPageResult[] = [];
+        const guardianLog: Array<{ filename: string; findings: GuardianFinding[] }> = [];
         const total = pages.length;
 
         for (let i = 0; i < pages.length; i++) {
@@ -163,11 +166,16 @@ export async function POST(req: NextRequest) {
               escalated.provider, escalated.model, `Retry escalation from ${difficulty} to ${nextTier}`,
               sharedCss, navSnippet, send,
             );
-            retry.status = retry.html.length >= MIN_PAGE_SIZE && guardianCheck(retry.html, pageName).pass ? "complete" : "failed";
+            const retryGuard = guardianCheck(retry.html, pageName, projectName, pages);
+            retry.html = retryGuard.html; // use cleaned HTML
+            retry.status = retry.html.length >= MIN_PAGE_SIZE && retryGuard.pass ? "complete" : "failed";
             if (retry.status === "failed") {
               retry.error = retry.html.length < MIN_PAGE_SIZE
                 ? `Page too small after retry (${retry.html.length} bytes)`
-                : `Guardian check failed after retry`;
+                : `Guardian check failed after retry: ${retryGuard.issues.join(", ")}`;
+            }
+            if (retryGuard.findings.length > 0) {
+              guardianLog.push({ filename, findings: retryGuard.findings });
             }
             results.push(retry);
           } else if (result.status === "complete" && result.html.length < MIN_PAGE_SIZE) {
@@ -176,12 +184,25 @@ export async function POST(req: NextRequest) {
             result.error = `Page too small (${result.html.length} bytes < ${MIN_PAGE_SIZE} threshold)`;
             results.push(result);
           } else {
-            // Check guardian — if fail, mark failed
+            // Run enhanced guardian — structural check + hallucination scan + auto-replace
             if (result.status === "complete") {
-              const guard = guardianCheck(result.html, pageName);
+              const guard = guardianCheck(result.html, pageName, projectName, pages);
+              result.html = guard.html; // use cleaned HTML with auto-replacements
               if (!guard.pass) {
                 result.status = "failed";
                 result.error = `Guardian failed: ${guard.issues.join(", ")}`;
+              }
+              if (guard.findings.length > 0) {
+                guardianLog.push({ filename, findings: guard.findings });
+                send({
+                  event: "guardian",
+                  page: pageName,
+                  pass: guard.pass,
+                  issues: guard.issues,
+                  findings: guard.findings.map((f) => `${f.type}: ${f.message} [${f.action}]`),
+                  navOk: guard.navOk,
+                  size: result.html.length,
+                });
               }
             }
             results.push(result);
@@ -189,19 +210,7 @@ export async function POST(req: NextRequest) {
 
           // Save to disk (even partial pages — overwrite previous attempts)
           const final = results[results.length - 1];
-
-          // Post-build validation: catch hallucinated data before save
           if (final.html.length > 0) {
-            const validation = postBuildValidation(final.html, projectName, pages);
-            if (validation.fixes.length > 0) {
-              final.html = validation.html;
-              send({
-                event: "validation",
-                page: pageName,
-                fixes: validation.fixes,
-                navOk: validation.navOk,
-              });
-            }
             fs.writeFileSync(path.join(projectDir, filename), final.html);
           }
 
@@ -224,16 +233,34 @@ export async function POST(req: NextRequest) {
           });
         }
 
-        // Step 4: Generate BUILD_LOG.md
+        // Step 4: Cross-page nav consistency check
+        const pageHtmlMap = results
+          .filter((r) => r.html.length > 0)
+          .map((r) => ({ filename: r.filename, html: r.html }));
+        const navFindings = checkNavConsistency(pageHtmlMap, pages);
+        if (navFindings.length > 0) {
+          send({
+            event: "guardian",
+            page: "ALL PAGES",
+            pass: true,
+            issues: [],
+            findings: navFindings.map((f) => `${f.type}: ${f.message} [${f.action}]`),
+            navOk: false,
+          });
+        }
+
+        // Step 5: Generate BUILD_LOG.md with Guardian Findings
         const passed = results.filter((r) => r.status === "complete" && r.html.length >= MIN_PAGE_SIZE);
         const failed = results.filter((r) => r.status !== "complete" || r.html.length < MIN_PAGE_SIZE);
         const now = new Date().toISOString().replace("T", " ").slice(0, 19);
+        const totalFindings = guardianLog.reduce((n, g) => n + g.findings.length, 0) + navFindings.length;
         const logLines = [
           `# Build Log — ${projectName}`,
           `Ref: ${refCode} | Built: ${now}`,
           "",
           `## Summary`,
           `Pages: ${results.length} | Complete: ${passed.length} | Failed: ${failed.length} | Min size: ${MIN_PAGE_SIZE} bytes`,
+          `Guardian findings: ${totalFindings} (${guardianLog.reduce((n, g) => n + g.findings.filter((f) => f.action === "auto-replaced").length, 0)} auto-replaced)`,
           "",
         ];
 
@@ -245,6 +272,18 @@ export async function POST(req: NextRequest) {
           logLines.push(`Size: ${r.html.length} bytes | Difficulty: ${r.difficulty} | Status: ${ok ? "COMPLETE" : "FAILED"}`);
           if (r.error) logLines.push(`Error: ${r.error}`);
           logLines.push("");
+        }
+
+        // Guardian Findings per page
+        if (guardianLog.length > 0 || navFindings.length > 0) {
+          logLines.push("---");
+          logLines.push("");
+          for (const entry of guardianLog) {
+            logLines.push(formatGuardianFindings(entry.filename, entry.findings));
+          }
+          if (navFindings.length > 0) {
+            logLines.push(formatGuardianFindings("Cross-Page Navigation", navFindings));
+          }
         }
 
         const buildLog = logLines.join("\n");
@@ -326,7 +365,9 @@ OUTPUT RULES:
 - The page MUST be fully self-contained, responsive, and production-quality.
 - Use the shared navigation HTML provided in the prompt — include it exactly as given.
 - The page must be substantial — at least 200 lines of HTML with real content sections.
-- Use PII placeholders: {{BUSINESS_NAME}}, {{phone}}, {{email}}, {{address}}, {{city}}, {{state}}, {{client_name}}.`,
+- Use PII placeholders: {{BUSINESS_NAME}}, {{phone}}, {{email}}, {{address}}, {{city}}, {{state}}, {{client_name}}.
+- Each page must fit in 2-3 viewport heights max at 1920x1080 (under 4000px total height). Do NOT create infinitely scrolling pages.
+- Use tabs, accordions, expandable sections instead of stacking everything vertically. Content-heavy sections should be collapsible.`,
           source: "multipage-builder",
           maxOutputTokens: 16384,
         }),
@@ -369,7 +410,7 @@ OUTPUT RULES:
     const durationMs = Date.now() - startTime;
     html = extractHtml(html);
 
-    // Guardian check
+    // Quick structural check (hallucination scan happens in the route after buildOnePage)
     const guard = guardianCheck(html, pageName);
     send({
       event: "guardian",
@@ -378,6 +419,7 @@ OUTPUT RULES:
       issues: guard.issues,
       size: html.length,
     });
+    html = guard.html;
 
     return {
       page: pageName,
