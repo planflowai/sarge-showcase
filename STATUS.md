@@ -4,6 +4,38 @@ Generated: 2026-03-06
 Branch: sargebuild-v1
 Tag: working-2026-03-02-deploy-fix (last tagged)
 
+## Project Kickoff Page (2026-03-06) — Package selection + pipeline wiring
+
+### What Was Built
+
+| # | Component | Description |
+|---|-----------|-------------|
+| 1 | `lib/pricing-config.ts` | Config-driven pricing: 3 packages (Essential/Standard/Premium), features array, colors, SVG icons |
+| 2 | `app/(client)/kickoff/page.tsx` | Public kickoff page — white cards on dark navy, teal/purple/pink palette, dark/light mode toggle, modal form on package select |
+| 3 | `app/api/project/kickoff/route.ts` | POST API — creates project folder, generates coming soon page, writes to Supabase `client_intake`, deploys to GitHub/Vercel/Netlify/Cloudflare (fire-and-forget), sends welcome email, returns ref code immediately |
+
+### Design
+- 3 pricing cards with centered SVG icons, colored gradient accents, feature pills (check/cross)
+- Bold trust bar: "100% Custom Design", "4-Platform Deploy", "Coming Soon Page in Minutes", "Full Source Code Included"
+- Dark/light mode toggle (top right)
+- Modal form on package select: project name, name, email, phone, domain
+- Success state shows ref code and "check your email" message
+
+### Route
+- Public at `/kickoff` — no auth required
+- Uses `(client)` route group (no sidebar/header chrome)
+
+### Pipeline (API route)
+- Validates package against `PACKAGES` config
+- Creates `L:/AI_MASTER_BUILDS/{slug}/` with index.html, project.json, hosting configs
+- Writes to Supabase `client_intake` table with `status: 'new'`, `source: 'kickoff'`
+- Revision rounds set by package tier (Essential=1, Standard=2, Premium=3)
+- Background deploy: git init → GitHub repo → Vercel → Netlify → Cloudflare
+- Background welcome email with intake form link
+- Returns `{ ref_code }` immediately — non-blocking on deploy failures
+
+---
+
 ## PlanFlowAI Branding Audit (2026-03-06) — Logo on all client-facing touchpoints
 
 ### What Changed
