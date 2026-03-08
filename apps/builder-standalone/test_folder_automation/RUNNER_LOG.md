@@ -1,5 +1,5 @@
 # RUNNER PRE-FLIGHT LOG
-Timestamp: 2026-03-08T17:47:48.068Z
+Timestamp: 2026-03-08T22:13:23.416Z
 
 ## Ollama Models
 Status: ONLINE (30 models)
@@ -35,3 +35,5 @@ localhost:3101: ✓ alive
 ## Visual Review Pool
 - ollama:qwen3.5:9b (Local Vision, 60s)
 - ollama:qwen3-vl:latest (Local Vision, 60s)
+- google:gemini-2.5-flash (Cloud Vision, 60s)
+- deepseek:deepseek-chat (Cloud Vision, 60s)

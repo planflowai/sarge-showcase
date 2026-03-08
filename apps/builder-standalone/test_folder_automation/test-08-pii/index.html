@@ -11,33 +11,30 @@
             box-sizing: border-box;
         }
         body {
-            font-family: system-ui, -apple-system, sans-serif;
+            font-family: 'Segoe UI', system-ui, sans-serif;
             background-color: #0F0F1A;
             color: #F0F2F5;
             line-height: 1.6;
             font-weight: 500;
             font-size: 16px;
             min-height: 100vh;
+            max-height: 2160px;
             overflow-x: hidden;
         }
         h1, h2, h3 {
             font-weight: 700;
             color: #FFFFFF;
         }
-        p, li, label {
+        p, li, address, label {
             color: #F0F2F5;
-            font-size: 16px;
-        }
-        label {
-            font-size: 14px;
         }
         a {
-            color: #6C8AFF;
+            color: #7C9CFF;
             text-decoration: none;
-            transition: opacity 0.3s;
+            transition: color 0.3s;
         }
         a:hover {
-            opacity: 0.8;
+            color: #A3C4FF;
         }
         .container {
             width: 100%;
@@ -48,7 +45,6 @@
         section {
             padding: 80px 0;
         }
-
         /* Header & Nav */
         header {
             background-color: #161627;
@@ -58,7 +54,7 @@
             padding: 20px 0;
             border-bottom: 1px solid #2A2A3E;
         }
-        .nav-container {
+        .header-container {
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -70,20 +66,22 @@
         }
         .nav-links {
             display: flex;
-            gap: 30px;
             list-style: none;
+            gap: 30px;
         }
         .nav-links a {
+            font-weight: 600;
+            font-size: 16px;
             color: #F0F2F5;
-            font-weight: 500;
+        }
+        .nav-links a:hover {
+            color: #7C9CFF;
         }
         .hamburger {
             display: none;
             flex-direction: column;
-            gap: 5px;
             cursor: pointer;
-            background: none;
-            border: none;
+            gap: 5px;
         }
         .hamburger span {
             width: 25px;
@@ -91,12 +89,11 @@
             background-color: #F0F2F5;
             border-radius: 2px;
         }
-
         /* Hero */
         .hero {
+            background: linear-gradient(135deg, #1A1A2E 0%, #0F0F1A 100%);
             text-align: center;
             padding: 120px 20px;
-            background: linear-gradient(135deg, #1A1A2E 0%, #0F0F1A 100%);
         }
         .hero h1 {
             font-size: 3.5rem;
@@ -108,57 +105,67 @@
             max-width: 700px;
             margin: 0 auto 30px;
         }
-        .cta-button {
+        .btn {
             display: inline-block;
-            background-color: #6C8AFF;
+            background-color: #7C9CFF;
             color: #0F0F1A;
-            padding: 15px 35px;
+            padding: 14px 32px;
             border-radius: 8px;
             font-weight: 700;
-            font-size: 18px;
+            font-size: 16px;
             border: none;
             cursor: pointer;
             transition: background-color 0.3s;
         }
-        .cta-button:hover {
-            background-color: #8BA4FF;
+        .btn:hover {
+            background-color: #A3C4FF;
         }
-
         /* About */
+        .about {
+            background-color: #161627;
+        }
+        .about h2 {
+            font-size: 2.5rem;
+            margin-bottom: 30px;
+        }
         .about-content {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 60px;
+            gap: 50px;
             align-items: center;
         }
-        .about-text h2 {
-            font-size: 2.5rem;
-            margin-bottom: 25px;
-        }
         .about-text p {
+            font-size: 18px;
             margin-bottom: 20px;
         }
-        .highlight {
+        .about-image {
             background-color: #2A2A3E;
-            padding: 25px;
-            border-radius: 10px;
-            border-left: 5px solid #6C8AFF;
-            font-style: italic;
+            height: 300px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: #A3C4FF;
         }
-
         /* Contact */
-        .contact-content {
+        .contact h2 {
+            font-size: 2.5rem;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+        .contact-wrapper {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 60px;
         }
-        .contact-info h2 {
-            font-size: 2.5rem;
+        .contact-info h3 {
+            font-size: 1.8rem;
             margin-bottom: 25px;
         }
         .contact-details {
             list-style: none;
-            margin-top: 30px;
+            font-size: 18px;
         }
         .contact-details li {
             margin-bottom: 20px;
@@ -166,39 +173,33 @@
             align-items: center;
             gap: 15px;
         }
-        .contact-details i {
-            font-size: 20px;
-            color: #6C8AFF;
+        .contact-details strong {
+            color: #FFFFFF;
         }
         .contact-form .form-group {
             margin-bottom: 25px;
         }
         .contact-form label {
             display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
+            font-weight: 600;
+            margin-bottom: 10px;
+            font-size: 16px;
+            color: #FFFFFF;
         }
         .contact-form input,
         .contact-form textarea {
             width: 100%;
             padding: 15px;
-            background-color: #161627;
+            background-color: #1A1A2E;
             border: 1px solid #2A2A3E;
             border-radius: 8px;
             color: #F0F2F5;
             font-size: 16px;
         }
-        .contact-form button {
-            background-color: #6C8AFF;
-            color: #0F0F1A;
-            padding: 15px 35px;
-            border-radius: 8px;
-            font-weight: 700;
-            font-size: 18px;
-            border: none;
-            cursor: pointer;
+        .contact-form textarea {
+            min-height: 150px;
+            resize: vertical;
         }
-
         /* Footer */
         footer {
             background-color: #161627;
@@ -211,39 +212,30 @@
             gap: 40px;
             margin-bottom: 40px;
         }
-        .footer-column h3 {
+        .footer-col h3 {
             font-size: 1.5rem;
             margin-bottom: 25px;
         }
-        .footer-links {
-            list-style: none;
+        .footer-col p, .footer-col address {
+            font-size: 16px;
+            margin-bottom: 15px;
+            font-style: normal;
         }
-        .footer-links li {
-            margin-bottom: 12px;
-        }
-        .footer-links a {
-            color: #F0F2F5;
-        }
-        .copyright {
+        .footer-bottom {
             text-align: center;
             padding-top: 30px;
             border-top: 1px solid #2A2A3E;
-            color: #F0F2F5;
             font-size: 14px;
+            color: #F0F2F5;
         }
-
         /* Responsive */
         @media (max-width: 992px) {
-            .about-content,
-            .contact-content {
+            .about-content, .contact-wrapper, .footer-content {
                 grid-template-columns: 1fr;
                 gap: 40px;
             }
             .hero h1 {
                 font-size: 2.8rem;
-            }
-            .footer-content {
-                grid-template-columns: repeat(2, 1fr);
             }
         }
         @media (max-width: 768px) {
@@ -256,6 +248,7 @@
                 background-color: #161627;
                 flex-direction: column;
                 padding: 20px;
+                text-align: center;
                 gap: 20px;
                 border-top: 1px solid #2A2A3E;
             }
@@ -275,56 +268,47 @@
                 padding: 60px 0;
             }
         }
-        @media (max-width: 576px) {
-            .footer-content {
-                grid-template-columns: 1fr;
-            }
-            .hero {
-                padding: 80px 20px;
-            }
-        }
     </style>
 </head>
 <body>
     <header>
-        <nav class="container nav-container">
+        <div class="container header-container">
             <div class="logo">Level 11 Events</div>
-            <button class="hamburger" id="hamburger">
-                <span></span>
-                <span></span>
-                <span></span>
-            </button>
-            <ul class="nav-links" id="navLinks">
-                <li><a href="#home">Home</a></li>
-                <li><a href="#about">About</a></li>
-                <li><a href="#contact">Contact</a></li>
-            </ul>
-        </nav>
+            <nav>
+                <ul class="nav-links">
+                    <li><a href="#home">Home</a></li>
+                    <li><a href="#about">About</a></li>
+                    <li><a href="#contact">Contact</a></li>
+                </ul>
+                <div class="hamburger" id="hamburger">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </nav>
+        </div>
     </header>
 
     <main>
         <section id="home" class="hero">
             <div class="container">
-                <h1>Welcome to Level 11 Events</h1>
-                <p>Your trusted partner for exceptional service and quality solutions. We deliver results that matter.</p>
-                <a href="#contact" class="cta-button">Get in Touch</a>
+                <h1>Level 11 Events</h1>
+                <p>Delivering exceptional services with dedication and expertise. Your success is our mission.</p>
+                <a href="#contact" class="btn">Get in Touch</a>
             </div>
         </section>
 
         <section id="about" class="about">
             <div class="container">
+                <h2>About Us</h2>
                 <div class="about-content">
                     <div class="about-text">
-                        <h2>Our Story</h2>
-                        <p>Founded with a vision to make a difference, we have grown into a reliable name in our industry. Our commitment to excellence drives everything we do.</p>
-                        <p>We believe in building lasting relationships and providing solutions that are tailored to our clients' unique needs.</p>
-                        <div class="highlight">
-                            <p>"Working with Level 11 Events has been transformative for our operations. Their dedication and expertise are unmatched." – DJ Sarge</p>
-                        </div>
+                        <p>Welcome to Level 11 Events. We are a dedicated team passionate about providing top-tier solutions for our clients.</p>
+                        <p>Our approach is centered around understanding your unique needs. As our valued client, <strong>DJ Sarge</strong>, can attest, we prioritize quality, reliability, and innovation in everything we do.</p>
+                        <p>With years of industry experience, we have built a reputation for excellence and customer satisfaction.</p>
                     </div>
                     <div class="about-image">
-                        <!-- Placeholder for an image -->
-                        <div style="background-color: #2A2A3E; height: 400px; border-radius: 15px; display: flex; align-items: center; justify-content: center; color: #6C8AFF; font-weight: 700;">About Us Image</div>
+                        [Image or graphic representing Level 11 Events]
                     </div>
                 </div>
             </div>
@@ -332,39 +316,31 @@
 
         <section id="contact" class="contact">
             <div class="container">
-                <div class="contact-content">
+                <h2>Contact Us</h2>
+                <div class="contact-wrapper">
                     <div class="contact-info">
-                        <h2>Contact Us</h2>
-                        <p>Reach out to us for inquiries, support, or to start a conversation about your project. We're here to help.</p>
+                        <h3>Get in Touch</h3>
                         <ul class="contact-details">
-                            <li>
-                                <strong>Phone:</strong> <a href="tel:(612) 555-0111">(612) 555-0111</a>
-                            </li>
-                            <li>
-                                <strong>Email:</strong> <a href="mailto:info@level11events.com">info@level11events.com</a>
-                            </li>
-                            <li>
-                                <strong>Address:</strong> PO Box 44426, Eden Prairie, MN 55344, Eden Prairie, MN
-                            </li>
+                            <li><strong>Phone:</strong> <a href="tel:(612) 555-0111">(612) 555-0111</a></li>
+                            <li><strong>Email:</strong> <a href="mailto:info@level11events.com">info@level11events.com</a></li>
+                            <li><strong>Address:</strong> PO Box 44426, Eden Prairie, MN 55344, Eden Prairie, MN</li>
                         </ul>
                     </div>
-                    <div class="contact-form">
-                        <form id="contactForm">
-                            <div class="form-group">
-                                <label for="name">Full Name</label>
-                                <input type="text" id="name" name="name" required placeholder="Your Name">
-                            </div>
-                            <div class="form-group">
-                                <label for="email">Email Address</label>
-                                <input type="email" id="email" name="email" required placeholder="you@example.com">
-                            </div>
-                            <div class="form-group">
-                                <label for="message">Your Message</label>
-                                <textarea id="message" name="message" rows="5" required placeholder="How can we help you?"></textarea>
-                            </div>
-                            <button type="submit" class="cta-button">Send Message</button>
-                        </form>
-                    </div>
+                    <form class="contact-form">
+                        <div class="form-group">
+                            <label for="name">Full Name</label>
+                            <input type="text" id="name" name="name" required placeholder="Your Name">
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email Address</label>
+                            <input type="email" id="email" name="email" required placeholder="you@example.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="message">Your Message</label>
+                            <textarea id="message" name="message" required placeholder="How can we help you?"></textarea>
+                        </div>
+                        <button type="submit" class="btn">Send Message</button>
+                    </form>
                 </div>
             </div>
         </section>
@@ -373,59 +349,57 @@
     <footer>
         <div class="container">
             <div class="footer-content">
-                <div class="footer-column">
+                <div class="footer-col">
                     <h3>Level 11 Events</h3>
-                    <p>Delivering excellence and innovation since our founding. Your success is our priority.</p>
+                    <p>Committed to excellence and your success. We provide reliable services tailored to your needs.</p>
                 </div>
-                <div class="footer-column">
+                <div class="footer-col">
                     <h3>Quick Links</h3>
-                    <ul class="footer-links">
-                        <li><a href="#home">Home</a></li>
-                        <li><a href="#about">About</a></li>
-                        <li><a href="#contact">Contact</a></li>
-                    </ul>
+                    <p><a href="#home">Home</a></p>
+                    <p><a href="#about">About</a></p>
+                    <p><a href="#contact">Contact</a></p>
                 </div>
-                <div class="footer-column">
-                    <h3>Get in Touch</h3>
-                    <ul class="footer-links">
-                        <li><a href="tel:(612) 555-0111">(612) 555-0111</a></li>
-                        <li><a href="mailto:info@level11events.com">info@level11events.com</a></li>
-                        <li>PO Box 44426, Eden Prairie, MN 55344, Eden Prairie, MN</li>
-                    </ul>
+                <div class="footer-col">
+                    <h3>Contact Info</h3>
+                    <address>
+                        <p><strong>Phone:</strong> <a href="tel:(612) 555-0111">(612) 555-0111</a></p>
+                        <p><strong>Email:</strong> <a href="mailto:info@level11events.com">info@level11events.com</a></p>
+                        <p><strong>Location:</strong> Eden Prairie, MN</p>
+                    </address>
                 </div>
             </div>
-            <div class="copyright">
+            <div class="footer-bottom">
                 <p>&copy; <span id="currentYear"></span> Level 11 Events. All rights reserved.</p>
             </div>
         </div>
     </footer>
 
     <script>
-        // Mobile Navigation Toggle
+        // Hamburger Menu Toggle
         const hamburger = document.getElementById('hamburger');
-        const navLinks = document.getElementById('navLinks');
+        const navLinks = document.querySelector('.nav-links');
 
         hamburger.addEventListener('click', () => {
             navLinks.classList.toggle('active');
         });
 
-        // Close mobile menu when clicking a link
+        // Close menu when clicking a link
         document.querySelectorAll('.nav-links a').forEach(link => {
             link.addEventListener('click', () => {
                 navLinks.classList.remove('active');
             });
         });
 
-        // Form Submission
-        const contactForm = document.getElementById('contactForm');
-        contactForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            alert('Thank you for your message! We will get back to you soon.');
-            contactForm.reset();
-        });
-
         // Set current year in footer
         document.getElementById('currentYear').textContent = new Date().getFullYear();
+
+        // Form submission (prevent default for demo)
+        const contactForm = document.querySelector('.contact-form');
+        contactForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            alert('Thank you! This is a demo. In a real site, this would send your message.');
+            contactForm.reset();
+        });
     </script>
 </body>
 </html>

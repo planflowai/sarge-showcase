@@ -16,14 +16,23 @@
             color: #F0F2F5;
             font-weight: 500;
             font-size: 16px;
-            line-height: 1.6;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
+            line-height: 1.5;
+            overflow-x: hidden;
+        }
+        h1, h2, h3 {
+            font-weight: 700;
+            color: #FFFFFF;
+        }
+        p, li, label, figcaption {
+            color: #F0F2F5;
         }
         a {
             color: #FFFFFF;
             text-decoration: none;
+            transition: opacity 0.2s;
+        }
+        a:hover {
+            opacity: 0.8;
         }
         .container {
             width: 100%;
@@ -31,115 +40,82 @@
             margin: 0 auto;
             padding: 0 20px;
         }
+        section {
+            padding: 40px 0;
+        }
+
+        /* Header & Nav */
         header {
             background-color: rgba(15, 15, 26, 0.95);
             position: sticky;
             top: 0;
             z-index: 1000;
+            padding: 15px 0;
             border-bottom: 1px solid #2A2A3E;
         }
         .header-container {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 20px 0;
         }
         .logo {
-            font-size: 24px;
+            font-size: 1.5rem;
             font-weight: 700;
-            color: #FFFFFF;
         }
-        nav ul {
+        .nav-links {
             display: flex;
             list-style: none;
             gap: 30px;
         }
-        nav a {
+        .nav-links a {
             font-weight: 600;
-            font-size: 16px;
-            transition: color 0.3s;
-        }
-        nav a:hover {
-            color: #A0A7FF;
         }
         .hamburger {
             display: none;
-            flex-direction: column;
+            background: none;
+            border: none;
+            color: #FFFFFF;
+            font-size: 1.8rem;
             cursor: pointer;
-            gap: 5px;
         }
-        .hamburger span {
-            width: 25px;
-            height: 3px;
-            background-color: #FFFFFF;
-            border-radius: 2px;
-        }
-        main {
-            flex: 1;
-        }
-        section {
-            padding: 80px 0;
-        }
+
+        /* Hero */
         .hero {
-            background-image: linear-gradient(rgba(15, 15, 26, 0.7), rgba(15, 15, 26, 0.9)), url('https://picsum.photos/seed/hero/1920/600');
-            background-size: cover;
-            background-position: center;
-            text-align: center;
+            min-height: 400px;
+            background: linear-gradient(rgba(15, 15, 26, 0.7), rgba(15, 15, 26, 0.9)), url('https://picsum.photos/seed/hero/1920/600') center/cover no-repeat;
             display: flex;
             align-items: center;
-            justify-content: center;
-            min-height: 600px;
-            padding: 40px 20px;
+            text-align: center;
+            padding: 60px 20px;
         }
         .hero-content {
             max-width: 800px;
+            margin: 0 auto;
         }
-        h1 {
-            font-size: 48px;
-            font-weight: 800;
+        .hero h1 {
+            font-size: 2.8rem;
             margin-bottom: 20px;
-            color: #FFFFFF;
-            line-height: 1.2;
         }
         .hero p {
-            font-size: 20px;
-            font-weight: 500;
+            font-size: 1.2rem;
             margin-bottom: 30px;
-            color: #F0F2F5;
         }
-        .btn {
-            display: inline-block;
-            background-color: #4A4AFF;
-            color: #FFFFFF;
-            padding: 14px 32px;
-            border-radius: 8px;
-            font-weight: 700;
-            font-size: 16px;
-            transition: background-color 0.3s;
-        }
-        .btn:hover {
-            background-color: #3A3AEE;
-        }
-        h2 {
-            font-size: 36px;
-            font-weight: 800;
-            margin-bottom: 40px;
+
+        /* Gallery */
+        .gallery-section h2 {
             text-align: center;
-            color: #FFFFFF;
+            margin-bottom: 30px;
+            font-size: 2.2rem;
         }
         .gallery-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 30px;
+            gap: 20px;
         }
         .gallery-item {
-            border-radius: 12px;
+            border-radius: 8px;
             overflow: hidden;
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
-            transition: transform 0.3s;
-        }
-        .gallery-item:hover {
-            transform: translateY(-10px);
+            background-color: #1A1A2E;
         }
         .gallery-item img {
             width: 100%;
@@ -147,17 +123,26 @@
             object-fit: cover;
             display: block;
         }
-        .video-container {
-            max-width: 900px;
-            margin: 0 auto;
+        .gallery-caption {
+            padding: 15px;
+            font-weight: 500;
+        }
+
+        /* Video */
+        .video-section {
+            text-align: center;
+        }
+        .video-section h2 {
+            margin-bottom: 30px;
+            font-size: 2.2rem;
         }
         .video-wrapper {
             position: relative;
-            padding-bottom: 56.25%;
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+            padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
             height: 0;
-            overflow: hidden;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
         }
         .video-wrapper iframe {
             position: absolute;
@@ -166,84 +151,85 @@
             width: 100%;
             height: 100%;
             border: none;
+            border-radius: 8px;
         }
+
+        /* Footer */
         footer {
-            background-color: #0A0A12;
-            padding: 60px 0 30px;
-            border-top: 1px solid #2A2A3E;
+            background-color: #1A1A2E;
+            padding: 40px 0 20px;
+            margin-top: 40px;
         }
         .footer-content {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 40px;
-            margin-bottom: 40px;
+            margin-bottom: 30px;
         }
         .footer-column h3 {
-            font-size: 20px;
-            font-weight: 700;
             margin-bottom: 20px;
-            color: #FFFFFF;
+            font-size: 1.3rem;
         }
-        .footer-column p, .footer-column a {
-            font-size: 16px;
-            color: #F0F2F5;
+        .footer-column ul {
+            list-style: none;
+        }
+        .footer-column li {
             margin-bottom: 10px;
-            display: block;
-        }
-        .footer-column a:hover {
-            color: #A0A7FF;
         }
         .copyright {
             text-align: center;
-            padding-top: 30px;
+            padding-top: 20px;
             border-top: 1px solid #2A2A3E;
-            font-size: 14px;
+            font-size: 0.9rem;
             color: #F0F2F5;
         }
+
+        /* Responsive */
         @media (max-width: 768px) {
-            h1 {
-                font-size: 36px;
+            body {
+                font-size: 15px;
             }
-            .hero p {
-                font-size: 18px;
+            .hamburger {
+                display: block;
             }
-            h2 {
-                font-size: 30px;
-            }
-            nav ul {
+            .nav-links {
                 display: none;
-                flex-direction: column;
                 position: absolute;
                 top: 100%;
                 left: 0;
                 width: 100%;
                 background-color: #0F0F1A;
+                flex-direction: column;
                 padding: 20px;
+                gap: 15px;
                 border-top: 1px solid #2A2A3E;
-                gap: 20px;
             }
-            nav ul.active {
+            .nav-links.active {
                 display: flex;
             }
-            .hamburger {
-                display: flex;
+            .hero h1 {
+                font-size: 2.2rem;
+            }
+            .hero p {
+                font-size: 1.1rem;
             }
             section {
-                padding: 60px 0;
+                padding: 30px 0;
             }
-            .hero {
-                min-height: 500px;
+            .gallery-grid {
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             }
         }
         @media (max-width: 480px) {
-            h1 {
-                font-size: 28px;
+            .hero h1 {
+                font-size: 1.8rem;
+            }
+            .hero {
+                min-height: 300px;
+                padding: 40px 20px;
             }
             h2 {
-                font-size: 26px;
-            }
-            .container {
-                padding: 0 15px;
+                font-size: 1.8rem !important;
             }
         }
     </style>
@@ -252,13 +238,9 @@
     <header>
         <div class="container header-container">
             <div class="logo">Level 11 Events</div>
+            <button class="hamburger" id="hamburgerBtn">☰</button>
             <nav>
-                <div class="hamburger" id="hamburger">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </div>
-                <ul id="nav-menu">
+                <ul class="nav-links" id="navLinks">
                     <li><a href="#home">Home</a></li>
                     <li><a href="#gallery">Gallery</a></li>
                     <li><a href="#video">Video</a></li>
@@ -267,83 +249,110 @@
             </nav>
         </div>
     </header>
+
     <main>
         <section class="hero" id="home">
             <div class="container hero-content">
                 <h1>Welcome to Level 11 Events</h1>
-                <p>Experience excellence and innovation with our premium services. We are dedicated to delivering outstanding results for every client.</p>
-                <a href="#contact" class="btn">Get in Touch</a>
+                <p>Experience excellence in every detail. Discover our work and vision through our gallery and featured video.</p>
+                <a href="#gallery" style="background-color: #3A3AFF; color: #FFFFFF; padding: 12px 30px; border-radius: 6px; font-weight: 600; display: inline-block;">Explore Gallery</a>
             </div>
         </section>
-        <section id="gallery">
-            <div class="container">
-                <h2>Our Gallery</h2>
-                <div class="gallery-grid">
-                    <div class="gallery-item">
-                        <img src="https://picsum.photos/seed/pic1/400/300" alt="Gallery Image 1">
-                    </div>
-                    <div class="gallery-item">
-                        <img src="https://picsum.photos/seed/pic2/400/300" alt="Gallery Image 2">
-                    </div>
-                    <div class="gallery-item">
-                        <img src="https://picsum.photos/seed/pic3/400/300" alt="Gallery Image 3">
-                    </div>
-                    <div class="gallery-item">
-                        <img src="https://picsum.photos/seed/pic4/400/300" alt="Gallery Image 4">
-                    </div>
-                </div>
+
+        <section class="gallery-section container" id="gallery">
+            <h2>Our Gallery</h2>
+            <div class="gallery-grid">
+                <figure class="gallery-item">
+                    <img src="https://picsum.photos/seed/pic1/400/300" alt="Gallery image 1" loading="lazy">
+                    <figcaption class="gallery-caption">Beautiful scene showcasing our work.</figcaption>
+                </figure>
+                <figure class="gallery-item">
+                    <img src="https://picsum.photos/seed/pic2/400/300" alt="Gallery image 2" loading="lazy">
+                    <figcaption class="gallery-caption">Innovative design and execution.</figcaption>
+                </figure>
+                <figure class="gallery-item">
+                    <img src="https://picsum.photos/seed/pic3/400/300" alt="Gallery image 3" loading="lazy">
+                    <figcaption class="gallery-caption">Precision and quality in every project.</figcaption>
+                </figure>
+                <figure class="gallery-item">
+                    <img src="https://picsum.photos/seed/pic4/400/300" alt="Gallery image 4" loading="lazy">
+                    <figcaption class="gallery-caption">Award-winning results.</figcaption>
+                </figure>
             </div>
         </section>
-        <section id="video">
-            <div class="container">
-                <h2>Featured Video</h2>
-                <div class="video-container">
-                    <div class="video-wrapper">
-                        <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-                    </div>
-                </div>
+
+        <section class="video-section container" id="video">
+            <h2>Featured Video</h2>
+            <div class="video-wrapper">
+                <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
             </div>
         </section>
     </main>
+
     <footer id="contact">
         <div class="container">
             <div class="footer-content">
                 <div class="footer-column">
                     <h3>Level 11 Events</h3>
-                    <p>Providing top-tier services with a commitment to quality and customer satisfaction.</p>
+                    <p>Delivering exceptional quality and service since our founding. We are dedicated to excellence.</p>
                 </div>
                 <div class="footer-column">
-                    <h3>Contact Us</h3>
-                    <p><strong>Phone:</strong> (612) 555-0111</p>
-                    <p><strong>Email:</strong> info@level11events.com</p>
-                    <p><strong>Address:</strong> PO Box 44426, Eden Prairie, MN 55344</p>
+                    <h3>Contact Info</h3>
+                    <ul>
+                        <li>Phone: (612) 555-0111</li>
+                        <li>Email: info@level11events.com</li>
+                        <li>Address: PO Box 44426, Eden Prairie, MN 55344</li>
+                    </ul>
                 </div>
                 <div class="footer-column">
                     <h3>Quick Links</h3>
-                    <a href="#home">Home</a>
-                    <a href="#gallery">Gallery</a>
-                    <a href="#video">Video</a>
-                    <a href="#contact">Contact</a>
+                    <ul>
+                        <li><a href="#home">Home</a></li>
+                        <li><a href="#gallery">Gallery</a></li>
+                        <li><a href="#video">Video</a></li>
+                        <li><a href="#contact">Contact</a></li>
+                    </ul>
                 </div>
             </div>
             <div class="copyright">
-                &copy; <span id="currentYear"></span> Level 11 Events. All rights reserved.
+                <p>&copy; <span id="currentYear"></span> Level 11 Events. All rights reserved.</p>
             </div>
         </div>
     </footer>
+
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const hamburger = document.getElementById('hamburger');
-            const navMenu = document.getElementById('nav-menu');
-            hamburger.addEventListener('click', function() {
-                navMenu.classList.toggle('active');
+        // Mobile Navigation Toggle
+        const hamburgerBtn = document.getElementById('hamburgerBtn');
+        const navLinks = document.getElementById('navLinks');
+
+        hamburgerBtn.addEventListener('click', () => {
+            navLinks.classList.toggle('active');
+        });
+
+        // Close mobile menu when clicking a link
+        document.querySelectorAll('.nav-links a').forEach(link => {
+            link.addEventListener('click', () => {
+                navLinks.classList.remove('active');
             });
-            document.querySelectorAll('nav a').forEach(anchor => {
-                anchor.addEventListener('click', function() {
-                    navMenu.classList.remove('active');
-                });
+        });
+
+        // Set current year in footer
+        document.getElementById('currentYear').textContent = new Date().getFullYear();
+
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href');
+                if(targetId === '#') return;
+                const targetElement = document.querySelector(targetId);
+                if(targetElement) {
+                    window.scrollTo({
+                        top: targetElement.offsetTop - 80,
+                        behavior: 'smooth'
+                    });
+                }
             });
-            document.getElementById('currentYear').textContent = new Date().getFullYear();
         });
     </script>
 </body>

@@ -24,22 +24,32 @@
         a {
             color: #A78BFA;
             text-decoration: none;
-            transition: opacity 0.2s;
+            transition: color 0.2s;
         }
         a:hover {
-            opacity: 0.8;
+            color: #C4B5FD;
         }
+        button {
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 600;
+        }
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        /* Header & Nav */
         header {
             background-color: #1A1A2E;
-            padding: 1rem 2rem;
+            padding: 20px 0;
             position: sticky;
             top: 0;
             z-index: 100;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         }
         .header-container {
-            max-width: 1200px;
-            margin: 0 auto;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -49,66 +59,115 @@
             font-weight: 800;
             color: #FFFFFF;
         }
-        nav ul {
+        .desktop-nav {
+            display: none;
+        }
+        .desktop-nav ul {
             display: flex;
             list-style: none;
-            gap: 2rem;
+            gap: 30px;
         }
-        nav a {
+        .desktop-nav a {
             font-weight: 600;
-            color: #FFFFFF;
-            font-size: 1rem;
+            color: #F0F2F5;
+        }
+        .desktop-nav a:hover {
+            color: #A78BFA;
         }
         .hamburger {
-            display: none;
-            flex-direction: column;
-            gap: 4px;
-            cursor: pointer;
+            display: block;
             background: none;
             border: none;
-            padding: 4px;
+            color: #F0F2F5;
+            font-size: 1.8rem;
         }
-        .hamburger span {
+        .mobile-nav {
+            position: fixed;
+            top: 0;
+            right: -100%;
+            width: 280px;
+            height: 100vh;
+            background-color: #1A1A2E;
+            padding: 100px 30px 30px;
+            transition: right 0.3s ease;
+            z-index: 99;
+            box-shadow: -5px 0 15px rgba(0, 0, 0, 0.5);
+        }
+        .mobile-nav.active {
+            right: 0;
+        }
+        .mobile-nav ul {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+        .mobile-nav a {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #F0F2F5;
             display: block;
-            width: 24px;
-            height: 3px;
-            background-color: #FFFFFF;
-            border-radius: 2px;
-            transition: 0.3s;
+            padding: 5px 0;
         }
+        .mobile-nav a:hover {
+            color: #A78BFA;
+        }
+        .close-nav {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            background: none;
+            border: none;
+            color: #F0F2F5;
+            font-size: 1.8rem;
+        }
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 98;
+            display: none;
+        }
+        .overlay.active {
+            display: block;
+        }
+        /* Main Content */
         main {
             flex: 1;
-            max-width: 1200px;
-            width: 100%;
-            margin: 0 auto;
-            padding: 2rem;
+            padding: 40px 0;
         }
         section {
-            margin-bottom: 3rem;
+            margin-bottom: 60px;
+        }
+        h1, h2, h3 {
+            color: #FFFFFF;
+            font-weight: 800;
+            margin-bottom: 20px;
         }
         h2 {
-            font-size: 2.2rem;
-            font-weight: 800;
-            color: #FFFFFF;
-            margin-bottom: 1.5rem;
+            font-size: 2rem;
             text-align: center;
         }
+        /* Gallery */
         .gallery-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 1.5rem;
+            gap: 20px;
+            margin-top: 30px;
         }
         .gallery-item {
             aspect-ratio: 4 / 3;
-            border-radius: 12px;
             overflow: hidden;
+            border-radius: 12px;
             cursor: pointer;
             transition: transform 0.3s, box-shadow 0.3s;
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
         }
         .gallery-item:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.6);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(167, 139, 250, 0.2);
         }
         .gallery-item img {
             width: 100%;
@@ -116,298 +175,303 @@
             object-fit: cover;
             display: block;
         }
-        .lightbox-overlay {
+        /* Lightbox */
+        .lightbox {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.92);
-            display: none;
+            background-color: rgba(0, 0, 0, 0.95);
+            z-index: 999;
+            display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 1000;
-            padding: 2rem;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        .lightbox.active {
+            opacity: 1;
+            visibility: visible;
         }
         .lightbox-content {
-            position: relative;
             max-width: 90%;
             max-height: 90%;
+            position: relative;
         }
         .lightbox-img {
             max-width: 100%;
             max-height: 80vh;
             border-radius: 8px;
             display: block;
-            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.7);
         }
         .close-lightbox {
             position: absolute;
-            top: -20px;
-            right: -20px;
-            background-color: #EF4444;
-            color: #FFFFFF;
+            top: -50px;
+            right: 0;
+            background: none;
             border: none;
-            width: px;
-            height: 44px;
-            border-radius: 50%;
-            font-size: 1.8rem;
-            font-weight: 700;
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            transition: background-color 0.2s;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            color: #FFFFFF;
+            font-size: 2.5rem;
+            font-weight: 300;
+            line-height: 1;
         }
-        .close-lightbox:hover {
-            background-color: #DC2626;
-        }
-        .map-container {
+        /* Map */
+        .map-section iframe {
             border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            margin-top: 20px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
         }
-        .social-section {
+        /* Social */
+        .social-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 30px;
+        }
+        .social-card {
             background-color: #1A1A2E;
             border-radius: 12px;
-            padding: 2rem;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+            padding: 25px;
+            flex: 1;
+            min-width: 300px;
+            max-width: 500px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
         }
-        .social-embed {
+        .social-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #A78BFA;
+        }
+        .social-placeholder {
             background-color: #252547;
             border-radius: 8px;
-            padding: 1.5rem;
-            margin-top: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 1.5rem;
-            flex-wrap: wrap;
-            justify-content: center;
+            padding: 40px 20px;
+            text-align: center;
+            color: #D1D5DB;
+            font-weight: 500;
         }
-        .social-icon {
-            font-size: 2.5rem;
-            color: #FFFFFF;
-        }
-        .social-text {
-            font-size: 1.1rem;
-            color: #FFFFFF;
-            font-weight: 600;
-        }
+        /* Footer */
         footer {
             background-color: #1A1A2E;
-            padding: 2.5rem 2rem;
+            padding: 40px 0 20px;
             margin-top: auto;
         }
-        .footer-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            gap: 2rem;
-        }
-        .footer-column {
-            flex: 1;
-            min-width: 200px;
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 40px;
+            margin-bottom: 30px;
         }
         .footer-column h3 {
             font-size: 1.3rem;
-            font-weight: 800;
-            color: #FFFFFF;
-            margin-bottom: 1rem;
+            margin-bottom: 20px;
+            color: #A78BFA;
         }
         .footer-column p, .footer-column a {
             color: #F0F2F5;
-            margin-bottom: 0.75rem;
+            margin-bottom: 10px;
             display: block;
-            font-size: 1rem;
+            font-size: 15px;
+        }
+        .footer-column a:hover {
+            color: #C4B5FD;
         }
         .copyright {
             text-align: center;
-            margin-top: 2rem;
-            padding-top: 1.5rem;
+            padding-top: 20px;
             border-top: 1px solid #2D2D4D;
-            color: #F0F2F5;
-            font-size: 0.95rem;
+            color: #D1D5DB;
+            font-size: 14px;
         }
-        @media (max-width: 768px) {
+        /* Responsive */
+        @media (min-width: 768px) {
+            .desktop-nav {
+                display: block;
+            }
             .hamburger {
-                display: flex;
+                display: none;
             }
-            nav ul {
-                position: fixed;
-                top: 70px;
-                right: -100%;
-                flex-direction: column;
-                background-color: #1A1A2E;
-                width: 100%;
-                max-width: 300px;
-                padding: 2rem;
-                border-radius: 0 0 0 12px;
-                box-shadow: -4px 8px 24px rgba(0, 0, 0, 0.5);
-                transition: right 0.4s;
-                gap: 1.5rem;
-            }
-            nav ul.active {
-                right: 0;
-            }
-            .gallery-grid {
-                grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-            }
-            main {
-                padding: 1.5rem;
+            .mobile-nav {
+                display: none;
             }
             h2 {
-                font-size: 1.8rem;
-            }
-            .footer-container {
-                flex-direction: column;
-                gap: 1.5rem;
+                font-size: 2.5rem;
             }
         }
     </style>
 </head>
 <body>
     <header>
-        <div class="header-container">
+        <div class="container header-container">
             <div class="logo">Level 11 Events</div>
-            <button class="hamburger" id="hamburger" aria-label="Toggle navigation">
-                <span></span>
-                <span></span>
-                <span></span>
-            </button>
-            <nav>
-                <ul id="nav-menu">
+            <nav class="desktop-nav">
+                <ul>
                     <li><a href="#gallery">Gallery</a></li>
                     <li><a href="#map">Location</a></li>
                     <li><a href="#social">Social</a></li>
                     <li><a href="#contact">Contact</a></li>
                 </ul>
             </nav>
+            <button class="hamburger" id="hamburgerBtn">☰</button>
         </div>
+        <nav class="mobile-nav" id="mobileNav">
+            <button class="close-nav" id="closeNavBtn">×</button>
+            <ul>
+                <li><a href="#gallery">Gallery</a></li>
+                <li><a href="#map">Location</a></li>
+                <li><a href="#social">Social</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+        </nav>
+        <div class="overlay" id="navOverlay"></div>
     </header>
 
-    <main>
+    <main class="container">
         <section id="gallery">
             <h2>Image Gallery</h2>
             <div class="gallery-grid">
                 <div class="gallery-item" data-img="https://picsum.photos/id/1015/800/600">
-                    <img src="https://picsum.photos/id/1015/400/300" alt="Gallery image 1" loading="lazy">
+                    <img src="https://picsum.photos/id/1015/400/300" alt="Gallery image 1">
                 </div>
                 <div class="gallery-item" data-img="https://picsum.photos/id/1018/800/600">
-                    <img src="https://picsum.photos/id/1018/400/300" alt="Gallery image 2" loading="lazy">
+                    <img src="https://picsum.photos/id/1018/400/300" alt="Gallery image 2">
                 </div>
                 <div class="gallery-item" data-img="https://picsum.photos/id/1020/800/600">
-                    <img src="https://picsum.photos/id/1020/400/300" alt="Gallery image 3" loading="lazy">
+                    <img src="https://picsum.photos/id/1020/400/300" alt="Gallery image 3">
                 </div>
                 <div class="gallery-item" data-img="https://picsum.photos/id/1024/800/600">
-                    <img src="https://picsum.photos/id/1024/400/300" alt="Gallery image 4" loading="lazy">
-                </div>
-                <div class="gallery-item" data-img="https://picsum.photos/id/1027/800/600">
-                    <img src="https://picsum.photos/id/1027/400/300" alt="Gallery image 5" loading="lazy">
+                    <img src="https://picsum.photos/id/1024/400/300" alt="Gallery image 4">
                 </div>
                 <div class="gallery-item" data-img="https://picsum.photos/id/1035/800/600">
-                    <img src="https://picsum.photos/id/1035/400/300" alt="Gallery image 6" loading="lazy">
+                    <img src="https://picsum.photos/id/1035/400/300" alt="Gallery image 5">
+                </div>
+                <div class="gallery-item" data-img="https://picsum.photos/id/1039/800/600">
+                    <img src="https://picsum.photos/id/1039/400/300" alt="Gallery image 6">
                 </div>
             </div>
         </section>
 
         <section id="map">
             <h2>Our Location</h2>
-            <div class="map-container">
-                <iframe src="https://maps.google.com/maps?q=Minneapolis+MN&output=embed" width="100%" height="300" style="border:0" allowfullscreen loading="lazy"></iframe>
-            </div>
+            <iframe src="https://maps.google.com/maps?q=Minneapolis+MN&output=embed" width="100%" height="300" style="border:0" allowfullscreen="" loading="lazy"></iframe>
         </section>
 
         <section id="social">
             <h2>Connect With Us</h2>
-            <div class="social-section">
-                <p style="color: #FFFFFF; text-align: center; margin-bottom: 1rem;">Follow us on social media for updates and news.</p>
-                <div class="social-embed">
-                    <div class="social-icon">📱</div>
-                    <div class="social-text">Find us on Instagram: <strong>@Level 11 Events</strong></div>
-                    <div style="background-color: #333366; padding: 0.75rem 1.5rem; border-radius: 6px; color: #FFFFFF; font-weight: 600;">Social Media Feed Placeholder</div>
+            <div class="social-container">
+                <div class="social-card">
+                    <h3>Facebook</h3>
+                    <div class="social-placeholder">
+                        Facebook Feed Embed Placeholder<br>
+                        Follow us for updates and news.
+                    </div>
+                </div>
+                <div class="social-card">
+                    <h3>Instagram</h3>
+                    <div class="social-placeholder">
+                        Instagram Embed Placeholder<br>
+                        Check out our latest photos.
+                    </div>
                 </div>
             </div>
         </section>
     </main>
 
     <footer id="contact">
-        <div class="footer-container">
-            <div class="footer-column">
-                <h3>Contact Info</h3>
-                <p><strong>Phone:</strong> (612) 555-0111</p>
-                <p><strong>Email:</strong> info@level11events.com</p>
-                <p><strong>Address:</strong> PO Box 44426, Eden Prairie, MN 55344</p>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-column">
+                    <h3>Contact Info</h3>
+                    <p><strong>Phone:</strong> (612) 555-0111</p>
+                    <p><strong>Email:</strong> info@level11events.com</p>
+                    <p><strong>Address:</strong> PO Box 44426, Eden Prairie, MN 55344</p>
+                </div>
+                <div class="footer-column">
+                    <h3>Quick Links</h3>
+                    <a href="#gallery">Gallery</a>
+                    <a href="#map">Location</a>
+                    <a href="#social">Social Media</a>
+                </div>
+                <div class="footer-column">
+                    <h3>Business Hours</h3>
+                    <p>Mon-Fri: 9am - 6pm</p>
+                    <p>Sat: 10am - 4pm</p>
+                    <p>Sun: Closed</p>
+                </div>
             </div>
-            <div class="footer-column">
-                <h3>Quick Links</h3>
-                <a href="#gallery">Gallery</a>
-                <a href="#map">Location</a>
-                <a href="#social">Social Media</a>
+            <div class="copyright">
+                &copy; <span id="currentYear"></span> Level 11 Events. All rights reserved.
             </div>
-            <div class="footer-column">
-                <h3>Business Hours</h3>
-                <p>Monday - Friday: 9am - 6pm</p>
-                <p>Saturday: 10am - 4pm</p>
-                <p>Sunday: Closed</p>
-            </div>
-        </div>
-        <div class="copyright">
-            &copy; <span id="currentYear"></span> Level 11 Events. All rights reserved.
         </div>
     </footer>
 
-    <div class="lightbox-overlay" id="lightbox">
+    <div class="lightbox" id="lightbox">
         <div class="lightbox-content">
-            <button class="close-lightbox" id="close-lightbox" aria-label="Close lightbox">&times;</button>
-            <img class="lightbox-img" id="lightbox-img" src="" alt="Enlarged view">
+            <button class="close-lightbox" id="closeLightboxBtn">×</button>
+            <img class="lightbox-img" id="lightboxImg" src="https://placehold.co/800x600?text=Image" alt="Enlarged view">
         </div>
     </div>
 
     <script>
-        // Mobile navigation toggle
-        const hamburger = document.getElementById('hamburger');
-        const navMenu = document.getElementById('nav-menu');
-        hamburger.addEventListener('click', () => {
-            navMenu.classList.toggle('active');
-            hamburger.setAttribute('aria-expanded', navMenu.classList.contains('active'));
-        });
-        document.querySelectorAll('nav a').forEach(link => {
-            link.addEventListener('click', () => {
-                navMenu.classList.remove('active');
-                hamburger.setAttribute('aria-expanded', false);
-            });
+        // Mobile Navigation
+        const hamburgerBtn = document.getElementById('hamburgerBtn');
+        const closeNavBtn = document.getElementById('closeNavBtn');
+        const mobileNav = document.getElementById('mobileNav');
+        const navOverlay = document.getElementById('navOverlay');
+
+        function openMobileNav() {
+            mobileNav.classList.add('active');
+            navOverlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeMobileNav() {
+            mobileNav.classList.remove('active');
+            navOverlay.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        hamburgerBtn.addEventListener('click', openMobileNav);
+        closeNavBtn.addEventListener('click', closeMobileNav);
+        navOverlay.addEventListener('click', closeMobileNav);
+
+        // Close mobile nav when clicking a link
+        document.querySelectorAll('.mobile-nav a').forEach(link => {
+            link.addEventListener('click', closeMobileNav);
         });
 
-        // Lightbox functionality
+        // Lightbox Gallery
         const lightbox = document.getElementById('lightbox');
-        const lightboxImg = document.getElementById('lightbox-img');
-        const closeLightbox = document.getElementById('close-lightbox');
+        const lightboxImg = document.getElementById('lightboxImg');
+        const closeLightboxBtn = document.getElementById('closeLightboxBtn');
         const galleryItems = document.querySelectorAll('.gallery-item');
+
         galleryItems.forEach(item => {
             item.addEventListener('click', () => {
                 const imgSrc = item.getAttribute('data-img');
                 lightboxImg.src = imgSrc;
-                lightbox.style.display = 'flex';
+                lightbox.classList.add('active');
                 document.body.style.overflow = 'hidden';
             });
         });
-        closeLightbox.addEventListener('click', () => {
-            lightbox.style.display = 'none';
-            document.body.style.overflow = 'auto';
-        });
+
+        function closeLightbox() {
+            lightbox.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        closeLightboxBtn.addEventListener('click', closeLightbox);
         lightbox.addEventListener('click', (e) => {
-            if (e.target === lightbox) {
-                lightbox.style.display = 'none';
-                document.body.style.overflow = 'auto';
-            }
+            if (e.target === lightbox) closeLightbox();
         });
+
+        // Close lightbox with Escape key
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && lightbox.style.display === 'flex') {
-                lightbox.style.display = 'none';
-                document.body.style.overflow = 'auto';
+            if (e.key === 'Escape') {
+                closeLightbox();
+                closeMobileNav();
             }
         });
 
@@ -417,11 +481,11 @@
         // Smooth scroll for anchor links
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function(e) {
-                e.preventDefault();
                 const targetId = this.getAttribute('href');
                 if (targetId === '#') return;
                 const targetElement = document.querySelector(targetId);
                 if (targetElement) {
+                    e.preventDefault();
                     window.scrollTo({
                         top: targetElement.offsetTop - 80,
                         behavior: 'smooth'

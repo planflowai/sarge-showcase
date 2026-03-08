@@ -1,5 +1,5 @@
 TEST 20 — Full Site Build (Level 11 Events)
-Started: 2026-03-08T20:03:59.180Z
+Started: 2026-03-08T22:00:06.121Z
 
 Submitting intake...
 Submit: 200 — L11-LEVEL11-002
@@ -14,31 +14,31 @@ Starting build-multipage...
   PAGE: nav-snippet.html (1373b)
   [page] Building home page...
   GUARDIAN: home — PASS
-  PAGE: index.html (31517b)
+  PAGE: index.html (32304b)
   [page] Building services page...
   [page] services: deepseek-chat Build API returned 400. Trying next model...
   GUARDIAN: services — PASS
-  PAGE: services.html (50631b)
+  PAGE: services.html (41450b)
   [page] Building photo-booths page...
-  GUARDIAN: photo-booths — PASS
-  PAGE: photo-booths.html (18851b)
+  GUARDIAN: photo-booths — FAIL
+  GUARDIAN: photo-booths — FAIL
+  PAGE: photo-booths.html (18540b)
   [page] Building gallery page...
   GUARDIAN: gallery — PASS
-  PAGE: gallery.html (18526b)
+  PAGE: gallery.html (17440b)
   [page] Building reviews page...
   GUARDIAN: reviews — PASS
-  PAGE: reviews.html (21134b)
+  PAGE: reviews.html (19715b)
   [page] Building about page...
   [page] about: qwen2.5-coder:14b Ollama returned 404: {"error":"model 'qwen2.5-coder:14b' not found"}. Trying next model...
   GUARDIAN: about — PASS
-  PAGE: about.html (19484b)
+  PAGE: about.html (25421b)
   [page] Building contact page...
   GUARDIAN: contact — PASS
-  [page] contact: qwen2.5-coder:7b too small (5009 bytes < 5120). Trying next model...
-  GUARDIAN: contact — PASS
-  PAGE: contact.html (20722b)
+  PAGE: contact.html (5433b)
+  GUARDIAN: ALL PAGES — PASS
   [pii] Injecting client data into pages...
-  [pii] PII injection complete: 57 replacements across 7 files
+  [pii] PII injection complete: 51 replacements across 7 files
   [images] Fixing broken image URLs...
   [images] Fixed 1 broken image URLs
   [visual_review] Running visual review...
@@ -46,7 +46,11 @@ Starting build-multipage...
   [visual_review] Reviewed contact.html with gemini-2.5-flash
   [visual_review] Reviewed gallery.html with gemini-2.5-flash
   [visual_review] Reviewed index.html with gemini-2.5-flash
-Pipeline error: The operation was aborted due to timeout
+  [visual_review] Reviewed photo-booths.html with gemini-2.5-flash
+  [visual_review] Reviewed reviews.html with gemini-2.5-flash
+  [visual_review] Reviewed services.html with gemini-2.5-flash
+  [deploy] Deploying to Vercel test subdomain...
+  [deploy] Deployed: [2K[1A[2K[GPreview: https://level-11-events-eeupzgvnd-sarges-projects-e39bf217.vercel.app [9s]
 
-STATUS: FAIL
-REASON: Pipeline: The operation was aborted due to timeout
+STATUS: PASS
+REASON: 7 pages built, deployed to [2K[1A[2K[GPreview: https://level-11-events-eeupzgvnd-sarges-projects-e39bf217.vercel.app [9s]
