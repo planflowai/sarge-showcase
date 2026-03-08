@@ -45,9 +45,10 @@ export const MODEL_RATES: Record<string, ModelRate> = {
   // ── xAI (updated Mar 2026) ───────────────────────────────
   "grok-3":                       { input: 3.00,  output: 15.00 },
   "grok-3-mini":                  { input: 0.30,  output: 0.50  },
-  "grok-4":                       { input: 3.00,  output: 15.00 },
-  "grok-4.1-fast":                { input: 0.20,  output: 0.50  },
-  "grok-4.20":                    { input: 2.00,  output: 6.00  },
+  "grok-4-0709":                  { input: 3.00,  output: 15.00 },
+  "grok-4-1-fast-non-reasoning":  { input: 0.20,  output: 0.50  },
+  "grok-4-1-fast-reasoning":      { input: 0.20,  output: 0.50  },
+  "grok-code-fast-1":             { input: 0.20,  output: 0.50  },
 
   // ── DeepSeek (V3, updated Mar 2026) ──────────────────────
   "deepseek-chat":                { input: 0.27,  output: 1.10  },

@@ -21,26 +21,26 @@
 
 | # | Test Name | Folder | Status | Score | Notes |
 |---|-----------|--------|--------|-------|-------|
-| 01 | Basic Page | `test-01-basic` | 🔲 PENDING | — | Nav, hero, footer. No images. Dark mode. |
-| 02 | Cards + Accordion/Tabs | `test-02-cards-tabs` | 🔲 PENDING | — | Grid layout + interactive JS. No scroll. |
-| 03 | Stock Images + Video Embed | `test-03-media` | 🔲 PENDING | — | picsum.photos only. YouTube iframe. |
-| 04 | Asset Management | `test-04-assets` | 🔲 PENDING | — | Logo upload, service images, folder structure by intake section. |
-| 05 | Forms + Newsletter | `test-05-forms` | 🔲 PENDING | — | Contact form + newsletter signup. Validation. Submission. |
-| 06 | Booking + Timer + Pricing + PDF | `test-06-conversion` | 🔲 PENDING | — | Calendar widget, countdown, pricing table, PDF download. |
-| 07 | Gallery + Maps + Social | `test-07-display` | 🔲 PENDING | — | Lightbox gallery, maps embed, social media embeds. |
-| 08 | PII Injection + Guardian | `test-08-pii` | 🔲 PENDING | — | Full placeholder → real data flow. Guardian catches and auto-fixes hallucinations. Zero placeholders remaining. |
-| 09 | Email Suite | `test-09-emails` | 🔲 PENDING | — | Welcome, build complete, PlanFlowAI branded templates. Correct recipient. Real data. No raw placeholders. |
-| 10 | Basic Chatbot + AI Chatbot + Multi-Model | `test-10-chatbot` | 🔲 PENDING | — | Static FAQ → live API → provider switching. |
-| 11 | Voice — Full Suite | `test-11-voice` | 🔲 PENDING | — | TTS output, STT input, full voice chatbot (speak in/speak back). Min 3 male + 3 female voices. |
-| 12 | AI Video + AI Music | `test-12-generative-media` | 🔲 PENDING | — | UNBLOCKED — grok-imagine-video and grok-imagine-image available natively through xAI. No external API needed. |
-| 13 | Compliance + Accessibility | `test-13-compliance` | 🔲 PENDING | — | WCAG, axe-core, keyboard nav, screen reader, disability rules, cookie consent, legal pages (privacy/terms auto-generated), no-scroll enforcement. |
-| 14 | Dark/Light Mode | `test-14-darklight` | 🔲 PENDING | — | Toggle works. Contrast correct on both modes. No grey on either. |
-| 15 | Multi-Page Site | `test-15-multipage` | 🔲 PENDING | — | 3 pages. Nav works between them. Consistent header/footer. |
-| 16 | Blog Layout | `test-16-blog` | 🔲 PENDING | — | Posts, categories, pagination. |
-| 17 | Multi-Language | `test-17-multilang` | 🔲 PENDING | — | Language switcher. At least EN + ES. |
-| 18 | Visual Review Pipeline | `test-18-visual-review` | 🔲 PENDING | — | qwen3.5:9b local (60s timeout) → Gemini fallback. Screenshots logged. Findings fixed. |
-| 19 | Billing Accuracy | `test-19-billing` | 🔲 PENDING | — | Every API call logged with provider, model, tokens, calculated cost. Dashboard shows accurate totals across all providers. |
-| 20 | Full Site Build | `test-20-full-site` | 🔲 PENDING | — | Everything combined. Use Level 11 Events intake data. Builder does ALL work. No Claude Code HTML edits. Certificate generated. Deploy. Emails. |
+| 01 | Basic Page | `test-01-basic` | ✅ PASS | 97 | Nav, hero, footer. No images. Dark mode. |
+| 02 | Cards + Accordion/Tabs | `test-02-cards-tabs` | ✅ PASS | 91 | Grid layout + interactive JS. No scroll. |
+| 03 | Stock Images + Video Embed | `test-03-media` | ❌ FAIL | — | picsum.photos only. YouTube iframe. |
+| 04 | Asset Management | `test-04-assets` | 🔧 NEEDS BUILD | — | Logo upload, service images, folder structure by intake section. |
+| 05 | Forms + Newsletter | `test-05-forms` | ❌ FAIL | — | Contact form + newsletter signup. Validation. Submission. |
+| 06 | Booking + Timer + Pricing + PDF | `test-06-conversion` | ❌ FAIL | — | Calendar widget, countdown, pricing table, PDF download. |
+| 07 | Gallery + Maps + Social | `test-07-display` | ❌ FAIL | — | Lightbox gallery, maps embed, social media embeds. |
+| 08 | PII Injection + Guardian | `test-08-pii` | ❌ FAIL | — | Full placeholder → real data flow. Guardian catches and auto-fixes hallucinations. Zero placeholders remaining. |
+| 09 | Email Suite | `test-09-emails` | ❌ FAIL | — | Welcome, build complete, PlanFlowAI branded templates. Correct recipient. Real data. No raw placeholders. |
+| 10 | Basic Chatbot + AI Chatbot + Multi-Model | `test-10-chatbot` | 🔧 NEEDS BUILD | — | Static FAQ → live API → provider switching. |
+| 11 | Voice — Full Suite | `test-11-voice` | 🔧 NEEDS BUILD | — | TTS output, STT input, full voice chatbot (speak in/speak back). Min 3 male + 3 female voices. |
+| 12 | AI Video + AI Music | `test-12-generative-media` | 🔧 NEEDS BUILD | — | UNBLOCKED — grok-imagine-video and grok-imagine-image available natively through xAI. No external API needed. |
+| 13 | Compliance + Accessibility | `test-13-compliance` | ❌ FAIL | — | WCAG, axe-core, keyboard nav, screen reader, disability rules, cookie consent, legal pages (privacy/terms auto-generated), no-scroll enforcement. |
+| 14 | Dark/Light Mode | `test-14-darklight` | ❌ FAIL | — | Toggle works. Contrast correct on both modes. No grey on either. |
+| 15 | Multi-Page Site | `test-15-multipage` | ❌ FAIL | — | 3 pages. Nav works between them. Consistent header/footer. |
+| 16 | Blog Layout | `test-16-blog` | ❌ FAIL | — | Posts, categories, pagination. |
+| 17 | Multi-Language | `test-17-multilang` | ❌ FAIL | — | Language switcher. At least EN + ES. |
+| 18 | Visual Review Pipeline | `test-18-visual-review` | ❌ FAIL | 97 | qwen3.5:9b local (60s timeout) → Gemini fallback. Screenshots logged. Findings fixed. |
+| 19 | Billing Accuracy | `test-19-billing` | ✅ PASS | 100 | Every API call logged with provider, model, tokens, calculated cost. Dashboard shows accurate totals across all providers. |
+| 20 | Full Site Build | `test-20-full-site` | ❌ FAIL | — | Everything combined. Use Level 11 Events intake data. Builder does ALL work. No Claude Code HTML edits. Certificate generated. Deploy. Emails. |
 
 **Status Key:** 🔲 PENDING &nbsp;|&nbsp; 🔄 IN PROGRESS &nbsp;|&nbsp; ✅ PASS &nbsp;|&nbsp; ❌ FAIL &nbsp;|&nbsp; 🔧 FIXING
 

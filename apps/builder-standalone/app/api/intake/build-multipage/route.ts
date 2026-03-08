@@ -41,19 +41,19 @@ const MODEL_CHAINS: Record<string, ModelOption[]> = {
     { provider: "ollama", model: "qwen2.5-coder:7b", type: "local" },
     { provider: "ollama", model: "codellama:7b", type: "local" },
     { provider: "deepseek", model: "deepseek-chat", type: "cloud" },
-    { provider: "xai", model: "grok-4.1-fast", type: "cloud" },
+    { provider: "xai", model: "grok-4-1-fast-non-reasoning", type: "cloud" },
     { provider: "google", model: "gemini-2.5-flash", type: "cloud" },
   ],
   medium: [
     { provider: "deepseek", model: "deepseek-chat", type: "cloud" },
-    { provider: "xai", model: "grok-4.1-fast", type: "cloud" },
+    { provider: "xai", model: "grok-4-1-fast-non-reasoning", type: "cloud" },
     { provider: "google", model: "gemini-2.5-flash", type: "cloud" },
     { provider: "openai", model: "gpt-4.1", type: "cloud" },
   ],
   hard: [
     { provider: "google", model: "gemini-2.5-flash", type: "cloud" },
     { provider: "openai", model: "gpt-4.1", type: "cloud" },
-    { provider: "xai", model: "grok-4.20", type: "cloud" },
+    { provider: "xai", model: "grok-4-0709", type: "cloud" },
     { provider: "anthropic", model: "claude-sonnet-4-5-20250514", type: "cloud" },
   ],
 };
