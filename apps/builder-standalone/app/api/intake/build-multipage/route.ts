@@ -11,7 +11,6 @@ import {
   guardianCheck,
   checkNavConsistency,
   formatGuardianFindings,
-  pickModelForDifficulty,
   MIN_PAGE_SIZE,
   type BuildPageResult,
   type GuardianFinding,
@@ -19,10 +18,85 @@ import {
 import { injectPII, countPlaceholders, type PIIData } from "@sarge/builder/lib/piiInjector";
 import * as fs from "fs";
 import * as path from "path";
+import { execSync } from "child_process";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const PROJECTS_DIR = process.env.PROJECTS_DIR || "L:/ai_builder/projects";
+const OLLAMA_URL = "http://127.0.0.1:11434";
+
+// ── FIX 2: Auto-Router Config Array ─────────────────────────────────────────
+// Model chain per difficulty tier — tried in order, first available wins.
+// Per BUILDER_RULES.md: local first, cheap cloud second, mid-tier third, expensive last.
+
+interface ModelOption {
+  provider: string;
+  model: string;
+  type: "local" | "cloud";
+}
+
+const MODEL_CHAINS: Record<string, ModelOption[]> = {
+  easy: [
+    { provider: "ollama", model: "qwen2.5-coder:14b", type: "local" },
+    { provider: "ollama", model: "qwen2.5-coder:7b", type: "local" },
+    { provider: "ollama", model: "codellama:7b", type: "local" },
+    { provider: "deepseek", model: "deepseek-chat", type: "cloud" },
+    { provider: "xai", model: "grok-4.1-fast", type: "cloud" },
+    { provider: "google", model: "gemini-2.5-flash", type: "cloud" },
+  ],
+  medium: [
+    { provider: "deepseek", model: "deepseek-chat", type: "cloud" },
+    { provider: "xai", model: "grok-4.1-fast", type: "cloud" },
+    { provider: "google", model: "gemini-2.5-flash", type: "cloud" },
+    { provider: "openai", model: "gpt-4.1", type: "cloud" },
+  ],
+  hard: [
+    { provider: "google", model: "gemini-2.5-flash", type: "cloud" },
+    { provider: "openai", model: "gpt-4.1", type: "cloud" },
+    { provider: "xai", model: "grok-4.20", type: "cloud" },
+    { provider: "anthropic", model: "claude-sonnet-4-5-20250514", type: "cloud" },
+  ],
+};
+
+/** Check which local Ollama models are available */
+async function getAvailableOllamaModels(): Promise<string[]> {
+  try {
+    const res = await fetch(`${OLLAMA_URL}/api/tags`, { signal: AbortSignal.timeout(5000) });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.models || []).map((m: any) => m.name as string);
+  } catch {
+    return [];
+  }
+}
+
+/** Pick the first available model from the chain for a difficulty tier */
+async function routeModel(
+  difficulty: "easy" | "medium" | "hard",
+  ollamaModels: string[],
+  failedModels: Set<string>,
+): Promise<{ provider: string; model: string; reason: string }> {
+  const chain = MODEL_CHAINS[difficulty] || MODEL_CHAINS.medium;
+
+  for (const option of chain) {
+    const key = `${option.provider}:${option.model}`;
+    if (failedModels.has(key)) continue;
+
+    if (option.type === "local") {
+      // Check if this local model is actually available in Ollama
+      if (ollamaModels.some((m) => m === option.model || m.startsWith(option.model.split(":")[0]))) {
+        return { provider: option.provider, model: option.model, reason: `${difficulty} tier — local first (${option.model})` };
+      }
+      continue; // Local model not available, try next
+    }
+
+    // Cloud model — always considered available
+    return { provider: option.provider, model: option.model, reason: `${difficulty} tier — ${option.model}` };
+  }
+
+  // Fallback: Gemini Flash (should never reach here)
+  return { provider: "google", model: "gemini-2.5-flash", reason: `${difficulty} tier — ultimate fallback` };
+}
 
 /**
  * Multi-page build pipeline — streams progress events as NDJSON.
@@ -90,6 +164,19 @@ export async function POST(req: NextRequest) {
           projectDir,
         });
 
+        // ── FIX 2: Check Ollama availability at pipeline start ──────────
+        send({ event: "progress", phase: "router", message: "Checking available models..." });
+        const ollamaModels = await getAvailableOllamaModels();
+        const ollamaAvailable = ollamaModels.length > 0;
+        send({
+          event: "progress",
+          phase: "router",
+          message: ollamaAvailable
+            ? `Ollama online — ${ollamaModels.length} local models available: ${ollamaModels.slice(0, 5).join(", ")}${ollamaModels.length > 5 ? "..." : ""}`
+            : "Ollama offline — using cloud models only",
+          ollamaModels: ollamaAvailable ? ollamaModels : [],
+        });
+
         // Step 1: Generate shared CSS
         send({ event: "progress", phase: "styles", message: "Generating shared styles..." });
         const sharedCss = generateSharedCss(flat);
@@ -101,13 +188,11 @@ export async function POST(req: NextRequest) {
         const navSnippet = generateNavSnippet(pages);
         send({ event: "page_complete", phase: "nav", filename: "nav-snippet.html", size: navSnippet.length });
 
-        // Retry escalation: if a page fails or is too small, retry with next tier
-        const ESCALATION: Record<string, "medium" | "hard"> = { easy: "medium", medium: "hard" };
-
-        // Step 3: Build each page
+        // Step 3: Build each page with auto-router retry chain
         const results: BuildPageResult[] = [];
         const guardianLog: Array<{ filename: string; findings: GuardianFinding[] }> = [];
         const total = pages.length;
+        const failedModels = new Set<string>(); // Track models that failed across pages
 
         for (let i = 0; i < pages.length; i++) {
           const pageName = pages[i];
@@ -115,13 +200,13 @@ export async function POST(req: NextRequest) {
           const filename = pageKey === "home" ? "index.html" : `${pageKey}.html`;
           const difficulty = (PAGE_DIFFICULTY[pageKey] || "medium") as "easy" | "medium" | "hard";
 
-          // Pick model
+          // Pick model — user override or auto-router
           let provider = overrideProvider || "";
           let model = overrideModel || "";
           let reason = "User override";
 
           if (!provider || !model) {
-            const pick = pickModelForDifficulty(difficulty);
+            const pick = await routeModel(difficulty, ollamaModels, failedModels);
             provider = pick.provider;
             model = pick.model;
             reason = pick.reason;
@@ -140,79 +225,84 @@ export async function POST(req: NextRequest) {
             reason,
           });
 
-          const result = await buildOnePage(
+          // Build with retry chain — if model fails or page too small, try next in chain
+          let result = await buildOnePage(
             rawFormData, pageName, pageKey, filename, difficulty,
             provider, model, reason, sharedCss, navSnippet, send,
           );
 
-          // Check size threshold — retry with escalated model if too small
-          if (result.status === "complete" && result.html.length < MIN_PAGE_SIZE && ESCALATION[difficulty as string]) {
-            const nextTier = ESCALATION[difficulty as string];
-            const escalated = pickModelForDifficulty(nextTier);
+          // Retry loop: if failed or too small, try next model in chain
+          let attempts = 1;
+          const maxAttempts = 3;
+          while (
+            attempts < maxAttempts &&
+            (result.status === "failed" || result.html.length < MIN_PAGE_SIZE)
+          ) {
+            const prevKey = `${provider}:${model}`;
+            failedModels.add(prevKey);
+            const failReason = result.html.length < MIN_PAGE_SIZE && result.status !== "failed"
+              ? `too small (${result.html.length} bytes < ${MIN_PAGE_SIZE})`
+              : result.error || "failed";
+
             send({
               event: "progress",
               phase: "page",
-              message: `${pageName} too small (${result.html.length} bytes < ${MIN_PAGE_SIZE}). Retrying with ${escalated.model}...`,
+              message: `${pageName}: ${model} ${failReason}. Trying next model...`,
               index: i + 1,
               total,
               page: pageName,
-              difficulty: nextTier,
-              model: escalated.model,
-              provider: escalated.provider,
-              reason: `Retry — original ${result.html.length} bytes < ${MIN_PAGE_SIZE} threshold`,
+              attempt: attempts + 1,
             });
 
-            const retry = await buildOnePage(
-              rawFormData, pageName, pageKey, filename, nextTier,
-              escalated.provider, escalated.model, `Retry escalation from ${difficulty} to ${nextTier}`,
-              sharedCss, navSnippet, send,
+            // Escalate difficulty for retry to get a better model
+            const retryDifficulty = attempts === 1
+              ? (difficulty === "easy" ? "medium" : "hard")
+              : "hard";
+            const next = await routeModel(retryDifficulty as "easy" | "medium" | "hard", ollamaModels, failedModels);
+            provider = next.provider;
+            model = next.model;
+            reason = `Retry #${attempts} — ${next.reason}`;
+
+            result = await buildOnePage(
+              rawFormData, pageName, pageKey, filename, retryDifficulty as "easy" | "medium" | "hard",
+              provider, model, reason, sharedCss, navSnippet, send,
             );
-            const retryGuard = guardianCheck(retry.html, pageName, projectName, pages);
-            retry.html = retryGuard.html; // use cleaned HTML
-            retry.status = retry.html.length >= MIN_PAGE_SIZE && retryGuard.pass ? "complete" : "failed";
-            if (retry.status === "failed") {
-              retry.error = retry.html.length < MIN_PAGE_SIZE
-                ? `Page too small after retry (${retry.html.length} bytes)`
-                : `Guardian check failed after retry: ${retryGuard.issues.join(", ")}`;
-            }
-            if (retryGuard.findings.length > 0) {
-              guardianLog.push({ filename, findings: retryGuard.findings });
-            }
-            results.push(retry);
-          } else if (result.status === "complete" && result.html.length < MIN_PAGE_SIZE) {
-            // Already at hard tier, can't escalate — mark failed
-            result.status = "failed";
-            result.error = `Page too small (${result.html.length} bytes < ${MIN_PAGE_SIZE} threshold)`;
-            results.push(result);
-          } else {
-            // Run enhanced guardian — structural check + hallucination scan + auto-replace
-            if (result.status === "complete") {
-              const guard = guardianCheck(result.html, pageName, projectName, pages);
-              result.html = guard.html; // use cleaned HTML with auto-replacements
-              if (!guard.pass) {
-                result.status = "failed";
-                result.error = `Guardian failed: ${guard.issues.join(", ")}`;
-              }
-              if (guard.findings.length > 0) {
-                guardianLog.push({ filename, findings: guard.findings });
-                send({
-                  event: "guardian",
-                  page: pageName,
-                  pass: guard.pass,
-                  issues: guard.issues,
-                  findings: guard.findings.map((f) => `${f.type}: ${f.message} [${f.action}]`),
-                  navOk: guard.navOk,
-                  size: result.html.length,
-                });
-              }
-            }
-            results.push(result);
+            attempts++;
           }
 
-          // Save to disk (even partial pages — overwrite previous attempts)
-          const final = results[results.length - 1];
-          if (final.html.length > 0) {
-            fs.writeFileSync(path.join(projectDir, filename), final.html);
+          // Final size check
+          if (result.status !== "failed" && result.html.length < MIN_PAGE_SIZE) {
+            result.status = "failed";
+            result.error = `Page too small after ${attempts} attempts (${result.html.length} bytes < ${MIN_PAGE_SIZE})`;
+          }
+
+          // Run guardian on successful builds
+          if (result.status === "complete") {
+            const guard = guardianCheck(result.html, pageName, projectName, pages);
+            result.html = guard.html;
+            if (!guard.pass) {
+              result.status = "failed";
+              result.error = `Guardian failed: ${guard.issues.join(", ")}`;
+            }
+            if (guard.findings.length > 0) {
+              guardianLog.push({ filename, findings: guard.findings });
+              send({
+                event: "guardian",
+                page: pageName,
+                pass: guard.pass,
+                issues: guard.issues,
+                findings: guard.findings.map((f) => `${f.type}: ${f.message} [${f.action}]`),
+                navOk: guard.navOk,
+                size: result.html.length,
+              });
+            }
+          }
+
+          results.push(result);
+
+          // Save to disk
+          if (result.html.length > 0) {
+            fs.writeFileSync(path.join(projectDir, filename), result.html);
           }
 
           send({
@@ -220,15 +310,15 @@ export async function POST(req: NextRequest) {
             phase: "page",
             page: pageName,
             filename,
-            difficulty: final.difficulty,
-            model: final.model,
-            provider: final.provider,
+            difficulty: result.difficulty,
+            model: result.model,
+            provider: result.provider,
             reason,
-            tokens: final.tokens,
-            durationMs: final.durationMs,
-            size: final.html.length,
-            guardianPass: final.status === "complete",
-            status: final.status,
+            tokens: result.tokens,
+            durationMs: result.durationMs,
+            size: result.html.length,
+            guardianPass: result.status === "complete",
+            status: result.status,
             index: i + 1,
             total,
           });
@@ -287,17 +377,20 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        // Step 6: PII Injection — replace all {{placeholder}} tokens with real client data
+        // ── FIX 1: PII Injection with correct field mapping ─────────────
         send({ event: "progress", phase: "pii", message: "Injecting client data into pages..." });
+
+        // Parse location into city/state (e.g. "Eden Prairie, MN" → city="Eden Prairie", state="MN")
+        const locationParts = (flat.location || "").split(",").map((s: string) => s.trim());
 
         const piiData: PIIData = {
           name: flat.business_name || projectName,
-          phone: flat.phone || flat.step6_contact?.phone || "",
-          email: flat.email || flat.step6_contact?.email || "",
-          address: flat.address || flat.step6_contact?.address || "",
-          city: flat.city || flat.step6_contact?.city || "",
-          state: flat.state || flat.step6_contact?.state || "",
-          clientName: flat.client_name || flat.contact_name || flat.owner_name || "",
+          phone: flat.phone || flat.business_phone || "",
+          email: flat.email || flat.business_email || "",
+          address: flat.business_address || flat.address || "",
+          city: locationParts[0] || flat.city || "",
+          state: locationParts[1] || flat.state || "",
+          clientName: flat.full_name || flat.client_name || flat.contact_name || "",
         };
 
         const htmlFiles = fs.readdirSync(projectDir).filter((f: string) => f.endsWith(".html"));
@@ -327,6 +420,7 @@ export async function POST(req: NextRequest) {
         logLines.push("");
         logLines.push("## PII Injection");
         logLines.push(`Total replacements: ${totalReplacements} across ${htmlFiles.length} files`);
+        logLines.push(`PII data: name="${piiData.name}", phone="${piiData.phone}", email="${piiData.email}", address="${piiData.address}", city="${piiData.city}", state="${piiData.state}", clientName="${piiData.clientName}"`);
         for (const line of piiLog) logLines.push(line);
         logLines.push("");
 
@@ -338,7 +432,7 @@ export async function POST(req: NextRequest) {
           piiLog,
         });
 
-        // Step 7: Post-build image URL fix — replace deprecated source.unsplash.com URLs
+        // Step 7: Post-build image URL fix
         send({ event: "progress", phase: "images", message: "Fixing broken image URLs..." });
         let totalImageFixes = 0;
 
@@ -347,17 +441,14 @@ export async function POST(req: NextRequest) {
           let html = fs.readFileSync(filePath, "utf-8");
           let fixes = 0;
 
-          // Replace source.unsplash.com URLs with picsum.photos
           html = html.replace(
             /https?:\/\/source\.unsplash\.com\/(?:random\/)?(\d+)x(\d+)\/?[^"'\s)>]*/g,
             (_match, w, h) => { fixes++; return `https://picsum.photos/${w}/${h}`; },
           );
-          // Handle source.unsplash.com without dimensions
           html = html.replace(
             /https?:\/\/source\.unsplash\.com\/[^"'\s)>]*/g,
             () => { fixes++; return `https://picsum.photos/800/600`; },
           );
-          // Fix empty src attributes
           html = html.replace(
             /<img([^>]*)\ssrc\s*=\s*["']\s*["']/g,
             (_match, attrs) => { fixes++; return `<img${attrs} src="https://picsum.photos/800/600"`; },
@@ -403,17 +494,101 @@ export async function POST(req: NextRequest) {
           }
         }
 
+        // ── FIX 5: Visual Review (inline, not subprocess) ───────────────
+        send({ event: "progress", phase: "visual_review", message: "Running visual review..." });
+        const visualLog: string[] = [];
+        try {
+          const reviewResults = await runVisualReview(projectDir, htmlFiles, send);
+          for (const vr of reviewResults) {
+            visualLog.push(`### ${vr.file}`);
+            visualLog.push(`Model: ${vr.model} | Provider: ${vr.provider}`);
+            if (vr.findings) visualLog.push(vr.findings);
+            visualLog.push("");
+          }
+          logLines.push("---");
+          logLines.push("");
+          logLines.push("## Visual Review");
+          logLines.push(`Reviewed ${reviewResults.length} pages`);
+          for (const line of visualLog) logLines.push(line);
+        } catch (vrErr: unknown) {
+          const msg = vrErr instanceof Error ? vrErr.message : String(vrErr);
+          logLines.push("## Visual Review");
+          logLines.push(`Visual review failed: ${msg}`);
+          logLines.push("");
+          send({ event: "progress", phase: "visual_review", message: `Visual review failed: ${msg}` });
+        }
+
+        // ── FIX 3: Deploy to Vercel ─────────────────────────────────────
+        send({ event: "progress", phase: "deploy", message: "Deploying to Vercel test subdomain..." });
+        let deployUrl = "";
+        try {
+          deployUrl = await deployToVercel(projectDir, projectSlug, send);
+          logLines.push("---");
+          logLines.push("");
+          logLines.push("## Deployment");
+          logLines.push(`Deploy URL: ${deployUrl}`);
+          logLines.push("");
+
+          // Update Supabase with deploy URL
+          await supabase
+            .from("client_intake")
+            .update({ deploy_url: deployUrl })
+            .eq("ref_code", refCode)
+            .then(() => {});
+        } catch (deployErr: unknown) {
+          const msg = deployErr instanceof Error ? deployErr.message : String(deployErr);
+          logLines.push("---");
+          logLines.push("");
+          logLines.push("## Deployment");
+          logLines.push(`Deploy failed: ${msg}`);
+          logLines.push("");
+          send({ event: "progress", phase: "deploy", message: `Deploy failed: ${msg}` });
+        }
+
+        // Write BUILD_LOG.md
         const buildLog = logLines.join("\n");
         fs.writeFileSync(path.join(projectDir, "BUILD_LOG.md"), buildLog);
         send({ event: "build_log", content: buildLog, projectDir });
 
-        // Update Supabase status — only mark "built" if all pages pass
+        // Update Supabase status
         const allPassed = passed.length === results.length;
         await supabase
           .from("client_intake")
           .update({ status: allPassed ? "built" : "partial" })
           .eq("ref_code", refCode)
           .then(() => {});
+
+        // ── FIX 4: Send site_live email if deploy succeeded ─────────────
+        if (deployUrl && allPassed) {
+          send({ event: "progress", phase: "email", message: "Sending build complete email..." });
+          try {
+            const clientEmail = flat.email || flat.business_email || intake.client_email || "";
+            if (clientEmail) {
+              await fetch(`${baseUrl}/api/email/send`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  to: clientEmail,
+                  template: "site_live",
+                  data: {
+                    business_name: projectName,
+                    project_name: projectName,
+                    client_name: piiData.clientName || "there",
+                    live_urls: deployUrl,
+                    ref_code: refCode,
+                  },
+                }),
+              });
+              send({ event: "progress", phase: "email", message: `Build complete email sent to ${clientEmail}` });
+              logLines.push("## Email");
+              logLines.push(`site_live email sent to ${clientEmail}`);
+              logLines.push("");
+            }
+          } catch (emailErr: unknown) {
+            const msg = emailErr instanceof Error ? emailErr.message : String(emailErr);
+            send({ event: "progress", phase: "email", message: `Email failed: ${msg}` });
+          }
+        }
 
         send({
           event: "done",
@@ -424,6 +599,7 @@ export async function POST(req: NextRequest) {
           pagesFailed: failed.length,
           totalPages: results.length,
           allPassed,
+          deployUrl,
         });
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
@@ -441,6 +617,139 @@ export async function POST(req: NextRequest) {
       Connection: "keep-alive",
     },
   });
+}
+
+// ── FIX 3: Vercel Deploy ─────────────────────────────────────────────────────
+
+async function deployToVercel(
+  projectDir: string,
+  projectSlug: string,
+  send: (data: any) => void,
+): Promise<string> {
+  // Deploy using Vercel CLI — production=false for test subdomain
+  const vercelToken = process.env.VERCEL_TOKEN || "";
+  const tokenFlag = vercelToken ? `--token ${vercelToken}` : "";
+
+  try {
+    const output = execSync(
+      `vercel deploy ${tokenFlag} --yes --name "${projectSlug}" 2>&1`,
+      {
+        cwd: projectDir,
+        timeout: 120000,
+        encoding: "utf-8",
+        env: { ...process.env, VERCEL_ORG_ID: process.env.VERCEL_ORG_ID || "", VERCEL_PROJECT_ID: process.env.VERCEL_PROJECT_ID || "" },
+      },
+    );
+
+    // Extract URL from output (last line that looks like a URL)
+    const lines = output.trim().split("\n");
+    const urlLine = lines.reverse().find((l) => l.includes("https://"));
+    const deployUrl = urlLine?.trim() || "";
+
+    if (deployUrl) {
+      send({ event: "progress", phase: "deploy", message: `Deployed: ${deployUrl}` });
+      return deployUrl;
+    }
+
+    throw new Error(`No deploy URL in output: ${output.slice(0, 500)}`);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    // If Vercel CLI fails, try a simpler approach
+    throw new Error(`Vercel deploy failed: ${msg.slice(0, 300)}`);
+  }
+}
+
+// ── FIX 5: Visual Review (inline API call to Ollama/Gemini) ──────────────────
+
+interface VisualReviewResult {
+  file: string;
+  model: string;
+  provider: string;
+  findings: string;
+}
+
+async function runVisualReview(
+  projectDir: string,
+  htmlFiles: string[],
+  send: (data: any) => void,
+): Promise<VisualReviewResult[]> {
+  const results: VisualReviewResult[] = [];
+  const VISION_PROMPT = `You are a professional web designer. Review this HTML page for visual issues: broken layouts, overlapping text, text showing one word per line, broken columns, missing images, inconsistent spacing, excessive whitespace, unreadable text, broken alignment. Be specific and concise. List issues as bullet points. If it looks good, say "No visual issues found."`;
+
+  for (const htmlFile of htmlFiles) {
+    const filePath = path.join(projectDir, htmlFile);
+    const html = fs.readFileSync(filePath, "utf-8");
+    // Send HTML content to a text-based review (not vision — no screenshots in server context)
+    // Try Ollama qwen3.5:9b first, then Gemini fallback
+    let findings = "";
+    let model = "";
+    let provider = "";
+
+    // Try Ollama qwen3.5:9b
+    try {
+      const ollamaRes = await fetch(`${OLLAMA_URL}/api/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "qwen3.5:9b",
+          prompt: `${VISION_PROMPT}\n\nHTML to review:\n${html.slice(0, 12000)}`,
+          stream: false,
+          options: { num_predict: 1024 },
+        }),
+        signal: AbortSignal.timeout(60000),
+      });
+      if (ollamaRes.ok) {
+        const data = await ollamaRes.json();
+        findings = data.response || "";
+        model = "qwen3.5:9b";
+        provider = "ollama";
+      } else {
+        throw new Error(`Ollama ${ollamaRes.status}`);
+      }
+    } catch {
+      // Fallback to Gemini
+      const geminiKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY || "";
+      if (geminiKey) {
+        try {
+          const gemRes = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                contents: [{ parts: [{ text: `${VISION_PROMPT}\n\nHTML to review:\n${html.slice(0, 12000)}` }] }],
+                generationConfig: { maxOutputTokens: 1024 },
+              }),
+              signal: AbortSignal.timeout(30000),
+            },
+          );
+          if (gemRes.ok) {
+            const data = await gemRes.json();
+            findings = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+            model = "gemini-2.5-flash";
+            provider = "google";
+          }
+        } catch { /* fallback also failed */ }
+      }
+    }
+
+    if (!findings) {
+      findings = "Visual review unavailable (no model responded)";
+      model = "none";
+      provider = "none";
+    }
+
+    results.push({ file: htmlFile, model, provider, findings });
+    send({
+      event: "progress",
+      phase: "visual_review",
+      message: `Reviewed ${htmlFile} with ${model}`,
+      file: htmlFile,
+      findings: findings.slice(0, 500),
+    });
+  }
+
+  return results;
 }
 
 /**
@@ -464,16 +773,20 @@ async function buildOnePage(
   try {
     const pagePrompt = intakeToPagePrompt(rawFormData, pageName, sharedCss, navSnippet);
 
-    const buildRes = await fetch(
-      `http://localhost:${process.env.PORT || 3101}/api/test/stream`,
-      {
+    // For Ollama models, call Ollama directly instead of going through /api/test/stream
+    const isOllama = provider === "ollama";
+    let html = "";
+    let tokenInput = 0;
+    let tokenOutput = 0;
+
+    if (isOllama) {
+      // Direct Ollama call
+      const ollamaRes = await fetch(`${OLLAMA_URL}/api/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          provider,
           model,
-          prompt: pagePrompt,
-          systemPrompt: `You are a web developer building the "${pageName}" page for a client website.
+          system: `You are a web developer building the "${pageName}" page for a client website.
 
 OUTPUT RULES:
 - Output ONLY the complete HTML file — no explanations, no markdown fences.
@@ -486,41 +799,78 @@ OUTPUT RULES:
 - Each page must fit in 2-3 viewport heights max at 1920x1080 (under 4000px total height). Do NOT create infinitely scrolling pages.
 - Use tabs, accordions, expandable sections instead of stacking everything vertically. Content-heavy sections should be collapsible.
 - Do NOT use source.unsplash.com URLs — this service is deprecated and returns 404. For stock images, use https://picsum.photos/{width}/{height} (e.g. https://picsum.photos/800/600). Do NOT leave any img src empty.`,
-          source: "multipage-builder",
-          maxOutputTokens: 16384,
+          prompt: pagePrompt,
+          stream: false,
+          options: { num_predict: 16384, temperature: 0.7 },
         }),
-        signal: AbortSignal.timeout(180000),
-      },
-    );
+        signal: AbortSignal.timeout(120000), // 2 min for local models
+      });
 
-    if (!buildRes.ok || !buildRes.body) {
-      throw new Error(`Build API returned ${buildRes.status}`);
-    }
+      if (!ollamaRes.ok) {
+        throw new Error(`Ollama returned ${ollamaRes.status}: ${await ollamaRes.text()}`);
+      }
 
-    let html = "";
-    let tokenInput = 0;
-    let tokenOutput = 0;
-    const reader = buildRes.body.getReader();
-    const decoder = new TextDecoder();
+      const ollamaData = await ollamaRes.json();
+      html = ollamaData.response || "";
+      tokenInput = ollamaData.prompt_eval_count || 0;
+      tokenOutput = ollamaData.eval_count || 0;
+    } else {
+      // Cloud model — use /api/test/stream
+      const buildRes = await fetch(
+        `http://localhost:${process.env.PORT || 3101}/api/test/stream`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            provider,
+            model,
+            prompt: pagePrompt,
+            systemPrompt: `You are a web developer building the "${pageName}" page for a client website.
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      const chunk = decoder.decode(value, { stream: true });
-      for (const line of chunk.split("\n")) {
-        if (!line.trim()) continue;
-        try {
-          const data = JSON.parse(line);
-          if (data.token) html += data.token;
-          if (data.content) html += data.content;
-          if (data.message?.content) html += data.message.content;
-          if (data.usage) {
-            tokenInput = data.usage.input_tokens || data.usage.prompt_tokens || 0;
-            tokenOutput = data.usage.output_tokens || data.usage.completion_tokens || 0;
+OUTPUT RULES:
+- Output ONLY the complete HTML file — no explanations, no markdown fences.
+- Start with <!DOCTYPE html> and end with </html>.
+- Include ALL CSS in <style> tags and ALL JavaScript in <script> tags.
+- The page MUST be fully self-contained, responsive, and production-quality.
+- Use the shared navigation HTML provided in the prompt — include it exactly as given.
+- The page must be substantial — at least 200 lines of HTML with real content sections.
+- Use PII placeholders: {{BUSINESS_NAME}}, {{phone}}, {{email}}, {{address}}, {{city}}, {{state}}, {{client_name}}.
+- Each page must fit in 2-3 viewport heights max at 1920x1080 (under 4000px total height). Do NOT create infinitely scrolling pages.
+- Use tabs, accordions, expandable sections instead of stacking everything vertically. Content-heavy sections should be collapsible.
+- Do NOT use source.unsplash.com URLs — this service is deprecated and returns 404. For stock images, use https://picsum.photos/{width}/{height} (e.g. https://picsum.photos/800/600). Do NOT leave any img src empty.`,
+            source: "multipage-builder",
+            maxOutputTokens: 16384,
+          }),
+          signal: AbortSignal.timeout(180000),
+        },
+      );
+
+      if (!buildRes.ok || !buildRes.body) {
+        throw new Error(`Build API returned ${buildRes.status}`);
+      }
+
+      const reader = buildRes.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        for (const line of chunk.split("\n")) {
+          if (!line.trim()) continue;
+          try {
+            const data = JSON.parse(line);
+            if (data.token) html += data.token;
+            if (data.content) html += data.content;
+            if (data.message?.content) html += data.message.content;
+            if (data.usage) {
+              tokenInput = data.usage.input_tokens || data.usage.prompt_tokens || 0;
+              tokenOutput = data.usage.output_tokens || data.usage.completion_tokens || 0;
+            }
+            if (data.full_content) html = data.full_content;
+          } catch {
+            // Skip unparseable lines
           }
-          if (data.full_content) html = data.full_content;
-        } catch {
-          // Skip unparseable lines
         }
       }
     }
@@ -528,7 +878,7 @@ OUTPUT RULES:
     const durationMs = Date.now() - startTime;
     html = extractHtml(html);
 
-    // Quick structural check (hallucination scan happens in the route after buildOnePage)
+    // Quick structural check
     const guard = guardianCheck(html, pageName);
     send({
       event: "guardian",
