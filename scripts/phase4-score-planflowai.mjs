@@ -11,7 +11,7 @@ import { join } from "path";
 
 const BASE = "http://localhost:3101";
 const PROJECT_DIR = "L:/ai_builder/projects/planflowai";
-const GEMINI_API_KEY = "process.env.GOOGLE_API_KEY";
+const GEMINI_API_KEY = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY || "";
 
 const MAX_PASSES = 3;
 const TARGET_SCORE = 95;
