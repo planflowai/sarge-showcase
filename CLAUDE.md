@@ -5,6 +5,7 @@ IF YOU ARE NOT IN THIS FOLDER, STOP IMMEDIATELY AND TELL THE USER.
 
 ## CRITICAL RULES
 
+0. **ALWAYS read `BUILDER_RULES.md` before starting any task. These rules override any prompt instructions that conflict with them.**
 1. ONLY modify files in `L:\ai_builder\ai_builderv2`
 2. Do NOT break existing SARGE features (Chat, Debate Arena, Settings, etc.)
 3. Ask before modifying more than 3 existing files. New Builder files don't count.
