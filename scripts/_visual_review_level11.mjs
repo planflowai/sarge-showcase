@@ -5,6 +5,16 @@
 import puppeteer from "puppeteer";
 import { readFileSync, writeFileSync, existsSync } from "fs";
 import { join, basename } from "path";
+import { config } from "dotenv";
+
+// Load .env.local from project root (handles PM2/subprocess env var inheritance)
+const ROOT_DIR = join(import.meta.dirname || ".", "..");
+for (const envFile of [".env.local", ".env"]) {
+  const envPath = join(ROOT_DIR, envFile);
+  if (existsSync(envPath)) {
+    config({ path: envPath });
+  }
+}
 
 const PROJECT_DIR = "L:/ai_builder/projects/level-11-events";
 const OLLAMA_URL = "http://127.0.0.1:11434";

@@ -341,22 +341,29 @@ export function guardianCheck(
     }
   }
 
-  // Second pass — any remaining phone-like patterns (flag, don't auto-replace)
+  // Second pass — any remaining phone-like patterns — auto-replace with {{phone}}
   ANY_PHONE_RE.lastIndex = 0;
   let phoneMatch;
+  const phonesSeen = new Set<string>();
   while ((phoneMatch = ANY_PHONE_RE.exec(cleaned)) !== null) {
     const raw = phoneMatch[0];
     // Skip if inside a placeholder, tel: href already handled, or HTML entity
-    if (raw.includes("{{") || raw.includes("phone_tel")) continue;
+    if (raw.includes("{{") || raw.includes("phone_tel") || phonesSeen.has(raw)) continue;
     // Skip if it's inside a CSS value, year range, or dimension
     const before = cleaned.substring(Math.max(0, phoneMatch.index - 30), phoneMatch.index);
     if (before.includes("width:") || before.includes("height:") || before.includes("font-size") ||
         before.includes("rgba(") || before.includes("hsl(") || before.includes("#")) continue;
+    phonesSeen.add(raw);
+    cleaned = cleaned.split(`tel:${raw}`).join("tel:{{phone_tel}}");
+    cleaned = cleaned.split(`tel:+${raw}`).join("tel:{{phone_tel}}");
+    cleaned = cleaned.split(raw).join("{{phone}}");
     findings.push({
       type: "HALLUCINATION",
-      message: `Found suspicious phone pattern "${raw}" — verify if real`,
-      action: "flagged",
+      message: `HALLUCINATION FIXED: replaced phone "${raw}" with {{phone}}`,
+      action: "auto-replaced",
     });
+    // Reset regex index since we modified the string
+    ANY_PHONE_RE.lastIndex = 0;
   }
 
   // ── HALLUCINATION: EMAIL ADDRESSES ────────────────────────────────
@@ -377,22 +384,27 @@ export function guardianCheck(
     }
   }
 
-  // Broader email scan — flag unknown emails (not in allowed domains)
+  // Broader email scan — auto-replace unknown emails with {{email}}
   ANY_EMAIL_RE.lastIndex = 0;
   let emailMatch;
+  const emailsSeen = new Set<string>();
   while ((emailMatch = ANY_EMAIL_RE.exec(cleaned)) !== null) {
     const raw = emailMatch[0];
-    if (raw.includes("{{")) continue;
+    if (raw.includes("{{") || emailsSeen.has(raw)) continue;
     const domain = raw.split("@")[1]?.toLowerCase() || "";
     // Skip allowed domains
     if (ALLOWED_EMAIL_DOMAINS.some((d) => domain === d || domain.endsWith("." + d))) continue;
     // Skip if it's a known real client email (from businessName slug)
     if (businessName && raw.toLowerCase().includes(businessName.toLowerCase().replace(/\s+/g, ""))) continue;
+    emailsSeen.add(raw);
+    cleaned = cleaned.split(`mailto:${raw}`).join("mailto:{{email}}");
+    cleaned = cleaned.split(raw).join("{{email}}");
     findings.push({
       type: "HALLUCINATION",
-      message: `Found unrecognized email "${raw}" — verify if real or replace with {{email}}`,
-      action: "flagged",
+      message: `HALLUCINATION FIXED: replaced email "${raw}" with {{email}}`,
+      action: "auto-replaced",
     });
+    ANY_EMAIL_RE.lastIndex = 0;
   }
 
   // ── HALLUCINATION: STREET ADDRESSES ───────────────────────────────
@@ -400,17 +412,21 @@ export function guardianCheck(
   for (const pattern of FAKE_ADDRESS_PATTERNS) {
     pattern.lastIndex = 0;
     let match;
+    const addrSeen = new Set<string>();
     while ((match = pattern.exec(cleaned)) !== null) {
       const raw = match[0];
-      if (raw.includes("{{")) continue;
+      if (raw.includes("{{") || addrSeen.has(raw)) continue;
       // Skip if inside a CSS rule or script
       const context = cleaned.substring(Math.max(0, match.index - 50), match.index);
       if (context.includes("{") && !context.includes(">")) continue;
+      addrSeen.add(raw);
+      cleaned = cleaned.split(raw).join("{{address}}");
       findings.push({
         type: "HALLUCINATION",
-        message: `Found suspicious address "${raw}" (expected {{address}})`,
-        action: "flagged",
+        message: `HALLUCINATION FIXED: replaced address "${raw}" with {{address}}`,
+        action: "auto-replaced",
       });
+      pattern.lastIndex = 0;
     }
   }
 

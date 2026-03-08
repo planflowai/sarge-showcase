@@ -11,10 +11,20 @@
 import puppeteer from "puppeteer";
 import { readFileSync, writeFileSync, existsSync } from "fs";
 import { join, basename } from "path";
+import { config } from "dotenv";
+
+// Load .env.local from project root (handles PM2/subprocess env var inheritance)
+const ROOT_DIR = join(import.meta.dirname || ".", "..");
+for (const envFile of [".env.local", ".env"]) {
+  const envPath = join(ROOT_DIR, envFile);
+  if (existsSync(envPath)) {
+    config({ path: envPath });
+  }
+}
 
 const PROJECT_DIR = process.argv[2] || "L:/ai_builder/projects/planflowai";
 const OLLAMA_URL = "http://127.0.0.1:11434";
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
+const GEMINI_API_KEY = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY || "";
 const MAX_PAGE_HEIGHT = 4000;
 const MAX_PASSES = 3;
 

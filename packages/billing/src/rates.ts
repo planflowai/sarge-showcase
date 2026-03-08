@@ -42,17 +42,18 @@ export const MODEL_RATES: Record<string, ModelRate> = {
   "gemini-2.0-flash":             { input: 0.10,  output: 0.40  },
   "gemini-3-flash":               { input: 0.30,  output: 2.50  },
 
-  // ── xAI ──────────────────────────────────────────────────
+  // ── xAI (updated Mar 2026) ───────────────────────────────
   "grok-3":                       { input: 3.00,  output: 15.00 },
   "grok-3-mini":                  { input: 0.30,  output: 0.50  },
   "grok-4":                       { input: 3.00,  output: 15.00 },
-  "grok-4.1-fast":                { input: 0.80,  output: 2.00  },
+  "grok-4.1-fast":                { input: 0.20,  output: 0.50  },
+  "grok-4.20":                    { input: 2.00,  output: 6.00  },
 
-  // ── DeepSeek (V3.2 unified pricing, Mar 2026) ────────────
-  "deepseek-chat":                { input: 0.28,  output: 0.42  },
-  "deepseek-reasoner":            { input: 0.28,  output: 0.42  },
-  "deepseek-v3":                  { input: 0.28,  output: 0.42  },
-  "deepseek-r1":                  { input: 0.28,  output: 0.42  },
+  // ── DeepSeek (V3, updated Mar 2026) ──────────────────────
+  "deepseek-chat":                { input: 0.27,  output: 1.10  },
+  "deepseek-reasoner":            { input: 0.27,  output: 1.10  },
+  "deepseek-v3":                  { input: 0.27,  output: 1.10  },
+  "deepseek-r1":                  { input: 0.27,  output: 1.10  },
 
   // ── Mistral ──────────────────────────────────────────────
   "devstral-2512":                { input: 0.30,  output: 0.90  },

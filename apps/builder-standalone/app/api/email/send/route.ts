@@ -100,7 +100,7 @@ function infoRow(label: string, value: string): string {
 const TEMPLATES: Record<TemplateName, (data: Record<string, string>) => { subject: string; html: string }> = {
   // ── 1. Welcome ──────────────────────────────────────────────────────────────
   welcome: (data) => ({
-    subject: `Welcome to PlanFlowAI — Your Project Has Started`,
+    subject: `Welcome to PlanFlowAI${data.business_name ? ` — ${data.business_name}` : ""} Project Started`,
     html: wrapLayout(`
   <div style="font-size:15px;color:#E2E8F0;line-height:1.7;">
     <p style="margin:0 0 16px;">Hi <strong>${data.client_name || "there"}</strong>,</p>
@@ -119,7 +119,7 @@ const TEMPLATES: Record<TemplateName, (data: Record<string, string>) => { subjec
 
   // ── 2. Intake Received ──────────────────────────────────────────────────────
   intake_received: (data) => ({
-    subject: `We Got Everything — Building Starts Now`,
+    subject: `We Got Everything${data.business_name ? ` for ${data.business_name}` : ""} — Building Starts Now`,
     html: wrapLayout(`
   <div style="font-size:15px;color:#E2E8F0;line-height:1.7;">
     <p style="margin:0 0 16px;">Hi <strong>${data.client_name || "there"}</strong>,</p>
@@ -171,15 +171,16 @@ const TEMPLATES: Record<TemplateName, (data: Record<string, string>) => { subjec
 
   // ── 4. Site Live ────────────────────────────────────────────────────────────
   site_live: (data) => ({
-    subject: `Your Website Is Live!`,
+    subject: `${data.business_name || data.project_name || "Your Website"} Is Live!`,
     html: wrapLayout(`
   <div style="font-size:15px;color:#E2E8F0;line-height:1.7;">
     <p style="margin:0 0 16px;">Hi <strong>${data.client_name || "there"}</strong>,</p>
-    <p style="margin:0 0 16px;">Your website is now <strong style="color:#10B981;">live</strong>! Here are your URLs:</p>
+    <p style="margin:0 0 16px;">Your website for <strong style="color:#FF6700;">${data.business_name || data.project_name || "your business"}</strong> is now <strong style="color:#10B981;">live</strong>!</p>
 
-    <div style="margin:0 0 20px;padding:16px 20px;background:#1A1D23;border:1px solid #1E2128;border-radius:8px;">
-      <div style="font-size:13px;color:#E2E8F0;line-height:2;">${(data.live_urls || "").split(",").map((u: string) => `<a href="${u.trim()}" style="color:#FF6700;font-weight:600;display:block;">${u.trim()}</a>`).join("")}</div>
-    </div>
+    ${(data.live_urls || "").trim() ? `<div style="margin:0 0 20px;padding:16px 20px;background:#1A1D23;border:1px solid #1E2128;border-radius:8px;">
+      <div style="font-size:12px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Your Live URLs</div>
+      <div style="font-size:13px;color:#E2E8F0;line-height:2;">${(data.live_urls || "").split(",").filter((u: string) => u.trim()).map((u: string) => `<a href="${u.trim()}" style="color:#FF6700;font-weight:600;display:block;">${u.trim()}</a>`).join("")}</div>
+    </div>` : ""}
 
     <p style="margin:0 0 16px;font-size:13px;color:#94A3B8;">Your compliance certificate is attached — it verifies that your site has been tested for performance, accessibility (WCAG AA), SEO, and security.</p>
 

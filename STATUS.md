@@ -4,6 +4,49 @@ Generated: 2026-03-08
 Branch: sargebuild-v1
 Tag: working-2026-03-02-deploy-fix (last tagged)
 
+## Pipeline Wiring Fixes (2026-03-08) — 6 Fixes
+
+### Fix Results
+
+| # | Fix | Status | Evidence |
+|---|-----|--------|----------|
+| 1 | PII injection after multi-page build | **FIXED** | Added to `build-multipage/route.ts` — runs after all pages built, reads intake data, injects into every HTML file, logs counts to BUILD_LOG.md. Test: 72 replacements, 0 remaining on Level 11 |
+| 2 | Broken image URLs (source.unsplash.com) | **FIXED** | System prompt + intakeToPrompt updated to warn against deprecated URLs. Post-build scan added — replaces source.unsplash.com with picsum.photos. Test: 43 image URLs fixed on Level 11 |
+| 3 | Email templates missing data | **FIXED** | site_live subject uses real business_name. Body shows business_name, handles empty URLs. welcome + intake_received subjects also updated |
+| 4 | Vision model subprocess env vars | **FIXED** | Both visual-review.mjs and _visual_review_level11.mjs now load `.env.local` via dotenv on startup. GEMINI_API_KEY resolved via GOOGLE_API_KEY fallback |
+| 5 | Guardian auto-fix for hallucinations | **FIXED** | Guardian now auto-replaces ALL suspicious phones, emails, and addresses with {{placeholder}} tokens. Changed from "flagged" → "auto-replaced". Logs "HALLUCINATION FIXED" |
+| 6 | Billing dashboard accuracy | **FIXED** | Updated rates: Grok 4.1 Fast ($0.20/$0.50), Grok 4.20 ($2.00/$6.00), DeepSeek V3 ($0.27/$1.10). Multi-page builder now logs each page build to billing. OpenAI Usage API added. Gemini "Paid Tier 1 with free credits" note added |
+
+### Post-Fix Verification — Level 11 Events
+
+| Metric | Before | After |
+|--------|--------|-------|
+| PII placeholders remaining | Many ({{BUSINESS_NAME}}, {{phone}}, etc.) | **0** |
+| Broken source.unsplash.com URLs | 43 | **0** |
+| picsum.photos replacements | 0 | **43** |
+| "Level 11 Events" on pages | Partial | **All 6 pages** |
+| Real phone on pages | 0 | **4 pages** |
+| Real email on pages | 0 | **4 pages** |
+| Hallucinated phones | "(123) 456-7890" on contact | **Only in form placeholder (expected)** |
+| Hallucinated emails | None | **None** |
+| Hallucinated addresses | None | **None** |
+| Nav elements per page | 6/6 | **6/6** |
+| Performance score | 78 | **80** |
+| Certificate tier | Silver (adjusted) | **Silver (legitimate)** |
+
+### Files Modified
+
+- `apps/builder-standalone/app/api/intake/build-multipage/route.ts` — PII injection step, image URL fix step, billing logging, unsplash warning in system prompt
+- `packages/builder/src/lib/intakeToPrompt.ts` — Replaced unsplash instructions with picsum.photos in both single-page and multi-page prompts
+- `packages/builder/src/lib/multiPageBuilder.ts` — Guardian: phones/emails/addresses now auto-replace (not just flag). "HALLUCINATION FIXED" in log messages
+- `apps/builder-standalone/app/api/email/send/route.ts` — Subject lines use real business_name. site_live body shows business_name and handles empty URLs
+- `scripts/visual-review.mjs` — Added dotenv loading from .env.local, GOOGLE_API_KEY fallback
+- `scripts/_visual_review_level11.mjs` — Same dotenv fix
+- `packages/billing/src/rates.ts` — Updated Grok 4.1 Fast, added Grok 4.20, updated DeepSeek V3 rates
+- `apps/builder-standalone/app/api/billing/balances/route.ts` — OpenAI Usage API (org/costs), Gemini free tier note
+
+---
+
 ## Full Pipeline Test — Level 11 Events (2026-03-08)
 
 Test client: **Level 11 Events** (DJ Sarge, planflowai@outlook.com)

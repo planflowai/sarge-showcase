@@ -16,6 +16,7 @@ import {
   type BuildPageResult,
   type GuardianFinding,
 } from "@sarge/builder/lib/multiPageBuilder";
+import { injectPII, countPlaceholders, type PIIData } from "@sarge/builder/lib/piiInjector";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -286,6 +287,122 @@ export async function POST(req: NextRequest) {
           }
         }
 
+        // Step 6: PII Injection — replace all {{placeholder}} tokens with real client data
+        send({ event: "progress", phase: "pii", message: "Injecting client data into pages..." });
+
+        const piiData: PIIData = {
+          name: flat.business_name || projectName,
+          phone: flat.phone || flat.step6_contact?.phone || "",
+          email: flat.email || flat.step6_contact?.email || "",
+          address: flat.address || flat.step6_contact?.address || "",
+          city: flat.city || flat.step6_contact?.city || "",
+          state: flat.state || flat.step6_contact?.state || "",
+          clientName: flat.client_name || flat.contact_name || flat.owner_name || "",
+        };
+
+        const htmlFiles = fs.readdirSync(projectDir).filter((f: string) => f.endsWith(".html"));
+        let totalReplacements = 0;
+        const piiLog: string[] = [];
+
+        for (const htmlFile of htmlFiles) {
+          const filePath = path.join(projectDir, htmlFile);
+          const originalHtml = fs.readFileSync(filePath, "utf-8");
+          const beforeCount = countPlaceholders(originalHtml);
+          const injectedHtml = injectPII(originalHtml, piiData);
+          const afterCount = countPlaceholders(injectedHtml);
+          const replacements = beforeCount - afterCount;
+          totalReplacements += replacements;
+
+          if (replacements > 0) {
+            fs.writeFileSync(filePath, injectedHtml);
+          }
+
+          piiLog.push(`- ${htmlFile}: ${replacements} replacements (${afterCount} remaining)`);
+          if (afterCount > 0) {
+            piiLog.push(`  ⚠ ${afterCount} unresolved placeholders remain`);
+          }
+        }
+
+        logLines.push("---");
+        logLines.push("");
+        logLines.push("## PII Injection");
+        logLines.push(`Total replacements: ${totalReplacements} across ${htmlFiles.length} files`);
+        for (const line of piiLog) logLines.push(line);
+        logLines.push("");
+
+        send({
+          event: "progress",
+          phase: "pii",
+          message: `PII injection complete: ${totalReplacements} replacements across ${htmlFiles.length} files`,
+          piiData: Object.fromEntries(Object.entries(piiData).filter(([, v]) => v)),
+          piiLog,
+        });
+
+        // Step 7: Post-build image URL fix — replace deprecated source.unsplash.com URLs
+        send({ event: "progress", phase: "images", message: "Fixing broken image URLs..." });
+        let totalImageFixes = 0;
+
+        for (const htmlFile of htmlFiles) {
+          const filePath = path.join(projectDir, htmlFile);
+          let html = fs.readFileSync(filePath, "utf-8");
+          let fixes = 0;
+
+          // Replace source.unsplash.com URLs with picsum.photos
+          html = html.replace(
+            /https?:\/\/source\.unsplash\.com\/(?:random\/)?(\d+)x(\d+)\/?[^"'\s)>]*/g,
+            (_match, w, h) => { fixes++; return `https://picsum.photos/${w}/${h}`; },
+          );
+          // Handle source.unsplash.com without dimensions
+          html = html.replace(
+            /https?:\/\/source\.unsplash\.com\/[^"'\s)>]*/g,
+            () => { fixes++; return `https://picsum.photos/800/600`; },
+          );
+          // Fix empty src attributes
+          html = html.replace(
+            /<img([^>]*)\ssrc\s*=\s*["']\s*["']/g,
+            (_match, attrs) => { fixes++; return `<img${attrs} src="https://picsum.photos/800/600"`; },
+          );
+
+          if (fixes > 0) {
+            fs.writeFileSync(filePath, html);
+            totalImageFixes += fixes;
+          }
+        }
+
+        if (totalImageFixes > 0) {
+          logLines.push("## Image URL Fixes");
+          logLines.push(`Fixed ${totalImageFixes} broken image URLs (source.unsplash.com → picsum.photos)`);
+          logLines.push("");
+        }
+
+        send({
+          event: "progress",
+          phase: "images",
+          message: `Fixed ${totalImageFixes} broken image URLs`,
+        });
+
+        // Step 8: Billing — log cost for each page build
+        const baseUrl = `http://localhost:${process.env.PORT || 3101}`;
+        for (const r of results) {
+          if (r.tokens.input > 0 || r.tokens.output > 0) {
+            try {
+              await fetch(`${baseUrl}/api/billing/log`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  model: r.model,
+                  provider: r.provider,
+                  app: "builder",
+                  tokensIn: r.tokens.input,
+                  tokensOut: r.tokens.output,
+                  durationMs: r.durationMs,
+                  context: `multipage-build:${r.page}`,
+                }),
+              });
+            } catch { /* billing log failure is non-blocking */ }
+          }
+        }
+
         const buildLog = logLines.join("\n");
         fs.writeFileSync(path.join(projectDir, "BUILD_LOG.md"), buildLog);
         send({ event: "build_log", content: buildLog, projectDir });
@@ -367,7 +484,8 @@ OUTPUT RULES:
 - The page must be substantial — at least 200 lines of HTML with real content sections.
 - Use PII placeholders: {{BUSINESS_NAME}}, {{phone}}, {{email}}, {{address}}, {{city}}, {{state}}, {{client_name}}.
 - Each page must fit in 2-3 viewport heights max at 1920x1080 (under 4000px total height). Do NOT create infinitely scrolling pages.
-- Use tabs, accordions, expandable sections instead of stacking everything vertically. Content-heavy sections should be collapsible.`,
+- Use tabs, accordions, expandable sections instead of stacking everything vertically. Content-heavy sections should be collapsible.
+- Do NOT use source.unsplash.com URLs — this service is deprecated and returns 404. For stock images, use https://picsum.photos/{width}/{height} (e.g. https://picsum.photos/800/600). Do NOT leave any img src empty.`,
           source: "multipage-builder",
           maxOutputTokens: 16384,
         }),

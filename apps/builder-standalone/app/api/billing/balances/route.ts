@@ -26,6 +26,35 @@ function getApiKey(provider: string): string {
 }
 
 async function queryOpenAI(apiKey: string): Promise<ProviderBalanceResult> {
+  // Try the Organization Usage API (completions) — more reliable than credit_grants
+  try {
+    const now = new Date();
+    const startDate = new Date(now.getFullYear(), now.getMonth(), 1)
+      .toISOString().split("T")[0]; // first day of current month
+    const res = await fetch(
+      `https://api.openai.com/v1/organization/costs?start_date=${startDate}&limit=0`,
+      {
+        headers: { Authorization: `Bearer ${apiKey}` },
+        signal: AbortSignal.timeout(10000),
+      },
+    );
+    if (res.ok) {
+      const data = await res.json();
+      const totalCents = data.total_usage ?? 0;
+      const totalUsd = totalCents / 100;
+      return {
+        provider: "openai",
+        status: "ok",
+        balance: undefined,
+        currency: "USD",
+        message: `Month-to-date spend: $${totalUsd.toFixed(2)}`,
+        consoleUrl: PROVIDER_CONSOLE_URLS.openai,
+        lastUpdated: new Date().toISOString(),
+      };
+    }
+  } catch { /* fall through */ }
+
+  // Fallback: try legacy credit_grants endpoint
   try {
     const res = await fetch("https://api.openai.com/dashboard/billing/credit_grants", {
       headers: { Authorization: `Bearer ${apiKey}` },
@@ -43,17 +72,15 @@ async function queryOpenAI(apiKey: string): Promise<ProviderBalanceResult> {
         lastUpdated: new Date().toISOString(),
       };
     }
-    // Billing endpoint may be restricted — fall back to console link
-    return {
-      provider: "openai",
-      status: "no-api",
-      message: "Balance API restricted — check console",
-      consoleUrl: PROVIDER_CONSOLE_URLS.openai,
-      lastUpdated: new Date().toISOString(),
-    };
-  } catch {
-    return { provider: "openai", status: "error", message: "Failed to query", consoleUrl: PROVIDER_CONSOLE_URLS.openai, lastUpdated: new Date().toISOString() };
-  }
+  } catch { /* fall through */ }
+
+  return {
+    provider: "openai",
+    status: "no-api",
+    message: "Balance API restricted — check console",
+    consoleUrl: PROVIDER_CONSOLE_URLS.openai,
+    lastUpdated: new Date().toISOString(),
+  };
 }
 
 async function queryDeepSeek(apiKey: string): Promise<ProviderBalanceResult> {
@@ -95,7 +122,7 @@ async function queryGoogle(apiKey: string): Promise<ProviderBalanceResult> {
   return {
     provider: "google",
     status: apiKey ? "no-api" : "no-key",
-    message: apiKey ? "Free tier active" : "No API key configured",
+    message: apiKey ? "Paid Tier 1 with free credits — actual charges may be $0" : "No API key configured",
     consoleUrl: PROVIDER_CONSOLE_URLS.google,
     lastUpdated: new Date().toISOString(),
   };

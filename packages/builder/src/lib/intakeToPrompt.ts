@@ -341,7 +341,7 @@ export function intakeToPrompt(formData: any): string {
   lines.push(`## Build Requirements`);
   lines.push(`- Build a single self-contained HTML file with all CSS in <style> and all JS in <script>.`);
   lines.push(`- Make it fully responsive. Mobile-first design.`);
-  lines.push(`- Use real stock photos from Unsplash or placeholder images.`);
+  lines.push(`- Do NOT use source.unsplash.com URLs — this service is deprecated and returns 404. For stock images, use https://picsum.photos/{width}/{height} (e.g. https://picsum.photos/800/600). Do NOT leave any img src empty.`);
   lines.push(`- All navigation must use JavaScript show/hide sections (SPA pattern), NOT separate files.`);
 
   return lines.join("\n");
@@ -482,7 +482,7 @@ export function intakeToPagePrompt(
   lines.push(`## Build Rules`);
   lines.push(`- Single self-contained HTML file with all CSS in <style> and all JS in <script>.`);
   lines.push(`- Fully responsive, mobile-first.`);
-  lines.push(`- Use Unsplash stock photos or placeholder images.`);
+  lines.push(`- Do NOT use source.unsplash.com — it is deprecated. Use https://picsum.photos/{width}/{height} for stock images. No empty img src.`);
   lines.push(`- Each page must fit in 2-3 viewport heights maximum at 1920x1080 (under 4000px total height).`);
   lines.push(`- Do NOT create infinitely scrolling pages. Use tabs, accordions, expandable sections, and sub-navigation instead of stacking everything vertically.`);
   lines.push(`- Content-heavy sections should be collapsible by default.`);
