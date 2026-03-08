@@ -13,8 +13,8 @@ import { config } from "dotenv";
 
 // === PATHS ===
 const TEST_BASE = import.meta.dirname;
-const STANDALONE = path.resolve(TEST_BASE, "..", "..");
-const ROOT = path.resolve(STANDALONE, "..", "..");
+const STANDALONE = path.resolve(TEST_BASE, "..");
+const ROOT = path.resolve(STANDALONE, "..", "..", "..");
 for (const f of [".env.local", ".env"]) {
   const p = path.join(STANDALONE, f);
   if (fs.existsSync(p)) config({ path: p });
@@ -46,17 +46,29 @@ const RATES = {
   "claude-sonnet-4-5-20250514": { i: 3.00, o: 15.00 },
 };
 
-// === MODEL CHAIN (BUILDER_RULES.md: local first, cheap cloud, mid, expensive) ===
-const MODEL_CHAIN = [
-  { provider: "ollama", model: "qwen2.5-coder:14b", type: "local", tier: "Local 14B" },
-  { provider: "ollama", model: "qwen2.5-coder:7b", type: "local", tier: "Local 7B" },
-  { provider: "ollama", model: "codellama:7b", type: "local", tier: "Local CodeLlama" },
+// === MODEL CHAINS (BUILDER_RULES.md: local first, cheap cloud, mid, expensive) ===
+// Dead weight removed: smollm:360m, llama3.2:1b/3b, gemma2:2b, phi3:mini,
+// deepseek-r1:7b/8b, cogito:8b, rnj-1:8b, qwen2:7b, qwen3:8b, gemma3:4b,
+// minicpm-v variants (except visual), llava-phi3
+
+// Page building pool — local code models first, 60s timeout each
+const PAGE_BUILD_CHAIN = [
+  { provider: "ollama", model: "qwen2.5-coder:7b", type: "local", tier: "Local Coder", timeout: 60000 },
+  { provider: "ollama", model: "deepseek-coder:6.7b", type: "local", tier: "Local Coder", timeout: 60000 },
+  { provider: "ollama", model: "codellama:7b", type: "local", tier: "Local Coder", timeout: 60000 },
+  { provider: "ollama", model: "starcoder2:7b", type: "local", tier: "Local Coder", timeout: 60000 },
   { provider: "deepseek", model: "deepseek-chat", type: "cloud", tier: "Cheap Cloud", key: "DEEPSEEK_API_KEY" },
   { provider: "xai", model: "grok-4-1-fast-non-reasoning", type: "cloud", tier: "Cheap Cloud", key: "XAI_API_KEY" },
   { provider: "google", model: "gemini-2.5-flash", type: "cloud", tier: "Mid-tier", key: "GOOGLE_API_KEY" },
   { provider: "openai", model: "gpt-4.1", type: "cloud", tier: "Mid-tier", key: "OPENAI_API_KEY" },
   { provider: "xai", model: "grok-4.20-experimental-beta-0304-non-reasoning", type: "cloud", tier: "Premium", key: "XAI_API_KEY" },
   { provider: "anthropic", model: "claude-sonnet-4-5-20250514", type: "cloud", tier: "Premium", key: "ANTHROPIC_API_KEY" },
+];
+
+// Visual review pool — vision-capable local models only, 60s timeout each
+const VISUAL_REVIEW_CHAIN = [
+  { provider: "ollama", model: "qwen3.5:9b", type: "local", tier: "Local Vision", timeout: 60000 },
+  { provider: "ollama", model: "qwen3-vl:latest", type: "local", tier: "Local Vision", timeout: 60000 },
 ];
 
 // === GREY TEXT PATTERNS ===
@@ -101,8 +113,9 @@ async function preflight() {
       const data = await res.json();
       ollamaModels = data.models.map(m => m.name);
       log.push(`Status: ONLINE (${ollamaModels.length} models)`);
-      const relevant = ollamaModels.filter(m => m.includes("qwen2.5-coder") || m.includes("codellama"));
-      log.push(`Builder-relevant: ${relevant.join(", ") || "none"}`);
+      const allChainModels = [...PAGE_BUILD_CHAIN, ...VISUAL_REVIEW_CHAIN].filter(m => m.provider === "ollama").map(m => m.model);
+      const relevant = ollamaModels.filter(o => allChainModels.some(c => o === c || o.startsWith(c.split(":")[0])));
+      log.push(`Router-relevant: ${relevant.join(", ") || "none"}`);
     } else { log.push("Status: OFFLINE (bad response)"); }
   } catch { log.push("Status: OFFLINE (connection refused)"); }
   log.push("");
@@ -131,16 +144,22 @@ async function preflight() {
   log.push(`localhost:${APP_PORT}: ${portAlive ? "✓ alive" : "✗ dead"}`);
   log.push("");
 
-  // 5. Available pool
-  log.push("## Available Model Pool");
-  const pool = getPool();
-  for (const m of pool) log.push(`- ${m.provider}:${m.model} (${m.tier})`);
-  if (!pool.length) log.push("⚠ NO MODELS AVAILABLE");
+  // 5. Available pools
+  log.push("## Page Build Pool");
+  const buildPool = getPool(PAGE_BUILD_CHAIN);
+  for (const m of buildPool) log.push(`- ${m.provider}:${m.model} (${m.tier}, ${m.timeout ? m.timeout/1000 + "s" : "180s"})`);
+  if (!buildPool.length) log.push("⚠ NO BUILD MODELS AVAILABLE");
+  log.push("");
+
+  log.push("## Visual Review Pool");
+  const vizPool = getPool(VISUAL_REVIEW_CHAIN);
+  for (const m of vizPool) log.push(`- ${m.provider}:${m.model} (${m.tier}, ${m.timeout ? m.timeout/1000 + "s" : "60s"})`);
+  if (!vizPool.length) log.push("⚠ NO VISUAL REVIEW MODELS AVAILABLE (Test 18 will skip visual review)");
   log.push("");
 
   fs.writeFileSync(RUNNER_LOG, log.join("\n"));
   console.log(log.join("\n"));
-  return pool.length > 0;
+  return buildPool.length > 0;
 }
 
 function countGemini() {
@@ -151,8 +170,8 @@ function countGemini() {
   }).length;
 }
 
-function getPool() {
-  return MODEL_CHAIN.filter(m => {
+function getPool(chain = PAGE_BUILD_CHAIN) {
+  return chain.filter(m => {
     if (m.type === "local") return ollamaModels.some(o => o === m.model || o.startsWith(m.model.split(":")[0]));
     if (m.key && !process.env[m.key]) return false;
     if (m.provider === "google" && geminiToday > GEMINI_DAILY_LIMIT - 20) return false;
@@ -164,8 +183,8 @@ function getPool() {
 // ║  ROUTER                                                      ║
 // ╚══════════════════════════════════════════════════════════════╝
 
-function route(difficulty = "easy", tried = new Set()) {
-  const avail = getPool().filter(m => !tried.has(`${m.provider}:${m.model}`));
+function route(difficulty = "easy", tried = new Set(), chain = PAGE_BUILD_CHAIN) {
+  const avail = getPool(chain).filter(m => !tried.has(`${m.provider}:${m.model}`));
   if (!avail.length) return null;
   if (difficulty === "hard") { const cloud = avail.filter(m => m.type === "cloud"); if (cloud.length) return cloud[0]; }
   return avail[0];
@@ -187,12 +206,12 @@ function extractHtml(content) {
   return h;
 }
 
-async function buildOllama(model, sys, usr) {
+async function buildOllama(model, sys, usr, timeout = 60000) {
   const res = await fetch(`${OLLAMA_URL}/api/generate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ model, system: sys, prompt: usr, stream: false, options: { num_predict: 16384, temperature: 0.7 } }),
-    signal: AbortSignal.timeout(180000),
+    signal: AbortSignal.timeout(timeout),
   });
   if (!res.ok) throw new Error(`Ollama ${res.status}`);
   const data = await res.json();
@@ -203,7 +222,7 @@ async function buildCloud(provider, model, sys, usr) {
   const res = await fetch(`${APP_URL}/api/test/stream`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ provider, model, prompt: usr, systemPrompt: sys, source: "test-runner", maxOutputTokens: 16384 }),
+    body: JSON.stringify({ provider, model, prompt: usr, systemPrompt: sys, source: "test-runner", maxOutputTokens: 8192 }),
     signal: AbortSignal.timeout(180000),
   });
   if (!res.ok) throw new Error(`API ${res.status}`);
@@ -229,17 +248,18 @@ async function buildCloud(provider, model, sys, usr) {
   return { html: extractHtml(html), tIn, tOut };
 }
 
-async function buildPage(sys, usr, difficulty = "easy") {
+async function buildPage(sys, usr, difficulty = "easy", chain = PAGE_BUILD_CHAIN) {
   const tried = new Set();
   while (true) {
-    const r = route(difficulty, tried);
+    const r = route(difficulty, tried, chain);
     if (!r) return { ok: false, error: "All models exhausted", html: "", model: "", provider: "", tier: "", reason: "", tIn: 0, tOut: 0, ms: 0 };
     const key = `${r.provider}:${r.model}`;
     tried.add(key);
     const reason = `${key} — ${r.tier}, attempt ${tried.size}`;
     const t0 = Date.now();
     try {
-      const res = r.type === "local" ? await buildOllama(r.model, sys, usr) : await buildCloud(r.provider, r.model, sys, usr);
+      const timeout = r.timeout || (r.type === "local" ? 60000 : 180000);
+      const res = r.type === "local" ? await buildOllama(r.model, sys, usr, timeout) : await buildCloud(r.provider, r.model, sys, usr);
       const ms = Date.now() - t0;
       if (res.html.length < MIN_PAGE_SIZE) { console.log(`  ✗ ${key}: ${res.html.length}b < ${MIN_PAGE_SIZE}`); continue; }
       if (r.provider === "google") geminiToday++;
@@ -291,13 +311,18 @@ function countPlaceholders(html) { return (html.match(/\{\{[^}]+\}\}/g) || []).l
 
 async function runLighthouse(htmlPath) {
   try {
-    const url = `file:///${htmlPath.replace(/\\/g, "/")}`;
-    const out = execSync(
-      `npx lighthouse "${url}" --output=json --quiet --chrome-flags="--headless --no-sandbox --disable-gpu" --only-categories=performance,accessibility,best-practices,seo 2>/dev/null`,
-      { timeout: 90000, encoding: "utf-8", maxBuffer: 10 * 1024 * 1024 }
-    );
-    const c = JSON.parse(out).categories;
-    return { perf: Math.round((c.performance?.score||0)*100), a11y: Math.round((c.accessibility?.score||0)*100), seo: Math.round((c.seo?.score||0)*100), bp: Math.round((c["best-practices"]?.score||0)*100) };
+    // Use the /api/audit/run endpoint which has Lighthouse built in
+    const projectDir = path.dirname(htmlPath);
+    const res = await fetch(`${APP_URL}/api/audit/run`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ projectPath: projectDir.replace(/\\/g, "/") }),
+      signal: AbortSignal.timeout(60000),
+    });
+    if (!res.ok) throw new Error(`Audit API ${res.status}`);
+    const data = await res.json();
+    const s = data.scores || {};
+    return { perf: s.performance || 0, a11y: s.accessibility || 0, seo: s.seo || 0, bp: s.bestPractices || 0 };
   } catch (e) { console.log(`  LH error: ${e.message.slice(0, 80)}`); return { perf: 0, a11y: 0, seo: 0, bp: 0 }; }
 }
 
@@ -946,9 +971,9 @@ async function runTest18() {
   const ssOk = await takeScreenshots(htmlPath, dir);
   blog.push(`Screenshots: ${ssOk ? "OK" : "FAILED"}`);
 
-  blog.push("\nRunning text-based visual review...");
+  blog.push("\nRunning text-based visual review (VISUAL_REVIEW_CHAIN)...");
   const reviewPrompt = `Review this HTML for visual issues:\n1. Grey/dim text\n2. Layout problems\n3. Missing responsive styles\n4. Accessibility issues\nList issues or say "No issues".\n\nHTML:\n${html.slice(0, 6000)}`;
-  const review = await buildPage("You are a web design reviewer. List issues only, be concise.", reviewPrompt, "easy");
+  const review = await buildPage("You are a web design reviewer. List issues only, be concise.", reviewPrompt, "easy", VISUAL_REVIEW_CHAIN);
   if (review.ok) {
     blog.push(`Reviewer: ${review.provider}:${review.model}`);
     blog.push(`Findings:\n${review.html.slice(0, 1500)}`);

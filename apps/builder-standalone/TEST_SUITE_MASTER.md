@@ -54,7 +54,32 @@ Pass criteria: Lighthouse 80+ all 4 categories, page under 2160px, no grey text,
 
 ---
 
-## CONFIRMED WORKING MODELS
+## LOCAL MODEL POOLS (Confirmed March 8, 2026)
+
+### Page Building Pool (try in order, 60s timeout each)
+| # | Model | Purpose | Notes |
+|---|-------|---------|-------|
+| 1 | `qwen2.5-coder:7b` | Primary local coder | Best code quality at 7B |
+| 2 | `deepseek-coder:6.7b` | Fallback coder | Good at HTML/CSS |
+| 3 | `codellama:7b` | Fallback coder | Meta's code model |
+| 4 | `starcoder2:7b` | Last local resort | StarCoder v2 |
+
+Cloud fallback order: DeepSeek Chat → Grok 4.1 Fast → Gemini Flash → GPT-4.1 → Grok 4.20 → Claude Sonnet
+
+### Visual Review Pool (60s timeout each)
+| # | Model | Purpose | Notes |
+|---|-------|---------|-------|
+| 1 | `qwen3.5:9b` | Primary reviewer | Vision-capable, good at spotting issues |
+| 2 | `qwen3-vl:latest` | Fallback reviewer | Dedicated vision-language model |
+
+No cloud fallback — visual review is local-only.
+
+### Dead Weight Removed
+`smollm:360m`, `llama3.2:1b`, `llama3.2:3b`, `gemma2:2b`, `phi3:mini`, `deepseek-r1:7b`, `deepseek-r1:8b`, `cogito:8b`, `rnj-1:8b`, `qwen2:7b`, `qwen3:8b`, `gemma3:4b`, `minicpm-v` variants, `llava-phi3`
+
+---
+
+## CONFIRMED WORKING CLOUD MODELS
 
 All provider model names confirmed correct as of March 8, 2026.
 
