@@ -363,20 +363,20 @@ export function EnvManager() {
 
   return (
     <div className="h-full overflow-y-auto bg-white dark:bg-[#0a0a0a]">
-      <div className="max-w-[2400px] mx-auto px-6 py-8">
+      <div className="max-w-[2800px] mx-auto px-8 py-3">
         {/* Header */}
-        <div className="text-center mb-6">
-          <div className="flex items-center justify-center gap-3 mb-2">
-            <FileKey className="w-7 h-7 text-[#FF6700]" />
+        <div className="text-center mb-3">
+          <div className="flex items-center justify-center gap-4 mb-1">
+            <FileKey className="w-10 h-10 text-[#FF6700]" />
             <h1
-              className="text-[28px] font-bold tracking-[0.15em] uppercase"
+              className="text-4xl font-black tracking-[0.15em] uppercase"
               style={{ color: "#FF6700" }}
             >
               ENV MANAGER
             </h1>
           </div>
           {fileInfo && (
-            <div className="flex items-center justify-center gap-4 text-xs text-zinc-500 dark:text-zinc-400 font-mono">
+            <div className="flex items-center justify-center gap-4 text-base text-white font-mono font-bold">
               <span>{fileInfo.path}</span>
               <span>&middot;</span>
               <span>
@@ -396,39 +396,39 @@ export function EnvManager() {
           const catColor = CATEGORY_COLORS[cat] || "#888";
 
           return (
-            <div key={cat} className="mb-6">
+            <div key={cat} className="mb-3">
               {/* Category header */}
               <button
                 onClick={() => toggleCollapse(cat)}
-                className="flex items-center gap-2 mb-3 group w-full text-left"
+                className="flex items-center gap-2 mb-1 group w-full text-left"
               >
                 {isCollapsed ? (
                   <ChevronRight
-                    className="w-4 h-4 text-zinc-500"
+                    className="w-5 h-5 text-white/50"
                   />
                 ) : (
                   <ChevronDown
-                    className="w-4 h-4 text-zinc-500"
+                    className="w-5 h-5 text-white/50"
                   />
                 )}
                 <div
-                  className="w-2 h-2 rounded-full"
+                  className="w-2.5 h-2.5 rounded-full"
                   style={{ backgroundColor: catColor }}
                 />
                 <span
-                  className="text-sm font-bold tracking-wide uppercase"
+                  className="text-lg font-black tracking-wide uppercase"
                   style={{ color: catColor }}
                 >
                   {cat}
                 </span>
-                <span className="text-xs text-zinc-500 dark:text-zinc-600">
+                <span className="text-base font-bold text-white/50">
                   ({catKeys.length})
                 </span>
               </button>
 
-              {/* Cards grid */}
+              {/* Horizontal strip rows — 2 per row */}
               {!isCollapsed && (
-                <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-x-4 gap-y-1">
                   {catKeys.map((envKey) => {
                     const isRevealed = revealed[envKey.key] !== undefined;
                     const isEditing = editing === envKey.key;
@@ -438,142 +438,128 @@ export function EnvManager() {
                     const isDeleting = confirmDelete === envKey.key;
 
                     return (
-                      <div
-                        key={envKey.key}
-                        className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-[#141414] p-4 transition-all hover:border-zinc-300 dark:hover:border-zinc-700"
-                      >
-                        {/* Key name + status dot */}
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <div
-                              className={`w-2 h-2 rounded-full ${
-                                envKey.hasValue
-                                  ? "bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.5)]"
-                                  : envKey.maskedValue === ""
-                                  ? "bg-yellow-500 shadow-[0_0_6px_rgba(234,179,8,0.5)]"
-                                  : "bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.5)]"
-                              }`}
-                            />
-                            <span className="font-mono font-bold text-sm text-zinc-900 dark:text-white">
-                              {envKey.key}
+                      <div key={envKey.key}>
+                        {/* Main row — everything on one line */}
+                        <div
+                          className="flex items-center gap-3 rounded-lg border border-zinc-700/60 bg-[#141414] px-4 py-2 hover:border-zinc-500 transition-colors"
+                        >
+                          {/* Status dot */}
+                          <div
+                            className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
+                              envKey.hasValue
+                                ? "bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.5)]"
+                                : envKey.maskedValue === ""
+                                ? "bg-yellow-500 shadow-[0_0_6px_rgba(234,179,8,0.5)]"
+                                : "bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.5)]"
+                            }`}
+                          />
+
+                          {/* Key name — fixed width */}
+                          <span className="font-mono font-black text-[15px] text-white truncate w-56 flex-shrink-0">
+                            {envKey.key}
+                          </span>
+
+                          {/* Masked value */}
+                          {isEditing ? (
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              <input
+                                type="text"
+                                value={editValue}
+                                onChange={(e) => setEditValue(e.target.value)}
+                                className="flex-1 px-2 py-1 rounded text-sm font-mono font-bold bg-zinc-900 border border-zinc-600 text-white focus:outline-none focus:ring-1 focus:ring-[#FF6700]"
+                                autoFocus
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") saveEdit();
+                                  if (e.key === "Escape") setEditing(null);
+                                }}
+                              />
+                              <button
+                                onClick={saveEdit}
+                                disabled={saving}
+                                className="p-1 rounded bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
+                              >
+                                <Check className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => setEditing(null)}
+                                className="p-1 rounded bg-zinc-600 text-white hover:bg-zinc-500"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="font-mono font-bold text-sm text-white/70 truncate flex-1 min-w-0">
+                              {isRevealed
+                                ? revealed[envKey.key]
+                                : envKey.maskedValue || "—"}
                             </span>
-                          </div>
-                          {/* Delete button */}
-                          <button
-                            onClick={() =>
-                              setConfirmDelete(
-                                isDeleting ? null : envKey.key
-                              )
-                            }
-                            className="text-zinc-400 hover:text-red-500 transition-colors p-1"
-                            title="Delete key"
+                          )}
+
+                          {/* Rotation badge */}
+                          <span
+                            className={`text-sm font-bold px-2 py-0.5 rounded flex-shrink-0 ${badge.bg} ${badge.color}`}
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                            {badge.label}
+                          </span>
+
+                          {/* Action buttons */}
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            <button
+                              onClick={() => toggleReveal(envKey.key)}
+                              className="flex items-center gap-1 px-2.5 py-1 rounded text-sm font-bold bg-zinc-800 hover:bg-zinc-600 text-white transition-colors"
+                            >
+                              {isRevealed ? (
+                                <><EyeOff className="w-4 h-4" /> Hide</>
+                              ) : (
+                                <><Eye className="w-4 h-4" /> Show</>
+                              )}
+                            </button>
+                            <button
+                              onClick={() => startEdit(envKey.key)}
+                              className="flex items-center gap-1 px-2.5 py-1 rounded text-sm font-bold bg-zinc-800 hover:bg-zinc-600 text-white transition-colors"
+                            >
+                              <Pencil className="w-4 h-4" /> Edit
+                            </button>
+                            {rotUrl && (
+                              <button
+                                onClick={() => rotateKey(envKey.key)}
+                                className="flex items-center gap-1 px-2.5 py-1 rounded text-sm font-bold bg-[#FF6700]/15 hover:bg-[#FF6700]/30 text-[#FF6700] transition-colors"
+                              >
+                                <ExternalLink className="w-4 h-4" /> Rotate
+                              </button>
+                            )}
+                            <button
+                              onClick={() =>
+                                setConfirmDelete(isDeleting ? null : envKey.key)
+                              }
+                              className="text-zinc-500 hover:text-red-500 transition-colors p-1"
+                              title="Delete key"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
 
-                        {/* Delete confirmation */}
+                        {/* Delete confirmation — slides in below */}
                         {isDeleting && (
-                          <div className="flex items-center gap-2 mb-2 p-2 rounded bg-red-500/10 border border-red-500/20">
-                            <span className="text-xs text-red-400 flex-1">
+                          <div className="flex items-center gap-3 ml-10 mt-1 mb-1 p-2 rounded bg-red-500/10 border border-red-500/20">
+                            <span className="text-sm font-bold text-red-400">
                               Delete {envKey.key}?
                             </span>
                             <button
                               onClick={() => deleteKey(envKey.key)}
-                              className="px-2 py-0.5 rounded text-xs bg-red-600 text-white hover:bg-red-700"
+                              className="px-3 py-1 rounded text-sm font-bold bg-red-600 text-white hover:bg-red-700"
                             >
                               Yes
                             </button>
                             <button
                               onClick={() => setConfirmDelete(null)}
-                              className="px-2 py-0.5 rounded text-xs bg-zinc-700 text-zinc-300 hover:bg-zinc-600"
+                              className="px-3 py-1 rounded text-sm font-bold bg-zinc-700 text-white/70 hover:bg-zinc-600"
                             >
                               No
                             </button>
                           </div>
                         )}
-
-                        {/* Value display / edit */}
-                        {isEditing ? (
-                          <div className="flex items-center gap-2 mb-2">
-                            <input
-                              type="text"
-                              value={editValue}
-                              onChange={(e) => setEditValue(e.target.value)}
-                              className="flex-1 px-2 py-1.5 rounded text-xs font-mono bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-600 text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-[#FF6700]"
-                              autoFocus
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") saveEdit();
-                                if (e.key === "Escape") setEditing(null);
-                              }}
-                            />
-                            <button
-                              onClick={saveEdit}
-                              disabled={saving}
-                              className="p-1.5 rounded bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
-                              title="Save"
-                            >
-                              <Check className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => setEditing(null)}
-                              className="p-1.5 rounded bg-zinc-600 text-white hover:bg-zinc-500"
-                              title="Cancel"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="mb-2">
-                            <span className="text-xs font-mono text-zinc-500 dark:text-zinc-400 break-all">
-                              {isRevealed
-                                ? revealed[envKey.key]
-                                : envKey.maskedValue || "—"}
-                            </span>
-                          </div>
-                        )}
-
-                        {/* Rotation badge */}
-                        <div className="flex items-center gap-2 mb-3">
-                          <Clock className="w-3 h-3 text-zinc-500" />
-                          <span
-                            className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${badge.bg} ${badge.color}`}
-                          >
-                            {badge.label}
-                          </span>
-                        </div>
-
-                        {/* Action buttons */}
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            onClick={() => toggleReveal(envKey.key)}
-                            className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 transition-colors"
-                          >
-                            {isRevealed ? (
-                              <>
-                                <EyeOff className="w-3 h-3" /> Hide
-                              </>
-                            ) : (
-                              <>
-                                <Eye className="w-3 h-3" /> Show
-                              </>
-                            )}
-                          </button>
-                          <button
-                            onClick={() => startEdit(envKey.key)}
-                            className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 transition-colors"
-                          >
-                            <Pencil className="w-3 h-3" /> Edit
-                          </button>
-                          {rotUrl && (
-                            <button
-                              onClick={() => rotateKey(envKey.key)}
-                              className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium bg-[#FF6700]/10 hover:bg-[#FF6700]/20 text-[#FF6700] transition-colors"
-                            >
-                              <ExternalLink className="w-3 h-3" /> Rotate
-                            </button>
-                          )}
-                        </div>
                       </div>
                     );
                   })}
@@ -584,11 +570,11 @@ export function EnvManager() {
         })}
 
         {/* Add New Key */}
-        <div className="mt-8 border-t border-zinc-200 dark:border-zinc-800 pt-6">
+        <div className="mt-3 border-t border-zinc-800 pt-3">
           {addMode ? (
             <div className="flex items-end gap-3 max-w-xl">
               <div className="flex-1">
-                <label className="block text-xs text-zinc-500 mb-1 font-medium">
+                <label className="block text-sm text-white/60 mb-1 font-bold">
                   Variable Name
                 </label>
                 <input
@@ -598,12 +584,12 @@ export function EnvManager() {
                     setNewKey(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, ""))
                   }
                   placeholder="MY_API_KEY"
-                  className="w-full px-3 py-2 rounded-lg text-sm font-mono bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-[#FF6700]"
+                  className="w-full px-3 py-2 rounded-lg text-sm font-mono font-bold bg-zinc-900 border border-zinc-700 text-white focus:outline-none focus:ring-1 focus:ring-[#FF6700]"
                   autoFocus
                 />
               </div>
               <div className="flex-1">
-                <label className="block text-xs text-zinc-500 mb-1 font-medium">
+                <label className="block text-sm text-white/60 mb-1 font-bold">
                   Value
                 </label>
                 <input
@@ -611,13 +597,13 @@ export function EnvManager() {
                   value={newValue}
                   onChange={(e) => setNewValue(e.target.value)}
                   placeholder="sk-..."
-                  className="w-full px-3 py-2 rounded-lg text-sm font-mono bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-[#FF6700]"
+                  className="w-full px-3 py-2 rounded-lg text-sm font-mono font-bold bg-zinc-900 border border-zinc-700 text-white focus:outline-none focus:ring-1 focus:ring-[#FF6700]"
                 />
               </div>
               <button
                 onClick={addKey}
                 disabled={!newKey || saving}
-                className="px-4 py-2 rounded-lg text-sm font-medium bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
+                className="px-4 py-2 rounded-lg text-sm font-bold bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
               >
                 Add
               </button>
@@ -627,7 +613,7 @@ export function EnvManager() {
                   setNewKey("");
                   setNewValue("");
                 }}
-                className="px-4 py-2 rounded-lg text-sm font-medium bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-300 dark:hover:bg-zinc-700"
+                className="px-4 py-2 rounded-lg text-sm font-bold bg-zinc-800 text-white/70 hover:bg-zinc-700"
               >
                 Cancel
               </button>
@@ -635,23 +621,23 @@ export function EnvManager() {
           ) : (
             <button
               onClick={() => setAddMode(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 transition-colors"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-base font-bold bg-zinc-800 hover:bg-zinc-700 text-white transition-colors"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-5 h-5" />
               Add New Key
             </button>
           )}
         </div>
 
         {/* Bottom action bar */}
-        <div className="mt-8 flex items-center gap-3 justify-center pb-8">
+        <div className="mt-3 flex items-center gap-3 justify-center pb-3">
           <button
             onClick={pushToApps}
             disabled={saving}
-            className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold text-white transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-6 py-3 rounded-xl text-base font-black text-white transition-colors disabled:opacity-50"
             style={{ backgroundColor: "#FF6700" }}
           >
-            <Upload className="w-4 h-4" />
+            <Upload className="w-5 h-5" />
             Save & Push to All Apps
           </button>
 
@@ -659,18 +645,18 @@ export function EnvManager() {
             <button
               onClick={restartApps}
               disabled={saving}
-              className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 px-6 py-3 rounded-xl text-base font-black bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-50"
             >
-              <RefreshCw className="w-4 h-4" />
+              <RefreshCw className="w-5 h-5" />
               Restart Running Apps
             </button>
           )}
 
           <button
             onClick={fetchKeys}
-            className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 transition-colors"
+            className="flex items-center gap-2 px-5 py-3 rounded-xl text-base font-bold bg-zinc-800 hover:bg-zinc-700 text-white transition-colors"
           >
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className="w-5 h-5" />
             Refresh
           </button>
         </div>

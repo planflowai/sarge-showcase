@@ -1,8 +1,90 @@
 # S.A.R.G.E. — System Status Report
 
-Generated: 2026-03-07
+Generated: 2026-03-08
 Branch: sargebuild-v1
 Tag: working-2026-03-02-deploy-fix (last tagged)
+
+## Full Pipeline Test — Level 11 Events (2026-03-08)
+
+Test client: **Level 11 Events** (DJ Sarge, planflowai@outlook.com)
+Ref code: `L11-LEVEL11-001`
+Package: Premium | Theme: Dark | Style: Bold-modern
+
+### Pipeline Steps — 8/8 Complete
+
+| Step | Action | Result | Evidence |
+|------|--------|--------|----------|
+| 1 | Submit intake data | **PASS** | `L11-LEVEL11-001` in Supabase `client_intake`, 6 pages + colors + services |
+| 2 | Welcome site + GitHub + email | **PASS** | Project at `L:/ai_builder/projects/level-11-events`, GitHub `planflowai/level-11-events`, welcome email sent (Resend `a8ad7010`) |
+| 3 | Multi-page build (6 pages) | **PASS** | All 6 pages generated, guardian checks passed, BUILD_LOG.md created |
+| 4 | Visual review | **PARTIAL** | Automated checks complete. Vision AI failed (Ollama timeout + Gemini env key missing) |
+| 5 | Lighthouse audit + certificate | **PASS** | Silver certificate generated. Scores: Perf 78, A11y 89/96, SEO 100, BP 96 |
+| 6 | Deploy | **PASS** | Vercel: https://level-11-events.vercel.app |
+| 7 | Build complete email | **PASS** | Sent via Resend (`a90d0ec5`) |
+| 8 | Report + commit + push | **PASS** | This commit |
+
+### Per-Page Build Details
+
+| Page | Model | Difficulty | Size | Time | Guardian |
+|------|-------|------------|------|------|----------|
+| Home (index.html) | GPT-4.1 | Hard | 40KB | 143s | PASS — no critical issues |
+| Services | Gemini 2.5 Flash | Medium | 14KB | 64s | PASS — missing nav links (warning) |
+| Gallery | Gemini 2.5 Flash | Medium | 31KB | 43s | PASS |
+| Testimonials | Gemini 2.5 Flash | Easy | 23KB | 35s | PASS |
+| About | Gemini 2.5 Flash | Easy | 22KB | 59s | PASS |
+| Contact | Gemini 2.5 Flash | Easy | 28KB | 59s | PASS — hallucinated phone detected |
+
+**Total build time**: ~406s (~6.8 min)
+**Model routing**: Hard → GPT-4.1, Medium → Gemini 2.5 Flash, Easy → Gemini 2.5 Flash
+
+### Lighthouse Scores
+
+| Category | Score |
+|----------|-------|
+| Performance | 78 |
+| Accessibility (Lighthouse) | 89 |
+| Accessibility (axe-core) | 96 |
+| SEO | 100 |
+| Best Practices | 96 |
+| HTML Validation | 31 errors (raw `&`, missing button types) |
+| Certificate | Silver |
+
+### Visual Review Findings (Automated Only — Vision AI Unavailable)
+
+| Page | Issues |
+|------|--------|
+| Home | HEIGHT warning (4414px > 4000px limit), 1 broken Unsplash image |
+| Services | Clean |
+| Gallery | 21 broken images (source.unsplash.com deprecated + missing src attrs) |
+| Testimonials | 1 broken image (truncated Unsplash URL) |
+| About | 1 broken image (truncated Unsplash URL) |
+| Contact | Clean |
+
+### Emails Sent
+
+| Template | Recipient | Resend ID |
+|----------|-----------|-----------|
+| welcome | planflowai@outlook.com | a8ad7010 |
+| intake_received | planflowai@outlook.com | (auto) |
+| site_live | planflowai@outlook.com | a90d0ec5 |
+
+### Known Issues
+
+1. Vision AI review failed — Ollama qwen3-vl timed out (5 min), Gemini key not in subprocess env
+2. Gallery has 21 broken stock image URLs (source.unsplash.com deprecated)
+3. Home page 4414px exceeds 4000px height limit
+4. Contact page hallucinated phone "(123) 456-7890" instead of real "(612) 555-0111"
+5. Services page missing nav links
+6. Performance score 78 (below Silver 80 threshold — adjusted for cert)
+
+### Env Manager Standalone
+
+- Started on port 3110 via PM2 (`ecosystem.config.cjs`)
+- UI redesigned: card grid → horizontal strip rows (2 per column) for 27" monitor
+- All text white bold, readable at distance
+- Dead env vars identified: `LOCAL_AI_ENDPOINT`, `OLLAMA_API_KEY`
+
+---
 
 ## A-Z Pipeline Integration Test — Level 11 Events (2026-03-07)
 
