@@ -4,6 +4,48 @@ Generated: 2026-03-08
 Branch: sargebuild-v1
 Tag: working-2026-03-02-deploy-fix (last tagged)
 
+## Level 11 Events v2 — Full Pipeline Rebuild (2026-03-08)
+
+Ref: `L11-LEVEL11-002` | 7 pages | Clean slate rebuild with v2 intake data
+
+### Per-Page Build Results
+
+| Page | Model | Provider | Difficulty | Size | Time | Status |
+|------|-------|----------|------------|------|------|--------|
+| Home | GPT-4.1 | OpenAI | Hard | 44.8KB | 123.6s | COMPLETE |
+| Services | Gemini 2.5 Flash | Google | Medium | 48.2KB | 51.6s | COMPLETE |
+| Photo Booths | Gemini 2.5 Flash | Google | Medium | 32.1KB | 47.0s | COMPLETE |
+| Gallery | GPT-4.1 | OpenAI | Hard (retry) | 32.8KB | 81.3s | COMPLETE (retry — first attempt 0 bytes) |
+| Reviews | Gemini 2.5 Flash | Google | Medium | 41.2KB | 51.3s | COMPLETE |
+| About | Gemini 2.5 Flash | Google | Medium (retry) | 33.8KB | 47.9s | COMPLETE (retry — first attempt 2KB) |
+| Contact | Gemini 2.5 Flash | Google | Easy | 30.6KB | 40.9s | COMPLETE |
+
+**Total**: 7/7 pages, 263KB HTML, ~443s build time
+
+### Pipeline Steps
+
+| Step | Result |
+|------|--------|
+| Intake submit | PASS — L11-LEVEL11-002 in Supabase |
+| Shared CSS | PASS — 509 bytes |
+| Navigation | PASS — 7-page nav snippet |
+| Page builds | PASS — 7/7 (2 retries: gallery, about) |
+| Guardian | PASS — 0 findings, 0 hallucinations |
+| PII injection | PARTIAL — 74 replacements, 25 remaining |
+| Image URL fix | PASS — 0 broken (prompt fix worked) |
+| Billing log | PASS — 7 entries logged |
+| Lighthouse | Perf 71, A11y 100, SEO 82, BP 93 |
+| Certificate | FAILED — Perf 71 < 80 Silver threshold |
+
+### Known Issues
+
+1. **25 unresolved PII placeholders** — `{{address}}`, `{{city}}`, `{{state}}`, `{{client_name}}` not found in flattened intake data. Root cause: intake uses `business_address`, `location` (not `city`/`state` separately), `full_name` (not `client_name`). PII extraction in build-multipage needs field name mapping fix.
+2. **Performance score 71** — Below Silver (80) threshold. No certificate generated.
+3. **Gallery first attempt returned 0 bytes** — Gemini 2.5 Flash failed, GPT-4.1 retry succeeded.
+4. **About first attempt 2KB** — Below 5KB minimum, Gemini retry succeeded at 33KB.
+
+---
+
 ## Pipeline Wiring Fixes (2026-03-08) — 6 Fixes
 
 ### Fix Results
