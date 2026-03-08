@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Services - Level 11 Events</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: #0F0F1A;
+            color: #F0F2F5;
+            font-weight: 500;
+            font-size: 16px;
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        a {
+            color: #6C8AFF;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        a:hover {
+            color: #8CAAFF;
+        }
+
+        /* Header & Navigation */
+        header {
+            background-color: #161627;
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid #2A2A3E;
+        }
+
+        .header-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #FFFFFF;
+        }
+
+        .desktop-nav {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .desktop-nav a {
+            font-weight: 600;
+            color: #F0F2F5;
+            font-size: 1.05rem;
+        }
+
+        .desktop-nav a:hover {
+            color: #6C8AFF;
+        }
+
+        .desktop-nav a.active {
+            color: #6C8AFF;
+        }
+
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        .hamburger span {
+            display: block;
+            width: 24px;
+            height: 3px;
+            background-color: #F0F2F5;
+            border-radius: 2px;
+            transition: 0.3s;
+        }
+
+        .mobile-nav {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background-color: #161627;
+            flex-direction: column;
+            padding: 1.5rem 2rem;
+            border-top: 1px solid #2A2A3E;
+            z-index: 1000;
+        }
+
+        .mobile-nav.active {
+            display: flex;
+        }
+
+        .mobile-nav a {
+            padding: 1rem 0;
+            font-weight: 600;
+            color: #F0F2F5;
+            border-bottom: 1px solid #2A2A3E;
+            font-size: 1.1rem;
+        }
+
+        .mobile-nav a:last-child {
+            border-bottom: none;
+        }
+
+        .mobile-nav a.active {
+            color: #6C8AFF;
+        }
+
+        /* Main Content */
+        main {
+            flex: 1;
+            max-width: 1200px;
+            width: 100%;
+            margin: 3rem auto;
+            padding: 0 2rem;
+        }
+
+        .page-title {
+            font-size: 2.8rem;
+            font-weight: 800;
+            color: #FFFFFF;
+            margin-bottom: 3rem;
+            text-align: center;
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2.5rem;
+        }
+
+        .service-card {
+            background-color: #161627;
+            border-radius: 12px;
+            padding: 2.5rem 2rem;
+            border: 1px solid #2A2A3E;
+            transition: transform 0.3s, border-color 0.3s;
+        }
+
+        .service-card:hover {
+            transform: translateY(-8px);
+            border-color: #4A6AFF;
+        }
+
+        .service-icon {
+            font-size: 2.8rem;
+            margin-bottom: 1.5rem;
+            color: #6C8AFF;
+        }
+
+        .service-title {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: #FFFFFF;
+            margin-bottom: 1rem;
+        }
+
+        .service-description {
+            color: #F0F2F5;
+            font-size: 1.05rem;
+            line-height: 1.7;
+        }
+
+        /* Footer */
+        footer {
+            background-color: #161627;
+            padding: 3rem 2rem;
+            border-top: 1px solid #2A2A3E;
+            margin-top: auto;
+        }
+
+        .footer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 3rem;
+        }
+
+        .footer-logo {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #FFFFFF;
+            margin-bottom: 1rem;
+        }
+
+        .footer-tagline {
+            color: #F0F2F5;
+            font-size: 1.05rem;
+            line-height: 1.6;
+        }
+
+        .footer-heading {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: #FFFFFF;
+            margin-bottom: 1.5rem;
+        }
+
+        .footer-links {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.9rem;
+        }
+
+        .footer-links a {
+            color: #F0F2F5;
+            font-weight: 500;
+            font-size: 1.05rem;
+        }
+
+        .footer-links a:hover {
+            color: #6C8AFF;
+        }
+
+        .contact-info {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .contact-info li {
+            color: #F0F2F5;
+            font-size: 1.05rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+
+        .contact-info strong {
+            color: #FFFFFF;
+            font-weight: 700;
+        }
+
+        .copyright {
+            text-align: center;
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid #2A2A3E;
+            color: #F0F2F5;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .desktop-nav {
+                display: none;
+            }
+
+            .hamburger {
+                display: flex;
+            }
+
+            .page-title {
+                font-size: 2.3rem;
+            }
+
+            .services-grid {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .service-card {
+                padding: 2rem 1.5rem;
+            }
+
+            .footer-container {
+                grid-template-columns: 1fr;
+                gap: 2.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            header, main, footer {
+                padding-left: 1.5rem;
+                padding-right: 1.5rem;
+                       .page-title {
+                font-size: 2rem;
+            }
+
+            .service-title {
+                font-size: 1.4rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div class="logo">Level 11 Events</div>
+            <nav class="desktop-nav">
+                <a href="index.html">Home</a>
+                <a href="services.html" class="active">Services</a>
+                <a href="contact.html">Contact</a>
+            </nav>
+            <button class="hamburger" id="hamburgerBtn" aria-label="Toggle navigation">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+        <nav class="mobile-nav" id="mobileNav">
+            <a href="index.html">Home</a>
+            <a href="services.html" class="active">Services</a>
+            <a href="contact.html">Contact</a>
+        </nav>
+    </header>
+
+    <main>
+        <h1 class="page-title">Our Professional Services</h1>
+        <div class="services-grid">
+            <article class="service-card">
+                <div class="service-icon">🔧</div>
+                <h2 class="service-title">Consultation & Strategy</h2>
+                <p class="service-description">We provide in-depth analysis and strategic roadmaps tailored to your business goals. Our experts work with you to identify opportunities, optimize processes, and build a clear plan for sustainable growth and digital transformation.</p>
+            </article>
+            <article class="service-card">
+                <div class="service-icon">🚀</div>
+                <h2 class="service-title">Custom Development</h2>
+                <p class="service-description">From web applications to complex software solutions, we build robust, scalable, and secure systems using the latest technologies. Our development process is collaborative, ensuring the final product perfectly matches your vision and requirements.</p>
+            </article>
+            <article class="service-card">
+                <div class="service-icon">🛡️</div>
+                <h2 class="service-title">Security & Compliance</h2>
+                <p class="service-description">Protect your digital assets with our comprehensive security audits, penetration testing, and compliance frameworks. We ensure your systems meet industry standards and are resilient against evolving cyber threats.</p>
+            </article>
+            <article class="service-card">
+                <div class="service-icon">📈</div>
+                <h2 class="service-title">Ongoing Support & Maintenance</h2>
+                <p class="service-description">Our relationship continues after launch. We offer reliable support, performance monitoring, regular updates, and proactive maintenance to keep your systems running smoothly, securely, and efficiently at all times.</p>
+            </article>
+        </div>
+    </main>
+
+    <footer>
+        <div class="footer-container">
+            <div class="footer-brand">
+                <div class="footer-logo">Level 11 Events</div>
+                <p class="footer-tagline">Delivering expert solutions and unparalleled support to help your business thrive in the digital landscape.</p>
+            </div>
+            <div class="footer-nav">
+                <h3 class="footer-heading">Quick Links</h3>
+                <ul class="footer-links">
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="services.html">Services</a></li>
+                    <li><a href="contact.html">Contact Us</a></li>
+                </ul>
+            </div>
+            <div class="footer-contact">
+                <h3 class="footer-heading">Get In Touch</h3>
+                <ul class="contact-info">
+                    <li><strong>Phone:</strong> (612) 555-0111</li>
+                    <li><strong>Email:</strong> info@level11events.com</li>
+                    <li><strong>Address:</strong> PO Box 44426, Eden Prairie, MN 55344</li>
+                </ul>
+            </div>
+        </div>
+        <p class="copyright">&copy; <span id="currentYear"></span> Level 11 Events. All rights reserved.</p>
+    </footer>
+
+    <script>
+        // Mobile Navigation Toggle
+        const hamburgerBtn = document.getElementById('hamburgerBtn');
+        const mobileNav = document.getElementById('mobileNav');
+
+        hamburgerBtn.addEventListener('click', () => {
+            mobileNav.classList.toggle('active');
+            // Animate hamburger to 'X'
+            const spans = hamburgerBtn.querySelectorAll('span');
+            if (mobileNav.classList.contains('active')) {
+                spans[0].style.transform = 'rotate(45deg) translate(5px, 5px)';
+                spans[1].style.opacity = '0';
+                spans[2].style.transform = 'rotate(-45deg) translate(7px, -6px)';
+            } else {
+                spans[0].style.transform = 'none';
+                spans[1].style.opacity = '1';
+                spans[2].style.transform = 'none';
+            }
+        });
+
+        // Close mobile nav when clicking a link
+        const mobileNavLinks = mobileNav.querySelectorAll('a');
+        mobileNavLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                mobileNav.classList.remove('active');
+                const spans = hamburgerBtn.querySelectorAll('span');
+                spans[0].style.transform = 'none';
+                spans[1].style.opacity = '1';
+                spans[2].style.transform = 'none';
+            });
+        });
+
+        // Set current year in footer
+        document.getElementById('currentYear').textContent = new Date().getFullYear();
+    </script>
+</body>
+</html>

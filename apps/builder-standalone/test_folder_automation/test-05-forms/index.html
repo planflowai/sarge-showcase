@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #0F0F1A;
+            color: #FFFFFF;
+            margin: 0;
+            padding: 0;
+        }
+        header, nav, main, footer {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        header {
+            background: #1E1E28;
+            padding: 1rem 0;
+        }
+        nav {
+            padding: 0.5rem;
+        }
+        nav ul {
+            list-style: none;
+            padding: 0;
+        }
+        nav ul li {
+            margin: 0 1rem;
+        }
+        .hamburger {
+            display: none;
+            cursor: pointer;
+        }
+        @media (max-width: 600px) {
+            .hamburger {
+                display: block;
+            }
+            nav ul {
+                display: none;
+                flex-direction: column;
+                position: absolute;
+                top: 50px;
+                left: 0;
+                width: 100%;
+                background: #1E1E28;
+                text-align: center;
+            }
+            nav ul.active {
+                display: flex;
+            }
+        }
+        form {
+            max-width: 600px;
+            width: 100%;
+            padding: 1rem;
+        }
+        label {
+            display: block;
+            margin-top: 1rem;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 0.5rem;
+            margin-top: 0.5rem;
+            border: none;
+            border-radius: 4px;
+        }
+        input[type="email"] {
+            background: #2E2E36;
+        }
+        input[type="submit"] {
+            background: #4caf50;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            margin-top: 1rem;
+            cursor: pointer;
+        }
+        input[type="submit"]:hover {
+            background: #45a049;
+        }
+        .error {
+            color: red;
+        }
+        .success {
+            color: green;
+            margin-top: 1rem;
+        }
+        footer {
+            background: #1E1E28;
+            padding: 1rem 0;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Level 11 Events</h1>
+    </header>
+    <nav>
+        <div class="hamburger">☰</div>
+        <ul>
+            <li><a href="#">Home</a></li>
+            <li><a href="#">About</a></li>
+            <li><a href="#">Services</a></li>
+            <li><a href="#">Contact</a></li>
+        </ul>
+    </nav>
+    <main>
+        <form id="contactForm">
+            <label for="name">Name:</label>
+            <input type="text" id="name" name="name" required>
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
+            <label for="phone">Phone:</label>
+            <input type="text" id="phone" name="phone">
+            <label for="message">Message:</label>
+            <textarea id="message" name="message" required></textarea>
+            <input type="submit" value="Send">
+        </form>
+        <div id="formMessage" class="success" style="display:none;">Thank you!</div>
+        <div id="formError" class="error" style="display:none;"></div>
+        <div>
+            <h3>Subscribe to our newsletter</h3>
+            <form id="newsletterForm">
+                <label for="newsletterEmail">Email:</label>
+                <input type="email" id="newsletterEmail" name="newsletterEmail" required>
+                <input type="submit" value="Subscribe">
+            </form>
+        </div>
+    </main>
+    <footer>
+        <p>Phone: (612) 555-0111 | Email: info@level11events.com</p>
+    </footer>
+    <script>
+        document.querySelector('.hamburger').addEventListener('click', function() {
+            document.querySelector('nav ul').classList.toggle('active');
+        });
+
+        document.getElementById('contactForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const form = event.target;
+            const name = form.name.value;
+            const email = form.email.value;
+            const phone = form.phone.value;
+            const message = form.message.value;
+            const errorDiv = document.getElementById('formError');
+            const successDiv = document.getElementById('formMessage');
+
+            errorDiv.style.display = 'none';
+            successDiv.style.display = 'none';
+
+            if (!name || !email || !message) {
+                errorDiv.style.display = 'block';
+                errorDiv.textContent = 'Please fill in all required fields.';
+                return;
+            }
+
+            if (!email.includes('@')) {
+                errorDiv.style.display = 'block';
+                errorDiv.textContent = 'Please enter a valid email address.';
+                return;
+            }
+
+            successDiv.style.display = 'block';
+            form.reset();
+        });
+
+        document.getElementById('newsletterForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const form = event.target;
+            const email = form.newsletterEmail.value;
+            const errorDiv = document.getElementById('formError');
+
+            errorDiv.style.display = 'none';
+
+            if (!email.includes('@')) {
+                errorDiv.style.display = 'block';
+                errorDiv.textContent = 'Please enter a valid email address.';
+                return;
+            }
+
+            alert('Thank you for subscribing!');
+            form.reset();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Level 11 Events | Services</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: #0F0F1A;
+            color: #F0F2F5;
+            font-weight: 500;
+            font-size: 16px;
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        a {
+            color: #6C8CFF;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        button {
+            cursor: pointer;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 24px;
+            transition: all 0.3s ease;
+        }
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        section {
+            padding: 60px 0;
+        }
+        h1, h2, h3 {
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: #FFFFFF;
+        }
+        h1 { font-size: 2.5rem; }
+        h2 { font-size: 2rem; }
+        h3 { font-size: 1.5rem; }
+
+        /* Header & Nav */
+        header {
+            background-color: #1A1A2E;
+            padding: 20px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #FFFFFF;
+        }
+        .nav-desktop {
+            display: flex;
+            gap: 30px;
+        }
+        .nav-desktop a {
+            color: #F0F2F5;
+            font-weight: 600;
+        }
+        .hamburger {
+            display: none;
+            background: none;
+            border: none;
+            color: #F0F2F5;
+            font-size: 1.8rem;
+            cursor: pointer;
+        }
+        .nav-mobile {
+            display: none;
+            flex-direction: column;
+            background-color: #1A1A2E;
+            padding: 20px;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            gap: 15px;
+        }
+        .nav-mobile.active {
+            display: flex;
+        }
+
+        /* Calendar Widget */
+        .calendar-widget {
+            background-color: #1A1A2E;
+            border-radius: 12px;
+            padding: 25px;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .calendar-nav-btn {
+            background-color: #2D2D44;
+            color: #FFFFFF;
+            padding: 8px 16px;
+            border-radius: 6px;
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+        }
+        .calendar-day-header {
+            text-align: center;
+            font-weight: 700;
+            color: #FFFFFF;
+            padding: 10px 0;
+            font-size: 0.9rem;
+        }
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #2D2D44;
+            border-radius: 6px;
+            color: #F0F2F5;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .calendar-day:hover {
+            background-color: #3A3A5A;
+        }
+        .calendar-day.other-month {
+            color: #6C757D;
+        }
+        .calendar-day.today {
+            background-color: #6C8CFF;
+            color: #FFFFFF;
+        }
+
+        /* Countdown Timer */
+        .countdown-section {
+            text-align: center;
+        }
+        .countdown-timer {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 30px;
+        }
+        .countdown-unit {
+            background-color: #1A1A2E;
+            border-radius: 12px;
+            padding: 25px 15px;
+            min-width: 120px;
+        }
+        .countdown-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #FFFFFF;
+            display: block;
+        }
+        .countdown-label {
+            font-size: 0.9rem;
+            color: #F0F2F5;
+            font-weight: 600;
+            margin-top: 8px;
+            display: block;
+        }
+
+        /* Pricing Table */
+        .pricing-section {
+            text-align: center;
+        }
+        .pricing-table {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+            margin-top: 40px;
+        }
+        .pricing-tier {
+            background-color: #1A1A2E;
+            border-radius: 16px;
+            padding: 40px 30px;
+            flex: 1;
+            min-width: 280px;
+            max-width: 350px;
+            display: flex;
+            flex-direction: column;
+        }
+        .pricing-tier h3 {
+            color: #FFFFFF;
+        }
+        .price {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #FFFFFF;
+            margin: 20px 0;
+        }
+        .price span {
+            font-size: 1rem;
+            color: #F0F2F5;
+        }
+        .features {
+            list-style: none;
+            text-align: left;
+            margin: 25px 0;
+            flex-grow: 1;
+        }
+        .features li {
+            padding: 10px 0;
+            color: #F0F2F5;
+            border-bottom: 1px solid #2D2D44;
+        }
+        .features li:last-child {
+            border-bottom: none;
+        }
+        .cta-button {
+            background: linear-gradient(135deg, #6C8CFF, #4A6FFF);
+            color: #FFFFFF;
+            font-size: 1.1rem;
+            margin-top: 20px;
+        }
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(108, 140, 255, 0.3);
+        }
+
+        /* PDF Download */
+        .pdf-section {
+            text-align: center;
+            background-color: #1A1A2E;
+            border-radius: 16px;
+            padding: 40px;
+            margin: 0 auto;
+            max-width: 600px;
+        }
+        .pdf-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background-color: #2D2D44;
+            color: #FFFFFF;
+            padding: 18px 36px;
+            border-radius: 12px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-top: 20px;
+        }
+        .pdf-button:hover {
+            background-color: #3A3A5A;
+            text-decoration: none;
+        }
+
+        /* Footer */
+        footer {
+            background-color: #1A1A2E;
+            padding: 40px 0;
+            margin-top: auto;
+        }
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 40px;
+        }
+        .footer-info h3 {
+            color: #FFFFFF;
+        }
+        .footer-info p {
+            color: #F0F2F5;
+            margin: 10px 0;
+        }
+        .copyright {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #2D2D44;
+            color: #F0F2F5;
+            font-size: 0.9rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-desktop {
+                display: none;
+            }
+            .hamburger {
+                display: block;
+            }
+            h1 { font-size: 2rem; }
+            h2 { font-size: 1.75rem; }
+            .countdown-unit {
+                min-width: 100px;
+                padding: 20px 10px;
+            }
+            .countdown-value {
+                font-size: 2rem;
+            }
+            .pricing-table {
+                flex-direction: column;
+                align-items: center;
+            }
+            .footer-content {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container header-container">
+            <div class="logo">Level 11 Events</div>
+            <nav class="nav-desktop">
+                <a href="#calendar">Calendar</a>
+                <a href="#countdown">Countdown</a>
+                <a href="#pricing">Pricing</a>
+                <a href="#download">Download</a>
+            </nav>
+            <button class="hamburger" id="hamburgerBtn">☰</button>
+        </div>
+        <nav class="nav-mobile" id="mobileNav">
+            <a href="#calendar">Calendar</a>
+            <a href="#countdown">Countdown</a>
+            <a href="#pricing">Pricing</a>
+            <a href="#download">Download</a>
+        </nav>
+    </header>
+
+    <main>
+        <section id="calendar" class="container">
+            <h2>Monthly Calendar</h2>
+            <div class="calendar-widget">
+                <div class="calendar-header">
+                    <button id="prevMonth" class="calendar-nav-btn">‹</button>
+                    <h3 id="currentMonthYear">Month Year</h3>
+                    <button id="nextMonth" class="calendar-nav-btn">›</button>
+                </div>
+                <div class="calendar-grid" id="calendarGrid">
+                    <!-- Days filled by JS -->
+                </div>
+            </div>
+        </section>
+
+        <section id="countdown" class="countdown-section container">
+            <h2>Countdown to December 31, 2026</h2>
+            <div class="countdown-timer" id="countdownTimer">
+                <div class="countdown-unit">
+                    <span class="countdown-value" id="days">00</span>
+                    <span class="countdown-label">Days</span>
+                </div>
+                <div class="countdown-unit">
+                    <span class="countdown-value" id="hours">00</span>
+                    <span class="countdown-label">Hours</span>
+                </div>
+                <div class="countdown-unit">
+                    <span class="countdown-value" id="minutes">00</span>
+                    <span class="countdown-label">Minutes</>
+                </div>
+                <div class="countdown-unit">
+                    <span class="countdown-value" id="seconds">00</span>
+                    <span class="countdown-label">Seconds</span>
+                </div>
+            </div>
+        </section>
+
+        <section id="pricing" class="pricing-section container">
+            <h2>Pricing Plans</h2>
+            <div class="pricing-table">
+                <div class="pricing-tier">
+                    <h3>Basic</h3>
+                    <div class="price">$99<span>/month</span></div>
+                    <ul class="features">
+                        <li>Core Feature Set</li>
+                        <li>Email Support</li>
+                        <li>Basic Analytics</li>
+                        <li>5GB Storage</li>
+                        <li>Up to 10 Users</li>
+                    </ul>
+                    <button class="cta-button">Get Started</button>
+                </div>
+                <div class="pricing-tier">
+                    <h3>Standard</h3>
+                    <div class="price">$199<span>/month</span></div>
+                    <ul class="features">
+                        <li>Advanced Features</li>
+                        <li>Priority Support</li>
+                        <li>Advanced Analytics</li>
+                        <li>50GB Storage</li>
+                        <li>Up to 50 Users</li>
+                    </ul>
+                    <button class="cta-button">Get Started</button>
+                </div>
+                <div class="pricing-tier">
+                    <h3>Premium</h3>
+                    <div class="price">$399<span>/month</span></div>
+                    <ul class="features">
+                        <li>Full Feature Suite</li>
+                        <li>24/7 Phone Support</li>
+                        <li>Custom Reporting</li>
+                        <li>Unlimited Storage</li>
+                        <li>Unlimited Users</li>
+                    </ul>
+                    <button class="cta-button">Get Started</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="download" class="container">
+            <div class="pdf-section">
+                <h2>Company Brochure</h2>
+                <p>Download our detailed brochure to learn more about our services and offerings.</p>
+                <a href="https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" download class="pdf-button">
+                    📥 Download Brochure
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-info">
+                    <h3>Level 11 Events</h3>
+                    <p>PO Box 44426, Eden Prairie, MN 55344</p>
+                    <p>Phone: (612) 555-0111</p>
+                    <p>Email: info@level11events.com</p>
+                </div>
+                <div class="footer-info">
+                    <h3>Quick Links</h3>
+                    <p><a href="#calendar">Calendar</a></p>
+                    <p><a href="#pricing">Pricing</a></p>
+                    <p><a href="#download">Brochure</a></p>
+                </div>
+            </div>
+            <div class="copyright">
+                © 2024 Level 11 Events. All rights reserved.
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Mobile Navigation
+        const hamburgerBtn = document.getElementById('hamburgerBtn');
+        const mobileNav = document.getElementById('mobileNav');
+        hamburgerBtn.addEventListener('click', () => {
+            mobileNav.classList.toggle('active');
+        });
+        // Close mobile nav on link click
+        document.querySelectorAll('.nav-mobile a').forEach(link => {
+            link.addEventListener('click', () => {
+                mobileNav.classList.remove('active');
+            });
+        });
+
+        // Calendar Widget
+        let currentDate = new Date();
+        const currentMonthYear = document.getElementById('currentMonthYear');
+        const calendarGrid = document.getElementById('calendarGrid');
+        const prevMonthBtn = document.getElementById('prevMonth');
+        const nextMonthBtn = document.getElementById('nextMonth');
+
+        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+        function renderCalendar(date) {
+            const year = date.getFullYear();
+            const month = date.getMonth();
+            const today = new Date();
+            const todayString = today.toDateString();
+
+            // Set header
+            currentMonthYear.textContent = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+            // Clear grid
+            calendarGrid.innerHTML = '';
+
+            // Day headers
+            dayNames.forEach(day => {
+                const dayHeader = document.createElement('div');
+                dayHeader.className = 'calendar-day-header';
+                dayHeader.textContent = day;
+                calendarGrid.appendChild(dayHeader);
+            });
+
+            // First day of month
+            const firstDay = new Date(year, month, 1);
+            // Last day of month
+            const lastDay = new Date(year, month + 1, 0);
+            // Starting day (0 = Sunday)
+            const startDay = firstDay.getDay();
+            // Total days in month
+            const totalDays = lastDay.getDate();
+            // Previous month's last days
+            const prevMonthLastDay = new Date(year, month, 0).getDate();
+
+            // Previous month days
+            for (let i = startDay - 1; i >= 0; i--) {
+                const day = document.createElement('div');
+                day.className = 'calendar-day other-month';
+                day.textContent = prevMonthLastDay - i;
+                calendarGrid.appendChild(day);
+            }
+
+            // Current month days
+            for (let i = 1; i <= totalDays; i++) {
+                const day = document.createElement('div');
+                day.className = 'calendar-day';
+                day.textContent = i;
+                const dayDate = new Date(year, month, i);
+                if (dayDate.toDateString() === todayString) {
+                    day.classList.add('today');
+                }
+                day.addEventListener('click', () => {
+                    alert(`You clicked on ${dayDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`);
+                });
+                calendarGrid.appendChild(day);
+            }
+
+            // Next month days (fill remaining cells)
+            const totalCells = 42; // 6 rows * 7 days
+            const cellsUsed = startDay + totalDays;
+            for (let i = 1; i <= totalCells - cellsUsed; i++) {
+                const day = document.createElement('div');
+                day.className = 'calendar-day other-month';
+                day.textContent = i;
+                calendarGrid.appendChild(day);
+            }
+        }
+
+        prevMonthBtn.addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            renderCalendar(currentDate);
+        });
+
+        nextMonthBtn.addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            renderCalendar(currentDate);
+        });
+
+        // Initial render
+        renderCalendar(currentDate);
+
+        // Countdown Timer
+        const targetDate = new Date('December 31, 2026 23:59:59').getTime();
+        const daysEl = document.getElementById('days');
+        const hoursEl = document.getElementById('hours');
+        const minutesEl = document.getElementById('minutes');
+        const secondsEl = document.getElementById('seconds');
+
+        function updateCountdown() {
+            const now = new Date().getTime();
+            const timeLeft = targetDate - now;
+
+            if (timeLeft < 0) {
+                daysEl.textContent = '00';
+                hoursEl.textContent = '00';
+                minutesEl.textContent = '00';
+                secondsEl.textContent = '00';
+                return;
+            }
+
+            const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+            daysEl.textContent = days.toString().padStart(2, '0');
+            hoursEl.textContent = hours.toString().padStart(2, '0');
+            minutesEl.textContent = minutes.toString().padStart(2, '0');
+            secondsEl.textContent = seconds.toString().padStart(2, '0');
+        }
+
+        // Initial call and interval
+        updateCountdown();
+        setInterval(updateCountdown, 1000);
+
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href');
+                if(targetId === '#') return;
+                const targetElement = document.querySelector(targetId);
+                if(targetElement) {
+                    window.scrollTo({
+                        top: targetElement.offsetTop - 80,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

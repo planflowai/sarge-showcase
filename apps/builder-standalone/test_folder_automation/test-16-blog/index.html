@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Level 11 Events Blog</title>
+    <style>
+        body, h1, h2, h3, p, label {
+            font-family: Arial, sans-serif;
+        }
+        body {
+            background: #0F0F1A;
+            color: #FFFFFF;
+            margin: 0;
+            padding: 0;
+            font-weight: 500;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header, footer {
+            background: #1E1E2F;
+            padding: 20px;
+            text-align: center;
+        }
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        nav a {
+            color: #FFFFFF;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+        .nav-toggle {
+            display: none;
+        }
+        @media (max-width: 768px) {
+            .nav-toggle {
+                display: block;
+            }
+            .nav-menu {
+                display: none;
+            }
+            .nav-toggle.active + .nav-menu {
+                display: flex;
+                flex-direction: column;
+            }
+        }
+        .blog-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .posts {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+        .post {
+            background: #252536;
+            margin-bottom: 20px;
+            padding: 20px;
+            width: calc(50% - 10px);
+            box-sizing: border-box;
+        }
+        .post h2 {
+            margin: 0 0 10px 0;
+        }
+        .post p {
+            margin: 0;
+        }
+        .category-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            margin-top: 10px;
+            font-weight: 700;
+            border-radius: 5px;
+            background: #565669;
+            color: #FFFFFF;
+        }
+        .category-badge.news {
+            background: #4CAF50;
+        }
+        .category-badge.tips {
+            background: #2196F3;
+        }
+        .category-badge.events {
+            background: #FF5722;
+        }
+        .filter-buttons {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .filter-buttons button {
+            margin: 0 10px;
+            padding: 5px 15px;
+            border: none;
+            background: #333344;
+            color: #FFFFFF;
+            cursor: pointer;
+        }
+        .filter-buttons button.active {
+            background: #565669;
+        }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .pagination button {
+            margin: 0 10px;
+            padding: 5px 15px;
+            border: none;
+            background: #333344;
+            color: #FFFFFF;
+            cursor: pointer;
+        }
+        .pagination button.active {
+            background: #565669;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <a href="#">Level 11 Events</a>
+            <button class="nav-toggle" aria-label="Toggle navigation">☰</button>
+            <div class="nav-menu">
+                <a href="#">Home</a>
+                <a href="#">About</a>
+                <a href="#">Contact</a>
+            </div>
+        </nav>
+    </header>
+    <div class="container">
+        <h1 class="blog-header">Level 11 Events Blog</h1>
+        <div class="filter-buttons">
+            <button class="active" data-category="all">All</button>
+            <button data-category="news">News</button>
+            <button data-category="tips">Tips</button>
+            <button data-category="events">Events</button>
+        </div>
+        <div class="posts" id="posts">
+            <div class="post" data-category="news">
+                <h2>Post Title 1</h2>
+                <p>Posted on January 1, 2023</p>
+                <div class="category-badge news">News</div>
+                <p>Excerpt of the post...</p>
+                <a href="#">Read More</a>
+            </div>
+            <div class="post" data-category="tips">
+                <h2>Post Title 2</h2>
+                <p>Posted on January 2, 2023</p>
+                <div class="category-badge tips">Tips</div>
+                <p>Excerpt of the post...</p>
+                <a href="#">Read More</a>
+            </div>
+            <div class="post" data-category="events">
+                <h2>Post Title 3</h2>
+                <p>Posted on January 3, 2023</p>
+                <div class="category-badge events">Events</div>
+                <p>Excerpt of the post...</p>
+                <a href="#">Read More</a>
+            </div>
+            <div class="post" data-category="news">
+                <h2>Post Title 4</h2>
+                <p>Posted on January 4, 2023</p>
+                <div class="category-badge news">News</div>
+                <p>Excerpt of the post...</p>
+                <a href="#">Read More</a>
+            </div>
+        </div>
+        <div class="pagination" id="pagination">
+            <button class="active">1</button>
+            <button>2</button>
+            <button>3</button>
+        </div>
+    </div>
+    <footer>
+        <p>&copy; Level 11 Events 2023</p>
+    </footer>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const posts = document.querySelectorAll('.post');
+            const filterButtons = document.querySelectorAll('.filter-buttons button');
+            const paginationButtons = document.querySelectorAll('.pagination button');
+            let currentPage = 1;
+
+            function filterPosts(category) {
+                posts.forEach(post => {
+                    if (category === 'all' || post.dataset.category === category) {
+                        post.style.display = 'block';
+                    } else {
+                        post.style.display = 'none';
+                    }
+                });
+            }
+
+            function showPagination() {
+                const totalPosts = posts.length;
+                const postsPerPage = 2;
+                const totalPages = Math.ceil(totalPosts / postsPerPage);
+
+                paginationButtons.forEach(button => {
+                    button.style.display = 'none';
+                });
+
+                for (let i = 1; i <= totalPages; i++) {
+                    paginationButtons[i - 1].style.display = 'inline-block';
+                    paginationButtons[i - 1].innerText = i;
+                    if (i === currentPage) {
+                        paginationButtons[i - 1].classList.add('active');
+                    }
+                }
+            }
+
+            function showPosts() {
+                const totalPosts = posts.length;
+                const postsPerPage = 2;
+                const start = (currentPage - 1) * postsPerPage;
+                const end = start + postsPerPage;
+
+                posts.forEach((post, index) => {
+                    if (index >= start && index < end) {
+                        post.style.display = 'block';
+                    } else {
+                        post.style.display = 'none';
+                    }
+                });
+            }
+
+            filterButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    filterButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    filterPosts(button.dataset.category);
+                    currentPage = 1;
+                    showPagination();
+                    showPosts();
+                });
+            });
+
+            paginationButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    paginationButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    currentPage = parseInt(button.innerText);
+                    showPosts();
+                });
+            });
+
+            filterPosts('all');
+            showPagination();
+            showPosts();
+        });
+    </script>
+</body>
+</html>

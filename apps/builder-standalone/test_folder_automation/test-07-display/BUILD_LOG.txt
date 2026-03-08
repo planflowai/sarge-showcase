@@ -1,0 +1,30 @@
+============================================================
+TEST 07 — Gallery + Maps + Social
+Started: 2026-03-08T19:11:33.533Z
+============================================================
+
+── Run 1 ──
+Model: ollama:qwen2.5-coder:7b (Local Coder)
+Size: 5174b | Tokens: 362/1350 | Cost: $0.000000 | Time: 34.5s
+LH: P:81 A:91 S:91 BP:96 (avg 90)
+Height: 1697px | Grey: 0 | PH: 0 | Assets: 0
+PASS: lighthouse, height, grey, placeholders, assets, lightbox, map, social
+FAIL: none
+
+── Run 2 ──
+Model: deepseek:deepseek-chat (Cheap Cloud)
+Size: 13123b | Tokens: 339/3008 | Cost: $0.003400 | Time: 88.5s
+LH: P:93 A:93 S:91 BP:96 (avg 93)
+Height: 1705px | Grey: 0 | PH: 0 | Assets: 1
+PASS: lighthouse, height, grey, placeholders, lightbox, map, social
+FAIL: assets(empty src)
+
+── Run 3 ──
+Model: deepseek:deepseek-chat (Cheap Cloud)
+Size: 14599b | Tokens: 339/3572 | Cost: $0.004021 | Time: 108.0s
+LH: P:96 A:92 S:91 BP:96 (avg 94)
+Height: 1943px | Grey: 0 | PH: 0 | Assets: 1
+PASS: lighthouse, height, grey, placeholders, lightbox, map, social
+FAIL: assets(empty src)
+
+STATUS: FAIL | MEDIAN: 93 | COST: $0.007421

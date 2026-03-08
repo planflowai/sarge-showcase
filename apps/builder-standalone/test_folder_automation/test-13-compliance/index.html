@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Level 11 Events - Accessible Services</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: #0F0F1A;
+            color: #F0F2F5;
+            font-weight: 500;
+            font-size: 16px;
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .skip-link {
+            position: absolute;
+            top: -3rem;
+            left: 0.5rem;
+            background-color: #4F46E5;
+            color: #FFFFFF;
+            padding: 0.75rem;
+            text-decoration: none;
+            font-weight: 700;
+            border-radius: 0.25rem;
+            z-index: 9999;
+        }
+
+        .skip-link:focus {
+            top: 0.5rem;
+            outline: 3px solid #F0F2F5;
+            outline-offset: 2px;
+        }
+
+        header {
+            background-color: #1A1A2E;
+            padding: 1.5rem 2rem;
+            border-bottom: 2px solid #2D2D44;
+        }
+
+        .header-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: #FFFFFF;
+            text-decoration: none;
+        }
+
+        nav {
+            display: flex;
+            align-items: center;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            color: #F0F2F5;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.1rem;
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+        }
+
+        .nav-links a:hover,
+        .nav-links a:focus {
+            background-color: #2D2D44;
+            outline: 2px solid #4F46E5;
+            outline-offset: 2px;
+        }
+
+        .hamburger {
+            display: none;
+            background: none;
+            border: none;
+            color: #F0F2F5;
+            font-size: 1.8rem;
+            cursor: pointer;
+            padding: 0.5rem;
+        }
+
+        .hamburger:focus {
+            outline: 2px solid #4F46E5;
+            border-radius: 0.25rem;
+        }
+
+        main {
+            flex: 1;
+            max-width: 1200px;
+            width: 100%;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 3rem 1rem;
+            margin-bottom: 3rem;
+            background: linear-gradient(135deg, #1A1A2E 0%, #2D2D44 100%);
+            border-radius: 1rem;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #FFFFFF;
+            font-weight: 800;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            max-width: 700px;
+            margin: 0 auto 2rem;
+        }
+
+        .btn {
+            display: inline-block;
+            background-color: #4F46E5;
+            color: #FFFFFF;
+            padding: 0.9rem 2rem;
+            text-decoration: none;
+            font-weight: 700;
+            border-radius: 0.5rem;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+        }
+
+        .btn:hover {
+            background-color: #4338CA;
+        }
+
+        .btn:focus {
+            outline: 3px solid #F0F2F5;
+            outline-offset: 2px;
+        }
+
+        section {
+            margin-bottom: 4rem;
+        }
+
+        h2 {
+            font-size: 2.25rem;
+            margin-bottom: 1.5rem;
+            color: #FFFFFF;
+            font-weight: 800;
+        }
+
+        h3 {
+            font-size: 1.75rem;
+            margin-bottom: 1rem;
+            color: #FFFFFF;
+            font-weight: 700;
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .service-card {
+            background-color: #1A1A2E;
+            padding: 2rem;
+            border-radius: 1rem;
+            border: 1px solid #2D2D44;
+        }
+
+        .service-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .contact-info {
+            background-color: #1A1A2E;
+            padding: 2rem;
+            border-radius: 1rem;
+            margin-top: 2rem;
+        }
+
+        .contact-info p {
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        .contact-info a {
+            color: #4F46E5;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .contact-info a:hover,
+        .contact-info a:focus {
+            text-decoration: underline;
+            outline: none;
+        }
+
+        footer {
+            background-color: #1A1A2E;
+            padding: 3rem 2rem;
+            border-top: 2px solid #2D2D44;
+            margin-top: auto;
+        }
+
+        .footer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 3rem;
+        }
+
+        .footer-links {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .footer-links a {
+            color: #F0F2F5;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .footer-links a:hover,
+        .footer-links a:focus {
+            text-decoration: underline;
+            outline: none;
+        }
+
+        .copyright {
+            width: 100%;
+            text-align: center;
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid #2D2D44;
+            font-size: 0.95rem;
+        }
+
+        .cookie-banner {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: #1A1A2E;
+            padding: 1.5rem 2rem;
+            border-top: 2px solid #4F46E5;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1.5rem;
+            z-index: 1000;
+        }
+
+        .cookie-text {
+            flex: 1;
+            min-width: 300px;
+            font-size: 1rem;
+        }
+
+        .cookie-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .cookie-buttons button {
+            padding: 0.75rem 1.5rem;
+            font-weight: 700;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .accept-btn {
+            background-color: #4F46E5;
+            color: #FFFFFF;
+            border: none;
+        }
+
+        .decline-btn {
+            background-color: transparent;
+            color: #F0F2F5;
+            border: 2px solid #2D2D44;
+        }
+
+        .accept-btn:hover {
+            background-color: #4338CA;
+        }
+
+        .decline-btn:hover {
+            background-color: #2D2D44;
+        }
+
+        .accept-btn:focus,
+        .decline-btn:focus {
+            outline: 3px solid #F0F2F5;
+            outline-offset: 2px;
+        }
+
+        @media (max-width: 768px) {
+            .hamburger {
+                display: block;
+            }
+
+            .nav-links {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background-color: #1A1A2E;
+                flex-direction: column;
+                padding: 2rem;
+                gap: 1.5rem;
+                border-top: 2px solid #2D2D44;
+            }
+
+            .nav-links.active {
+                display: flex;
+            }
+
+            h1 {
+                font-size: 2.5rem;
+            }
+
+            h2 {
+                font-size: 2rem;
+            }
+
+            .footer-container {
+                flex-direction: column;
+                gap: 2rem;
+            }
+
+            .cookie-banner {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .cookie-buttons {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="#main-content" class="skip-link" tabindex="0">Skip to main content</a>
+
+    <header>
+        <div class="header-container">
+            <a href="#" class="logo" aria-label="Level 11 Events Home">Level 11 Events</a>
+            <nav>
+                <button class="hamburger" aria-label="Toggle navigation menu" aria-expanded="false">☰</button>
+                <ul class="nav-links">
+                    <li><a href="#services" tabindex="0">Services</a></li>
+                    <li><a href="#about" tabindex="0">About</a></li>
+                    <li><a href="#contact" tabindex="0">Contact</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main id="main-content">
+        <section class="hero">
+            <h1>Accessible Digital Solutions</h1>
+            <p>We build inclusive, user-friendly experiences for everyone. Our commitment to accessibility ensures all users can engage with our services seamlessly.</p>
+            <a href="#contact" class="btn" tabindex="0" aria-label="Get in touch with Level 11 Events">Get Started</a>
+        </section>
+
+        <section id="services">
+            <h2>Our Services</h2>
+            <div class="services-grid">
+                <article class="service-card">
+                    <img src="https://picsum.photos/600/400?random=1" alt="Team collaborating on a web accessibility audit">
+                    <h3>Accessibility Audits</h3>
+                    <p>Comprehensive evaluation of your digital products against WCAG guidelines, providing actionable reports.</p>
+                </article>
+                <article class="service-card">
+                    <img src="https://picsum.photos/600/400?random=2" alt="Developer coding an accessible website interface">
+                    <h3>Inclusive Development</h3>
+                    <p>Building websites and applications with semantic HTML, ARIA, and keyboard navigation from the ground up.</p>
+                </article>
+                <article class="service-card">
+                    <img src="https://picsum.photos/600/400?random=3" alt="Group training session on digital accessibility">
+                    <h3>Team Training</h3>
+                    <p>Empowering your designers and developers with the knowledge to create accessible digital experiences.</p>
+                </article>
+            </div>
+        </section>
+
+        <section id="about">
+            <h2>About Our Mission</h2>
+            <p>At Level 11 Events, we believe the web should be open and usable for all. Our team is dedicated to implementing and promoting accessibility best practices across every project.</p>
+            <h3>Our Standards</h3>
+            <p>We adhere to the Web Content Accessibility Guidelines (WCAG) 2.1 Level AA, ensuring our work meets international standards for digital accessibility.</p>
+        </section>
+
+        <section id="contact">
+            <h2>Contact Us</h2>
+            <p>Ready to make your digital presence more inclusive? Reach out to our team.</p>
+            <div class="contact-info">
+                <p><strong>Phone:</strong> <a href="tel:(612) 555-0111" aria-label="Call us at (612) 555-0111">(612) 555-0111</a></p>
+                <p><strong>Email:</strong> <a href="mailto:info@level11events.com" aria-label="Email us at info@level11events.com">info@level11events.com</a></p>
+                <p><strong>Address:</strong> PO Box 44426, Eden Prairie, MN 55344</p>
+            </div>
+            <a href="mailto:info@level11events.com?subject=Accessibility Inquiry" class="btn" tabindex="0" aria-label="Send an email to Level 11 Events">Send a Message</a>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-container">
+            <div>
+                <h3>Level 11 Events</h3>
+                <p>Creating an accessible digital world.</p>
+            </div>
+            <div class="footer-links">
+                <a href="privacy.html" tabindex="0">Privacy Policy</a>
+                <a href="terms.html" tabindex="0">Terms of Service</a>
+                <a href="#main-content" tabindex="0" aria-label="Return to top of page">Back to Top</a>
+            </div>
+        </div>
+        <p class="copyright">&copy; 2023 Level 11 Events. All rights reserved.</p>
+    </footer>
+
+    <div class="cookie-banner" role="dialog" aria-label="Cookie consent banner">
+        <p class="cookie-text">We use cookies to enhance your browsing experience and analyze site traffic. By clicking "Accept", you consent to our use of cookies.</p>
+        <div class="cookie-buttons">
+            <button class="accept-btn" tabindex="0" aria-label="Accept cookies">Accept</button>
+            <button class="decline-btn" tabindex="0" aria-label="Decline cookies">Decline</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const hamburger = document.querySelector('.hamburger');
+            const navLinks = document.querySelector('.nav-links');
+            const cookieBanner = document.querySelector('.cookie-banner');
+            const acceptBtn = document.querySelector('.accept-btn');
+            const declineBtn = document.querySelector('.decline-btn');
+
+            hamburger.addEventListener('click', function() {
+                const isExpanded = this.getAttribute('aria-expanded') === 'true';
+                this.setAttribute('aria-expanded', !isExpanded);
+                navLinks.classList.toggle('active');
+            });
+
+            acceptBtn.addEventListener('click', function() {
+                cookieBanner.style.display = 'none';
+                document.cookie = "cookieConsent=accepted; max-age=2592000; path=/";
+            });
+
+            declineBtn.addEventListener('click', function() {
+                cookieBanner.style.display = 'none';
+                document.cookie = "cookieConsent=declined; max-age=2592000; path=/";
+            });
+
+            if (document.cookie.includes('cookieConsent')) {
+                cookieBanner.style.display = 'none';
+            }
+
+            const focusableElements = document.querySelectorAll('a, button, input, textarea, select, [tabindex]:not([tabindex="-1"])');
+            focusableElements.forEach(el => {
+                el.addEventListener('focus', function() {
+                    this.style.outline = '3px solid #4F46E5';
+                    this.style.outlineOffset = '2px';
+                });
+                el.addEventListener('blur', function() {
+                    this.style.outline = '';
+                });
+            });
+        });
+    </script>
+</body>
+</html>

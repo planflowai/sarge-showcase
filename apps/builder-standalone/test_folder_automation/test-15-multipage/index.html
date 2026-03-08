@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Level 11 Events | Home</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: #0F0F1A;
+            color: #F0F2F5;
+            line-height: 1.6;
+            font-weight: 500;
+            font-size: 16px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        a {
+            color: #FFFFFF;
+            text-decoration: none;
+        }
+        header {
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid #2A2A3E;
+        }
+        .header-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #FFFFFF;
+        }
+        nav {
+            display: flex;
+            align-items: center;
+        }
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+        .nav-links a {
+            font-weight: 600;
+            font-size: 1rem;
+            transition: color 0.2s;
+        }
+        .nav-links a:hover {
+            color: #7C9CFF;
+        }
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0.5rem;
+        }
+        .hamburger span {
+            width: 25px;
+            height: 3px;
+            background-color: #FFFFFF;
+            border-radius: 2px;
+            transition: 0.3s;
+        }
+        main {
+            flex: 1;
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .hero {
+            text-align: center;
+            padding: 4rem 1rem;
+            margin-bottom: 4rem;
+        }
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+            line-height: 1.2;
+            color: #FFFFFF;
+        }
+        .hero p {
+            font-size: 1.3rem;
+            max-width: 700px;
+            margin: 0 auto 2.5rem;
+            color: #F0F2F5;
+        }
+        .cta-button {
+            display: inline-block;
+            background-color: #4A6FFF;
+            color: #FFFFFF;
+            padding: 1rem 2.5rem;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            transition: background-color 0.3s;
+        }
+        .cta-button:hover {
+            background-color: #3050E0;
+        }
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2.5rem;
+            margin-bottom: 4rem;
+        }
+        .card {
+            background-color: #1A1A2E;
+            border-radius: 12px;
+            padding: 2.5rem 2rem;
+            border: 1px solid #2A2A3E;
+            transition: transform 0.3s, border-color 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: #4A6FFF;
+        }
+        .card h3 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            color: #FFFFFF;
+        }
+        .card p {
+            color: #F0F2F5;
+            font-size: 1.05rem;
+        }
+        footer {
+            background-color: #0A0A14;
+            padding: 3rem 2rem;
+            margin-top: auto;
+            border-top: 1px solid #2A2A3E;
+        }
+        .footer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+            text-align: center;
+        }
+        .footer-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .footer-links a {
+            font-weight: 600;
+            color: #F0F2F5;
+        }
+        .footer-links a:hover {
+            color: #7C9CFF;
+        }
+        .contact-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+            font-size: 1.1rem;
+            color: #F0F2F5;
+        }
+        .copyright {
+            font-size: 0.95rem;
+            color: #F0F2F5;
+            margin-top: 1rem;
+        }
+        @media (max-width: 768px) {
+            .hamburger {
+                display: flex;
+            }
+            .nav-links {
+                position: fixed;
+                top: 80px;
+                left: 0;
+                width: 100%;
+                background-color: #1A1A2E;
+                flex-direction: column;
+                align-items: center;
+                padding: 2rem 0;
+                gap: 1.5rem;
+                clip-path: polygon(0 0, 100% 0, 100% 0, 0 0);
+                transition: clip-path 0.4s ease;
+                border-bottom: 1px solid #2A2A3E;
+            }
+            .nav-links.active {
+                clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+            }
+            .hero h1 {
+                font-size: 2.8rem;
+            }
+            .hero p {
+                font-size: 1.1rem;
+            }
+            .features {
+                grid-template-columns: 1fr;
+            }
+            .footer-links {
+                flex-direction: column;
+                gap: 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div class="logo">Level 11 Events</div>
+            <nav>
+                <button class="hamburger" id="hamburger" aria-label="Toggle navigation">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+                <ul class="nav-links" id="navLinks">
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="services.html">Services</a></li>
+                    <li><a href="contact.html">Contact</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+    <main>
+        <section class="hero">
+            <h1>Elevate Your Vision with Level 11 Events</h1>
+            <p>We deliver exceptional solutions tailored to your needs, combining innovation with proven expertise to drive your success forward.</p>
+            <a href="contact.html" class="cta-button">Start Your Project</a>
+        </section>
+        <section class="features">
+            <div class="card">
+                <h3>Expert Solutions</h3>
+                <p>Our team of specialists provides industry-leading strategies and execution, ensuring your objectives are met with precision and excellence.</p>
+            </div>
+            <div class="card">
+                <h3>Dedicated Support</h3>
+                <p>We offer continuous, responsive support throughout our partnership, guaranteeing your satisfaction and seamless project progression.</p>
+            </div>
+            <div class="card">
+                <h3>Proven Results</h3>
+                <p>With a track record of successful outcomes, we focus on delivering measurable value and tangible growth for every client.</p>
+            </div>
+        </section>
+    </main>
+    <footer>
+        <div class="footer-container">
+            <ul class="footer-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="services.html">Services</a></li>
+                <li><a href="contact.html">Contact</a></li>
+            </ul>
+            <div class="contact-info">
+                <div>Phone: (612) 555-0111</div>
+                <div>Email: info@level11events.com</div>
+            </div>
+            <div class="copyright">&copy; <span id="currentYear"></span> Level 11 Events. All rights reserved.</div>
+        </div>
+    </footer>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const hamburger = document.getElementById('hamburger');
+            const navLinks = document.getElementById('navLinks');
+            hamburger.addEventListener('click', function() {
+                navLinks.classList.toggle('active');
+                const spans = hamburger.querySelectorAll('span');
+                if (navLinks.classList.contains('active')) {
+                    spans[0].style.transform = 'rotate(45deg) translate(5px, 5px)';
+                    spans[1].style.opacity = '0';
+                    spans[2].style.transform = 'rotate(-45deg) translate(7px, -6px)';
+                } else {
+                    spans[0].style.transform = 'none';
+                    spans[1].style.opacity = '1';
+                    spans[2].style.transform = 'none';
+                }
+            });
+            document.getElementById('currentYear').textContent = new Date().getFullYear();
+            window.addEventListener('resize', function() {
+                if (window.innerWidth > 768) {
+                    navLinks.classList.remove('active');
+                    const spans = hamburger.querySelectorAll('span');
+                    spans[0].style.transform = 'none';
+                    spans[1].style.opacity = '1';
+                    spans[2].style.transform = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

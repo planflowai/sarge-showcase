@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Level 11 Events</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: #0F0F1A;
+            color: #F0F2F5;
+            font-weight: 500;
+            font-size: 16px;
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        a {
+            color: #A78BFA;
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+        a:hover {
+            opacity: 0.8;
+        }
+        header {
+            background-color: #1A1A2E;
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        .header-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #FFFFFF;
+        }
+        nav ul {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+        nav a {
+            font-weight: 600;
+            color: #FFFFFF;
+            font-size: 1rem;
+        }
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 4px;
+        }
+        .hamburger span {
+            display: block;
+            width: 24px;
+            height: 3px;
+            background-color: #FFFFFF;
+            border-radius: 2px;
+            transition: 0.3s;
+        }
+        main {
+            flex: 1;
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        section {
+            margin-bottom: 3rem;
+        }
+        h2 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: #FFFFFF;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+        .gallery-item {
+            aspect-ratio: 4 / 3;
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+        }
+        .gallery-item:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.6);
+        }
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .lightbox-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.92);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 2rem;
+        }
+        .lightbox-content {
+            position: relative;
+            max-width: 90%;
+            max-height: 90%;
+        }
+        .lightbox-img {
+            max-width: 100%;
+            max-height: 80vh;
+            border-radius: 8px;
+            display: block;
+            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.7);
+        }
+        .close-lightbox {
+            position: absolute;
+            top: -20px;
+            right: -20px;
+            background-color: #EF4444;
+            color: #FFFFFF;
+            border: none;
+            width: px;
+            height: 44px;
+            border-radius: 50%;
+            font-size: 1.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.2s;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+        }
+        .close-lightbox:hover {
+            background-color: #DC2626;
+        }
+        .map-container {
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        }
+        .social-section {
+            background-color: #1A1A2E;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        }
+        .social-embed {
+            background-color: #252547;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .social-icon {
+            font-size: 2.5rem;
+            color: #FFFFFF;
+        }
+        .social-text {
+            font-size: 1.1rem;
+            color: #FFFFFF;
+            font-weight: 600;
+        }
+        footer {
+            background-color: #1A1A2E;
+            padding: 2.5rem 2rem;
+            margin-top: auto;
+        }
+        .footer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 2rem;
+        }
+        .footer-column {
+            flex: 1;
+            min-width: 200px;
+        }
+        .footer-column h3 {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: #FFFFFF;
+            margin-bottom: 1rem;
+        }
+        .footer-column p, .footer-column a {
+            color: #F0F2F5;
+            margin-bottom: 0.75rem;
+            display: block;
+            font-size: 1rem;
+        }
+        .copyright {
+            text-align: center;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #2D2D4D;
+            color: #F0F2F5;
+            font-size: 0.95rem;
+        }
+        @media (max-width: 768px) {
+            .hamburger {
+                display: flex;
+            }
+            nav ul {
+                position: fixed;
+                top: 70px;
+                right: -100%;
+                flex-direction: column;
+                background-color: #1A1A2E;
+                width: 100%;
+                max-width: 300px;
+                padding: 2rem;
+                border-radius: 0 0 0 12px;
+                box-shadow: -4px 8px 24px rgba(0, 0, 0, 0.5);
+                transition: right 0.4s;
+                gap: 1.5rem;
+            }
+            nav ul.active {
+                right: 0;
+            }
+            .gallery-grid {
+                grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            }
+            main {
+                padding: 1.5rem;
+            }
+            h2 {
+                font-size: 1.8rem;
+            }
+            .footer-container {
+                flex-direction: column;
+                gap: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div class="logo">Level 11 Events</div>
+            <button class="hamburger" id="hamburger" aria-label="Toggle navigation">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <nav>
+                <ul id="nav-menu">
+                    <li><a href="#gallery">Gallery</a></li>
+                    <li><a href="#map">Location</a></li>
+                    <li><a href="#social">Social</a></li>
+                    <li><a href="#contact">Contact</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section id="gallery">
+            <h2>Image Gallery</h2>
+            <div class="gallery-grid">
+                <div class="gallery-item" data-img="https://picsum.photos/id/1015/800/600">
+                    <img src="https://picsum.photos/id/1015/400/300" alt="Gallery image 1" loading="lazy">
+                </div>
+                <div class="gallery-item" data-img="https://picsum.photos/id/1018/800/600">
+                    <img src="https://picsum.photos/id/1018/400/300" alt="Gallery image 2" loading="lazy">
+                </div>
+                <div class="gallery-item" data-img="https://picsum.photos/id/1020/800/600">
+                    <img src="https://picsum.photos/id/1020/400/300" alt="Gallery image 3" loading="lazy">
+                </div>
+                <div class="gallery-item" data-img="https://picsum.photos/id/1024/800/600">
+                    <img src="https://picsum.photos/id/1024/400/300" alt="Gallery image 4" loading="lazy">
+                </div>
+                <div class="gallery-item" data-img="https://picsum.photos/id/1027/800/600">
+                    <img src="https://picsum.photos/id/1027/400/300" alt="Gallery image 5" loading="lazy">
+                </div>
+                <div class="gallery-item" data-img="https://picsum.photos/id/1035/800/600">
+                    <img src="https://picsum.photos/id/1035/400/300" alt="Gallery image 6" loading="lazy">
+                </div>
+            </div>
+        </section>
+
+        <section id="map">
+            <h2>Our Location</h2>
+            <div class="map-container">
+                <iframe src="https://maps.google.com/maps?q=Minneapolis+MN&output=embed" width="100%" height="300" style="border:0" allowfullscreen loading="lazy"></iframe>
+            </div>
+        </section>
+
+        <section id="social">
+            <h2>Connect With Us</h2>
+            <div class="social-section">
+                <p style="color: #FFFFFF; text-align: center; margin-bottom: 1rem;">Follow us on social media for updates and news.</p>
+                <div class="social-embed">
+                    <div class="social-icon">📱</div>
+                    <div class="social-text">Find us on Instagram: <strong>@Level 11 Events</strong></div>
+                    <div style="background-color: #333366; padding: 0.75rem 1.5rem; border-radius: 6px; color: #FFFFFF; font-weight: 600;">Social Media Feed Placeholder</div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer id="contact">
+        <div class="footer-container">
+            <div class="footer-column">
+                <h3>Contact Info</h3>
+                <p><strong>Phone:</strong> (612) 555-0111</p>
+                <p><strong>Email:</strong> info@level11events.com</p>
+                <p><strong>Address:</strong> PO Box 44426, Eden Prairie, MN 55344</p>
+            </div>
+            <div class="footer-column">
+                <h3>Quick Links</h3>
+                <a href="#gallery">Gallery</a>
+                <a href="#map">Location</a>
+                <a href="#social">Social Media</a>
+            </div>
+            <div class="footer-column">
+                <h3>Business Hours</h3>
+                <p>Monday - Friday: 9am - 6pm</p>
+                <p>Saturday: 10am - 4pm</p>
+                <p>Sunday: Closed</p>
+            </div>
+        </div>
+        <div class="copyright">
+            &copy; <span id="currentYear"></span> Level 11 Events. All rights reserved.
+        </div>
+    </footer>
+
+    <div class="lightbox-overlay" id="lightbox">
+        <div class="lightbox-content">
+            <button class="close-lightbox" id="close-lightbox" aria-label="Close lightbox">&times;</button>
+            <img class="lightbox-img" id="lightbox-img" src="" alt="Enlarged view">
+        </div>
+    </div>
+
+    <script>
+        // Mobile navigation toggle
+        const hamburger = document.getElementById('hamburger');
+        const navMenu = document.getElementById('nav-menu');
+        hamburger.addEventListener('click', () => {
+            navMenu.classList.toggle('active');
+            hamburger.setAttribute('aria-expanded', navMenu.classList.contains('active'));
+        });
+        document.querySelectorAll('nav a').forEach(link => {
+            link.addEventListener('click', () => {
+                navMenu.classList.remove('active');
+                hamburger.setAttribute('aria-expanded', false);
+            });
+        });
+
+        // Lightbox functionality
+        const lightbox = document.getElementById('lightbox');
+        const lightboxImg = document.getElementById('lightbox-img');
+        const closeLightbox = document.getElementById('close-lightbox');
+        const galleryItems = document.querySelectorAll('.gallery-item');
+        galleryItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const imgSrc = item.getAttribute('data-img');
+                lightboxImg.src = imgSrc;
+                lightbox.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            });
+        });
+        closeLightbox.addEventListener('click', () => {
+            lightbox.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        });
+        lightbox.addEventListener('click', (e) => {
+            if (e.target === lightbox) {
+                lightbox.style.display = 'none';
+                document.body.style.overflow = 'auto';
+            }
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && lightbox.style.display === 'flex') {
+                lightbox.style.display = 'none';
+                document.body.style.overflow = 'auto';
+            }
+        });
+
+        // Set current year in footer
+        document.getElementById('currentYear').textContent = new Date().getFullYear();
+
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href');
+                if (targetId === '#') return;
+                const targetElement = document.querySelector(targetId);
+                if (targetElement) {
+                    window.scrollTo({
+                        top: targetElement.offsetTop - 80,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

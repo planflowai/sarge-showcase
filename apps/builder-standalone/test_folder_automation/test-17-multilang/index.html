@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Level 11 Events</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: #0F0F1A;
+            color: #F0F2F5;
+            font-weight: 500;
+            font-size: 16px;
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            max-height: 2160px;
+            overflow-x: hidden;
+        }
+        header {
+            background-color: #1A1A2E;
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid #2A2A3E;
+        }
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #FFFFFF;
+        }
+        nav {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+        .nav-links a {
+            color: #FFFFFF;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: color 0.2s;
+        }
+        .nav-links a:hover {
+            color: #7C9CFF;
+        }
+        .lang-switcher {
+            display: flex;
+            gap: 0.5rem;
+            margin-left: 1rem;
+        }
+        .lang-btn {
+            background: #2A2A3E;
+            color: #FFFFFF;
+            border: 1px solid #3A3A4E;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .lang-btn:hover, .lang-btn.active {
+            background: #4A4A6E;
+            color: #FFFFFF;
+        }
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0.5rem;
+        }
+        .hamburger span {
+            width: 25px;
+            height: 3px;
+            background-color: #FFFFFF;
+            border-radius: 2px;
+        }
+        main {
+            flex: 1;
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+        }
+        section {
+            margin-bottom: 4rem;
+            padding: 2rem;
+            background-color: #1A1A2E;
+            border-radius: 12px;
+            border: 1px solid #2A2A3E;
+        }
+        h1, h2, h3 {
+            color: #FFFFFF;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+        }
+        h1 {
+            font-size: 3rem;
+            line-height: 1.2;
+        }
+        h2 {
+            font-size: 2.2rem;
+        }
+        h3 {
+            font-size: 1.8rem;
+        }
+        p, li {
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            color: #F0F2F5;
+        }
+        ul {
+            padding-left: 1.5rem;
+        }
+        .contact-info {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            font-size: 1.1rem;
+        }
+        .contact-info a {
+            color: #7C9CFF;
+            text-decoration: none;
+        }
+        footer {
+            background-color: #1A1A2E;
+            padding: 2.5rem 2rem;
+            border-top: 1px solid #2A2A3E;
+            text-align: center;
+            font-size: 1rem;
+        }
+        .footer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            list-style: none;
+            margin-bottom: 1rem;
+        }
+        .footer-links a {
+            color: #F0F2F5;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .copyright {
+            color: #F0F2F5;
+            font-size: 0.95rem;
+        }
+        [data-lang] {
+            display: none        }
+        [data-lang].active {
+            display: inline;
+        }
+        @media (max-width: 768px) {
+            .hamburger {
+                display: flex;
+            }
+            .nav-links {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                width: 100%;
+                background-color: #1A1A2E;
+                flex-direction: column;
+                padding: 1.5rem;
+                gap: 1rem;
+                border-top: 1px solid #2A2A3E;
+                z-index: 100;
+            }
+            .nav-links.active {
+                display: flex;
+            }
+            .lang-switcher {
+                margin-left: 0;
+                margin-top: 1rem;
+                justify-content: center;
+            }
+            h1 {
+                font-size: 2.5rem;
+            }
+            h2 {
+                font-size: 2rem;
+            }
+            section {
+                padding: 1.5rem;
+            }
+            main {
+                padding: 2rem 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div class="logo">Level 11 Events</div>
+            <button class="hamburger" id="hamburger" aria-label="Toggle navigation">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <nav>
+                <ul class="nav-links" id="navLinks">
+                    <li><a href="#hero"><span data-lang-en="Home" data-lang-es="Inicio" class="active" data-lang="en">Home</span></a></li>
+                    <li><a href="#about"><span data-lang-en="About" data-lang-es="Nosotros" class="active" data-lang="en">About</span></a></li>
+                    <li><a href="#contact"><span data-lang-en="Contact" data-lang-es="Contacto" class="active" data-lang="en">Contact</span></a></li>
+                    <div class="lang-switcher">
+                        <button class="lang-btn active" id="btnEn" data-lang="en">EN</button>
+                        <button class="lang-btn" id="btnEs" data-lang="es">ES</button>
+                    </div>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section id="hero">
+            <h1><span data-lang-en="Welcome to Level 11 Events" data-lang-es="Bienvenido a Level 11 Events" class="active" data-lang="en">Welcome to Level 11 Events</span></h1>
+            <p><span data-lang-en="We provide innovative solutions tailored to your needs. Excellence and reliability are our core principles." data-lang-es="Ofrecemos soluciones innovadoras adaptadas a sus necesidades. La excelencia y la fiabilidad son nuestros principios fundamentales." class="active" data-lang="en">We provide innovative solutions tailored to your needs. Excellence and reliability are our core principles.</span></p>
+            <p><span data-lang-en="Our team is dedicated to delivering outstanding results every single day." data-lang-es="Nuestro equipo se dedica a ofrecer resultados excepcionales cada día." class="active" data-lang="en">Our team is dedicated to delivering outstanding results every single day.</span></p>
+        </section>
+
+        <section id="about">
+            <h2><span data-lang-en="About Us" data-lang-es="Sobre Nosotros" class="active" data-lang="en">About Us</span></h2>
+            <p><span data-lang-en="Level 11 Events was founded with a vision to transform the industry through cutting-edge technology and unparalleled customer service." data-lang-es="Level 11 Events se fundó con la visión de transformar la industria mediante tecnología de vanguardia y un servicio al cliente inigualable." class="active" data-lang="en">Level 11 Events was founded with a vision to transform the industry through cutting-edge technology and unparalleled customer service.</span></p>
+            <h3><span data-lang-en="Our Values" data-lang-es="Nuestros Valores" class="active" data-lang="en">Our Values</span></h3>
+            <ul>
+                <li><span data-lang-en="Integrity: We do what is right, always." data-lang-es="Integridad: Hacemos lo correcto, siempre." class="active" data-lang="en">Integrity: We do what is right, always.</span></li>
+                <li><span data-lang-en="Innovation: We embrace change and drive progress." data-lang-es="Innovación: Adoptamos el cambio e impulsamos el progreso." class="active" data-lang="en">Innovation: We embrace change and drive progress.</span></li>
+                <li><span data-lang-en="Collaboration: We achieve more together." data-lang-es="Colaboración: Logramos más juntos." class="active" data-lang="en">Collaboration: We achieve more together.</span></li>
+            </ul>
+        </section>
+
+        <section id="contact">
+            <h2><span data-lang-en="Contact Us" data-lang-es="Contáctenos" class="active" data-lang="en">Contact Us</span></h2>
+            <p><span data-lang-en="Get in touch with our team for inquiries, support, or partnership opportunities." data-lang-es="Póngase en contacto con nuestro equipo para consultas, soporte u oportunidades de colaboración." class="active" data-lang="en">Get in touch with our team for inquiries, support, or partnership opportunities.</span></p>
+            <div class="contact-info">
+                <p><strong><span data-lang-en="Phone:" data-lang-es="Teléfono:" class="active" data-lang="en">Phone:</span></strong> (612) 555-0111</p>
+                <p><strong><span data-lang-en="Email:" data-lang-es="Correo:" class="active" data-lang="en">Email:</span></strong> <a href="mailto:info@level11events.com">info@level11events.com</a></p>
+                <p><strong><span data-lang-en="Address:" data-lang-es="Dirección:" class="active" data-lang="en">Address:</span></strong> PO Box 44426, Eden Prairie, MN 55344</p>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-container">
+            <ul class="footer-links">
+                <li><a href="#hero"><span data-lang-en="Home" data-lang-es="Inicio" class="active" data-lang="en">Home</span></a></li>
+                <li><a href="#about"><span data-lang-en="About" data-lang-es="Nosotros" class="" data-lang="en">About</span></a></li>
+                <li><a href="#contact"><span data-lang-en="Contact" data-lang-es="Contacto" class="active" data-lang="en">Contact</span></a></li>
+            </ul>
+            <p class="copyright"><span data-lang-en="© 2023 Level 11 Events. All rights reserved." data-lang-es="© 2023 Level 11 Events. Todos los derechos reservados." class="active" data-lang="en">© 2023 Level 11 Events. All rights reserved.</span></p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const btnEn = document.getElementById('btnEn');
+            const btnEs = document.getElementById('btnEs');
+            const langButtons = [btnEn, btnEs];
+            const htmlElement = document.documentElement;
+            const hamburger = document.getElementById('hamburger');
+            const navLinks = document.getElementById('navLinks');
+
+            function switchLanguage(lang) {
+                // Update active button
+                langButtons.forEach(btn => {
+                    if (btn.dataset.lang === lang) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                });
+
+                // Update html lang attribute
+                htmlElement.lang = lang;
+
+                // Show/hide spans
+                document.querySelectorAll('[data-lang]').forEach(span => {
+                    if (span.dataset.lang === lang) {
+                        span.classList.add('active');
+                    } else {
+                        span.classList.remove('active');
+                    }
+                });
+
+                // Update data-lang attributes for dynamic content
+                document.querySelectorAll('[data-lang-en], [data-lang-es]').forEach(element => {
+                    const text = element.getAttribute(`data-lang-${lang}`);
+                    if (text) {
+                        element.textContent = text;
+                    }
+                });
+            }
+
+            btnEn.addEventListener('click', () => switchLanguage('en'));
+            btnEs.addEventListener('click', () => switchLanguage('es'));
+
+            // Hamburger menu toggle
+            hamburger.addEventListener('click', () => {
+                navLinks.classList.toggle('active');
+                hamburger.setAttribute('aria-expanded', navLinks.classList.contains('active'));
+            });
+
+            // Close mobile menu when clicking a link
+            document.querySelectorAll('.nav-links a').forEach(link => {
+                link.addEventListener('click', () => {
+                    navLinks.classList.remove('active');
+                    hamburger.setAttribute('aria-expanded', false);
+                });
+            });
+
+            // Initialize with English
+            switchLanguage('en');
+        });
+    </script>
+</body>
+</html>
