@@ -127,6 +127,7 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
     cloudCompleteRun,
     cloudSetTotalCost,
     cloudSetWarmupHtml,
+    cloudProcessEvent,
     cloudWarmupHtml,
     cloudParallel,
     setCloudParallel,
@@ -389,19 +390,9 @@ export default function ForgeTrialsDashboard({ onClose }: Props) {
           if (!line.trim()) continue;
           try {
             const event: BenchmarkEvent = JSON.parse(line);
-            cloudAddEvent(event);
+            // Single batched state update — prevents 6+ re-renders per event
+            cloudProcessEvent(event);
             logActivity(event);
-            if (event.modelId) cloudSetCurrentModel(event.modelId);
-            if (event.scenarioId) cloudSetCurrentRound(event.scenarioId);
-            if (event.result) cloudAddResult(event.result);
-            if (event.scorecard) cloudAddScorecard(event.scorecard);
-            if (event.warmupHtml) cloudSetWarmupHtml(event.warmupHtml);
-
-            // Extract cost from message (format: "...$X.XXXX...")
-            const costMatch = event.message?.match(/\$(\d+\.\d+)/);
-            if (costMatch) {
-              cloudSetTotalCost(parseFloat(costMatch[1]));
-            }
 
             if (event.type === "run:complete" || event.type === "run:stopped") {
               cloudCompleteRun({

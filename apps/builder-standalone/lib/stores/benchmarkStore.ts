@@ -117,6 +117,8 @@ interface BenchmarkState {
   cloudSetAbortController: (ctrl: AbortController | null) => void;
   cloudSetTotalCost: (cost: number) => void;
   cloudSetWarmupHtml: (html: string) => void;
+  /** Batch-process a single NDJSON event — ONE state update instead of 6+ */
+  cloudProcessEvent: (event: BenchmarkEvent) => void;
   cloudReset: () => void;
 
   // ── Parallel toggle ──
@@ -303,6 +305,27 @@ export const useBenchmarkStore = create<BenchmarkState>()(
       cloudSetAbortController: (ctrl) => set({ cloudAbortController: ctrl }),
       cloudSetTotalCost: (cost) => set({ cloudTotalCost: cost }),
       cloudSetWarmupHtml: (html) => set({ cloudWarmupHtml: html }),
+
+      cloudProcessEvent: (event) =>
+        set((s) => {
+          const patch: Partial<typeof s> = {
+            cloudEvents: [...s.cloudEvents.slice(-200), event],
+          };
+          if (event.modelId) patch.cloudCurrentModel = event.modelId;
+          if (event.scenarioId) patch.cloudCurrentRound = event.scenarioId;
+          if (event.warmupHtml) patch.cloudWarmupHtml = event.warmupHtml;
+          if (event.scorecard) patch.cloudScorecards = [...s.cloudScorecards, event.scorecard];
+          if (event.result) {
+            const cloudModels = s.cloudSelectedModels;
+            const match = cloudModels.find((m) => m.id === event.result!.modelId);
+            supabaseSyncRound(event.result, "cloud", match?.provider || "unknown", s.cloudCurrentRunId || "unknown");
+            patch.cloudResults = [...s.cloudResults, event.result];
+            patch.cloudSelectedCell = { modelId: event.result.modelId, scenarioId: event.result.scenarioId };
+          }
+          const costMatch = event.message?.match(/\$(\d+\.\d+)/);
+          if (costMatch) patch.cloudTotalCost = parseFloat(costMatch[1]);
+          return patch;
+        }),
 
       cloudCompleteRun: (run) =>
         set((s) => ({

@@ -29,6 +29,18 @@ interface Props {
 
 type Tab = "preview" | "code" | "breakdown";
 
+/** Memoized iframe — only re-renders when warmupHtml changes, not on timer/cost/model updates */
+const WarmupIframe = React.memo(function WarmupIframe({ html }: { html: string }) {
+  return (
+    <iframe
+      srcDoc={html}
+      className="flex-1 w-full bg-zinc-950"
+      sandbox="allow-scripts"
+      title="Forge Trials Warmup"
+    />
+  );
+});
+
 export function ForgeTrialsRoundDetail({
   result,
   scenario,
@@ -119,12 +131,7 @@ export function ForgeTrialsRoundDetail({
               <span className="text-sm font-mono text-emerald-400 ml-auto">${totalCost.toFixed(4)}</span>
             )}
           </div>
-          <iframe
-            srcDoc={warmupHtml}
-            className="flex-1 w-full bg-zinc-950"
-            sandbox="allow-scripts"
-            title="Forge Trials Warmup"
-          />
+          <WarmupIframe html={warmupHtml} />
         </div>
       );
     }
