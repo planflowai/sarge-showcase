@@ -23,16 +23,36 @@ function formatCost(cost: number): string {
   if (cost < 1) return `$${cost.toFixed(3)}`;
   return `$${cost.toFixed(2)}`;
 }
+// Output rates per 1M tokens — must match packages/billing/src/rates.ts MODEL_RATES
 const OUTPUT_RATES: Record<string, number> = {
-  "claude-opus-4.6": 75, "claude-sonnet-4.5": 15, "claude-haiku-4.5": 4, "claude-sonnet-4.6": 15,
-  "gpt-4o": 10, "gpt-4o-mini": 0.6, "gpt-5.2": 12, "o1": 60, "o1-mini": 12,
-  "grok-4": 10, "grok-4.1-fast": 0.5,
-  "gemini-2.5-flash": 3, "gemini-3-flash": 3, "gemini-2.5-pro": 10,
-  "deepseek-chat": 0.28, "deepseek-reasoner": 2.19, "deepseek-v3": 0.28, "deepseek-r1": 2.19,
+  // Anthropic
+  "claude-opus-4-6": 25, "claude-opus-4.6": 25, "claude-opus-4-5": 25, "claude-opus-4.5": 25,
+  "claude-sonnet-4-6": 15, "claude-sonnet-4.6": 15, "claude-sonnet-4-5": 15, "claude-sonnet-4.5": 15,
+  "claude-haiku-4-5": 5, "claude-haiku-4.5": 5,
+  // OpenAI
+  "gpt-5.4": 20, "gpt-5.2": 14, "gpt-5-mini": 2, "gpt-5-nano": 0.40,
+  "gpt-4.1": 8, "gpt-4.1-mini": 1.60, "gpt-4o": 10, "gpt-4o-mini": 0.60,
+  "o3": 40, "o4-mini": 4.40, "o1": 60, "o1-mini": 12,
+  // xAI
+  "grok-4": 15, "grok-4-fast": 5, "grok-3": 15, "grok-3-mini": 0.50,
+  "grok-4-1-fast-reasoning": 0.50, "grok-4-1-fast-non-reasoning": 0.50,
+  // Google
+  "gemini-2.5-flash": 2.50, "gemini-2.5-pro": 10, "gemini-3-flash-preview": 3,
+  // DeepSeek
+  "deepseek-chat": 0.42, "deepseek-reasoner": 2.18, "deepseek-v3": 0.42, "deepseek-r1": 2.18,
+  // Mistral
+  "mistral-large-latest": 6, "mistral-small-latest": 0.60, "codestral-latest": 0.90,
 };
 function getRate(model: string, provider: string) {
   if (provider === "ollama" || provider === "lmstudio") return { output: 0 };
-  return { output: OUTPUT_RATES[model] || 0 };
+  // Exact match
+  if (OUTPUT_RATES[model] !== undefined) return { output: OUTPUT_RATES[model] };
+  // Partial match — handle dated variants like claude-sonnet-4-5-20250929
+  const lower = model.toLowerCase();
+  for (const [key, rate] of Object.entries(OUTPUT_RATES)) {
+    if (lower.includes(key) || key.includes(lower)) return { output: rate };
+  }
+  return { output: 0 };
 }
 
 /**

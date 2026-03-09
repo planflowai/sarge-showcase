@@ -119,6 +119,8 @@ function ArtifactPanelInner({
   const [iframeKey, setIframeKey] = useState(0);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [isFading, setIsFading] = useState(false);  // For smooth fade transitions
+  const [overlayFadingOut, setOverlayFadingOut] = useState(false); // Fade overlay → site transition
+  const [siteReady, setSiteReady] = useState(false); // Site fade-in complete
   const [previewUrl, setPreviewUrl] = useState<string | null>(null); // API-based preview URL
   const [isSaving, setIsSaving] = useState(false);
   // Dev server preview
@@ -429,9 +431,24 @@ function ArtifactPanelInner({
     if (isStreaming) {
       // Remember if we had a preview when streaming started
       streamingStartedWithPreviewRef.current = previewContent.length > 0;
+      // Reset fade states for new build
+      setOverlayFadingOut(false);
+      setSiteReady(false);
       console.log('[ArtifactPanel] Streaming started, had previous preview:', streamingStartedWithPreviewRef.current);
     }
   }, [isStreaming, previewContent.length]);
+
+  // Fade overlay → site transition: when preview content first appears during streaming
+  useEffect(() => {
+    if (isStreaming && previewContent.length > 0 && !streamingStartedWithPreviewRef.current && !overlayFadingOut && !siteReady) {
+      // First preview content during a fresh build — trigger fade transition
+      setOverlayFadingOut(true);
+      // After overlay fades out, show the site
+      setTimeout(() => {
+        setSiteReady(true);
+      }, 600);
+    }
+  }, [isStreaming, previewContent.length, overlayFadingOut, siteReady]);
 
   // Update preview when code changes - with anti-flicker debouncing
   useEffect(() => {
@@ -914,19 +931,41 @@ function ArtifactPanelInner({
                 />
               ) : previewContent && code && code.trim().length > 0 ? (
                 // srcdoc-based preview for streaming/no project
-                <iframe
-                  ref={iframeRef}
-                  srcDoc={previewContent}
-                  sandbox="allow-scripts allow-forms allow-popups"
-                  className="w-full h-full border-0"
-                  title="Preview"
-                  style={{
-                    display: 'block',
-                    minHeight: '100%',
-                    opacity: isFading ? 0.3 : 1,
-                    transition: 'opacity 0.1s ease-in-out',
-                  }}
-                />
+                <div className="relative w-full h-full">
+                  <iframe
+                    ref={iframeRef}
+                    srcDoc={previewContent}
+                    sandbox="allow-scripts allow-forms allow-popups"
+                    className="w-full h-full border-0"
+                    title="Preview"
+                    style={{
+                      display: 'block',
+                      minHeight: '100%',
+                      opacity: (isFading || (isStreaming && overlayFadingOut && !siteReady)) ? 0 : 1,
+                      transition: 'opacity 0.5s ease-in-out',
+                    }}
+                  />
+                  {/* Overlay fading out — site appearing underneath */}
+                  {isStreaming && overlayFadingOut && !siteReady && (
+                    <div
+                      className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950 z-10"
+                      style={{
+                        opacity: 0,
+                        transition: 'opacity 0.5s ease-out',
+                        animation: 'overlayFadeOut 0.5s ease-out forwards',
+                      }}
+                    >
+                      <Hammer className="h-12 w-12 text-[#FF6700]" />
+                      <p className="text-white font-bold mt-3">Your site is ready</p>
+                      <style>{`
+                        @keyframes overlayFadeOut {
+                          0% { opacity: 1; }
+                          100% { opacity: 0; }
+                        }
+                      `}</style>
+                    </div>
+                  )}
+                </div>
               ) : (
                 <div className="flex flex-col items-center justify-center h-full bg-zinc-950/20">
                   {isStreaming ? (
@@ -939,26 +978,56 @@ function ArtifactPanelInner({
                         <p className="text-lg font-bold text-white tracking-wide">
                           The Foundry is building your site...
                         </p>
-                        <div className="w-64 h-2 bg-zinc-800 rounded-full overflow-hidden mx-auto">
-                          <div
-                            className="h-full bg-gradient-to-r from-[#FF6700] to-[#FFD700] rounded-full"
-                            style={{
-                              animation: 'foundryProgress 3s ease-in-out infinite',
-                              width: '70%',
-                            }}
-                          />
+                        {/* Real milestone progress bar */}
+                        <div className="w-72 space-y-2 mx-auto">
+                          {progressSteps.length > 0 ? (
+                            <>
+                              {/* Progress bar based on completed steps */}
+                              <div className="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-gradient-to-r from-[#FF6700] to-[#FFD700] rounded-full transition-all duration-500 ease-out"
+                                  style={{
+                                    width: `${Math.max(5, (progressSteps.filter(s => s.status === 'completed').length / progressSteps.length) * 100)}%`,
+                                  }}
+                                />
+                              </div>
+                              {/* Current step label */}
+                              <div className="space-y-1">
+                                {progressSteps.map((step) => (
+                                  <div key={step.id} className="flex items-center gap-2 text-xs">
+                                    {step.status === 'completed' ? (
+                                      <span className="text-[#FF6700] font-bold">✓</span>
+                                    ) : step.status === 'in_progress' ? (
+                                      <span className="text-[#FFD700] animate-pulse">●</span>
+                                    ) : (
+                                      <span className="text-zinc-600">○</span>
+                                    )}
+                                    <span className={
+                                      step.status === 'completed' ? 'text-zinc-400' :
+                                      step.status === 'in_progress' ? 'text-white font-medium' :
+                                      'text-zinc-600'
+                                    }>
+                                      {step.label}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <div className="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-gradient-to-r from-[#FF6700] to-[#FFD700] rounded-full"
+                                  style={{ width: '5%' }}
+                                />
+                              </div>
+                              <p className="text-sm text-zinc-400 animate-pulse">
+                                Warming up...
+                              </p>
+                            </>
+                          )}
                         </div>
-                        <p className="text-sm text-zinc-400 animate-pulse">
-                          First content arriving soon...
-                        </p>
                       </div>
-                      <style>{`
-                        @keyframes foundryProgress {
-                          0% { width: 10%; opacity: 0.6; }
-                          50% { width: 80%; opacity: 1; }
-                          100% { width: 10%; opacity: 0.6; }
-                        }
-                      `}</style>
                     </div>
                   ) : (
                     <>

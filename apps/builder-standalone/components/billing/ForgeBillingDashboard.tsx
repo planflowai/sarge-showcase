@@ -7,7 +7,7 @@ import {
   Shield, ShieldOff, Plane, Radio, ExternalLink, Download, AlertTriangle,
   CheckCircle, Clock, ChevronDown, ChevronRight, Pencil, Check,
 } from "lucide-react";
-import { CheckPricesModal } from "./CheckPricesModal";
+import CheckPricesPanel from "./CheckPricesPanel";
 import { formatCost, calculateCost, getRate, PROVIDER_CONSOLE_URLS } from "@sarge/billing";
 import type { ModelBreakdown, AppBreakdown, DailyTotal, UsageEntry } from "@sarge/billing";
 import {
@@ -71,13 +71,14 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
   const [monthCost, setMonthCost] = useState(0);
   const [allTimeCost, setAllTimeCost] = useState(0);
   const [models, setModels] = useState<ModelBreakdown[]>([]);
+  const [allTimeModels, setAllTimeModels] = useState<ModelBreakdown[]>([]); // For provider balance cards
   const [apps, setApps] = useState<AppBreakdown[]>([]);
   const [dailyTotals, setDailyTotals] = useState<DailyTotal[]>([]);
   const [sortKey, setSortKey] = useState<SortKey>("totalCost");
   const [sortAsc, setSortAsc] = useState(false);
   const [chartView, setChartView] = useState<ChartView>("all");
   const [refreshing, setRefreshing] = useState(false);
-  const [checkPricesOpen, setCheckPricesOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"overview" | "checkprices">("overview");
 
   // Provider balances (from API)
   const [providerBalances, setProviderBalances] = useState<ProviderBalance[]>([]);
@@ -107,12 +108,31 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
   const [historyPeriod, setHistoryPeriod] = useState<HistoryPeriod>("month");
   const [historyOpen, setHistoryOpen] = useState(true);
 
-  // Provider spend from models
+  // Provider spend from models (period-filtered) — for table/chart display
   const providerSpend = useMemo(() => {
     const spend: Record<string, number> = {};
-    models.forEach(m => { spend[m.provider] = (spend[m.provider] || 0) + m.totalCost; });
+    models.forEach(m => {
+      const isLocal = m.provider === "ollama" || m.provider === "lmstudio";
+      const cost = (m.totalCost > 0 || isLocal || m.totalTokensOut === 0)
+        ? m.totalCost
+        : calculateCost(m.model, m.provider, m.totalTokensIn, m.totalTokensOut);
+      spend[m.provider] = (spend[m.provider] || 0) + cost;
+    });
     return spend;
   }, [models]);
+
+  // All-time provider spend — for balance cards (remaining = balance - allTimeSpent)
+  const allTimeProviderSpend = useMemo(() => {
+    const spend: Record<string, number> = {};
+    allTimeModels.forEach(m => {
+      const isLocal = m.provider === "ollama" || m.provider === "lmstudio";
+      const cost = (m.totalCost > 0 || isLocal || m.totalTokensOut === 0)
+        ? m.totalCost
+        : calculateCost(m.model, m.provider, m.totalTokensIn, m.totalTokensOut);
+      spend[m.provider] = (spend[m.provider] || 0) + cost;
+    });
+    return spend;
+  }, [allTimeModels]);
 
   // Provider spend for pie chart
   const providerPieData = useMemo(() => {
@@ -200,6 +220,7 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
       setWeekCost(weekData.totalCost || 0);
       setMonthCost(monthData.totalCost || 0);
       setAllTimeCost(allData.totalCost || 0);
+      setAllTimeModels(allData.modelBreakdown || []);
       setModels(periodData.modelBreakdown || []);
       setApps(periodData.appBreakdown || []);
       setDailyTotals(dailyData.dailyTotals || []);
@@ -277,9 +298,17 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
           <button onClick={exportCSV} className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-lg text-sm font-bold transition-all border border-zinc-700" title="Export CSV">
             <Download className="w-4 h-4" /> CSV
           </button>
-          <button onClick={() => setCheckPricesOpen(true)} className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-lg text-sm font-bold transition-all border border-zinc-700" title="Check current model prices online">
-            <Search className="w-4 h-4" /> Check Prices
-          </button>
+          {/* Tab Switcher */}
+          <div className="flex items-center ml-2 border border-zinc-700 rounded-lg overflow-hidden">
+            <button onClick={() => setActiveTab("overview")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-bold transition-all ${activeTab === "overview" ? "bg-[#FF6700]/20 text-[#FF6700]" : "bg-zinc-800 hover:bg-zinc-700 text-zinc-300"}`}>
+              <DollarSign className="w-3.5 h-3.5" /> Overview
+            </button>
+            <button onClick={() => setActiveTab("checkprices")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-bold transition-all border-l border-zinc-700 ${activeTab === "checkprices" ? "bg-amber-500/20 text-amber-300" : "bg-zinc-800 hover:bg-zinc-700 text-zinc-300"}`}>
+              <Search className="w-3.5 h-3.5" /> Check Prices
+            </button>
+          </div>
         </div>
         <div className="flex-1 flex items-center justify-center gap-3">
           <DollarSign className="w-5 h-5 text-[#FF6700] drop-shadow-[0_0_8px_rgba(255,103,0,0.6)]" />
@@ -298,15 +327,23 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
         </div>
       </div>
 
+      {/* ── Tab Content ── */}
+      {activeTab === "checkprices" ? (
+        <CheckPricesPanel />
+      ) : (
+      <>
       {/* ── Provider Balance Cards Row — CENTERED ── */}
       <div className="flex-shrink-0 px-4 pt-3">
         <div className="grid grid-cols-4 xl:grid-cols-7 gap-2">
           {providerBalances.map(pb => {
             const color = PROVIDER_COLORS[pb.provider] || "#888";
-            const spent = providerSpend[pb.provider] || 0;
+            const spent = allTimeProviderSpend[pb.provider] || 0;
             const manualBal = manualBalances[pb.provider];
-            const displayBalance = pb.status === "ok" && pb.balance !== undefined ? pb.balance : manualBal;
-            const remaining = displayBalance !== undefined ? Math.max(displayBalance - spent, 0) : undefined;
+            // For providers with live balance API (e.g. DeepSeek), use that directly.
+            // For manual balances, show remaining = manual - allTimeSpent
+            const liveBalance = pb.status === "ok" && pb.balance !== undefined ? pb.balance : undefined;
+            const displayBalance = liveBalance !== undefined ? liveBalance : (manualBal !== undefined ? Math.max(manualBal - spent, 0) : undefined);
+            const remaining = undefined; // Balance card now shows the live/calculated remaining directly
             const isEditing = editingBalance === pb.provider;
             const ago = pb.lastUpdated ? Math.round((Date.now() - new Date(pb.lastUpdated).getTime()) / 60000) : null;
             return (
@@ -316,18 +353,19 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
                   <span className="text-sm font-bold text-white capitalize">{pb.provider}</span>
                   <StatusIcon status={pb.status} />
                 </div>
-                {/* Balance display — live API or manual, colored to match provider */}
+                {/* Balance display — live API or calculated remaining */}
                 {displayBalance !== undefined ? (
                   <div className="text-2xl font-bold font-mono" style={{ color }}>${displayBalance.toFixed(2)}</div>
                 ) : isEditing ? null : (
                   <div className="text-sm font-bold text-zinc-300 text-center">{pb.message || "—"}</div>
                 )}
-                {/* Remaining after spend */}
-                {remaining !== undefined && (
-                  <div className="text-xs text-zinc-300 font-bold">Remaining: <span className="text-white">${remaining.toFixed(2)}</span></div>
-                )}
-                {displayBalance !== undefined && (
+                {/* All-time spend */}
+                {(displayBalance !== undefined || liveBalance !== undefined) && spent > 0 && (
                   <div className="text-xs text-zinc-300 font-bold">Spent: <span className="text-white">{formatCost(spent)}</span></div>
+                )}
+                {/* Show the original set balance for reference when manual */}
+                {liveBalance === undefined && manualBal !== undefined && spent > 0 && (
+                  <div className="text-xs text-zinc-500 font-bold">Set at: ${manualBal.toFixed(2)}</div>
                 )}
                 {/* Editable balance input */}
                 {isEditing ? (
@@ -612,8 +650,8 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
         </div>
       </div>
 
-      {/* Check Prices Modal */}
-      {checkPricesOpen && <CheckPricesModal onClose={() => setCheckPricesOpen(false)} />}
+      </>
+      )}
     </div>
   );
 }

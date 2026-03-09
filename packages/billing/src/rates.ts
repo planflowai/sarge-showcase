@@ -10,15 +10,20 @@ export interface ModelRate {
  */
 export const MODEL_RATES: Record<string, ModelRate> = {
   // ── Anthropic (Mar 2026) ─────────────────────────────────
+  // API returns dated IDs like claude-sonnet-4-20250514 (no minor version)
+  // AND claude-sonnet-4-5-20250514 (with minor version) — need both
   "claude-opus-4-6":              { input: 5.00,  output: 25.00 },
   "claude-opus-4.6":              { input: 5.00,  output: 25.00 },
+  "claude-opus-4-20250514":       { input: 5.00,  output: 25.00 },
   "claude-opus-4-5-20250514":     { input: 5.00,  output: 25.00 },
   "claude-opus-4.5":              { input: 5.00,  output: 25.00 },
   "claude-opus-4-5":              { input: 5.00,  output: 25.00 },
   "claude-sonnet-4-6":            { input: 3.00,  output: 15.00 },
   "claude-sonnet-4.6":            { input: 3.00,  output: 15.00 },
+  "claude-sonnet-4-20250514":     { input: 3.00,  output: 15.00 },
   "claude-sonnet-4-5-20250514":   { input: 3.00,  output: 15.00 },
   "claude-sonnet-4-5-20241022":   { input: 3.00,  output: 15.00 },
+  "claude-sonnet-4-5-20250929":   { input: 3.00,  output: 15.00 },
   "claude-sonnet-4.5":            { input: 3.00,  output: 15.00 },
   "claude-sonnet-4-5":            { input: 3.00,  output: 15.00 },
   "claude-haiku-4-5-20251001":    { input: 1.00,  output: 5.00  },
@@ -129,6 +134,18 @@ export function getRate(model: string, provider: string): ModelRate {
   const lower = model.toLowerCase();
   if (LOCAL_PREFIXES.some(p => lower.startsWith(p))) {
     return MODEL_RATES["local:*"];
+  }
+
+  // Anthropic dated variants: claude-{type}-{major}-{YYYYMMDD} → match claude-{type}-{major}-{minor}
+  // API returns e.g. "claude-sonnet-4-20250514" but rates has "claude-sonnet-4-5" or "claude-sonnet-4-5-20250514"
+  const anthropicDated = lower.match(/^claude-(opus|sonnet|haiku)-(\d+)-(\d{8})$/);
+  if (anthropicDated) {
+    const [, type, major] = anthropicDated;
+    const base = `claude-${type}-${major}`;
+    // Try base without minor version (claude-sonnet-4)
+    for (const [key, rate] of Object.entries(MODEL_RATES)) {
+      if (key.startsWith(base)) return rate;
+    }
   }
 
   // Partial match — try matching the base name without version suffixes

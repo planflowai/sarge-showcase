@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readUsageEntries } from "@sarge/billing/src/logger";
+import { calculateCost } from "@sarge/billing";
 import type { PeriodStats, ModelBreakdown, AppBreakdown } from "@sarge/billing";
+
+/** Recalculate cost if logged cost was zero (rate lookup failed at log time) */
+function fixCost(e: { model: string; provider: string; tokensIn: number; tokensOut: number; cost: number }): number {
+  if (e.cost > 0) return e.cost;
+  const isLocal = e.provider === "ollama" || e.provider === "lmstudio";
+  if (isLocal || e.tokensOut === 0) return 0;
+  return calculateCost(e.model, e.provider, e.tokensIn, e.tokensOut);
+}
 
 export async function GET(req: NextRequest) {
   const period = (req.nextUrl.searchParams.get("period") || "day") as "day" | "week" | "month" | "all";
@@ -15,7 +24,7 @@ export async function GET(req: NextRequest) {
 
   const stats: PeriodStats = {
     period,
-    totalCost: entries.reduce((s, e) => s + e.cost, 0),
+    totalCost: entries.reduce((s, e) => s + fixCost(e), 0),
     totalTokensIn: entries.reduce((s, e) => s + e.tokensIn, 0),
     totalTokensOut: entries.reduce((s, e) => s + e.tokensOut, 0),
     callCount: entries.length,
@@ -30,7 +39,7 @@ export async function GET(req: NextRequest) {
       model: e.model, provider: e.provider, totalCost: 0, callCount: 0,
       totalTokensIn: 0, totalTokensOut: 0, avgTokensPerSecond: 0,
     };
-    existing.totalCost += e.cost;
+    existing.totalCost += fixCost(e);
     existing.callCount += 1;
     existing.totalTokensIn += e.tokensIn;
     existing.totalTokensOut += e.tokensOut;
@@ -48,7 +57,7 @@ export async function GET(req: NextRequest) {
   const appMap = new Map<string, AppBreakdown>();
   for (const e of entries) {
     const existing = appMap.get(e.app) || { app: e.app, totalCost: 0, callCount: 0 };
-    existing.totalCost += e.cost;
+    existing.totalCost += fixCost(e);
     existing.callCount += 1;
     appMap.set(e.app, existing);
   }
