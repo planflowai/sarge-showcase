@@ -127,6 +127,7 @@ async function callAnthropic(model: string, messages: ChatMessage[], apiKey: str
       model,
       messages: chatMessages,
       max_tokens: 8192,
+      temperature: 0.3,
       ...(systemMsg ? { system: systemMsg.content } : {}),
     }),
   });
@@ -150,7 +151,7 @@ async function callOpenAI(model: string, messages: ChatMessage[], apiKey: string
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ model, messages, stream: false }),
+    body: JSON.stringify({ model, messages, stream: false, temperature: 0.3 }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error?.message || `OpenAI error: ${res.status}`);
@@ -174,7 +175,7 @@ async function callGoogle(model: string, messages: ChatMessage[], apiKey: string
     parts: [{ text: m.content }],
   }));
 
-  const body: Record<string, unknown> = { contents };
+  const body: Record<string, unknown> = { contents, generationConfig: { temperature: 0.3 } };
   if (systemMsg) {
     body.systemInstruction = { parts: [{ text: systemMsg.content }] };
   }
@@ -209,7 +210,7 @@ async function callXAI(model: string, messages: ChatMessage[], apiKey: string) {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ model, messages, stream: false }),
+    body: JSON.stringify({ model, messages, stream: false, temperature: 0.3 }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error?.message || `xAI error: ${res.status}`);
@@ -231,7 +232,7 @@ async function callDeepSeek(model: string, messages: ChatMessage[], apiKey: stri
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ model, messages, stream: false }),
+    body: JSON.stringify({ model, messages, stream: false, temperature: 0.3 }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error?.message || `DeepSeek error: ${res.status}`);
@@ -254,7 +255,7 @@ async function callOpenAICompatible(model: string, messages: ChatMessage[], base
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ model, messages, stream: false }),
+    body: JSON.stringify({ model, messages, stream: false, temperature: 0.3 }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error?.message || `${provider} error: ${res.status}`);

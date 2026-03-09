@@ -9,4 +9,6 @@ export * from './stores/aiAnalysisStore';
 export { default as DiagnosticsPage } from './components/DiagnosticsPage';
 
 // ─── Lib ─────────────────────────────────────────────────
-export * from './lib/scanner';
+// scanner.ts uses Node.js fs/path — only import it directly in server-side code
+// e.g. import { scanCodebase } from '@sarge/diagnostics/lib/scanner'
+export type { ScanResult, ScanProgress } from './lib/scanner';

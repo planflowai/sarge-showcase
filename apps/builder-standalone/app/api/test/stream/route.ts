@@ -339,7 +339,7 @@ async function streamOpenAICompatible(
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey}`,
     },
-    body: JSON.stringify({ model, messages, max_tokens: tokenLimit, stream: true, stream_options: { include_usage: true } }),
+    body: JSON.stringify({ model, messages, max_tokens: tokenLimit, stream: true, temperature: 0.3, stream_options: { include_usage: true } }),
   });
 
   if (!res.ok || !res.body) {
@@ -418,6 +418,7 @@ async function streamAnthropic(model: string, prompt: string, systemPrompt?: str
       model,
       max_tokens: tokenLimit,
       stream: true,
+      temperature: 0.3,
       system: systemPrompt || undefined,
       messages: anthropicMessages,
     }),
@@ -495,7 +496,7 @@ async function streamOpenAI(model: string, messages: { role: string; content: an
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey}`,
     },
-    body: JSON.stringify({ model, messages, ...tokenParam, stream: true, stream_options: { include_usage: true } }),
+    body: JSON.stringify({ model, messages, ...tokenParam, stream: true, temperature: 0.3, stream_options: { include_usage: true } }),
   });
 
   if (!res.ok || !res.body) {
@@ -541,7 +542,7 @@ async function streamXAI(model: string, messages: { role: string; content: strin
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey}`,
     },
-    body: JSON.stringify({ model, messages, max_tokens: tokenLimit, stream: true, stream_options: { include_usage: true } }),
+    body: JSON.stringify({ model, messages, max_tokens: tokenLimit, stream: true, temperature: 0.3, stream_options: { include_usage: true } }),
   });
 
   if (!res.ok || !res.body) {
@@ -619,7 +620,7 @@ async function streamGemini(model: string, prompt: string, systemPrompt?: string
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents, generationConfig: { maxOutputTokens: tokenLimit } }),
+      body: JSON.stringify({ contents, generationConfig: { maxOutputTokens: tokenLimit, temperature: 0.3 } }),
     }
   );
 
@@ -666,7 +667,7 @@ async function streamDeepSeek(model: string, messages: { role: string; content: 
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey}`,
     },
-    body: JSON.stringify({ model, messages, max_tokens: tokenLimit, stream: true, stream_options: { include_usage: true } }),
+    body: JSON.stringify({ model, messages, max_tokens: tokenLimit, stream: true, temperature: 0.3, stream_options: { include_usage: true } }),
   });
 
   if (!res.ok || !res.body) {
