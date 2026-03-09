@@ -144,6 +144,15 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
     if (!code.toLowerCase().includes("<!doctype") && !code.toLowerCase().includes("<html")) {
       code = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:system-ui,sans-serif;padding:1rem}</style></head><body>${code}</body></html>`;
     }
+    // Prevent white flash: inject dark fallback bg BEFORE model's styles so they override it
+    const DARK_BG_FALLBACK = `<style>html,body{background:#1A1A2E}</style>`;
+    const headOpen = code.toLowerCase().indexOf("<head");
+    const headOpenEnd = headOpen !== -1 ? code.indexOf(">", headOpen) + 1 : -1;
+    if (headOpenEnd > 0) {
+      code = code.slice(0, headOpenEnd) + DARK_BG_FALLBACK + code.slice(headOpenEnd);
+    } else {
+      code = DARK_BG_FALLBACK + code;
+    }
     const bodyClose = code.toLowerCase().lastIndexOf("</body>");
     if (bodyClose !== -1) {
       code = code.slice(0, bodyClose) + NAV_FIX_SCRIPT + code.slice(bodyClose);
@@ -878,9 +887,8 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
       {/* ── Truth Anchor (collapsible — collapsed by default) ── */}
       {truthAnchor && (
         <div className="border-t border-zinc-800 flex-shrink-0">
-          <button
+          <div className="flex items-center gap-2 w-full px-4 py-2 hover:bg-zinc-800/40 transition-colors cursor-pointer"
             onClick={() => setTruthAnchorOpen(!truthAnchorOpen)}
-            className="flex items-center gap-2 w-full px-4 py-2 text-left hover:bg-zinc-800/40 transition-colors"
           >
             {truthAnchorOpen ? <ChevronDown className="w-4 h-4 text-zinc-300" /> : <ChevronRight className="w-4 h-4 text-zinc-300" />}
             <Lock className="w-4 h-4 text-amber-400" />
@@ -891,7 +899,7 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
               </span>
             )}
             {truthAnchorOpen && (
-              <div className="ml-auto flex-shrink-0">
+              <div className="ml-auto flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                 <CopyBtn
                   text={truthAnchorText}
                   copiedKey="truthanchor"
@@ -901,7 +909,7 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
               </div>
             )}
             {!truthAnchorOpen && <span className="ml-auto text-sm font-mono text-zinc-500">{truthAnchor.hash.slice(0, 8)}...</span>}
-          </button>
+          </div>
           {truthAnchorOpen && (
             <div className="px-4 pb-3">
               <div className="bg-zinc-900/60 border border-zinc-800 rounded-lg p-3 space-y-2 text-sm">

@@ -78,17 +78,26 @@ export function ForgeTrialsRoundDetail({
     }
   }, [running, result, currentModel, currentRound]);
 
-  // Build preview HTML
+  // Build preview HTML — inject dark background to prevent white flash
   const previewHtml = useMemo(() => {
     if (!result?.extractedCode) return "";
-    const code = result.extractedCode;
+    let code = result.extractedCode;
     if (
-      code.toLowerCase().includes("<!doctype") ||
-      code.toLowerCase().includes("<html")
+      !code.toLowerCase().includes("<!doctype") &&
+      !code.toLowerCase().includes("<html")
     ) {
-      return code;
+      code = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:system-ui,sans-serif;padding:1rem}</style></head><body>${code}</body></html>`;
     }
-    return `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:system-ui,sans-serif;padding:1rem}</style></head><body>${code}</body></html>`;
+    // Prevent white flash: inject dark fallback bg BEFORE model's styles so they override it
+    const DARK_BG_FALLBACK = `<style>html,body{background:#1A1A2E}</style>`;
+    const headOpen = code.toLowerCase().indexOf("<head");
+    const headOpenEnd = headOpen !== -1 ? code.indexOf(">", headOpen) + 1 : -1;
+    if (headOpenEnd > 0) {
+      code = code.slice(0, headOpenEnd) + DARK_BG_FALLBACK + code.slice(headOpenEnd);
+    } else {
+      code = DARK_BG_FALLBACK + code;
+    }
+    return code;
   }, [result?.extractedCode]);
 
   // Compute display cost — use stored cost, or calculate from tokens

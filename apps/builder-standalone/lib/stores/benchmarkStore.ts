@@ -359,7 +359,20 @@ export const useBenchmarkStore = create<BenchmarkState>()(
       hybridAddResult: (result) =>
         set((s) => ({ hybridResults: [...s.hybridResults, result] })),
       hybridAddEvent: (event) =>
-        set((s) => ({ hybridEvents: [...s.hybridEvents.slice(-200), event] })),
+        set((s) => {
+          // Keep only the latest partialHtml to avoid bloating the event array.
+          // Older streaming events get their partialHtml stripped (30KB+ each).
+          const newEvents = [...s.hybridEvents, event].slice(-100);
+          // Strip partialHtml from all but the last streaming event
+          let lastStreamingIdx = -1;
+          for (let i = newEvents.length - 1; i >= 0; i--) {
+            if (newEvents[i].type === "hybrid:step-streaming" && newEvents[i].partialHtml) {
+              if (lastStreamingIdx === -1) { lastStreamingIdx = i; }
+              else { newEvents[i] = { ...newEvents[i], partialHtml: undefined }; }
+            }
+          }
+          return { hybridEvents: newEvents };
+        }),
       hybridSetAbortController: (ctrl) => set({ hybridAbortController: ctrl }),
       hybridSetTotalCost: (cost) => set({ hybridTotalCost: cost }),
       hybridSaveRun: () => {
@@ -435,9 +448,11 @@ export const useBenchmarkStore = create<BenchmarkState>()(
           rawResponse: "",
           extractedCode: "",
         });
-        // Strip heavy fields from hybrid step results (content + extractedCode per step)
+        // Strip heavy fields from hybrid chain results (content + extractedCode per step + chain-level code)
         const stripHybridHeavy = (hr: HybridChainResult): HybridChainResult => ({
           ...hr,
+          extractedCode: "",    // chain-level HTML — 15-30KB
+          finalOutput: "",      // chain-level raw output
           steps: hr.steps.map(step => ({
             ...step,
             content: "",        // full streaming response — 5-30KB per step
@@ -462,7 +477,7 @@ export const useBenchmarkStore = create<BenchmarkState>()(
           hybridMode: s.hybridMode,
           hybridChains: s.hybridChains,
           hybridResults: s.hybridResults.map(stripHybridHeavy),
-          hybridPastRuns: s.hybridPastRuns.map(stripHybridHeavy),
+          hybridPastRuns: s.hybridPastRuns.slice(0, 20).map(stripHybridHeavy),
           hybridSelectedScenario: s.hybridSelectedScenario,
           hybridCustomPrompt: s.hybridCustomPrompt,
         };
