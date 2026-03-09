@@ -493,7 +493,7 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
             <iframe
               srcDoc={previewHtml}
               sandbox="allow-scripts allow-same-origin allow-forms"
-              className="w-full h-full border-0 bg-white"
+              className="w-full h-full border-0 bg-[#1A1A2E]"
               style={{ opacity: iframeOpacity, transition: "opacity 0.3s ease" }}
               title="Hybrid Live Preview"
             />
@@ -635,8 +635,9 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
               <iframe
                 srcDoc={previewHtml}
                 sandbox="allow-scripts allow-same-origin allow-forms"
-                className="w-full h-full border-0 bg-white"
+                className="w-full h-full border-0 bg-[#1A1A2E] opacity-0 transition-opacity duration-300"
                 title="Hybrid Preview"
+                onLoad={(e) => (e.currentTarget.style.opacity = "1")}
               />
             ) : (
               <div className="flex items-center justify-center h-full text-zinc-300 text-sm">

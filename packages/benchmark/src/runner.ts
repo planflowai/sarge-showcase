@@ -220,6 +220,10 @@ export interface HybridChainResult {
   timestamp: number;
   juryVerdict?: JuryVerdict;
   truthAnchor?: TruthAnchor;
+  /** Final extracted code from the last step — used by preview */
+  extractedCode?: string;
+  /** Raw output from the last step */
+  finalOutput?: string;
 }
 
 export interface HybridBenchmarkConfig {

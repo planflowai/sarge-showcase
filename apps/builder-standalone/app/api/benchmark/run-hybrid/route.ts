@@ -474,7 +474,13 @@ async function logBilling(
 
 // ── Step Prompts ──
 
-const STEP_SYSTEM = "You are a code builder assistant. Output a single complete HTML file with all CSS in a <style> tag and all JS in a <script> tag. No external dependencies except CDN libraries.";
+const STEP_SYSTEM = `You are a website builder. You build client-facing websites, NOT dashboards, admin panels, or data-visualization tools.
+
+RULES:
+- Output a single complete HTML file with all CSS in a <style> tag and all JS in a <script> tag.
+- No external dependencies except CDN libraries (Tailwind, Font Awesome, Google Fonts are fine).
+- The file must be fully functional and visually complete when opened in a browser.
+- Build exactly what is requested. If asked for a restaurant site, build a restaurant site. Never substitute a different type of site.`;
 
 const LOCAL_MODEL_PREFIX = `CRITICAL INSTRUCTION: You must output ONLY complete, valid HTML.
 No explanations. No apologies. No commentary. No markdown. No code blocks.
@@ -1692,6 +1698,8 @@ export async function POST(request: NextRequest) {
           );
         }
 
+        // Propagate final step's code/output to chain level for preview
+        const lastStep = stepResults[stepResults.length - 1];
         const chainResult: HybridChainResult = {
           chainId: chain.id,
           chainName: chain.name,
@@ -1702,6 +1710,8 @@ export async function POST(request: NextRequest) {
           timestamp: Date.now(),
           juryVerdict: juryVerdict || undefined,
           truthAnchor,
+          extractedCode: lastStep?.extractedCode || lastGoodCode || "",
+          finalOutput: lastStep?.content || "",
         };
 
         allChainResults.push(chainResult);

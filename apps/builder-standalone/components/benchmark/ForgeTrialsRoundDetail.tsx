@@ -356,9 +356,10 @@ export function ForgeTrialsRoundDetail({
             {previewHtml ? (
               <iframe
                 srcDoc={previewHtml}
-                className="w-full h-full rounded-lg border border-zinc-800 bg-white"
+                className="w-full h-full rounded-lg border border-zinc-800 bg-[#1A1A2E] opacity-0 transition-opacity duration-300"
                 sandbox="allow-scripts"
                 title="Preview"
+                onLoad={(e) => (e.currentTarget.style.opacity = "1")}
               />
             ) : (
               <div className="flex items-center justify-center h-full text-zinc-300 text-base font-bold">
