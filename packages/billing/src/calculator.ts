@@ -1,13 +1,21 @@
 import { getRate } from "./rates";
 
-/** Calculate cost in USD for a model call. Returns 0 for local models. */
+let _customRates: Record<string, { input: number; output: number }> | null = null;
+
+/** Inject custom rate overrides (called from server-side billing routes). */
+export function setCustomRates(rates: Record<string, { input: number; output: number }>): void {
+  _customRates = rates;
+}
+
+/** Calculate cost in USD for a model call. Checks custom overrides first. */
 export function calculateCost(
   model: string,
   provider: string,
   tokensIn: number,
   tokensOut: number
 ): number {
-  const rate = getRate(model, provider);
+  const custom = _customRates?.[model];
+  const rate = custom || getRate(model, provider);
   const inputCost = (tokensIn / 1_000_000) * rate.input;
   const outputCost = (tokensOut / 1_000_000) * rate.output;
   return Math.round((inputCost + outputCost) * 1e6) / 1e6;

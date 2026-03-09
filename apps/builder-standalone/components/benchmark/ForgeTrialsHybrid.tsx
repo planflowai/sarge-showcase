@@ -28,6 +28,7 @@ import {
   type RoutingMode,
   type ModelCandidate,
 } from "@/lib/autoRouter";
+import { PricingButton } from "./ModelPricingPopout";
 
 const DEFAULT_ROLES = ["Build", "Improve", "Refine", "Polish", "Check"];
 
@@ -565,6 +566,7 @@ export function ForgeTrialsHybrid() {
                   >
                     {step.modelName || step.modelId}
                   </span>
+                  <PricingButton modelId={step.modelId} provider={step.provider} />
                   <span className="text-sm font-mono text-emerald-400">
                     ${routerInfo?.costEstimate.toFixed(3) || "0.000"}
                   </span>

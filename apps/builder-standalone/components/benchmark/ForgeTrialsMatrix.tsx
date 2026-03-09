@@ -8,6 +8,7 @@ import type {
   BenchmarkScenario,
   Tier,
 } from "@sarge/benchmark";
+import { PricingButton } from "./ModelPricingPopout";
 
 interface Props {
   results: RoundResult[];
@@ -188,6 +189,7 @@ export function ForgeTrialsMatrix({
                       <span className={`text-sm font-bold truncate ${isActive ? "text-[#FF6700]" : "text-zinc-200"}`}>
                         {modelId}
                       </span>
+                      <PricingButton modelId={modelId} className="flex-shrink-0" />
                       {isActive && <div className="ember-ring micro ml-1 flex-shrink-0" />}
                     </div>
                   </td>

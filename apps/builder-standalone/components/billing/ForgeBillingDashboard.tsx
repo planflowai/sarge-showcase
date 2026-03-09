@@ -2,11 +2,12 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
-  Flame, ArrowLeft, Settings, ArrowUpDown,
+  Flame, ArrowLeft, Settings, ArrowUpDown, Search,
   Sun, Moon, DollarSign, Calendar, TrendingUp, Wallet, RefreshCw,
   Shield, ShieldOff, Plane, Radio, ExternalLink, Download, AlertTriangle,
   CheckCircle, Clock, ChevronDown, ChevronRight, Pencil, Check,
 } from "lucide-react";
+import { CheckPricesModal } from "./CheckPricesModal";
 import { formatCost, calculateCost, getRate, PROVIDER_CONSOLE_URLS } from "@sarge/billing";
 import type { ModelBreakdown, AppBreakdown, DailyTotal, UsageEntry } from "@sarge/billing";
 import {
@@ -76,6 +77,7 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
   const [sortAsc, setSortAsc] = useState(false);
   const [chartView, setChartView] = useState<ChartView>("all");
   const [refreshing, setRefreshing] = useState(false);
+  const [checkPricesOpen, setCheckPricesOpen] = useState(false);
 
   // Provider balances (from API)
   const [providerBalances, setProviderBalances] = useState<ProviderBalance[]>([]);
@@ -274,6 +276,9 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
           </button>
           <button onClick={exportCSV} className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-lg text-sm font-bold transition-all border border-zinc-700" title="Export CSV">
             <Download className="w-4 h-4" /> CSV
+          </button>
+          <button onClick={() => setCheckPricesOpen(true)} className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-lg text-sm font-bold transition-all border border-zinc-700" title="Check current model prices online">
+            <Search className="w-4 h-4" /> Check Prices
           </button>
         </div>
         <div className="flex-1 flex items-center justify-center gap-3">
@@ -606,6 +611,9 @@ export default function ForgeBillingDashboard({ onClose }: { onClose: () => void
           </div>
         </div>
       </div>
+
+      {/* Check Prices Modal */}
+      {checkPricesOpen && <CheckPricesModal onClose={() => setCheckPricesOpen(false)} />}
     </div>
   );
 }

@@ -2,7 +2,8 @@ import fs from "fs/promises";
 import { existsSync } from "fs";
 import path from "path";
 import type { UsageEntry, SessionStats, BillingConfig } from "./types";
-import { calculateCost } from "./calculator";
+import { calculateCost, setCustomRates } from "./calculator";
+import { getCustomRates } from "./rateOverrides";
 
 const BILLING_DIR = "L:/sarge-data/billing";
 const USAGE_FILE = path.join(BILLING_DIR, "usage.jsonl");
@@ -27,6 +28,9 @@ export async function logUsage(params: {
   context?: string;
 }): Promise<UsageEntry> {
   await ensureDir();
+
+  // Inject custom rate overrides before calculating cost
+  setCustomRates(getCustomRates());
 
   const cost = calculateCost(params.model, params.provider, params.tokensIn, params.tokensOut);
   const tokensPerSecond = params.durationMs > 0

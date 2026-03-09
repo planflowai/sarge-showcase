@@ -3,6 +3,7 @@
 import React, { useMemo } from "react";
 import { Check, Cloud, AlertCircle } from "lucide-react";
 import { useModelStore } from "@sarge/core";
+import { PricingButton } from "./ModelPricingPopout";
 
 interface CloudModel {
   id: string;
@@ -186,31 +187,33 @@ export function ForgeTrialsControls({
                   const isOffline = status === "error";
 
                   return (
-                    <button
-                      key={`${group.provider}-${model.id}`}
-                      onClick={() => toggleCloudModel(model.id, group.provider, model.name)}
-                      disabled={running}
-                      className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold transition-all border ${
-                        isOffline
-                          ? "bg-zinc-900 border-zinc-800 text-zinc-400 opacity-50"
-                          : selected
-                          ? "bg-[#FF6700]/15 border-[#FF6700]/40 text-[#FFD700] shadow-[0_0_8px_rgba(255,103,0,0.15)]"
-                          : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:border-zinc-600"
-                      } ${running ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
-                      title={isOffline ? "OFFLINE" : status === "active" ? "Verified" : "Not verified"}
-                    >
-                      <span
-                        className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                        style={{
-                          backgroundColor: status === "active" ? "#10B981"
-                            : status === "error" ? "#EF4444"
-                            : status === "unchecked" ? "#F59E0B"
-                            : "#6B7280",
-                        }}
-                      />
-                      {selected && <Check className="w-2.5 h-2.5 text-[#FF6700]" />}
-                      {model.name}
-                    </button>
+                    <span key={`${group.provider}-${model.id}`} className="inline-flex items-center gap-0.5">
+                      <button
+                        onClick={() => toggleCloudModel(model.id, group.provider, model.name)}
+                        disabled={running}
+                        className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold transition-all border ${
+                          isOffline
+                            ? "bg-zinc-900 border-zinc-800 text-zinc-400 opacity-50"
+                            : selected
+                            ? "bg-[#FF6700]/15 border-[#FF6700]/40 text-[#FFD700] shadow-[0_0_8px_rgba(255,103,0,0.15)]"
+                            : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:border-zinc-600"
+                        } ${running ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
+                        title={isOffline ? "OFFLINE" : status === "active" ? "Verified" : "Not verified"}
+                      >
+                        <span
+                          className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                          style={{
+                            backgroundColor: status === "active" ? "#10B981"
+                              : status === "error" ? "#EF4444"
+                              : status === "unchecked" ? "#F59E0B"
+                              : "#6B7280",
+                          }}
+                        />
+                        {selected && <Check className="w-2.5 h-2.5 text-[#FF6700]" />}
+                        {model.name}
+                      </button>
+                      <PricingButton modelId={model.id} provider={group.provider} />
+                    </span>
                   );
                 })}
               </div>
