@@ -382,7 +382,7 @@ export async function POST(request: NextRequest) {
       // ── Step 11: Send welcome email (non-blocking) ──
       if (clientEmail) {
         const comingSoonUrl = vercelUrl || netlifyUrl || cloudflareUrl || githubUrl;
-        const refCode = "SARGE-" + Date.now().toString(36).toUpperCase();
+        const refCode = "PF-" + Date.now().toString(36).toUpperCase().slice(-6);
         const intakeFormUrl = comingSoonUrl
           ? comingSoonUrl.replace(/\/$/, "").replace(/\/[^/]*$/, "") + "/intake"
           : "";

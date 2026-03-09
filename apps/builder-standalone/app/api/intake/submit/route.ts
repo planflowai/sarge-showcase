@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     // Accept ref_code OR ref — both work
     const refCode =
       body.ref_code || body.ref || formData.ref_code || formData.ref ||
-      "SARGE-" + Date.now().toString(36).toUpperCase();
+      "PF-" + Date.now().toString(36).toUpperCase().slice(-6);
 
     // Extract display fields — handle both flat and step-based nested structures
     const stepAbout = formData.step1_about || {};
@@ -145,7 +145,7 @@ async function sendIntakeEmails(
           subject: `New Project Intake — ${businessName} — Ref: ${refCode}`,
           template: "intake_received",
           data: {
-            client_name: `[NOTIFICATION] ${contactName}`,
+            client_name: contactName,
             project_name: businessName,
             form_summary: summaryRows.join("") +
               `<tr><td style="padding:8px 12px;font-size:12px;color:#94A3B8;font-weight:600;border-bottom:1px solid #1E2128;">Client Email</td><td style="padding:8px 12px;font-size:13px;color:#E2E8F0;border-bottom:1px solid #1E2128;">${clientEmail || "N/A"}</td></tr>`,

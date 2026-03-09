@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Generate ref code
-  const refCode = "SARGE-" + Date.now().toString(36).toUpperCase();
+  const refCode = "PF-" + Date.now().toString(36).toUpperCase().slice(-6);
 
   try {
     // ── Step 1: Create project folder ──

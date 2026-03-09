@@ -59,10 +59,14 @@ const SettingsPricing = dynamic(
   () => import("@/components/settings/SettingsPricing").then((m) => ({ default: m.SettingsPricing })),
   { loading: () => <div className="animate-pulse text-sm font-semibold text-white py-8 text-center">Loading pricing admin…</div> }
 );
+const SettingsEmailTemplates = dynamic(
+  () => import("@/components/settings/SettingsEmailTemplates").then((m) => ({ default: m.SettingsEmailTemplates })),
+  { loading: () => <div className="animate-pulse text-sm font-semibold text-white py-8 text-center">Loading email templates…</div> }
+);
 import { RollCall } from "@/components/settings/RollCall";
 import { ModelRoleTags } from "@/components/settings/ModelRoleTags";
 
-type Section = "general" | "models" | "registry" | "rollcall" | "orchestration" | "roles" | "prompts" | "security" | "knowledge" | "logic" | "questions" | "poisons" | "sync" | "guardian" | "trading" | "build-docs" | "diagnostics" | "packages";
+type Section = "general" | "models" | "registry" | "rollcall" | "orchestration" | "roles" | "prompts" | "security" | "knowledge" | "logic" | "questions" | "poisons" | "sync" | "guardian" | "trading" | "build-docs" | "diagnostics" | "packages" | "email";
 
 const NAV_ITEMS: { id: Section; label: string; icon: React.ElementType }[] = [
   { id: "general", label: "General", icon: Settings },
@@ -72,6 +76,7 @@ const NAV_ITEMS: { id: Section; label: string; icon: React.ElementType }[] = [
   { id: "roles", label: "Roles", icon: Shield },
   { id: "prompts", label: "Prompts", icon: MessageSquare },
   { id: "knowledge", label: "Knowledge", icon: Database },
+  { id: "email", label: "Email Templates", icon: Mail },
   { id: "diagnostics", label: "Diagnostics", icon: Activity },
   { id: "packages", label: "Packages", icon: DollarSign },
 ];
@@ -1282,6 +1287,8 @@ export default function SettingsPage() {
         {/* questions — hidden (view-only, monolith test mode only) */}
         {/* poisons — hidden (view-only, monolith test mode only) */}
         {/* build-docs — hidden (toggle with no consumer) */}
+
+        {section === "email" && <SettingsEmailTemplates />}
 
         {section === "diagnostics" && <PipelineDiagnostics />}
 

@@ -56,7 +56,7 @@ const DUMMY_INTAKE = {
   site_phone: "(555) 123-4567",
   site_email: "info@testplumbing.com",
   site_address: "123 Main St, Minneapolis, MN 55401",
-  ref: "SARGE-PIPELINETEST-" + Date.now().toString(36).toUpperCase(),
+  ref: "PF-" + Date.now().toString(36).toUpperCase().slice(-6),
   submitted_at: new Date().toISOString(),
 };
 

@@ -132,7 +132,7 @@ async function sendRevisionEmails(
           subject: `Revision Request — ${projectName} — Rev ${revisionNumber}`,
           template: "revision_received",
           data: {
-            client_name: `[NOTIFICATION] ${clientName}`,
+            client_name: clientName,
             project_name: projectName,
             page,
             description,

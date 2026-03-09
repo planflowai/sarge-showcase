@@ -10,24 +10,28 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         :root {
-            --bg-primary: #0B0E11;
-            --bg-secondary: #12161B;
-            --bg-card: #181D24;
-            --bg-input: #1E242C;
-            --bg-hover: #252D37;
-            --border: #2A3340;
-            --border-focus: #FF6700;
+            --bg-primary: #1A1A2E;
+            --bg-secondary: #242438;
+            --bg-card: #242438;
+            --bg-input: #2D2D44;
+            --bg-hover: #363650;
+            --border: #3D3D5C;
+            --border-focus: #3AB7FE;
             --text-primary: #F0F2F5;
-            --text-secondary: #9BA3AF;
-            --text-muted: #6B7280;
-            --accent: #FF6700;
-            --accent-dark: #CC5200;
-            --accent-glow: rgba(255, 103, 0, 0.15);
-            --accent-glow-strong: rgba(255, 103, 0, 0.3);
-            --success: #10B981;
+            --text-secondary: #C8CAD0;
+            --text-muted: #C8CAD0;
+            --accent: #E8722A;
+            --accent-dark: #C45E1F;
+            --accent-glow: rgba(58, 183, 254, 0.15);
+            --accent-glow-strong: rgba(58, 183, 254, 0.3);
+            --success: #34D399;
             --warning: #F59E0B;
             --danger: #EF4444;
-            --info: #3B82F6;
+            --info: #3AB7FE;
+            --pf-cyan: #3AB7FE;
+            --pf-blue: #3690DF;
+            --pf-purple: #B570FA;
+            --pf-gradient: linear-gradient(90deg, #3AB7FE, #3690DF, #B570FA);
             --radius: 12px;
             --radius-sm: 8px;
             --radius-xs: 6px;
@@ -69,13 +73,23 @@
             left: 0;
             right: 0;
             z-index: 100;
-            background: rgba(11, 14, 17, 0.85);
+            background: rgba(26, 26, 46, 0.92);
             backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--border);
-            padding: 16px 32px;
+            border-bottom: none;
+            padding: 16px 32px 0;
+            display: flex;
+            flex-direction: column;
+        }
+        .site-header .header-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
+            padding-bottom: 16px;
+        }
+        .site-header .header-gradient {
+            height: 3px;
+            background: var(--pf-gradient);
+            width: 100%;
         }
         .logo {
             display: flex;
@@ -150,13 +164,14 @@
             flex-shrink: 0;
         }
         .step-dot.active {
-            border-color: var(--accent);
-            background: var(--accent);
-            color: #000;
+            border-color: #E8722A;
+            background: #E8722A;
+            color: #fff;
+            font-weight: 700;
         }
         .step-dot.completed {
-            border-color: var(--success);
-            background: var(--success);
+            border-color: transparent;
+            background: linear-gradient(135deg, #3AB7FE, #3690DF, #B570FA);
             color: #fff;
         }
         .step-connector {
@@ -166,7 +181,7 @@
             transition: var(--transition);
             flex-shrink: 0;
         }
-        .step-connector.completed { background: var(--success); }
+        .step-connector.completed { background: linear-gradient(90deg, #3AB7FE, #B570FA); }
         .step-label {
             display: none;
         }
@@ -244,7 +259,7 @@
             align-items: center;
             gap: 8px;
             font-size: 14px;
-            font-weight: 500;
+            font-weight: 600;
             color: var(--text-primary);
             margin-bottom: 6px;
         }
@@ -696,13 +711,14 @@
             background: var(--accent-dark);
         }
         .btn-submit {
-            background: var(--success);
+            background: linear-gradient(90deg, #3AB7FE, #3690DF, #B570FA);
             color: #fff;
             padding: 16px 40px;
             font-size: 16px;
+            font-weight: 700;
         }
         .btn-submit:hover {
-            background: #0d9668;
+            opacity: 0.9;
         }
         .btn-save {
             background: transparent;
@@ -812,18 +828,21 @@
 
 <!-- HEADER -->
 <header class="site-header">
-    <div class="logo">
-        <img src="/logo_png.png" alt="PlanFlowAI" height="36" style="border-radius:6px;">
-        <div class="logo-text"><span>PlanFlow</span>AI</div>
-    </div>
-    <div style="display:flex;align-items:center;gap:20px;">
-        <button type="button" id="themeToggle" onclick="toggleTheme()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:8px 10px;cursor:pointer;color:var(--text-secondary);font-size:16px;display:flex;align-items:center;transition:var(--transition);" title="Toggle light/dark mode">
-            <i class="fas fa-moon" id="themeIcon"></i>
-        </button>
-        <div class="header-help">
-            Questions? <a href="mailto:info@planflowai.com">info@planflowai.com</a>
+    <div class="header-row">
+        <div class="logo">
+            <img src="/assets/logo.svg" alt="PlanFlowAI" height="32" style="border-radius:6px;">
+            <img src="/assets/planflowai_name.svg" alt="PlanFlowAI" height="24" onerror="this.style.display='none'">
+        </div>
+        <div style="display:flex;align-items:center;gap:20px;">
+            <button type="button" id="themeToggle" onclick="toggleTheme()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:8px 10px;cursor:pointer;color:var(--text-secondary);font-size:16px;display:flex;align-items:center;transition:var(--transition);" title="Toggle light/dark mode">
+                <i class="fas fa-moon" id="themeIcon"></i>
+            </button>
+            <div class="header-help">
+                Questions? <a href="mailto:info@planflowai.com" style="color:#C8CAD0;">info@planflowai.com</a>
+            </div>
         </div>
     </div>
+    <div class="header-gradient"></div>
 </header>
 
 <!-- PROGRESS BAR -->
@@ -2031,7 +2050,7 @@
         submission.image_source = [...document.querySelectorAll('.pill-group[data-name="image_source"] .pill.selected')].map(p => p.dataset.value);
         submission.pages = [...document.querySelectorAll('.toggle-card.selected[data-name="pages"]')].map(c => c.dataset.value);
         submission.features = [...document.querySelectorAll('.toggle-card.selected[data-name="features"]')].map(c => c.dataset.value);
-        submission.ref = urlRefCode || ('SARGE-' + Date.now().toString(36).toUpperCase());
+        submission.ref = urlRefCode || ('PF-' + Date.now().toString(36).toUpperCase().slice(-6));
         submission.submitted_at = new Date().toISOString();
 
         console.log('SUBMISSION:', JSON.stringify(submission, null, 2));

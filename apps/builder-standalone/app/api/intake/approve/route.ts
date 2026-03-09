@@ -20,38 +20,82 @@ export async function POST(req: NextRequest) {
     const supabase = createClient(supabaseUrl, supabaseKey);
     const emailEndpoint = new URL("/api/email/send", req.url).toString();
 
-    // ── Action: start_build ── Set status to 'building'
+    // ── Action: start_build ── Set status to 'building' + send build_started email
     if (action === "start_build") {
-      const { error } = await supabase
+      const { data: rec, error } = await supabase
         .from("client_intake")
         .update({
           status: "building",
           build_started_at: new Date().toISOString(),
         })
-        .eq("ref_code", ref_code);
+        .eq("ref_code", ref_code)
+        .select("*")
+        .single();
 
       if (error) {
         console.error("[intake/approve] start_build error:", error.message);
         return NextResponse.json({ error: "Failed to update status" }, { status: 500 });
       }
 
+      // Send build_started email (non-blocking)
+      const clientEmail = rec?.client_email || rec?.form_data?.email;
+      if (clientEmail) {
+        fetch(emailEndpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            to: clientEmail,
+            template: "build_started",
+            data: {
+              client_name: rec.client_name || rec.form_data?.contact_name || "Client",
+              project_name: rec.project_name || rec.form_data?.business_name || "Your Project",
+              ref_code,
+              timeline: "5-7",
+            },
+          }),
+        }).catch((err) => console.warn("[intake/approve] build_started email failed:", err));
+      }
+
       console.log(`[intake/approve] Project ${ref_code} → building`);
       return NextResponse.json({ success: true, status: "building" });
     }
 
-    // ── Action: send_preview ── Set status to 'preview'
+    // ── Action: send_preview ── Set status to 'preview' + send preview_ready email
     if (action === "send_preview") {
-      const { error } = await supabase
+      const { preview_url } = body;
+      const { data: rec, error } = await supabase
         .from("client_intake")
         .update({
           status: "preview",
           preview_sent_at: new Date().toISOString(),
         })
-        .eq("ref_code", ref_code);
+        .eq("ref_code", ref_code)
+        .select("*")
+        .single();
 
       if (error) {
         console.error("[intake/approve] send_preview error:", error.message);
         return NextResponse.json({ error: "Failed to update status" }, { status: 500 });
+      }
+
+      // Send preview_ready email (non-blocking)
+      const clientEmail = rec?.client_email || rec?.form_data?.email;
+      if (clientEmail) {
+        const previewLink = preview_url || `${new URL(req.url).origin}/preview/${encodeURIComponent(ref_code)}`;
+        fetch(emailEndpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            to: clientEmail,
+            template: "preview_ready",
+            data: {
+              client_name: rec.client_name || rec.form_data?.contact_name || "Client",
+              project_name: rec.project_name || rec.form_data?.business_name || "Your Project",
+              preview_url: previewLink,
+              ref_code,
+            },
+          }),
+        }).catch((err) => console.warn("[intake/approve] preview_ready email failed:", err));
       }
 
       console.log(`[intake/approve] Project ${ref_code} → preview`);
