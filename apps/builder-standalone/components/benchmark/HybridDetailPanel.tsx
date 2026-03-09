@@ -841,9 +841,9 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
       {/* ── AI Assessment (collapsible — collapsed by default) ── */}
       {chainResult && (
         <div className="border-t border-zinc-800 flex-shrink-0">
-          <button
+          <div
             onClick={() => setAssessmentOpen(!assessmentOpen)}
-            className="flex items-center gap-2 w-full px-4 py-2 text-left hover:bg-zinc-800/40 transition-colors"
+            className="flex items-center gap-2 w-full px-4 py-2 text-left hover:bg-zinc-800/40 transition-colors cursor-pointer"
           >
             {assessmentOpen ? <ChevronDown className="w-4 h-4 text-zinc-300" /> : <ChevronRight className="w-4 h-4 text-zinc-300" />}
             <Flame className="w-4 h-4 text-[#FF6700]" />
@@ -855,7 +855,7 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
               </span>
             )}
             {assessmentOpen && assessment && (
-              <div className="ml-auto flex-shrink-0">
+              <div className="ml-auto flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                 <CopyBtn
                   text={assessment}
                   copiedKey="assessment"
@@ -864,7 +864,7 @@ export function HybridDetailPanel({ running, chainResult, events, scenarioId }: 
                 />
               </div>
             )}
-          </button>
+          </div>
           {assessmentOpen && (
             <div className="px-4 pb-3 max-h-64 overflow-y-auto">
               {assessmentLoading ? (
