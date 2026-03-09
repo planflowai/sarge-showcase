@@ -24,10 +24,10 @@ interface ProviderStatus {
 }
 
 const CHECKER_MODELS = [
-  { label: "Grok 4.1 Fast", provider: "xai", model: "grok-4.1-fast" },
+  { label: "Grok 4 Fast", provider: "xai", model: "grok-4-fast" },
   { label: "DeepSeek V3.2", provider: "deepseek", model: "deepseek-chat" },
-  { label: "Gemini 2.0 Flash-Lite", provider: "google", model: "gemini-2.0-flash-lite" },
-  { label: "Mistral Nemo", provider: "mistral", model: "mistral-nemo" },
+  { label: "Gemini 2.0 Flash", provider: "google", model: "gemini-2.0-flash" },
+  { label: "Mistral Small", provider: "mistral", model: "mistral-small-latest" },
   { label: "GPT-4o Mini", provider: "openai", model: "gpt-4o-mini" },
 ];
 

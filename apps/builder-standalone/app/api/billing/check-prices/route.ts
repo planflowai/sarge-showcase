@@ -119,8 +119,8 @@ export async function POST(req: NextRequest) {
               }),
               signal: AbortSignal.timeout(30000),
             });
-            if (!chatRes.ok) throw new Error(`Chat failed: ${chatRes.status}`);
             const chatData = await chatRes.json();
+            if (!chatRes.ok) throw new Error(chatData.error || `Chat failed: ${chatRes.status}`);
             const content = (chatData.content || "").trim();
 
             // Parse JSON — handle code fences
