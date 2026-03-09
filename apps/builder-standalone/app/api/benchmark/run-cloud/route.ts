@@ -621,6 +621,18 @@ export async function POST(request: NextRequest) {
               });
             }, 10_000);
 
+            // === OPUS DIAGNOSIS: Log exact prompts sent to each provider ===
+            console.log(`\n=== CLOUD TRIAL REQUEST DEBUG ===`);
+            console.log(`Provider: ${model.provider}`);
+            console.log(`Model: ${model.id}`);
+            console.log(`Scenario: ${scenario.id} (${scenario.name})`);
+            console.log(`Temperature: 0.3 (hardcoded in all provider calls)`);
+            console.log(`System prompt (first 500): ${scenario.systemPrompt?.substring(0, 500)}`);
+            console.log(`User prompt (first 500): ${scenario.prompt?.substring(0, 500)}`);
+            console.log(`Timeout: ${scenario.timeout}ms`);
+            console.log(`Run: ${run + 1}/${RUNS_PER_SCENARIO}`);
+            console.log(`=== END REQUEST DEBUG ===\n`);
+
             const result = await callCloudDirect(
               model.provider,
               model.id,

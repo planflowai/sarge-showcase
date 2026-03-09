@@ -56,6 +56,41 @@ function isHtmlComplete(code: string): boolean {
   return /<\/html>/i.test(code);
 }
 
+/**
+ * Check if HTML has reached a meaningful rendering milestone.
+ * Milestones (in order of preference):
+ * 1. </html> — page is complete
+ * 2. </body> — body is complete
+ * 3. </style> — CSS is ready, show styled skeleton
+ */
+function getHtmlMilestone(code: string): 'complete' | 'body' | 'style' | null {
+  if (/<\/html>/i.test(code)) return 'complete';
+  if (/<\/body>/i.test(code)) return 'body';
+  if (/<\/style>/i.test(code)) return 'style';
+  return null;
+}
+
+/**
+ * Strip incomplete <script> blocks from HTML to prevent SyntaxErrors in iframe.
+ * If a <script> tag is opened but not closed, remove it entirely.
+ * The page renders with CSS styling; JS is added once the full block arrives.
+ */
+function stripIncompleteScripts(html: string): string {
+  // Find the last <script that isn't closed
+  const lastScriptOpen = html.lastIndexOf('<script');
+  if (lastScriptOpen === -1) return html;
+
+  // Check if there's a matching </script> after this opening tag
+  const afterOpen = html.slice(lastScriptOpen);
+  const hasClose = /<\/script>/i.test(afterOpen);
+
+  if (!hasClose) {
+    // Strip the incomplete <script...> block
+    return html.slice(0, lastScriptOpen);
+  }
+  return html;
+}
+
 function ArtifactPanelInner({
   code,
   onCodeChange,
@@ -276,8 +311,7 @@ function ArtifactPanelInner({
   const MIN_UPDATE_INTERVAL = STREAMING_MIN_UPDATE_INTERVAL_MS;
   const MIN_CONTENT_DELTA = STREAMING_MIN_CONTENT_DELTA;
 
-  // Log the projectName prop on render
-  console.log(`[ArtifactPanel] Render: projectName="${projectName}", isStreaming=${isStreaming}, code length=${code?.length || 0}`);
+  // Removed per-render console.log — was firing on every token during streaming
 
   // When project is set and not streaming, use API-based preview for multi-file support
   // DISABLED: API endpoint doesn't exist - use srcdoc instead for inline preview
@@ -421,7 +455,7 @@ function ArtifactPanelInner({
     const contentDelta = contentLength - lastContentLengthRef.current;
 
     if (isStreaming) {
-      // STREAMING MODE - prevent strobe by careful debouncing
+      // STREAMING MODE - prevent strobe by milestone-based updates
       if (streamingStartedWithPreviewRef.current) {
         // UPDATE MODE: We have an existing preview - hold it until code is complete
         // Only update when we see </html> (complete HTML)
@@ -433,10 +467,15 @@ function ArtifactPanelInner({
         }
         // Don't update otherwise - keep showing old preview (prevents strobe)
       } else {
-        // FIRST BUILD MODE: No existing preview - show live streaming with debounce
-        // Only update when enough time has passed AND enough new content
-        const shouldUpdate = timeSinceLastUpdate >= MIN_UPDATE_INTERVAL &&
-          (contentDelta >= MIN_CONTENT_DELTA || timeSinceLastUpdate > 1000);
+        // FIRST BUILD MODE: Wait for meaningful HTML milestones before rendering.
+        // This keeps the branded loading state ("The Foundry is building...") visible
+        // until there's enough HTML to render without broken partial content.
+        const milestone = getHtmlMilestone(code);
+        const shouldUpdate =
+          // Milestone reached — show the styled content
+          milestone !== null ||
+          // Fallback: >5s since last update AND >2000 chars (progress for long builds)
+          (timeSinceLastUpdate > 5000 && contentLength > 2000);
 
         if (shouldUpdate) {
           // Clear any pending update
@@ -444,18 +483,14 @@ function ArtifactPanelInner({
             clearTimeout(debounceRef.current);
             debounceRef.current = null;
           }
-          buildPreview(code, false);
+          // Strip incomplete <script> blocks to prevent SyntaxErrors in iframe
+          const safeCode = stripIncompleteScripts(code);
+          console.log(`[ArtifactPanel] First build: milestone=${milestone}, chars=${contentLength}, rendering preview`);
+          buildPreview(safeCode, false);
           lastUpdateTimeRef.current = now;
           lastContentLengthRef.current = contentLength;
-        } else if (!debounceRef.current) {
-          // Schedule a delayed update to ensure we don't miss content
-          debounceRef.current = setTimeout(() => {
-            buildPreview(code, false);
-            lastUpdateTimeRef.current = Date.now();
-            lastContentLengthRef.current = code.length;
-            debounceRef.current = null;
-          }, MIN_UPDATE_INTERVAL);
         }
+        // Otherwise: stay on loading state — don't render partial broken HTML
       }
     } else {
       // NOT STREAMING - immediate update

@@ -375,6 +375,35 @@ export const useBenchmarkStore = create<BenchmarkState>()(
     }),
     {
       name: "forge-trials-store",
+      // Safe localStorage wrapper — catches QuotaExceededError instead of crashing
+      storage: {
+        getItem: (name: string) => {
+          try {
+            const raw = localStorage.getItem(name);
+            return raw ? JSON.parse(raw) : null;
+          } catch (e) {
+            console.warn("[BenchmarkStore] Failed to read localStorage:", e);
+            return null;
+          }
+        },
+        setItem: (name: string, value: unknown) => {
+          try {
+            localStorage.setItem(name, JSON.stringify(value));
+          } catch (e) {
+            console.warn("[BenchmarkStore] localStorage write failed (likely QuotaExceeded), pruning...", e);
+            try {
+              // Emergency prune: delete the key and retry with current data
+              localStorage.removeItem(name);
+              localStorage.setItem(name, JSON.stringify(value));
+            } catch (e2) {
+              console.error("[BenchmarkStore] localStorage write failed even after prune:", e2);
+            }
+          }
+        },
+        removeItem: (name: string) => {
+          try { localStorage.removeItem(name); } catch {}
+        },
+      },
       partialize: (s) => {
         // Strip rawResponse + extractedCode from persisted results to avoid
         // blowing localStorage quota (each is 5-20KB of HTML × 8 rounds × N models)
@@ -382,6 +411,15 @@ export const useBenchmarkStore = create<BenchmarkState>()(
           ...r,
           rawResponse: "",
           extractedCode: "",
+        });
+        // Strip heavy fields from hybrid step results (content + extractedCode per step)
+        const stripHybridHeavy = (hr: HybridChainResult): HybridChainResult => ({
+          ...hr,
+          steps: hr.steps.map(step => ({
+            ...step,
+            content: "",        // full streaming response — 5-30KB per step
+            extractedCode: "",  // full HTML — 5-20KB per step
+          })),
         });
         return {
           activeTab: s.activeTab,
@@ -400,8 +438,8 @@ export const useBenchmarkStore = create<BenchmarkState>()(
           cloudParallel: s.cloudParallel,
           hybridMode: s.hybridMode,
           hybridChains: s.hybridChains,
-          hybridResults: s.hybridResults,
-          hybridPastRuns: s.hybridPastRuns,
+          hybridResults: s.hybridResults.map(stripHybridHeavy),
+          hybridPastRuns: s.hybridPastRuns.map(stripHybridHeavy),
           hybridSelectedScenario: s.hybridSelectedScenario,
           hybridCustomPrompt: s.hybridCustomPrompt,
         };

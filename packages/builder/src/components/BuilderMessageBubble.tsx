@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, memo } from "react";
 import ReactMarkdown from "react-markdown";
 import type { Components } from "react-markdown";
 import { Copy, Check, Zap, Clock, Brain, ChevronDown, ChevronRight } from "lucide-react";
@@ -178,8 +178,10 @@ interface BuilderMessageBubbleProps {
  * - Copy message button, token stats, timestamp
  *
  * No state management — pure component that receives data + callbacks
+ * Wrapped in React.memo to prevent re-rendering non-streaming messages
+ * when the streaming message updates (new messages array every token).
  */
-export default function BuilderMessageBubble({
+function BuilderMessageBubbleInner({
   message,
   onOpenInEditor,
   onOpenPreview,
@@ -589,3 +591,25 @@ export default function BuilderMessageBubble({
     </div>
   );
 }
+
+/**
+ * Memoized wrapper: Only re-renders when the message actually changes.
+ * During streaming, the messages array is replaced on every token,
+ * but only the CURRENTLY STREAMING message's content changes.
+ * Non-streaming messages skip re-render entirely.
+ */
+const BuilderMessageBubble = memo(BuilderMessageBubbleInner, (prev, next) => {
+  // Different message ID → always re-render
+  if (prev.message.id !== next.message.id) return false;
+  // Streaming message → re-render on content change
+  if (next.message.isStreaming || prev.message.isStreaming) {
+    return prev.message.content.length === next.message.content.length &&
+      prev.message.isStreaming === next.message.isStreaming;
+  }
+  // Finished message: content and props unchanged → skip re-render
+  return prev.message.content === next.message.content &&
+    prev.projectPath === next.projectPath &&
+    prev.autoApply === next.autoApply;
+});
+
+export default BuilderMessageBubble;

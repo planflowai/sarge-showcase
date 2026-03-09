@@ -4,6 +4,21 @@ Generated: 2026-03-08
 Branch: sargebuild-v1
 Tag: working-2026-03-02-deploy-fix (last tagged)
 
+## Streaming Preview + localStorage + Opus Diagnosis (2026-03-08)
+
+| # | Change | File | Status |
+|---|--------|------|--------|
+| 1 | Milestone-based preview updates (replace 300ms debounce) | `ArtifactPanel.tsx` | **DONE** — Waits for `</style>`, `</body>`, or `</html>` before first render |
+| 2 | Strip incomplete `<script>` blocks from preview | `ArtifactPanel.tsx` | **DONE** — Prevents SyntaxErrors from partial JS |
+| 3 | Memoize BuilderMessageBubble with React.memo | `BuilderMessageBubble.tsx` | **DONE** — Non-streaming messages skip re-render |
+| 4 | Remove per-render console.log in ArtifactPanel | `ArtifactPanel.tsx` | **DONE** — Was firing on every token |
+| 5 | Strip hybridResults/hybridPastRuns in partialize | `benchmarkStore.ts` | **DONE** — `content` + `extractedCode` stripped from steps |
+| 6 | Safe localStorage wrapper (QuotaExceededError catch) | `benchmarkStore.ts` | **DONE** — Emergency prune on quota failure |
+| 7 | Opus diagnosis debug logging | `run-cloud/route.ts` | **DONE** — Logs exact prompts before every provider call |
+| 8 | OPUS_DIAGNOSIS.md report | Root | **DONE** — All providers get identical prompts, zero retry logic |
+
+---
+
 ## Forensic Assessment Fixes (2026-03-08) — 8 Fixes
 
 | # | Fix | File | Status |
