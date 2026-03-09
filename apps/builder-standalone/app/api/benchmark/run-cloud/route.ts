@@ -20,7 +20,7 @@ import {
   type ScoreBreakdown,
 } from "@sarge/benchmark";
 
-const RUNS_PER_SCENARIO = 1;
+const RUNS_PER_SCENARIO = 3;
 
 const WARMUP_PROMPT = `Build a dramatic "FORGE TRIALS" splash page. Single HTML file:
 - Black background (#0a0a0a)
@@ -38,6 +38,7 @@ interface CloudCallResult {
   timeMs: number;
   timedOut: boolean;
   tokenCount: number;
+  inputTokens?: number;
   error?: string;
 }
 
@@ -141,7 +142,7 @@ async function callOpenAICompat(
         "Content-Type": "application/json",
         "Authorization": `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({ model, messages, ...tokenParam, stream: true }),
+      body: JSON.stringify({ model, messages, ...tokenParam, stream: true, temperature: 0.3 }),
       signal: controller.signal,
     });
 
@@ -227,6 +228,8 @@ async function callAnthropic(
 
   let content = "";
   let tokenCount = 0;
+  let inputTokens = 0;
+  let outputTokens = 0;
 
   try {
     console.log(`[CLOUD TRIAL] Calling Anthropic ${model} (timeout=${timeoutMs}ms)...`);
@@ -242,6 +245,7 @@ async function callAnthropic(
         model,
         max_tokens: 8192,
         stream: true,
+        temperature: 0.3,
         system: systemPrompt || undefined,
         messages: [{ role: "user", content: userPrompt }],
       }),
@@ -277,17 +281,32 @@ async function callAnthropic(
             content += data.delta.text;
             tokenCount++;
           }
+          // Read input_tokens from message_start (Anthropic spec: message.usage.input_tokens)
+          if (data.type === "message_start" && data.message?.usage) {
+            inputTokens = data.message.usage.input_tokens || 0;
+          }
+          // Read output_tokens from message_delta (Anthropic spec: usage.output_tokens)
+          if (data.type === "message_delta" && data.usage) {
+            outputTokens = data.usage.output_tokens || 0;
+          }
         } catch {}
       }
     }
 
-    console.log(`[CLOUD TRIAL] Anthropic ${model} DONE: ${content.length} chars, ${tokenCount} tokens`);
+    // Use real token counts from API if available
+    const finalTokenCount = outputTokens || Math.max(tokenCount, Math.ceil(content.length / 4));
+    if (!outputTokens) {
+      console.warn(`[CLOUD TRIAL] Anthropic ${model} WARNING: No usage data captured from API — using estimated token count`);
+    }
+
+    console.log(`[CLOUD TRIAL] Anthropic ${model} DONE: ${content.length} chars, inputTokens=${inputTokens}, outputTokens=${outputTokens}`);
 
     return {
       content,
       timeMs: Date.now() - start,
       timedOut: false,
-      tokenCount: Math.max(tokenCount, Math.ceil(content.length / 4)),
+      tokenCount: finalTokenCount,
+      inputTokens,
     };
   } catch (err: unknown) {
     const elapsed = Date.now() - start;
@@ -338,7 +357,7 @@ async function callGemini(
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contents }),
+        body: JSON.stringify({ contents, generationConfig: { temperature: 0.3 } }),
         signal: controller.signal,
       }
     );
@@ -407,7 +426,8 @@ async function logBilling(
   modelId: string,
   provider: string,
   tokensOut: number,
-  durationMs: number
+  durationMs: number,
+  tokensIn?: number
 ): Promise<number> {
   try {
     const res = await fetch(`${baseUrl}/api/billing/log`, {
@@ -417,7 +437,7 @@ async function logBilling(
         model: modelId,
         provider,
         app: "trials-cloud",
-        tokensIn: Math.ceil(tokensOut * 0.3),
+        tokensIn: tokensIn || Math.ceil(tokensOut * 0.3),
         tokensOut,
         durationMs,
       }),
@@ -563,6 +583,7 @@ export async function POST(request: NextRequest) {
           let bestCode = "";
           let bestScore: ScoreBreakdown | null = null;
           let bestTokenCount = 0;
+          let bestInputTokens = 0;
           let roundCost = 0;
 
           for (let run = 0; run < RUNS_PER_SCENARIO; run++) {
@@ -619,7 +640,8 @@ export async function POST(request: NextRequest) {
               model.id,
               model.provider,
               result.tokenCount,
-              result.timeMs
+              result.timeMs,
+              result.inputTokens
             );
             totalCost += cost;
             roundCost += cost;
@@ -662,6 +684,7 @@ export async function POST(request: NextRequest) {
               bestCode = scored.code;
               bestScore = scored.score;
               bestTokenCount = result.tokenCount;
+              bestInputTokens = result.inputTokens || 0;
             }
           }
 
@@ -706,7 +729,7 @@ export async function POST(request: NextRequest) {
             timestamp: Date.now(),
             timedOut: anyTimedOut,
             runs,
-            tokensIn: Math.ceil(bestTokenCount * 0.3),
+            tokensIn: bestInputTokens || Math.ceil(bestTokenCount * 0.3),
             tokensOut: bestTokenCount,
             cost: roundCost,
           };

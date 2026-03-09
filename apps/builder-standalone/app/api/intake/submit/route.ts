@@ -94,7 +94,7 @@ async function sendIntakeEmails(
   const businessName = formData.business_name || "Unknown";
   const industry = formData.industry || "Not specified";
   const clientEmail = formData.email;
-  const contactName = formData.contact_name || businessName;
+  const contactName = formData.client_name || formData.contact_name || formData.full_name || businessName;
   const notifyEmail = process.env.NOTIFICATION_EMAIL;
 
   // Build form summary rows for the client confirmation email

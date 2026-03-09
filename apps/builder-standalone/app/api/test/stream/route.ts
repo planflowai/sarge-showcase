@@ -441,16 +441,16 @@ async function streamAnthropic(model: string, prompt: string, systemPrompt?: str
               JSON.stringify({ message: { content: data.delta.text } }) + '\n'
             ));
           }
-          // Anthropic sends usage in message_delta (final event)
-          if (data.type === 'message_delta' && data.usage) {
-            controller.enqueue(new TextEncoder().encode(
-              JSON.stringify({ usage: { input_tokens: data.usage.input_tokens, output_tokens: data.usage.output_tokens } }) + '\n'
-            ));
-          }
-          // Also capture from message_start (has input_tokens)
+          // Anthropic message_start has input_tokens (read once, do NOT overwrite)
           if (data.type === 'message_start' && data.message?.usage) {
             controller.enqueue(new TextEncoder().encode(
-              JSON.stringify({ usage: { input_tokens: data.message.usage.input_tokens, output_tokens: data.message.usage.output_tokens } }) + '\n'
+              JSON.stringify({ usage: { input_tokens: data.message.usage.input_tokens } }) + '\n'
+            ));
+          }
+          // Anthropic message_delta has output_tokens only (no input_tokens in spec)
+          if (data.type === 'message_delta' && data.usage) {
+            controller.enqueue(new TextEncoder().encode(
+              JSON.stringify({ usage: { output_tokens: data.usage.output_tokens } }) + '\n'
             ));
           }
         } catch {}

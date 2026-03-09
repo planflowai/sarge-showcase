@@ -4,6 +4,29 @@ Generated: 2026-03-08
 Branch: sargebuild-v1
 Tag: working-2026-03-02-deploy-fix (last tagged)
 
+## Forensic Assessment Fixes (2026-03-08) — 8 Fixes
+
+| # | Fix | File | Status |
+|---|-----|------|--------|
+| 1 | Cloud runner temperature 0.3 (was unset = 1.0) | `run-cloud/route.ts` lines 145, 248, 360 | **FIXED** — All 3 provider paths (OpenAI-compat, Anthropic, Gemini) |
+| 2 | Email field mismatch (`contact_name` → `client_name`) | `submit/route.ts` line 97 | **FIXED** — Reads `client_name \|\| contact_name \|\| full_name` |
+| 3 | Anthropic billing: real tokens from SSE events | `run-cloud/route.ts` lines 276-290 | **FIXED** — Reads `message_start.input_tokens` + `message_delta.output_tokens` |
+| 4 | Anthropic streaming: input_tokens overwrite bug | `test/stream/route.ts` lines 444-455 | **FIXED** — `message_start` sends input only, `message_delta` sends output only |
+| 5 | Cloud runner 3 runs per scenario (was 1) | `run-cloud/route.ts` line 23 | **FIXED** — `RUNS_PER_SCENARIO = 3`, median scoring |
+| 6 | Grey text check in production guardian | `multiPageBuilder.ts` lines 463-479 | **FIXED** — CONTRAST finding type, 17 regex patterns, WARNING not FAIL |
+| 7 | PII injector: `site_phone`/`site_email` first | `build-multipage/route.ts` lines 389-390 | **FIXED** — `site_phone \|\| business_phone \|\| phone` |
+| 8 | Prompt comparison doc | `PROMPT_COMPARISON.md` + warnings in source | **FIXED** — Gap documented, no alignment yet |
+
+### Verification
+
+- Intake form test: "Test Client" + "Test Restaurant" → email says "Hi Test Client" ✓
+- Temperature: `grep temperature run-cloud/route.ts` → 3 matches (lines 145, 248, 360) ✓
+- Billing: `inputTokens` from `message_start`, `outputTokens` from `message_delta` ✓
+- TypeScript: `packages/billing` compiles clean ✓
+- Builder-standalone: PM2 online, HTTP 200 ✓
+
+---
+
 ## Level 11 Events v2 — Full Pipeline Rebuild (2026-03-08)
 
 Ref: `L11-LEVEL11-002` | 7 pages | Clean slate rebuild with v2 intake data

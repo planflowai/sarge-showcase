@@ -180,7 +180,7 @@ export function generateBuildLog(
 
 /** A single guardian finding */
 export interface GuardianFinding {
-  type: "HALLUCINATION" | "STRUCTURE" | "NAV";
+  type: "HALLUCINATION" | "STRUCTURE" | "NAV" | "CONTRAST";
   message: string;
   action: "auto-replaced" | "flagged";
 }
@@ -457,6 +457,27 @@ export function guardianCheck(
       issues.push("No PII placeholders found — may contain hardcoded data");
       findings.push({ type: "STRUCTURE", message: "No PII placeholders found — may contain hardcoded data", action: "flagged" });
     }
+  }
+
+  // ── GREY/MUTED TEXT CHECK (WARNING, not hard fail) ─────────────────
+  const GREY_PATTERNS: RegExp[] = [
+    /text-zinc-[4-7]00/g, /text-slate-[4-6]00/g, /text-gray-[4-6]00/g, /text-neutral-[4-6]00/g,
+    /color:\s*#6b7280/gi, /color:\s*#71717a/gi, /color:\s*#52525b/gi, /color:\s*#3f3f46/gi,
+    /color:\s*#94a3b8/gi, /color:\s*#64748b/gi, /color:\s*#9ca3af/gi, /color:\s*#a1a1aa/gi,
+    /zinc-500/g, /zinc-600/g, /zinc-700/g, /slate-400/g, /slate-500/g,
+  ];
+  const greyHits: string[] = [];
+  for (const rx of GREY_PATTERNS) {
+    rx.lastIndex = 0;
+    const m = cleaned.match(rx);
+    if (m) greyHits.push(...m);
+  }
+  if (greyHits.length > 0) {
+    findings.push({
+      type: "CONTRAST",
+      message: `Found ${greyHits.length} grey/muted text instances: ${greyHits.slice(0, 5).join(", ")}${greyHits.length > 5 ? "..." : ""}`,
+      action: "flagged",
+    });
   }
 
   // Pass only if no structural issues (hallucination findings don't fail — they auto-replace)

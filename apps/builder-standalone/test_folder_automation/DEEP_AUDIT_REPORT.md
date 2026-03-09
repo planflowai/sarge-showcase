@@ -322,7 +322,26 @@ All 7 original failures are now resolved. Test 08 is NEEDS REVIEW (hallucination
 
 ---
 
-## 12. RECOMMENDED NEXT ACTIONS
+## 12. FORENSIC ASSESSMENT FIXES (Post-Run 4)
+
+Full forensic assessment performed on 2026-03-08. See `FORENSIC_ASSESSMENT.md` in project root.
+
+### 8 Fixes Applied
+
+| # | Fix | File | Impact |
+|---|-----|------|--------|
+| 1 | **Temperature 0.3** in cloud runner | `run-cloud/route.ts` | Prevents Opus building wrong thing (was unset = 1.0) |
+| 2 | **Email field mismatch** fixed | `submit/route.ts` line 97 | `client_name` read correctly, no more "Hi Unknown" |
+| 3 | **Anthropic billing: real tokens** | `run-cloud/route.ts` | Reads `message_start`/`message_delta` SSE events, no fabrication |
+| 4 | **Anthropic streaming overwrite** | `test/stream/route.ts` | `input_tokens` from `message_start` no longer overwritten |
+| 5 | **3 runs per scenario** | `run-cloud/route.ts` line 23 | `RUNS_PER_SCENARIO = 3`, median scoring, matches local |
+| 6 | **Grey text in production guardian** | `multiPageBuilder.ts` | 17 regex patterns, CONTRAST finding type, WARNING not FAIL |
+| 7 | **PII field mapping** | `build-multipage/route.ts` | `site_phone`/`site_email` first, personal contact as fallback |
+| 8 | **Prompt comparison doc** | `PROMPT_COMPARISON.md` | Forge Trials vs production prompt gap documented |
+
+---
+
+## 13. RECOMMENDED NEXT ACTIONS
 
 ### Phase 1 — Build the 4 NEEDS BUILD features:
 1. **Test 04 — Asset Management**: Wire intake section → subfolder routing (logo/, hero/, services/, team/, gallery/)
@@ -331,10 +350,10 @@ All 7 original failures are now resolved. Test 08 is NEEDS REVIEW (hallucination
 4. **Test 12 — Generative Media**: Auto-embed generated images during page build
 
 ### Phase 2 — Quality hardening:
-5. **Guardian Layer 2** — Expand hallucination detection beyond example.com (Acme Corp, 123 Main St, etc.)
-6. **Font weight validation** — Add CSS weight checks to scoreFile()
-7. **Production build fix** — Fix scanner.ts client-side fs import
-8. **OpenAI billing** — Verify gpt-4.1 API key has balance
+5. **Font weight validation** — Add CSS weight checks to scoreFile()
+6. **Production build fix** — Fix scanner.ts client-side fs import
+7. **OpenAI billing** — Verify gpt-4.1 API key has balance
+8. **Prompt alignment decision** — Review PROMPT_COMPARISON.md, decide on alignment strategy
 
 ### Test runner improvements:
 9. **--only flag** — ✅ Already implemented (`node test-runner.mjs --only 3,7,8,9`)
@@ -347,3 +366,4 @@ All 7 original failures are now resolved. Test 08 is NEEDS REVIEW (hallucination
 *Total cost of all test runs (1-4): ~$0.20*
 *Run 4 result: 14/20 PASS + 1 NEEDS REVIEW + 4 NEEDS BUILD (0 FAIL)*
 *Progression: Run 1 (2 PASS) → Run 2 (4) → Run 3 (9) → Run 4 (14) — 7x improvement*
+*Forensic assessment: 5 bugs fixed, 3 gaps closed (2026-03-08)*

@@ -1,3 +1,4 @@
+// WARNING: The system prompt in buildOnePage() differs from the Forge Trials prompt. See PROMPT_COMPARISON.md
 import { NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import {
@@ -385,8 +386,8 @@ export async function POST(req: NextRequest) {
 
         const piiData: PIIData = {
           name: flat.business_name || projectName,
-          phone: flat.phone || flat.business_phone || "",
-          email: flat.email || flat.business_email || "",
+          phone: flat.site_phone || flat.business_phone || flat.phone || "",
+          email: flat.site_email || flat.business_email || flat.email || "",
           address: flat.business_address || flat.address || "",
           city: locationParts[0] || flat.city || "",
           state: locationParts[1] || flat.state || "",

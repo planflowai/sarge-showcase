@@ -2,6 +2,8 @@
  * Cloud Forge Trials — 8 Production-Grade Scenarios
  * Full-site builds testing cloud models at their ceiling.
  * Each round produces a SINGLE complete HTML file with inline CSS and JS.
+ *
+ * WARNING: This prompt differs from the production builder prompt. See PROMPT_COMPARISON.md
  */
 
 import type { BenchmarkScenario } from "./runner";
